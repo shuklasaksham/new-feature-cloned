@@ -50,6 +50,7 @@ from ai_engine import (
 )
 from routes_features import build_feature_router
 from routes_billing import build_billing_router
+from emailer import send_waitlist_welcome
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
@@ -95,15 +96,24 @@ async def join_waitlist(body: WaitlistIn):
         return {"ok": True, "already": True, "position": existing.get("position")}
     count = await db.waitlist.count_documents({})
     position = count + 1
+    name = (body.name or "").strip()
     doc = {
         "id": _uuid(),
         "email": email,
-        "name": (body.name or "").strip(),
+        "name": name,
         "role": body.role or "other",
         "position": position,
+        "welcomed": False,
         "created_at": _now_iso(),
     }
     await db.waitlist.insert_one(doc)
+    # Fire-and-forget welcome email; never block the response on it.
+    try:
+        sent = await send_waitlist_welcome(email, name, position)
+        if sent:
+            await db.waitlist.update_one({"email": email}, {"$set": {"welcomed": True}})
+    except Exception as e:
+        logger.warning(f"waitlist welcome email crashed: {e}")
     return {"ok": True, "already": False, "position": position}
 
 

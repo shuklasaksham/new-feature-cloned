@@ -14,12 +14,7 @@ const ROLES = [
   { id: "other", label: "Other" },
 ];
 
-const LAUNCH_DATE = (() => {
-  const d = new Date();
-  d.setDate(d.getDate() + 45);
-  d.setHours(9, 0, 0, 0);
-  return d;
-})();
+const LAUNCH_DATE = new Date(2026, 4, 30, 12, 0, 0); // May 30, 12:00 PM local
 
 function useCountdown(target) {
   const [now, setNow] = useState(Date.now());
@@ -51,7 +46,7 @@ export default function Waitlist() {
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) return setError("Email is required.");
+    if (!email.trim()) return setError("Your email — so we can reach you.");
     setLoading(true);
     setError("");
     try {
@@ -59,7 +54,11 @@ export default function Waitlist() {
       setDone(true);
       setPosition(data.position || null);
     } catch (err) {
-      setError(formatApiError(err));
+      const raw = formatApiError(err);
+      const friendly = /email/i.test(raw)
+        ? "That doesn't look like a working email. Try a real one — we'll only use it once."
+        : raw;
+      setError(friendly);
     } finally {
       setLoading(false);
     }
@@ -93,7 +92,7 @@ export default function Waitlist() {
                 ))}
               </div>
               <p className="mono-tag text-muted mt-4">
-                LAUNCH · {LAUNCH_DATE.toISOString().replace("T", " ").slice(0, 16)} UTC
+                LAUNCH · 30 MAY · 12:00 PM
               </p>
 
               <h1 className="font-display text-[56px] sm:text-[84px] md:text-[112px] uppercase mt-12 leading-[0.9]">
@@ -171,9 +170,9 @@ export default function Waitlist() {
                   </div>
 
                   {error && (
-                    <div className="border border-danger p-3" data-testid="waitlist-error">
-                      <p className="mono-tag text-danger">HMM</p>
-                      <p className="text-sm mt-1">{error}</p>
+                    <div className="border-l-2 border-ink bg-paper pl-4 py-3" data-testid="waitlist-error">
+                      <p className="mono-tag text-muted">NOTE</p>
+                      <p className="text-sm mt-1 text-ink">{error}</p>
                     </div>
                   )}
 
@@ -197,7 +196,12 @@ export default function Waitlist() {
                   {position && (
                     <p className="mono-tag text-signal mt-6">POSITION · #{String(position).padStart(4, "0")}</p>
                   )}
-                  <Link to="/how-it-works" className="btn-brut bg-chalk text-ink border-chalk hover:bg-signal hover:text-chalk hover:border-signal mt-8 w-full justify-center" data-testid="waitlist-next-cta">
+                  <Link
+                    to="/how-it-works"
+                    className="mt-8 w-full inline-flex items-center justify-center gap-3 px-5 py-4 border border-chalk font-mono uppercase text-[12px] tracking-[0.14em] font-semibold transition"
+                    style={{ background: "#ffffff", color: "#0A0A0A", boxShadow: "4px 4px 0 #0033FF" }}
+                    data-testid="waitlist-next-cta"
+                  >
                     See what's coming →
                   </Link>
                 </div>
