@@ -1,0 +1,41 @@
+{
+  "summary": "Full-stack regression for Bracket. Backend: 18/18 pytest passing (auth, onboarding, project CRUD, project isolation, full 5-step Claude AI flow including artifacts/lock, GPT-5.2 engine path). Frontend: landing + 4 marketing routes load, currency toggle present, ProtectedRoute redirects to /login, signup -> onboarding (2 steps) -> /app/new -> create project -> Step 1 Situation Framing successfully calls Claude and renders reframed_problem + clarity score (MURKY/35) + tensions list. Engine toggle (Claude Sonnet 4.5 / GPT-5.2) visible on new-project page. Login validates and redirects (to /onboarding when onboarded=false, to /app otherwise — correct).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "auth (cookie+Bearer)", "issue": "get_current_user prefers cookie over Authorization header. When a client has a stale cookie from a previous user (e.g. shared browser session or testing tool re-using a Session), Bearer tokens are silently ignored. This caused initial cross-user tests to fail; also a real risk if users switch accounts and an old cookie lingers. Recommend reversing precedence (Bearer beats cookie) or only honoring the cookie when no Authorization header is present AND the request originates from same-origin."},
+      {"endpoint": "DELETE /api/projects/{id}", "issue": "Always returns {ok: true} even when the project does not belong to the user (delete_one with composite filter just no-ops). Functionally correct (data isolation works) but consider returning 404 to give honest feedback / avoid leaking that an id exists for another user."},
+      {"endpoint": "POST /api/projects", "issue": "engine field silently coerced to 'claude' for any value other than ('claude','gpt') instead of returning 400 — should validate via Pydantic Literal."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "<head>", "issues": ["Document title is still the generic placeholder 'Emergent | Fullstack App' instead of 'Bracket'. Update public/index.html <title> + meta description for SEO + branded browser tabs."]},
+      {"screen": "Project flow Step 1", "issues": ["Submit button label switches between 'Reframe' (initial, gray/disabled visual) and 'Reframe again' (active blue) but disabled state is not visually obvious from the gray-on-light treatment — consider clearer disabled vs enabled contrast."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Optional: change auth precedence so Bearer token wins over cookie (or clear stale cookies on auth endpoints).",
+    "Optional: validate ProjectCreateIn.engine with Literal['claude','gpt'] and return 400 on invalid.",
+    "Update <title> in /app/frontend/public/index.html from 'Emergent | Fullstack App' to 'Bracket — Decisions for Designers' + add proper meta description/OG tags."
+  ],
+  "critical_code_review_comments": [
+    "auth.py get_current_user: cookie-then-bearer ordering can shadow a Bearer token if a stale 'access_token' cookie exists. Consider Bearer-first.",
+    "server.py create_project silently rewrites unknown engine values to 'claude' — should reject via Pydantic Literal/Enum for stricter input validation.",
+    "server.py uses on_event('startup'/'shutdown') which is deprecated in modern FastAPI; switch to lifespan context manager.",
+    "server.py: every step endpoint catches Exception and re-raises as 502 with the raw exception message in the detail — this can leak internal stack info to clients (e.g. provider API errors). Mask the user-facing message and only log details.",
+    "ai_engine._extract_json: regex-strip of fences works but is fragile if the model returns multiple JSON objects or trailing prose; consider a stricter JSON-mode prompt or json_repair lib.",
+    "Project status enum ('draft'|'in_progress'|'locked') is a free string — make it Pydantic Literal/Enum to prevent invalid states."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Backend pytest creates fresh users tester+a{ts}@example.com and tester+b{ts}@example.com (password bracket123) per run. UI test created uitest+1776706364@example.com / bracket123 (onboarded freelance/scope). Pre-existing curl test user: tester+bracket@example.com / bracket123 (NOT onboarded — redirects to /onboarding after login).",
+  "seed_data_creation": "None beyond per-test users (TEST_ prefixed projects) created and cleaned up by the test cases themselves.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file at /app/backend/tests/backend_test.py — full 18-test suite covering health/auth/onboarding/projects/AI flow (Claude + GPT). Run with: pytest /app/backend/tests/backend_test.py -v --junitxml=/app/test_reports/pytest/pytest_results.xml. Suite takes ~90s due to AI calls. IMPORTANT: When using requests.Session against this API, the auth endpoints set httpOnly cookies that PERSIST and shadow Bearer headers (because backend prefers cookie). Disable cookie persistence in the session (already done in fixture) when running multi-user scenarios. UI flow signup->onboarding->new-project->Step1 framing fully verified. Steps 2-5 of the project flow were tested at the API layer but not click-driven through the UI — recommend adding UI tests for context/decision/artifacts/lock screens in next iteration.",
+  "rca of the issue": "N/A — no blocking bugs. Initial test failures (project_isolation + step1-5) were caused by requests.Session sharing the access_token cookie across users; backend's get_current_user prefers cookie over Bearer header, so all subsequent calls authenticated as the last-registered user. Fixed in tests by disabling cookie persistence in the shared session. Recommended also flipping the precedence in backend/auth.py."
+}
