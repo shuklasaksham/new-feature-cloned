@@ -40,6 +40,8 @@ from ai_engine import (
     run_decision_engine,
     run_artifacts,
 )
+from routes_features import build_feature_router
+from routes_billing import build_billing_router
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
@@ -149,6 +151,7 @@ async def create_project(body: ProjectCreateIn, user: dict = Depends(_user_dep))
     doc = {
         "id": _uuid(),
         "user_id": user["id"],
+        "workspace_id": None,
         "name": body.name,
         "engine": body.engine if body.engine in ("claude", "gpt") else "claude",
         "status": "draft",
@@ -160,6 +163,9 @@ async def create_project(body: ProjectCreateIn, user: dict = Depends(_user_dep))
         "decision_input": None,
         "decision": None,
         "artifacts": None,
+        "simulation": None,
+        "share_token": None,
+        "revision_count": 0,
         "locked_at": None,
         "created_at": now,
         "updated_at": now,
@@ -303,6 +309,8 @@ async def step_lock(project_id: str, user: dict = Depends(_user_dep)):
 
 # --- Mount router ---
 app.include_router(api)
+app.include_router(build_feature_router(db), prefix="/api")
+app.include_router(build_billing_router(db), prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,

@@ -73,7 +73,7 @@ export default function Pricing() {
                     className={`mt-8 w-full justify-center ${isStudio ? "btn-brut" : "btn-ghost"}`}
                     data-testid={`pricing-cta-${t.id}`}
                   >
-                    {t.cta} <ArrowRight size={14} />
+                    {t.id === "free" ? t.cta : `Get ${t.name}`} <ArrowRight size={14} />
                   </Link>
                 </div>
               );

@@ -161,3 +161,65 @@ Return JSON:
   ]
 }}"""
     return await _run(prompt, engine)
+
+
+async def run_moment_advisor(inputs: dict, engine: str = "claude") -> dict:
+    """Moment Advisor — a designer pastes a client message or describes a moment,
+    Bracket recommends how to respond."""
+    prompt = f"""A designer is facing a client moment. They need a stance, not an essay.
+
+THE MOMENT (what the client said or what's happening):
+\"\"\"{inputs.get('moment', '')}\"\"\"
+
+CONTEXT THE DESIGNER GAVE (optional):
+{inputs.get('context', '') or '(none)'}
+
+Decide:
+1. Respond now, or respond later (with a cooling window)?
+2. Clarify, or push back?
+3. Soften the tone, or firm it up?
+
+Return JSON:
+{{
+  "read": "One line: what's actually happening underneath the client message",
+  "timing": "NOW | LATER",
+  "timing_why": "One sentence reason",
+  "posture": "CLARIFY | PUSH_BACK | HOLD",
+  "posture_why": "One sentence reason",
+  "tone": "SOFTEN | FIRM_UP | KEEP",
+  "tone_why": "One sentence reason",
+  "response_draft": "A 2-4 short-paragraph message the designer can send. Warm, direct, no fluff.",
+  "what_not_to_do": ["One pitfall to avoid", ...]
+}}"""
+    return await _run(prompt, engine)
+
+
+async def run_pushback_simulator(project: dict, engine: str = "claude") -> dict:
+    """Simulates likely client reactions to the locked decision and drafts responses."""
+    framing = project.get("framing", {})
+    decision = project.get("decision", {})
+    artifacts = project.get("artifacts", {})
+    prompt = f"""Play the client. Predict how they'll push back on this decision.
+
+PROJECT: {project.get('name', '')}
+REFRAMED PROBLEM: {framing.get('reframed_problem', '')}
+RECOMMENDATION: {json.dumps(decision.get('recommendation', {}))}
+SCOPE IN: {json.dumps(artifacts.get('scope_doc', {}).get('in_scope', []))}
+SCOPE OUT: {json.dumps(artifacts.get('scope_doc', {}).get('out_of_scope', []))}
+
+Return JSON simulating 4 likely reactions. Mix: silence, "can we reduce this", scope expansion attempts, timeline pressure, taste disagreements.
+
+{{
+  "scenarios": [
+    {{
+      "trigger": "The exact thing the client is likely to say or do",
+      "why": "Why they'll say it — the underlying pressure",
+      "best_move": "What the designer should do",
+      "response_draft": "A short reply the designer can send (or say in a meeting)",
+      "what_not_to_do": "The common mistake to avoid"
+    }},
+    ...
+  ]
+}}"""
+    return await _run(prompt, engine)
+

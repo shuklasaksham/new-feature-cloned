@@ -1,23 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Plus, Trash2, Lock, Clock } from "lucide-react";
-import BracketMark from "../components/BracketMark";
+import { ArrowRight, Trash2, Lock, Zap, Bookmark, Users } from "lucide-react";
+import AppNav from "../components/AppNav";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
-
-function AppHeader({ user, onLogout }) {
-  return (
-    <header className="sticky top-0 z-30 bg-paper border-b border-ink">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 h-16 flex items-center justify-between">
-        <Link to="/app"><BracketMark /></Link>
-        <div className="flex items-center gap-6">
-          <p className="mono-tag text-muted hidden md:block">{user?.email}</p>
-          <button className="btn-ghost" onClick={onLogout} data-testid="app-logout-btn">Log out</button>
-        </div>
-      </div>
-    </header>
-  );
-}
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -75,7 +61,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-paper" data-testid="dashboard-page">
-      <AppHeader user={user} onLogout={async () => { await logout(); navigate("/"); }} />
+      <AppNav />
 
       <main className="max-w-[1400px] mx-auto px-6 md:px-10 py-10">
         <div className="grid lg:grid-cols-12 gap-10">
@@ -118,6 +104,24 @@ export default function Dashboard() {
                 {creating ? "Creating…" : <>Start deciding <ArrowRight size={16} /></>}
               </button>
             </form>
+
+            <div className="mt-6 grid grid-cols-3 gap-0 border border-ink" data-testid="dashboard-quicknav">
+              <Link to="/app/moments" className="p-4 bg-chalk hover:bg-ink hover:text-chalk border-r border-ink transition" data-testid="dashboard-moments-tile">
+                <Zap size={16} />
+                <p className="mono-tag mt-3">MOMENTS</p>
+                <p className="text-xs text-muted mt-1">Client message advisor</p>
+              </Link>
+              <Link to="/app/templates" className="p-4 bg-chalk hover:bg-ink hover:text-chalk border-r border-ink transition" data-testid="dashboard-templates-tile">
+                <Bookmark size={16} />
+                <p className="mono-tag mt-3">TEMPLATES</p>
+                <p className="text-xs text-muted mt-1">Reusable starters</p>
+              </Link>
+              <Link to="/app/workspace" className="p-4 bg-chalk hover:bg-ink hover:text-chalk transition" data-testid="dashboard-workspace-tile">
+                <Users size={16} />
+                <p className="mono-tag mt-3">TEAM</p>
+                <p className="text-xs text-muted mt-1">Studio collaboration</p>
+              </Link>
+            </div>
           </div>
 
           <div className="lg:col-span-7 space-y-10">

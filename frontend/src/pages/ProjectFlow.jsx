@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowRight, ArrowLeft, Lock, Check, Loader2, RefreshCw } from "lucide-react";
+import { ArrowRight, ArrowLeft, Lock, Check, Loader2, RefreshCw, Share2, Download, FileText, History, Bookmark, Zap, Copy, X, Unlock } from "lucide-react";
 import BracketMark from "../components/BracketMark";
-import { api, formatApiError } from "../lib/api";
+import { api, formatApiError, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 
 const STEPS = [
@@ -67,6 +67,7 @@ export default function ProjectFlow() {
           </div>
           <div className="flex items-center gap-3">
             {isLocked && <span className="mono-tag text-signal flex items-center gap-2"><Lock size={12} /> LOCKED</span>}
+            <ProjectToolbar project={project} setProject={setProject} />
             <button className="btn-ghost" onClick={async () => { await logout(); navigate("/"); }} data-testid="flow-logout-btn">Exit</button>
           </div>
         </div>
@@ -627,3 +628,301 @@ function CopyButton({ text }) {
     </button>
   );
 }
+
+// ------- ProjectToolbar + drawers -------
+function ProjectToolbar({ project, setProject }) {
+  const [open, setOpen] = useState(null); // 'share' | 'simulate' | 'revisions' | 'save-template'
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [shareLink, setShareLink] = useState("");
+  const [revisions, setRevisions] = useState([]);
+  const [tplName, setTplName] = useState("");
+
+  const publicBase = typeof window !== "undefined" ? window.location.origin : "";
+
+  const openShare = async () => {
+    setOpen("share");
+    setError("");
+    try {
+      let token = project.share_token;
+      if (!token) {
+        setLoading(true);
+        const { data } = await api.post(`/projects/${project.id}/share`);
+        setProject(data);
+        token = data.share_token;
+      }
+      setShareLink(`${publicBase}/share/${token}`);
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const revokeShare = async () => {
+    setLoading(true);
+    try {
+      await api.delete(`/projects/${project.id}/share`);
+      const { data } = await api.get(`/projects/${project.id}`);
+      setProject(data);
+      setShareLink("");
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runSimulate = async () => {
+    setOpen("simulate");
+    setError("");
+    try {
+      setLoading(true);
+      const { data } = await api.post(`/projects/${project.id}/simulate`);
+      setProject(data);
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRevisions = async () => {
+    setOpen("revisions");
+    setError("");
+    try {
+      const { data } = await api.get(`/projects/${project.id}/revisions`);
+      setRevisions(data);
+    } catch (e) {
+      setError(formatApiError(e));
+    }
+  };
+
+  const unlockAndEdit = async () => {
+    if (!window.confirm("Unlock and create a new revision? The current version will be saved to history.")) return;
+    setLoading(true);
+    try {
+      const { data } = await api.post(`/projects/${project.id}/edit-after-lock`, { note: "" });
+      setProject(data);
+      setOpen(null);
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveTemplate = async (e) => {
+    e.preventDefault();
+    if (!tplName.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      await api.post("/templates", { name: tplName.trim(), from_project_id: project.id });
+      setTplName("");
+      setOpen(null);
+    } catch (err) {
+      setError(formatApiError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportUrl = `${API_BASE}/projects/${project.id}/export.md`;
+  const downloadMd = async () => {
+    const token = localStorage.getItem("bracket_token");
+    const res = await fetch(exportUrl, { headers: token ? { Authorization: `Bearer ${token}` } : {}, credentials: "include" });
+    const text = await res.text();
+    const blob = new Blob([text], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const hasArtifacts = !!project.artifacts;
+  const hasDecision = !!project.decision;
+
+  return (
+    <>
+      <div className="hidden md:flex items-center gap-2" data-testid="project-toolbar">
+        <ToolbarBtn onClick={openShare} disabled={!hasArtifacts} icon={<Share2 size={12} />} label="Share" testid="toolbar-share" />
+        <ToolbarBtn onClick={downloadMd} disabled={!hasArtifacts} icon={<Download size={12} />} label="Export" testid="toolbar-export" />
+        <ToolbarBtn onClick={runSimulate} disabled={!hasDecision} icon={<Zap size={12} />} label="Simulate" testid="toolbar-simulate" />
+        <ToolbarBtn onClick={() => setOpen("save-template")} disabled={!hasDecision} icon={<Bookmark size={12} />} label="Template" testid="toolbar-template" />
+        <ToolbarBtn onClick={openRevisions} icon={<History size={12} />} label="Revisions" testid="toolbar-revisions" />
+      </div>
+
+      {open && (
+        <div className="fixed inset-0 z-50 bg-ink/60 flex items-end md:items-center md:justify-end" onClick={() => setOpen(null)} data-testid="project-drawer">
+          <div className="w-full md:w-[520px] md:h-full bg-paper border-l border-ink overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="border-b border-ink px-6 h-16 flex items-center justify-between sticky top-0 bg-paper">
+              <p className="mono-label">{`{ ${open} }`}</p>
+              <button onClick={() => setOpen(null)} className="p-2 border border-ink hover:bg-ink hover:text-chalk" data-testid="drawer-close-btn"><X size={14} /></button>
+            </div>
+            <div className="p-6">
+              {error && <div className="border border-danger p-3 mb-4" data-testid="drawer-error"><p className="mono-tag text-danger">ERROR</p><p className="text-sm mt-1">{error}</p></div>}
+
+              {open === "share" && (
+                <ShareDrawer
+                  loading={loading}
+                  link={shareLink}
+                  token={project.share_token}
+                  onRevoke={revokeShare}
+                />
+              )}
+
+              {open === "simulate" && (
+                <SimulateDrawer
+                  loading={loading}
+                  simulation={project.simulation}
+                  onRun={runSimulate}
+                />
+              )}
+
+              {open === "revisions" && (
+                <RevisionsDrawer
+                  revisions={revisions}
+                  project={project}
+                  onUnlock={unlockAndEdit}
+                  loading={loading}
+                />
+              )}
+
+              {open === "save-template" && (
+                <form onSubmit={saveTemplate} className="space-y-5" data-testid="save-template-form">
+                  <h3 className="font-display text-2xl">Save this project as a template.</h3>
+                  <p className="text-muted text-sm">Your situation, context, and decision inputs will be saved. Outputs will be regenerated fresh every time.</p>
+                  <label className="mono-tag text-muted block">TEMPLATE NAME</label>
+                  <input className="input-line" value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="e.g. Landing page intake" data-testid="save-template-name-input" autoFocus />
+                  <button type="submit" disabled={loading || !tplName.trim()} className="btn-brut w-full justify-center" data-testid="save-template-submit-btn">
+                    {loading ? "Saving…" : "Save template"}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function ToolbarBtn({ onClick, icon, label, disabled, testid }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase flex items-center gap-2 ${disabled ? "opacity-40 cursor-not-allowed bg-paper" : "bg-paper hover:bg-ink hover:text-chalk"}`}
+      data-testid={testid}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+function ShareDrawer({ link, token, loading, onRevoke }) {
+  const [copied, setCopied] = useState(false);
+  if (loading) return <p className="mono-label">GENERATING LINK…</p>;
+  if (!token || !link) return <p className="mono-label">NO LINK YET</p>;
+  return (
+    <div data-testid="share-drawer">
+      <h3 className="font-display text-2xl">Public, read-only link.</h3>
+      <p className="text-muted text-sm mt-2">Anyone with this URL can view the artifacts. They can't edit. You can revoke any time.</p>
+
+      <div className="mt-6 border border-ink p-3 bg-chalk flex items-center gap-2">
+        <input className="flex-1 bg-transparent outline-none font-mono text-xs" value={link} readOnly data-testid="share-link-input" />
+        <button
+          onClick={() => { navigator.clipboard.writeText(link); setCopied(true); setTimeout(() => setCopied(false), 1200); }}
+          className="p-2 border border-ink hover:bg-ink hover:text-chalk"
+          data-testid="share-copy-btn"
+        >
+          <Copy size={12} />
+        </button>
+      </div>
+      {copied && <p className="mono-tag text-signal mt-2">COPIED</p>}
+
+      <div className="mt-6 flex gap-3">
+        <a href={link} target="_blank" rel="noreferrer" className="btn-ghost flex-1 justify-center" data-testid="share-open-btn">Open preview →</a>
+        <button onClick={onRevoke} className="btn-ghost flex-1 justify-center text-danger border-danger hover:bg-danger hover:text-chalk" data-testid="share-revoke-btn">Revoke</button>
+      </div>
+    </div>
+  );
+}
+
+function SimulateDrawer({ simulation, loading, onRun }) {
+  if (loading && !simulation) {
+    return (
+      <div className="flex items-center gap-3" data-testid="simulate-loading">
+        <Loader2 className="animate-spin text-signal" size={18} />
+        <p className="mono-label">SIMULATING PUSHBACK…</p>
+      </div>
+    );
+  }
+  return (
+    <div data-testid="simulate-drawer">
+      <h3 className="font-display text-2xl">Pushback simulator.</h3>
+      <p className="text-muted text-sm mt-2">What will the client say? Bracket plays client, so you can rehearse the answer before it's asked.</p>
+      <button onClick={onRun} disabled={loading} className="btn-brut mt-5 w-full justify-center" data-testid="simulate-run-btn">
+        {loading ? "Re-running…" : simulation ? <><RefreshCw size={12} /> Re-run simulation</> : "Run simulation"}
+      </button>
+
+      {simulation?.scenarios?.length > 0 && (
+        <div className="mt-6 space-y-4" data-testid="simulate-output">
+          {simulation.scenarios.map((s, i) => (
+            <div key={i} className="card-brut p-5">
+              <p className="mono-tag text-danger">SCENARIO {String(i + 1).padStart(2, "0")}</p>
+              <p className="font-display text-xl mt-2">"{s.trigger}"</p>
+              <p className="text-muted text-sm mt-2"><span className="mono-tag">WHY →</span> {s.why}</p>
+              <p className="text-sm mt-4"><span className="mono-tag text-signal">BEST MOVE →</span> {s.best_move}</p>
+              {s.response_draft && (
+                <div className="mt-4 border-l-2 border-signal pl-3 text-sm whitespace-pre-wrap">{s.response_draft}</div>
+              )}
+              {s.what_not_to_do && (
+                <p className="text-sm mt-3 text-muted"><span className="mono-tag text-danger">DON'T →</span> {s.what_not_to_do}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RevisionsDrawer({ revisions, project, onUnlock, loading }) {
+  return (
+    <div data-testid="revisions-drawer">
+      <h3 className="font-display text-2xl">Revision history.</h3>
+      <p className="text-muted text-sm mt-2">Every time a locked decision changes, it gets snapshotted here. So you always know what you decided — and when you changed your mind.</p>
+
+      {project.status === "locked" && (
+        <button onClick={onUnlock} disabled={loading} className="btn-brut w-full justify-center mt-6" data-testid="revisions-unlock-btn">
+          <Unlock size={12} /> {loading ? "Unlocking…" : "Unlock & create new revision"}
+        </button>
+      )}
+
+      <div className="mt-6 space-y-3">
+        {revisions.length === 0 ? (
+          <p className="mono-tag text-muted">NO REVISIONS YET. LOCK THIS PROJECT, THEN EDIT TO SNAPSHOT.</p>
+        ) : (
+          revisions.map((r) => (
+            <div key={r.id} className="border border-ink p-4 bg-chalk" data-testid={`revision-${r.version}`}>
+              <div className="flex items-center justify-between">
+                <p className="mono-label">V{String(r.version).padStart(2, "0")}</p>
+                <span className="mono-tag text-muted">{new Date(r.created_at).toLocaleString()}</span>
+              </div>
+              <p className="font-display text-lg mt-2 truncate">
+                {r.snapshot?.decision?.recommendation?.title || "(previous version)"}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+

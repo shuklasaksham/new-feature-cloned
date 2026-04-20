@@ -18,6 +18,12 @@ import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import NewProject from "./pages/NewProject";
 import ProjectFlow from "./pages/ProjectFlow";
+import Moments from "./pages/Moments";
+import Templates from "./pages/Templates";
+import Workspace from "./pages/Workspace";
+import Billing from "./pages/Billing";
+import BillingReturn from "./pages/BillingReturn";
+import Share from "./pages/Share";
 
 import "./App.css";
 
@@ -45,6 +51,14 @@ export default function App() {
           <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/app/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
           <Route path="/app/projects/:id" element={<ProtectedRoute><ProjectFlow /></ProtectedRoute>} />
+          <Route path="/app/moments" element={<ProtectedRoute><Moments /></ProtectedRoute>} />
+          <Route path="/app/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+          <Route path="/app/workspace" element={<ProtectedRoute><Workspace /></ProtectedRoute>} />
+          <Route path="/app/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
+
+          {/* Billing return + public share */}
+          <Route path="/billing/success" element={<ProtectedRoute><BillingReturn /></ProtectedRoute>} />
+          <Route path="/share/:token" element={<Share />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
