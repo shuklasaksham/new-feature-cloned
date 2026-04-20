@@ -52,7 +52,7 @@ export default function UseCases() {
           </h2>
           <p className="mt-6 text-faint max-w-xl">We'll ask you in the onboarding. Your Bracket will think differently based on how you work.</p>
           <div className="mt-8">
-            <Link to="/signup" className="btn-brut">Start free <ArrowRight size={16} /></Link>
+            <Link to="/waitlist" className="btn-brut">Join the waitlist <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

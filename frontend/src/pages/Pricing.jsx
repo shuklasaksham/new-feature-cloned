@@ -18,7 +18,7 @@ export default function Pricing() {
                 Pay for the <span className="text-signal">clarity.</span>
               </h1>
               <p className="mt-6 text-muted max-w-xl">
-                One flat price. No seat gymnastics. Cancel whenever your thinking is sharp enough to not need us.
+                Final pricing. Founder-cohort members lock this in for life — no future price bumps.
               </p>
             </div>
             <div className="inline-flex items-center border border-ink" data-testid="pricing-currency-toggle">
@@ -69,11 +69,11 @@ export default function Pricing() {
                     ))}
                   </ul>
                   <Link
-                    to="/signup"
+                    to="/waitlist"
                     className={`mt-8 w-full justify-center ${isStudio ? "btn-brut" : "btn-ghost"}`}
                     data-testid={`pricing-cta-${t.id}`}
                   >
-                    {t.id === "free" ? t.cta : `Get ${t.name}`} <ArrowRight size={14} />
+                    Join the waitlist <ArrowRight size={14} />
                   </Link>
                 </div>
               );
@@ -108,7 +108,7 @@ export default function Pricing() {
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-20">
           <h2 className="font-display text-5xl md:text-7xl uppercase">Decisions, priced fairly.</h2>
           <div className="mt-8">
-            <Link to="/signup" className="btn-brut">Start free <ArrowRight size={16} /></Link>
+            <Link to="/waitlist" className="btn-brut">Join the waitlist <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

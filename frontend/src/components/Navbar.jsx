@@ -1,14 +1,11 @@
 import React, { useState } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import BracketMark from "./BracketMark";
 import { NAV_LINKS } from "../lib/constants";
-import { useAuth } from "../lib/AuthContext";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-40 bg-paper border-b border-ink" data-testid="site-navbar">
@@ -31,32 +28,12 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          {user ? (
-            <>
-              <Link to="/app" className="btn-ghost" data-testid="nav-dashboard-btn">
-                Dashboard
-              </Link>
-              <button
-                onClick={async () => {
-                  await logout();
-                  navigate("/");
-                }}
-                className="btn-brut"
-                data-testid="nav-logout-btn"
-              >
-                Log out
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="btn-ghost" data-testid="nav-login-btn">
-                Log in
-              </Link>
-              <Link to="/signup" className="btn-brut" data-testid="nav-signup-btn">
-                Get started →
-              </Link>
-            </>
-          )}
+          <span className="mono-tag text-muted flex items-center gap-2" data-testid="nav-coming-soon">
+            <span className="dot-live" /> COMING SOON
+          </span>
+          <Link to="/waitlist" className="btn-brut" data-testid="nav-waitlist-btn">
+            Join the waitlist →
+          </Link>
         </div>
 
         <button
@@ -84,32 +61,9 @@ export default function Navbar() {
               </Link>
             ))}
             <div className="h-px bg-ink" />
-            {user ? (
-              <>
-                <Link to="/app" onClick={() => setOpen(false)} className="btn-ghost justify-center">
-                  Dashboard
-                </Link>
-                <button
-                  onClick={async () => {
-                    await logout();
-                    setOpen(false);
-                    navigate("/");
-                  }}
-                  className="btn-brut justify-center"
-                >
-                  Log out
-                </button>
-              </>
-            ) : (
-              <>
-                <Link to="/login" onClick={() => setOpen(false)} className="btn-ghost justify-center">
-                  Log in
-                </Link>
-                <Link to="/signup" onClick={() => setOpen(false)} className="btn-brut justify-center">
-                  Get started →
-                </Link>
-              </>
-            )}
+            <Link to="/waitlist" onClick={() => setOpen(false)} className="btn-brut justify-center" data-testid="nav-mobile-waitlist-btn">
+              Join the waitlist →
+            </Link>
           </div>
         </div>
       )}

@@ -78,7 +78,7 @@ export default function HowItWorks() {
             <span className="text-signal">Start deciding.</span>
           </h2>
           <div className="mt-8">
-            <Link to="/signup" className="btn-brut">Start free <ArrowRight size={16} /></Link>
+            <Link to="/waitlist" className="btn-brut">Join the waitlist <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

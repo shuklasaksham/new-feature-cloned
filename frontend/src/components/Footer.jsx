@@ -23,10 +23,10 @@ export default function Footer() {
           </ul>
         </div>
         <div>
-          <p className="mono-label mb-4">Account</p>
+          <p className="mono-label mb-4">Join</p>
           <ul className="space-y-2 text-sm">
-            <li><Link to="/login" className="link-u">Log in</Link></li>
-            <li><Link to="/signup" className="link-u">Start free</Link></li>
+            <li><Link to="/waitlist" className="link-u">Waitlist</Link></li>
+            <li><a href="mailto:hi@bracket.design" className="link-u">hi@bracket.design</a></li>
           </ul>
         </div>
       </div>

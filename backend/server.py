@@ -28,6 +28,14 @@ from models import (
     _uuid,
     _now_iso,
 )
+from pydantic import BaseModel, EmailStr
+from typing import Optional as _Optional
+
+
+class WaitlistIn(BaseModel):
+    email: EmailStr
+    name: _Optional[str] = ""
+    role: _Optional[str] = "other"
 from auth import (
     hash_password,
     verify_password,
@@ -76,6 +84,33 @@ def _set_auth_cookie(response: Response, token: str):
 @api.get("/")
 async def root():
     return {"service": "bracket", "status": "ok"}
+
+
+# --- WAITLIST ---
+@api.post("/waitlist")
+async def join_waitlist(body: WaitlistIn):
+    email = body.email.lower().strip()
+    existing = await db.waitlist.find_one({"email": email}, {"_id": 0})
+    if existing:
+        return {"ok": True, "already": True, "position": existing.get("position")}
+    count = await db.waitlist.count_documents({})
+    position = count + 1
+    doc = {
+        "id": _uuid(),
+        "email": email,
+        "name": (body.name or "").strip(),
+        "role": body.role or "other",
+        "position": position,
+        "created_at": _now_iso(),
+    }
+    await db.waitlist.insert_one(doc)
+    return {"ok": True, "already": False, "position": position}
+
+
+@api.get("/waitlist/count")
+async def waitlist_count():
+    count = await db.waitlist.count_documents({})
+    return {"count": count}
 
 
 # --- AUTH ---

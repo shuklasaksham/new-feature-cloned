@@ -76,8 +76,8 @@ export default function Landing() {
                   installed between your input and your output.
                 </p>
                 <div className="mt-7 flex flex-col gap-3">
-                  <Link to="/signup" className="btn-brut justify-center" data-testid="hero-primary-cta">
-                    Start Making Better Decisions <ArrowRight size={16} />
+                  <Link to="/waitlist" className="btn-brut justify-center" data-testid="hero-primary-cta">
+                    Join the waitlist <ArrowRight size={16} />
                   </Link>
                   <Link to="/how-it-works" className="btn-ghost justify-center" data-testid="hero-secondary-cta">
                     See how it works
@@ -309,7 +309,7 @@ export default function Landing() {
             <div className="p-8 bg-paper border-r border-ink">
               <p className="mono-label text-danger">BEFORE</p>
               <h3 className="font-display text-3xl mt-2">{CASE_STUDIES[0].brand}</h3>
-              <p className="mono-tag text-muted mt-1">{CASE_STUDIES[0].role}</p>
+              <p className="mono-tag text-muted mt-1">{CASE_STUDIES[0].category}</p>
               <ul className="mt-6 space-y-3">
                 {CASE_STUDIES[0].before.map((b, i) => (
                   <li key={i} className="flex gap-3 text-sm">
@@ -398,11 +398,11 @@ export default function Landing() {
                     ))}
                   </ul>
                   <Link
-                    to={t.id === "studio" ? "/signup" : "/signup"}
+                    to="/waitlist"
                     className={`mt-8 w-full justify-center ${isStudio ? "btn-brut" : "btn-ghost"}`}
                     data-testid={`pricing-cta-${t.id}`}
                   >
-                    {t.cta} <ArrowRight size={14} />
+                    Join the waitlist <ArrowRight size={14} />
                   </Link>
                 </div>
               );
@@ -428,8 +428,8 @@ export default function Landing() {
             <span className="text-signal">Start deciding.</span>
           </h2>
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
-            <Link to="/signup" className="btn-brut" data-testid="final-primary-cta">
-              Start your first project <ArrowRight size={16} />
+            <Link to="/waitlist" className="btn-brut" data-testid="final-primary-cta">
+              Reserve your seat <ArrowRight size={16} />
             </Link>
             <Link to="/how-it-works" className="btn-ghost text-chalk border-chalk hover:bg-chalk hover:text-ink" data-testid="final-secondary-cta">
               See the system first
