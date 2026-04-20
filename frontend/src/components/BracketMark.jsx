@@ -1,22 +1,27 @@
 import React from "react";
 
-// Stylised "Bracket" mark — a black rounded square containing { B }
-export default function BracketMark({ size = 28, label = true, className = "" }) {
+/**
+ * Bracket wordmark + glyph.
+ * Pass `variant="ink"` (default, for light bg) or `variant="chalk"` (for dark bg).
+ */
+export default function BracketMark({ size = 28, label = true, variant = "ink", className = "" }) {
+  const src = variant === "chalk" ? "/bracket-mark.png" : "/bracket-mark-ink.png";
+  const textColor = variant === "chalk" ? "text-chalk" : "text-ink";
   return (
     <span className={`inline-flex items-center gap-2 ${className}`} data-testid="bracket-logo">
-      <span
-        aria-hidden
-        className="inline-flex items-center justify-center bg-ink text-chalk font-mono font-bold"
-        style={{ width: size, height: size, fontSize: size * 0.6 }}
-      >
-        {"{"}
-        <span className="font-display" style={{ fontSize: size * 0.6, lineHeight: 1 }}>
-          B
-        </span>
-        {"}"}
-      </span>
+      <img
+        src={src}
+        alt="Bracket"
+        width={size}
+        height={Math.round(size * 149 / 140)}
+        className="block select-none"
+        draggable="false"
+      />
       {label && (
-        <span className="font-display text-[20px] tracking-tight text-ink" style={{ lineHeight: 1 }}>
+        <span
+          className={`font-display tracking-tight ${textColor}`}
+          style={{ fontSize: Math.round(size * 0.82), lineHeight: 1 }}
+        >
           Bracket
         </span>
       )}
