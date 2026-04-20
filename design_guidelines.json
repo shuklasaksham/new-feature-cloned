@@ -1,0 +1,124 @@
+{
+  "project_name": "Bracket",
+  "tagline": "Designers don't need more tools. They need better decisions.",
+  "theme": "Swiss & High-Contrast (Editorial Brutalism)",
+  "archetype": "Archetype 4 (Swiss & High-Contrast) - Light Theme",
+  "colors": {
+    "background": {
+      "page": "#F4F4F0",
+      "surface": "#FFFFFF",
+      "inverse": "#0A0A0A"
+    },
+    "text": {
+      "primary": "#0A0A0A",
+      "secondary": "#525252",
+      "inverse": "#FFFFFF",
+      "accent": "#0033FF"
+    },
+    "border": {
+      "default": "#0A0A0A",
+      "subtle": "#D4D4D0"
+    },
+    "accent": {
+      "primary": "#0033FF",
+      "hover": "#0029CC",
+      "danger": "#FF331F"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Cabinet Grotesk', sans-serif",
+      "body": "'Manrope', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "scales": {
+      "h1": "text-5xl sm:text-6xl+ tracking-tighter leading-none font-black uppercase",
+      "h2": "text-4xl sm:text-5xl tracking-tight leading-none font-extrabold uppercase",
+      "h3": "text-2xl sm:text-3xl tracking-tight leading-none font-bold",
+      "h4": "text-xl sm:text-2xl tracking-tight font-semibold",
+      "body": "text-base leading-relaxed font-normal",
+      "overline": "text-xs tracking-[0.2em] font-mono uppercase text-secondary",
+      "mono_accent": "text-sm font-mono tracking-tight text-accent-primary"
+    }
+  },
+  "visual_motifs": {
+    "brackets": "Oversized { } used as background watermarks, section dividers, or framing elements. Use JetBrains Mono for the braces.",
+    "borders": "Exposed 1px solid black grid lines (Grid Borders / The Technical Look) to frame content like an architectural blueprint. border-collapse styles.",
+    "shadows": "Sharp, solid 1px or 4px drop shadows (e.g., shadow-[4px_4px_0px_#0A0A0A]) instead of soft blurs.",
+    "corners": "Strictly sharp (rounded-none). No rounded cards."
+  },
+  "spacing_and_layout": {
+    "system": "Generous Spacing Philosophy. Use p-8 to p-24 for section padding.",
+    "grid": "Bento Grid (The 'Tetris' Grid Mode A). Asymmetrical layout, mixing wide and tall structural boxes with visible 1px borders.",
+    "alignment": "Optical alignment, left-aligned heavy text for raw brutalist feel."
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#0A0A0A] text-white hover:bg-[#0033FF] rounded-none px-6 py-4 font-mono uppercase text-sm tracking-widest transition-colors",
+      "secondary": "bg-transparent border border-[#0A0A0A] text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white rounded-none px-6 py-4 font-mono uppercase text-sm tracking-widest transition-colors"
+    },
+    "cards": {
+      "default": "bg-white border border-[#0A0A0A] rounded-none shadow-[4px_4px_0px_#0A0A0A] p-8",
+      "interactive": "hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0A0A0A] transition-all cursor-pointer"
+    },
+    "inputs": {
+      "default": "border-b-2 border-[#0A0A0A] bg-transparent focus:border-[#0033FF] focus:ring-0 rounded-none font-mono text-sm px-0 py-3 placeholder:text-neutral-400"
+    },
+    "navigation": {
+      "header": "Solid background (#F4F4F0) with a hard 1px bottom border (#0A0A0A). High contrast logo. Monospace nav links."
+    }
+  },
+  "pages": {
+    "landing": {
+      "hero": "Asymmetric split layout. Left: Massive 'Cabinet Grotesk' tagline 'DESIGNERS DON\\'T NEED MORE TOOLS.' with '{ }' motif overlapping text. Right: Blueprint architectural image with multiply blend mode. Dual CTA.",
+      "philosophy": "3-layer horizontal flex or grid timeline (Situation Framing, Context Compression, Decision Engine) connected by a solid 1px horizontal black line.",
+      "walkthrough": "5 stark brutalist cards. Minimal text, heavy use of mono fonts for labels (e.g., '01. FRAMING').",
+      "artifacts": "Overlapping artifact examples styled as physical paper documents with stark borders.",
+      "pricing": "3 columns. Free / Pro / Studio. The 'Studio' tier uses black background (#0A0A0A) with white text and electric blue accent. Currency toggle styled as a mechanical switch."
+    },
+    "dashboard": {
+      "layout": "The 'Control Room' Grid Mode B. Dense, data-heavy, 1px border grid system (border-collapse).",
+      "sections": "Active Projects list, Decisions in Progress, Locked Decisions.",
+      "styling": "Cardless layout where possible, using borders to separate widgets."
+    },
+    "new_project_flow": {
+      "layout": "5-step wizard. Progress indicator is a stark line filling with #0033FF. Steps are separated by literal bracket motifs '{' and '}'. Content area is a focused, minimal terminal-like interface for intent capture."
+    }
+  },
+  "image_urls": [
+    {
+      "category": "hero_background",
+      "description": "Abstract architectural curves and lines, used with a multiply blend mode to look like a blueprint sketch.",
+      "url": "https://images.pexels.com/photos/31500951/pexels-photo-31500951.jpeg"
+    },
+    {
+      "category": "blueprint_texture",
+      "description": "Technical architectural drawing for the 3-layer philosophy section.",
+      "url": "https://images.pexels.com/photos/4491829/pexels-photo-4491829.jpeg"
+    },
+    {
+      "category": "designer_workspace",
+      "description": "Minimalist designer desk setup for the Artifacts and Dashboard context.",
+      "url": "https://images.unsplash.com/photo-1612093991429-acd0fc7b1804?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwZGVzaWduZXIlMjBkZXNrJTIwc2V0dXB8ZW58MHx8fHwxNzc2NzA1MjM4fDA&ixlib=rb-4.1.0&q=85"
+    },
+    {
+      "category": "editorial_poster",
+      "description": "Minimalist editorial typography poster for Case Studies section.",
+      "url": "https://images.unsplash.com/photo-1543487945-139a97f387d5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwZWRpdG9yaWFsJTIwdHlwb2dyYXBoeSUyMHBvc3RlcnxlbnwwfHx8fDE3NzY3MDUyMTN8MA&ixlib=rb-4.1.0&q=85"
+    }
+  ],
+  "accessibility_and_interactions": {
+    "hover": "Hover states must invert colors (e.g. black to blue) or shift position (-translate-y-1). Do not rely solely on opacity changes.",
+    "focus": "focus:ring-2 focus:ring-[#0033FF] focus:outline-none rounded-none.",
+    "testing": "All interactive elements MUST include data-testid attribute using kebab-case role-based names."
+  },
+  "instructions_to_main_agent": [
+    "Install Cabinet Grotesk (from Fontshare) or fallback to Oswald, Manrope (Google Fonts), and JetBrains Mono.",
+    "Implement pure HTML/Tailwind for marketing layouts to achieve the 1px grid border ('border-collapse' style) and sharp brutalist aesthetic.",
+    "Do NOT use rounded corners on cards, buttons, or inputs (use 'rounded-none').",
+    "Do NOT use soft shadows; use solid harsh shadows like 'shadow-[4px_4px_0px_#0A0A0A]'.",
+    "Liberally use the characters '{' and '}' as decorative text elements with a large font size and low opacity, or as structural dividers.",
+    "Prioritize optical alignment over strict geometric alignment for typography.",
+    "For the App/Dashboard, use heavily customized Shadcn components (strip out all border-radius and default soft shadows to match the Brutalist aesthetic)."
+  ]
+}
