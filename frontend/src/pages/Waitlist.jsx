@@ -4,6 +4,7 @@ import { ArrowUpRight, Check, Loader2 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import DemoPlayer from "../components/DemoPlayer";
 import { api, formatApiError } from "../lib/api";
 
 const ROLES = [
@@ -72,6 +73,15 @@ export default function Waitlist() {
           <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-14 md:py-20 grid lg:grid-cols-12 gap-12 items-start">
             <div className="lg:col-span-7">
               <p className="mono-label flex items-center gap-3">
+                <span className="dot-live" />
+                A 30-SECOND LOOK
+              </p>
+
+              <div className="mt-5" data-testid="waitlist-demo-slot">
+                <DemoPlayer />
+              </div>
+
+              <p className="mono-label flex items-center gap-3 mt-12">
                 <span className="dot-live" />
                 FIRST LIGHT IN
               </p>
