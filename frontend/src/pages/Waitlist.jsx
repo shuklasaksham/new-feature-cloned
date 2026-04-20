@@ -45,9 +45,23 @@ export default function Waitlist() {
   const [position, setPosition] = useState(null);
   const { d, h, m, s } = useCountdown(LAUNCH_DATE);
 
+  const validateEmail = (val) => {
+    const trimmed = (val || "").trim();
+    if (!trimmed) return "Your email — so we can reach you.";
+    // Simple, forgiving email check.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return "That doesn't look like a working email. Try a real one — we'll only use it once.";
+    }
+    return "";
+  };
+
   const submit = async (e) => {
     e.preventDefault();
-    if (!email.trim()) return setError("Your email — so we can reach you.");
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -132,7 +146,7 @@ export default function Waitlist() {
 
             <div className="lg:col-span-5 lg:sticky lg:top-24">
               {!done ? (
-                <form onSubmit={submit} className="card-brut p-6 md:p-8 space-y-6" data-testid="waitlist-form">
+                <form onSubmit={submit} noValidate className="card-brut p-6 md:p-8 space-y-6" data-testid="waitlist-form">
                   <div className="flex items-center justify-between">
                     <p className="mono-label">{"{ form · alpha-rsvp }"}</p>
                     <span className="mono-tag text-signal">STATUS · OPEN</span>
@@ -152,14 +166,36 @@ export default function Waitlist() {
                   <div>
                     <label className="mono-tag text-muted">EMAIL · REQUIRED</label>
                     <input
-                      type="email"
-                      required
-                      className="input-line mt-2"
+                      type="text"
+                      inputMode="email"
+                      autoComplete="email"
+                      className={`input-line mt-2 ${error ? "!border-b-danger" : ""}`}
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (error) setError("");
+                      }}
                       placeholder="you@studio.com"
+                      aria-invalid={error ? "true" : "false"}
+                      aria-describedby={error ? "waitlist-email-error" : undefined}
                       data-testid="waitlist-email-input"
                     />
+                    {error && (
+                      <div
+                        id="waitlist-email-error"
+                        role="alert"
+                        className="mt-3 flex items-start gap-3"
+                        data-testid="waitlist-error"
+                      >
+                        <span
+                          aria-hidden
+                          className="mt-[2px] font-mono text-signal text-[11px] tracking-[0.22em] font-semibold select-none"
+                        >
+                          {"{ ! }"}
+                        </span>
+                        <p className="text-sm text-ink leading-snug">{error}</p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -178,13 +214,6 @@ export default function Waitlist() {
                       ))}
                     </div>
                   </div>
-
-                  {error && (
-                    <div className="border-l-2 border-ink bg-paper pl-4 py-3" data-testid="waitlist-error">
-                      <p className="mono-tag text-muted">NOTE</p>
-                      <p className="text-sm mt-1 text-ink">{error}</p>
-                    </div>
-                  )}
 
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 border-t border-ink pt-5">
                     <p className="mono-tag text-muted flex-1">ONE EMAIL. NO SPAM. UNSUBSCRIBE WITH A SINGLE KEYSTROKE.</p>
