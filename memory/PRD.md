@@ -1,0 +1,67 @@
+# Bracket — PRD
+
+## Original problem statement
+Build "Bracket" — a decision operating system for designers. Not another tool. A senior-designer brain between input and output. Positioned against Notion / Figma plugins / AI writing tools.
+
+Brand promise: "Designers don't need more tools. They need better decisions."
+
+Sells emotionally: confidence without arrogance · structure without rigidity · authority without ego · professionalism without pretending.
+
+## Users / personas
+1. **Freelancers** — clarity + confidence; scope creep, pricing anxiety.
+2. **Agencies** — consistency across designers; juniors defer calls to founders.
+3. **Product designers** — structured thinking that survives stakeholders.
+4. **Junior designers** — a senior brain sitting next to them.
+
+## Architecture
+- **Backend** — FastAPI + MongoDB (Motor). Files: `server.py`, `auth.py`, `ai_engine.py`, `models.py`.
+- **Auth** — JWT email+password (bcrypt). httpOnly cookie + Bearer-header fallback (Bearer preferred).
+- **AI engine** — `emergentintegrations.llm.chat.LlmChat` wrapping Claude Sonnet 4.5 (default) and GPT-5.2 (alternate). Strict JSON-output prompts per step.
+- **Frontend** — React 19 + React Router 7 + Tailwind + custom Swiss/brutalist design system. Cabinet Grotesk + Manrope + JetBrains Mono.
+- **Design aesthetic** — #F4F4F0 paper, pure black ink, electric blue #0033FF signal, sharp corners, brutalist shadow `4px 4px 0 #0A0A0A`, oversized `{ }` motif.
+
+## API surface
+- `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`, `GET /api/auth/me`
+- `POST /api/onboarding`
+- `GET/POST /api/projects`, `GET/DELETE /api/projects/{id}`
+- `POST /api/projects/{id}/situation` → framing
+- `POST /api/projects/{id}/context` → compressed context
+- `POST /api/projects/{id}/decision` → recommendation + alternatives + risks
+- `POST /api/projects/{id}/artifacts` → scope doc + client message + assumptions + risk flags
+- `POST /api/projects/{id}/lock` → locked decision
+
+## Pages
+Marketing: `/` `/how-it-works` `/use-cases` `/pricing` (INR/USD toggle) `/case-studies`.
+Auth: `/signup` `/login` `/onboarding` (2-step intent capture).
+App: `/app` (dashboard — drafts / in-progress / locked), `/app/new`, `/app/projects/:id` (5-step flow).
+
+## What's implemented (2025-12)
+- ✅ Full marketing site (9-section landing + 4 supporting pages)
+- ✅ JWT auth (register / login / me / logout) with Bearer-first precedence
+- ✅ Onboarding (work type + struggle)
+- ✅ Dashboard with project grouping by status
+- ✅ 5-step AI decision flow end-to-end (Claude Sonnet 4.5 + GPT-5.2)
+- ✅ Artifact generation (scope doc, client message, assumptions, risk flags) with copy-to-clipboard
+- ✅ Confidence Lock-in with status + locked_at timestamp
+- ✅ Currency toggle INR ↔ USD
+- ✅ Proper meta tags + branded document title
+
+## Backlog (P1)
+- Revision tracking (diff locked decisions against new versions)
+- Moment Advisor: paste a client message → get a response strategy
+- Scenario / Pushback Simulator (feature 05 from the board)
+- Templates library (saveable decision patterns)
+- Team workspaces + client-facing outputs (Studio tier)
+- Export artifacts as PDF / Markdown / shareable link
+- Stripe billing for Pro/Studio tiers
+
+## Backlog (P2)
+- Onboarding email sequence
+- Public case study CMS
+- SSO / Google login
+- Password reset flow
+
+## Next tasks
+1. Revenue: wire Stripe (subscription / lifetime) on Pricing page.
+2. Retention: Moment Advisor as a quick-action from dashboard.
+3. Virality: shareable public artifact link (read-only).
