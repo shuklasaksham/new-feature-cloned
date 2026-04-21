@@ -69,10 +69,16 @@ export default function Waitlist() {
       setDone(true);
       setPosition(data.position || null);
     } catch (err) {
+      const status = err?.response?.status;
       const raw = formatApiError(err);
-      const friendly = /email/i.test(raw)
-        ? "That doesn't look like a working email. Try a real one — we'll only use it once."
-        : raw;
+      let friendly = raw;
+      if (status === 409) {
+        // Already joined — surface the backend message as-is (friendly copy).
+        friendly = raw || "You're already on the waitlist. We'll be in touch soon.";
+      } else if (/email/i.test(raw)) {
+        friendly =
+          "That doesn't look like a working email. Try a real one — we'll only use it once.";
+      }
       setError(friendly);
     } finally {
       setLoading(false);

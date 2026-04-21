@@ -93,7 +93,11 @@ async def join_waitlist(body: WaitlistIn):
     email = body.email.lower().strip()
     existing = await db.waitlist.find_one({"email": email}, {"_id": 0})
     if existing:
-        return {"ok": True, "already": True, "position": existing.get("position")}
+        # Already registered — surface this as a friendly error to the UI.
+        raise HTTPException(
+            status_code=409,
+            detail="You're already on the waitlist. We'll be in touch soon.",
+        )
     count = await db.waitlist.count_documents({})
     position = count + 1
     name = (body.name or "").strip()
