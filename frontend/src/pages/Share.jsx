@@ -4,7 +4,11 @@ import { Lock, Check, Download } from "lucide-react";
 import axios from "axios";
 import BracketMark from "../components/BracketMark";
 
-const BACKEND = process.env.REACT_APP_BACKEND_URL;
+const ENV_BACKEND = process.env.REACT_APP_BACKEND_URL;
+const BACKEND =
+  typeof window !== "undefined" && window.location && window.location.origin
+    ? window.location.origin
+    : ENV_BACKEND;
 
 export default function Share() {
   const { token } = useParams();

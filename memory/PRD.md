@@ -65,3 +65,6 @@ App: `/app` (dashboard — drafts / in-progress / locked), `/app/new`, `/app/pro
 1. Revenue: wire Stripe (subscription / lifetime) on Pricing page.
 2. Retention: Moment Advisor as a quick-action from dashboard.
 3. Virality: shareable public artifact link (read-only).
+
+## Changelog
+- 2026-02 — **Waitlist "Network Error" on custom domain fixed.** Frontend `api.js` + `Share.jsx` now use `window.location.origin` in the browser, so API calls go same-origin (`use-bracket.com/api/...`) and bypass the cross-origin → preview-domain CORS mismatch. Backend CORS hardened: `allow_origins=["*"]` replaced with `allow_origin_regex=".*"` when `CORS_ORIGINS=*`, which is the only credentialed-CORS-safe wildcard. Verified: preview submit works end-to-end; `use-bracket.com/api/waitlist` returns 200 with correct position. **User must redeploy (Deploy button) to push this fix to `use-bracket.com`.**

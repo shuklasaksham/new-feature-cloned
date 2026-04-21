@@ -1,6 +1,12 @@
 import axios from "axios";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+// Prefer same-origin in the browser (works on custom domains + preview).
+// Falls back to the build-time env var for non-browser contexts (SSR, tests).
+const ENV_BACKEND = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL =
+  typeof window !== "undefined" && window.location && window.location.origin
+    ? window.location.origin
+    : ENV_BACKEND;
 export const API_BASE = `${BACKEND_URL}/api`;
 
 export const api = axios.create({

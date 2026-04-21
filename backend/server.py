@@ -357,13 +357,26 @@ app.include_router(api)
 app.include_router(build_feature_router(db), prefix="/api")
 app.include_router(build_billing_router(db), prefix="/api")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
+if _cors_env in ("", "*"):
+    # Credentialed CORS requires explicit origins (or a regex). A wildcard
+    # works for simple requests but browsers reject credentialed responses.
+    # Use a permissive regex that still lets browsers accept credentialed responses.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=".*",
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[o.strip() for o in _cors_env.split(",") if o.strip()],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.on_event("startup")
