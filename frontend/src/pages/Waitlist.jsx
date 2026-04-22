@@ -90,7 +90,7 @@ export default function Waitlist() {
       <Navbar />
       <main className="flex-1">
         <section className="border-b border-ink blueprint-bg">
-          <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-14 md:py-20 grid lg:grid-cols-12 gap-12 items-start">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-20 grid lg:grid-cols-12 gap-10 lg:gap-12 items-start">
             <div className="lg:col-span-7">
               <p className="mono-label flex items-center gap-3">
                 <span className="dot-live" />
@@ -101,12 +101,12 @@ export default function Waitlist() {
                 <DemoPlayer />
               </div>
 
-              <p className="mono-label flex items-center gap-3 mt-12">
+              <p className="mono-label flex items-center gap-3 mt-10 md:mt-12">
                 <span className="dot-live" />
                 FIRST LIGHT IN
               </p>
 
-              <div className="mt-6 grid grid-cols-4 gap-3 max-w-2xl" data-testid="countdown-timer">
+              <div className="mt-5 md:mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl" data-testid="countdown-timer">
                 {[
                   { n: d, l: "DAYS" },
                   { n: h, l: "HOURS" },
@@ -114,7 +114,7 @@ export default function Waitlist() {
                   { n: s, l: "SECONDS" },
                 ].map((c) => (
                   <div key={c.l} className="border border-ink bg-chalk p-3 md:p-5 text-center shadow-brut">
-                    <p className="font-display text-4xl md:text-6xl tracking-tight text-ink leading-none">
+                    <p className="font-display text-5xl sm:text-4xl md:text-6xl tracking-tight text-ink leading-none">
                       <Pad n={c.n} />
                     </p>
                     <p className="mono-tag text-muted mt-2 md:mt-3">{c.l}</p>
@@ -125,13 +125,13 @@ export default function Waitlist() {
                 LAUNCH · 30 MAY · 12:00 PM
               </p>
 
-              <h1 className="font-display text-[56px] sm:text-[84px] md:text-[112px] uppercase mt-12 leading-[0.9]">
+              <h1 className="font-display text-[44px] sm:text-[64px] md:text-[88px] lg:text-[112px] uppercase mt-10 md:mt-12 leading-[0.9]">
                 Reserve your
                 <br />
                 <span className="text-signal italic">seat</span> in the first cohort.
               </h1>
 
-              <p className="mt-6 text-muted max-w-xl text-lg">
+              <p className="mt-6 text-muted max-w-xl text-base md:text-lg">
                 Bracket is being built in private with a small group of designers. The first cohort is limited — you'll
                 get early access, a dedicated feedback loop, and founder pricing for life.
               </p>
@@ -152,7 +152,7 @@ export default function Waitlist() {
 
             <div className="lg:col-span-5 lg:sticky lg:top-24">
               {!done ? (
-                <form onSubmit={submit} noValidate className="card-brut p-6 md:p-8 space-y-6" data-testid="waitlist-form">
+                <form onSubmit={submit} noValidate className="card-brut p-5 sm:p-6 md:p-8 space-y-6" data-testid="waitlist-form">
                   <div className="flex items-center justify-between">
                     <p className="mono-label">{"{ form · alpha-rsvp }"}</p>
                     <span className="mono-tag text-signal">STATUS · OPEN</span>
@@ -256,14 +256,14 @@ export default function Waitlist() {
         </section>
 
         <section className="border-b border-ink bg-ink text-chalk">
-          <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-14">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14">
             <p className="mono-label text-faint">{"{ why a waitlist }"}</p>
-            <h2 className="font-display text-4xl md:text-6xl uppercase mt-4 max-w-4xl">
+            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase mt-4 max-w-4xl">
               We're not shipping fast.
               <br />
               We're shipping <span className="text-signal">right.</span>
             </h2>
-            <p className="mt-5 text-faint max-w-2xl">
+            <p className="mt-5 text-faint max-w-2xl text-sm md:text-base">
               Bracket is a way of thinking. Getting that wrong would be worse than not shipping at all. The alpha cohort
               shapes the product with us — then we open it up.
             </p>

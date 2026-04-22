@@ -1,0 +1,30 @@
+{
+  "summary": "Responsive-only frontend testing for the Bracket waitlist marketing site. Checked all 6 active public routes (/, /waitlist, /how-it-works, /use-cases, /pricing, /case-studies) across 7 viewports (375, 390, 430, 768, 820, 1280, 1440) = 42 combos. Zero horizontal overflow on every combo (documentElement.scrollWidth === window.innerWidth). Navbar hamburger at <1024px opens a mobile panel containing all nav links plus 'Join the waitlist' CTA; desktop >=1024 shows full nav plus CTA. Waitlist: H1 'Reserve your seat' fits at 375 (font 44px, width 335/375); countdown is 2x2 at 375 (grid-template-columns: 161.5px 161.5px) and 1x4 at 1024; form inputs fill card width (293px in 335px card); submit not clipped. Waitlist POST /api/waitlist returns 200 on new; duplicate returns 409 with friendly error 'You're already on the waitlist. We'll be in touch soon.' CaseStudies BEFORE/AFTER cards stack vertically on mobile with border-bottom=1px and border-right=0px; on desktop same-row with border-right=1px and border-bottom=0px (no dangling-right-border glitch). Pricing tiers stack 1-col @375 (distinct tops 457/833/1240) and 3-col @1024 (same top 596). Currency toggle + 'Join the waitlist' CTA visible in each tier. Landing hero H1 fits at 375 (font 44px). Oversized decorative brackets {,} visually extend past the viewport but are clipped via html/body overflow-x:clip + max-width:100vw so they do NOT cause horizontal scroll. Footer email link uses break-all and does not overflow (emailRight 324 < 375). UseCases rows reflow cleanly on mobile (each row width 335, stacked at tops 476/817/1158/1526).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Waitlist form", "issues": ["Email field uses type='text' (placeholder 'you@studio.com') instead of type='email'. Works, but misses native mobile email keyboard + browser-level email validation. Minor UX/a11y improvement."]},
+      {"screen": "Waitlist form inputs", "issues": ["Both inputs have empty name='' attribute. Works since React controls state, but for a11y/autofill it's nicer to set name='email' and name='name'. Minor."]},
+      {"screen": "Network console (all pages)", "issues": ["Two repeating 401s on every initial page load (likely GET /api/me or similar anonymous probe). Not user-visible but adds noise; consider suppressing the 401 log path for unauthenticated marketing routes, or gate the call so it only fires on /app routes."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_2.json"],
+  "action_items": [
+    "(Optional) Switch waitlist email input to type='email' and add name attributes (name='email', name='name') for a11y + autofill.",
+    "(Optional) Skip the anonymous /api/me probe on public marketing routes to eliminate the 2x 401 console noise on every page load."
+  ],
+  "critical_code_review_comments": [
+    "Responsive strategy (html/body max-width:100vw + overflow-x:clip + .font-display overflow-wrap:anywhere) is effective — no horizontal scroll anywhere — but clipping oversized decorative braces means part of the designed art silhouette is cut on narrow viewports (left=-24, right=399 at 375). Acceptable per spec (no scroll), but main agent may want to tighten bracket sizing or reposition on xs breakpoints purely for visual polish.",
+    "Waitlist inputs have empty name attribute — minor a11y/autofill miss."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (scope was frontend-only)", "frontend": "100% — 14/14 requested features verified"},
+  "test_credentials": "Waitlist submit test used uitest+<timestamp>@example.com (no auth required; public endpoint).",
+  "seed_data_creation": "One waitlist entry created per run (uitest+<ts>@example.com) via POST /api/waitlist. Second submit with same email correctly returns 409.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Public marketing site has robust responsive implementation. Key data-testids confirmed: nav-mobile-toggle (header hamburger), waitlist-name-input, waitlist-email-input, waitlist-role-{freelance|agency|in-house|student|other}, waitlist-submit-btn, pricing-page, pricing-currency-toggle, pricing-tier-{free|pro|studio}, pricing-cta-{free|pro|studio}, usecase-row-{freelancers|agencies|product designers|junior designers}, currency-toggle-INR, currency-toggle-USD. Waitlist form uses type='text' for email (custom regex validation in JS). POST /api/waitlist returns 200 on new, 409 with detail 'You're already on the waitlist...' on duplicate. No horizontal overflow on any of 42 viewport/route combos tested. Decorative braces on Landing overflow element-bounds but are clipped — by design.",
+  "rca of the issue": "N/A — no blocking issues. All 14 responsive requirements in the review request are satisfied."
+}

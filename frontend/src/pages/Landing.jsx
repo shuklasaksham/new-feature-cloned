@@ -41,41 +41,45 @@ export default function Landing() {
       {/* ============ HERO ============ */}
       <section className="relative overflow-hidden blueprint-bg" data-testid="hero-section">
         {/* giant brackets */}
-        <span className="bracket-mark absolute -top-24 -left-10 select-none" style={{ fontSize: 560 }}>
+        <span
+          className="bracket-mark absolute -top-16 sm:-top-24 -left-6 sm:-left-10 select-none text-[260px] sm:text-[380px] lg:text-[560px]"
+        >
           {"{"}
         </span>
-        <span className="bracket-mark absolute -bottom-40 -right-10 select-none" style={{ fontSize: 560 }}>
+        <span
+          className="bracket-mark absolute -bottom-28 sm:-bottom-40 -right-6 sm:-right-10 select-none text-[260px] sm:text-[380px] lg:text-[560px]"
+        >
           {"}"}
         </span>
 
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 pt-14 pb-10">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pt-10 md:pt-14 pb-10">
           <div className="flex items-center gap-3">
             <span className="dot-live" />
             <p className="mono-label">BRACKET · PROFESSIONAL OPERATING SYSTEM · V1.0</p>
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-10 mt-10 items-end">
+          <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 mt-8 md:mt-10 items-end">
             <div className="lg:col-span-8">
-              <h1 className="font-display text-[56px] sm:text-[88px] md:text-[120px] lg:text-[148px] uppercase animate-fade-up">
+              <h1 className="font-display text-[44px] sm:text-[72px] md:text-[104px] lg:text-[148px] uppercase animate-fade-up">
                 Designers
                 <br />
                 don't need
                 <br />
                 more <span className="text-signal">tools.</span>
               </h1>
-              <h2 className="font-display text-[32px] sm:text-[48px] md:text-[64px] mt-4 text-muted uppercase animate-fade-up">
+              <h2 className="font-display text-[24px] sm:text-[36px] md:text-[52px] lg:text-[64px] mt-4 text-muted uppercase animate-fade-up">
                 They need better decisions<span className="blink" />
               </h2>
             </div>
 
             <div className="lg:col-span-4">
-              <div className="card-brut p-7 relative">
+              <div className="card-brut p-5 sm:p-7 relative">
                 <p className="mono-label">{"{ the pitch }"}</p>
-                <p className="mt-4 text-lg leading-relaxed">
+                <p className="mt-4 text-base md:text-lg leading-relaxed">
                   Bracket helps you decide <em>what to do</em>, not just how to do it. A senior designer's brain,
                   installed between your input and your output.
                 </p>
-                <div className="mt-7 flex flex-col gap-3">
+                <div className="mt-6 flex flex-col gap-3">
                   <Link to="/waitlist" className="btn-brut justify-center" data-testid="hero-primary-cta">
                     Join the waitlist <ArrowRight size={16} />
                   </Link>
@@ -108,7 +112,7 @@ export default function Landing() {
       <Section id="problem" label="{ the problem }" className="bg-paper">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24 grid lg:grid-cols-12 gap-10">
           <div className="lg:col-span-5">
-            <h2 className="font-display text-5xl md:text-6xl uppercase">
+            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase">
               Too many tools.
               <br />
               Not enough <span className="text-signal">clarity.</span>
@@ -221,7 +225,7 @@ export default function Landing() {
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
           <div className="grid lg:grid-cols-12 gap-10 items-end">
             <div className="lg:col-span-7">
-              <h2 className="font-display text-5xl md:text-6xl uppercase text-chalk">
+              <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase text-chalk">
                 This is <span className="text-signal">trust.</span>
                 <br />
                 On paper.
@@ -263,7 +267,7 @@ export default function Landing() {
       {/* ============ USE CASES ============ */}
       <Section id="use-cases" label="{ who it's for }" className="bg-paper">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
-          <h2 className="font-display text-5xl md:text-6xl uppercase max-w-4xl">
+          <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase max-w-4xl">
             Built for designers who <span className="text-signal">ship decisions</span>, not just pixels.
           </h2>
 
@@ -295,7 +299,7 @@ export default function Landing() {
       <Section id="case-study" label="{ case study }" className="bg-chalk">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
           <div className="grid lg:grid-cols-12 gap-10 items-end">
-            <h2 className="font-display text-5xl md:text-6xl uppercase lg:col-span-8">
+            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase lg:col-span-8">
               Before Bracket:
               <br />
               <span className="text-signal">chaos.</span>
@@ -306,7 +310,7 @@ export default function Landing() {
           </div>
 
           <div className="mt-12 grid md:grid-cols-2 gap-0 border border-ink">
-            <div className="p-8 bg-paper border-r border-ink">
+            <div className="p-6 sm:p-8 bg-paper md:border-r border-b md:border-b-0 border-ink">
               <p className="mono-label text-danger">BEFORE</p>
               <h3 className="font-display text-3xl mt-2">{CASE_STUDIES[0].brand}</h3>
               <p className="mono-tag text-muted mt-1">{CASE_STUDIES[0].category}</p>
@@ -334,7 +338,7 @@ export default function Landing() {
             </div>
           </div>
 
-          <blockquote className="mt-12 max-w-3xl font-display text-3xl md:text-4xl leading-[1.05]">
+          <blockquote className="mt-12 max-w-3xl font-display text-2xl sm:text-3xl md:text-4xl leading-[1.05]">
             <span className="text-signal">"</span>
             {CASE_STUDIES[0].quote}
             <span className="text-signal">"</span>
@@ -346,7 +350,7 @@ export default function Landing() {
       <Section id="pricing" label="{ pricing }" className="bg-paper">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <h2 className="font-display text-5xl md:text-6xl uppercase max-w-3xl">
+            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase max-w-3xl">
               Simple pricing.
               <br />
               <span className="text-signal">No tier tetris.</span>
@@ -413,21 +417,27 @@ export default function Landing() {
 
       {/* ============ FINAL CTA ============ */}
       <Section id="final" className="bg-ink text-chalk">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-20 md:py-32 relative">
-          <span className="bracket-mark absolute -top-10 -left-6" style={{ fontSize: 380, color: "#fff", opacity: 0.08 }}>
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-16 md:py-32 relative">
+          <span
+            className="bracket-mark absolute -top-6 sm:-top-10 -left-4 sm:-left-6 text-[180px] sm:text-[280px] md:text-[380px]"
+            style={{ color: "#fff", opacity: 0.08 }}
+          >
             {"{"}
           </span>
-          <span className="bracket-mark absolute -bottom-16 -right-6" style={{ fontSize: 380, color: "#fff", opacity: 0.08 }}>
+          <span
+            className="bracket-mark absolute -bottom-10 sm:-bottom-16 -right-4 sm:-right-6 text-[180px] sm:text-[280px] md:text-[380px]"
+            style={{ color: "#fff", opacity: 0.08 }}
+          >
             {"}"}
           </span>
 
           <p className="mono-label text-faint">{"{ last word }"}</p>
-          <h2 className="font-display text-6xl md:text-8xl lg:text-9xl uppercase mt-6 text-chalk">
+          <h2 className="font-display text-5xl sm:text-6xl md:text-8xl lg:text-9xl uppercase mt-6 text-chalk">
             Stop guessing.
             <br />
             <span className="text-signal">Start deciding.</span>
           </h2>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4">
+          <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-4">
             <Link to="/waitlist" className="btn-brut" data-testid="final-primary-cta">
               Reserve your seat <ArrowRight size={16} />
             </Link>
