@@ -10,6 +10,8 @@ import Pricing from "./pages/Pricing";
 import CaseStudies from "./pages/CaseStudies";
 import StartProject from "./pages/StartProject";
 import ProjectFlow from "./pages/ProjectFlow";
+import ProjectDocument from "./pages/ProjectDocument";
+import ClientReview from "./pages/ClientReview";
 
 import "./App.css";
 
@@ -30,6 +32,10 @@ export default function App() {
         {/* Tool — anonymous, no account required */}
         <Route path="/start" element={<StartProject />} />
         <Route path="/project/:id" element={<ProjectFlow />} />
+        <Route path="/project/:id/document" element={<ProjectDocument />} />
+
+        {/* Public client review */}
+        <Route path="/r/:token" element={<ClientReview />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

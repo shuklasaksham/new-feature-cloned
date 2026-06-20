@@ -8,8 +8,7 @@ import {
   Loader2,
   RefreshCw,
   Download,
-  ThumbsUp,
-  ThumbsDown,
+  FileText,
 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
@@ -67,16 +66,23 @@ export default function ProjectFlow() {
   const isLocked = project?.status === "locked";
   const progress = (currentStep / 5) * 100;
 
-  const downloadPdf = () => {
-    const url = `${API_BASE}/projects/${project.id}/export.pdf`;
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  const downloadPdf = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${project.id}/export.pdf`);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      // Use alert as a last-resort; toast isn't imported here.
+      window.alert(`Couldn't download PDF — ${e.message || e}`);
+    }
   };
 
   return (
@@ -106,13 +112,13 @@ export default function ProjectFlow() {
               </span>
             )}
             {project?.artifacts && (
-              <button
-                onClick={downloadPdf}
+              <Link
+                to={`/project/${project.id}/document`}
                 className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase flex items-center gap-2 bg-paper hover:bg-ink hover:text-chalk"
-                data-testid="flow-export-btn"
+                data-testid="flow-document-link"
               >
-                <Download size={12} /> PDF
-              </button>
+                <FileText size={12} /> Document
+              </Link>
             )}
             <Link
               to="/start"
@@ -189,6 +195,7 @@ export default function ProjectFlow() {
             setProject={setProject}
             onBack={() => setCurrentStep(4)}
             onExport={downloadPdf}
+            projectId={project.id}
           />
         )}
       </main>
@@ -793,7 +800,7 @@ function Step4({ project, setProject, onDone, onBack }) {
   );
 }
 
-function Step5({ project, setProject, onBack, onExport }) {
+function Step5({ project, setProject, onBack, onExport, projectId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const isLocked = project.status === "locked";
@@ -815,8 +822,8 @@ function Step5({ project, setProject, onBack, onExport }) {
     <StepShell
       num={5}
       label="CONFIDENCE LOCK-IN"
-      title={isLocked ? "Locked. Go do the work." : "This is the direction."}
-      kicker="Lock the decision and download a polished PDF. We save your project to your email — come back anytime with the same address to pick it up."
+      title={isLocked ? "Locked. Open the document." : "This is the direction."}
+      kicker="Lock the decision, then open the polished document inside Bracket — download the PDF or send your client a review link straight from there."
     >
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -847,8 +854,6 @@ function Step5({ project, setProject, onBack, onExport }) {
               </li>
             </ul>
           </div>
-
-          {isLocked && <FeedbackPrompt project={project} setProject={setProject} />}
         </div>
 
         <div className="space-y-4">
@@ -859,15 +864,22 @@ function Step5({ project, setProject, onBack, onExport }) {
               </div>
               <h3 className="font-display text-3xl mt-3">Confidence, captured.</h3>
               <p className="mt-3 text-sm">
-                Download the full project as a PDF. Your project is also saved to your email —
-                use the same address on the start page to come back to it.
+                Open the document in Bracket — download the PDF or share a review link from there.
+                Your project is also saved to your email; come back anytime with the same address.
               </p>
+              <Link
+                to={`/project/${projectId}/document`}
+                className="btn-brut bg-chalk text-ink border-chalk hover:bg-ink hover:text-chalk mt-6 w-full justify-center"
+                data-testid="step5-open-document-btn"
+              >
+                <FileText size={14} /> Open document
+              </Link>
               <button
                 onClick={onExport}
-                className="btn-brut bg-chalk text-ink border-chalk hover:bg-ink hover:text-chalk mt-6 w-full justify-center"
+                className="btn-ghost text-chalk border-chalk hover:bg-chalk hover:text-ink mt-3 w-full justify-center"
                 data-testid="step5-export-btn"
               >
-                <Download size={14} /> Download PDF
+                <Download size={14} /> Quick PDF download
               </button>
               <Link
                 to="/start"
@@ -881,8 +893,8 @@ function Step5({ project, setProject, onBack, onExport }) {
             <div className="card-brut p-5 sm:p-6">
               <p className="mono-label">{"{ ready? }"}</p>
               <p className="mt-3 text-sm">
-                Lock the decision to mark it final, then download the PDF. Your project is saved to
-                your email — you can come back later with the same address.
+                Lock the decision to mark it final. The polished document opens inside Bracket — share it
+                with your client or download a PDF from there.
               </p>
               <button
                 onClick={onBack}
@@ -996,109 +1008,3 @@ function CopyButton({ text }) {
   );
 }
 
-function FeedbackPrompt({ project, setProject }) {
-  const existing = project.feedback;
-  const [sentiment, setSentiment] = useState(existing?.sentiment || null);
-  const [text, setText] = useState(existing?.text || "");
-  const [submitting, setSubmitting] = useState(false);
-  const [submittedAt, setSubmittedAt] = useState(existing?.submitted_at || null);
-  const [error, setError] = useState("");
-
-  const submit = async () => {
-    if (!sentiment) return setError("Pick a thumb first.");
-    setSubmitting(true);
-    setError("");
-    try {
-      const { data } = await api.post(`/projects/${project.id}/feedback`, {
-        sentiment,
-        text: text.trim(),
-      });
-      setProject(data);
-      setSubmittedAt(data.feedback?.submitted_at || new Date().toISOString());
-    } catch (e) {
-      setError(formatApiError(e));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (submittedAt) {
-    return (
-      <div
-        className="card-brut p-5 sm:p-6 bg-paper"
-        data-testid="feedback-thanks"
-      >
-        <p className="mono-label text-signal">{"{ feedback · received }"}</p>
-        <p className="mt-3 text-sm">
-          Thank you. Notes like yours{" "}
-          {sentiment === "up" ? "tell us where to double down." : "tell us where to fix."}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="card-brut p-5 sm:p-6 bg-paper" data-testid="feedback-prompt">
-      <div className="flex items-center justify-between gap-3">
-        <p className="mono-label">{"{ how did that feel? }"}</p>
-        <span className="mono-tag text-muted">30 SECONDS</span>
-      </div>
-      <p className="mt-3 text-sm text-muted">
-        Two thumbs and an optional note. We read every one.
-      </p>
-      <div className="mt-5 flex gap-3">
-        <button
-          type="button"
-          onClick={() => setSentiment("up")}
-          className={`flex-1 py-3 border border-ink flex items-center justify-center gap-2 transition ${
-            sentiment === "up" ? "bg-signal text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-          }`}
-          aria-pressed={sentiment === "up"}
-          data-testid="feedback-up-btn"
-        >
-          <ThumbsUp size={16} />
-          <span className="mono-tag">USEFUL</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setSentiment("down")}
-          className={`flex-1 py-3 border border-ink flex items-center justify-center gap-2 transition ${
-            sentiment === "down" ? "bg-danger text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-          }`}
-          aria-pressed={sentiment === "down"}
-          data-testid="feedback-down-btn"
-        >
-          <ThumbsDown size={16} />
-          <span className="mono-tag">NOT YET</span>
-        </button>
-      </div>
-      <label className="block mt-4">
-        <span className="mono-tag text-muted">A LINE WE SHOULD READ (OPTIONAL)</span>
-        <textarea
-          rows={3}
-          className="textarea-brut mt-2"
-          placeholder="What worked, what didn't, what would have helped."
-          value={text}
-          onChange={(ev) => setText(ev.target.value)}
-          data-testid="feedback-text"
-          maxLength={1000}
-        />
-      </label>
-      {error && (
-        <div className="border border-danger bg-chalk p-3 mt-3" data-testid="feedback-error">
-          <p className="mono-tag text-danger">CAN'T SEND</p>
-          <p className="text-sm mt-1">{error}</p>
-        </div>
-      )}
-      <button
-        type="button"
-        onClick={submit}
-        disabled={submitting || !sentiment}
-        className="btn-brut mt-4 w-full justify-center"
-        data-testid="feedback-submit-btn"
-      >
-        {submitting ? "Sending…" : "Send feedback"} <ArrowRight size={14} />
-      </button>
-    </div>
-  );
-}

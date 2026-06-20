@@ -8,7 +8,7 @@ load_dotenv(ROOT_DIR / ".env")
 import os
 import io
 import logging
-from typing import List, Literal
+from typing import List, Literal, Dict, Any
 
 from fastapi import FastAPI, APIRouter, HTTPException, Query
 from fastapi.responses import PlainTextResponse, StreamingResponse
@@ -31,6 +31,7 @@ from ai_engine import (
     run_context_compression,
     run_decision_engine,
     run_artifacts,
+    run_client_pushback_suggestions,
 )
 from emailer import send_thanks_email
 
@@ -94,6 +95,9 @@ async def create_project(body: ProjectStartIn):
         "artifacts": None,
         "locked_at": None,
         "feedback": None,
+        "share_token": None,
+        "share_status": "none",
+        "share_review": None,
         "created_at": now,
         "updated_at": now,
     }
@@ -575,6 +579,142 @@ async def submit_feedback(project_id: str, body: FeedbackIn):
         {"$set": {"feedback": feedback, "updated_at": _now_iso()}},
     )
     return await _get_project_or_404(project_id)
+
+
+# --- SHARE / CLIENT REVIEW -----------------------------------------------
+import secrets
+
+
+def _mk_token() -> str:
+    # 16 url-safe chars; collisions are negligible for this volume.
+    return secrets.token_urlsafe(12)
+
+
+def _public_view(project: dict) -> dict:
+    """Strip private fields before exposing to client-side share URL viewers."""
+    keep = {
+        "id", "name", "creator_name", "framing", "decision", "artifacts",
+        "share_status", "share_review", "locked_at",
+    }
+    return {k: v for k, v in project.items() if k in keep}
+
+
+@api.post("/projects/{project_id}/share", response_model=ProjectOut)
+async def create_share_link(project_id: str):
+    """Mint (or return existing) public share token for this project."""
+    project = await _get_project_or_404(project_id)
+    if not project.get("artifacts"):
+        raise HTTPException(status_code=400, detail="Generate artifacts first.")
+    token = project.get("share_token") or _mk_token()
+    new_status = project.get("share_status") or "none"
+    if new_status in ("none", ""):
+        new_status = "sent"
+    await db.projects.update_one(
+        {"id": project_id},
+        {
+            "$set": {
+                "share_token": token,
+                "share_status": new_status,
+                "updated_at": _now_iso(),
+            }
+        },
+    )
+    return await _get_project_or_404(project_id)
+
+
+@api.get("/share/{token}")
+async def get_shared_document(token: str):
+    """Public — anyone with the token can view the document."""
+    project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="This link isn't valid (or has been revoked).")
+    return _public_view(project)
+
+
+class AcceptIn(BaseModel):
+    acceptances: Dict[str, bool] = Field(default_factory=dict)
+    signature_name: str = Field(min_length=1, max_length=120)
+    role: str = Field(default="", max_length=120)
+
+
+@api.post("/share/{token}/accept")
+async def client_accept(token: str, body: AcceptIn):
+    project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="This link isn't valid.")
+    if project.get("share_status") in ("accepted", "rejected"):
+        raise HTTPException(status_code=409, detail="This document has already been reviewed.")
+    # Count accepted items
+    accepted_count = sum(1 for v in body.acceptances.values() if v)
+    total = len(body.acceptances)
+    review = {
+        "type": "accept",
+        "submitted_at": _now_iso(),
+        "signature_name": body.signature_name.strip(),
+        "role": (body.role or "").strip(),
+        "acceptances": body.acceptances,
+        "accepted_count": accepted_count,
+        "total_items": total,
+    }
+    await db.projects.update_one(
+        {"share_token": token},
+        {"$set": {"share_status": "accepted", "share_review": review, "updated_at": _now_iso()}},
+    )
+    project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    return _public_view(project)
+
+
+class RejectPreviewIn(BaseModel):
+    concerns: str = Field(min_length=4, max_length=4000)
+
+
+@api.post("/share/{token}/reject/preview")
+async def client_reject_preview(token: str, body: RejectPreviewIn):
+    """Show the client AI-generated suggestions BEFORE they finalize the rejection.
+    Doesn't mutate share_status — that happens on /reject/confirm."""
+    project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="This link isn't valid.")
+    if project.get("share_status") in ("accepted", "rejected"):
+        raise HTTPException(status_code=409, detail="This document has already been reviewed.")
+    try:
+        suggestions = await run_client_pushback_suggestions(
+            project, body.concerns, project.get("engine", "claude")
+        )
+    except Exception as e:
+        logger.exception("pushback suggestions failed")
+        raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
+    return {"concerns": body.concerns.strip(), "ai_suggestions": suggestions}
+
+
+class RejectConfirmIn(BaseModel):
+    concerns: str = Field(min_length=4, max_length=4000)
+    signature_name: str = Field(min_length=1, max_length=120)
+    role: str = Field(default="", max_length=120)
+    ai_suggestions: Dict[str, Any] = Field(default_factory=dict)
+
+
+@api.post("/share/{token}/reject/confirm")
+async def client_reject_confirm(token: str, body: RejectConfirmIn):
+    project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    if not project:
+        raise HTTPException(status_code=404, detail="This link isn't valid.")
+    if project.get("share_status") in ("accepted", "rejected"):
+        raise HTTPException(status_code=409, detail="This document has already been reviewed.")
+    review = {
+        "type": "reject",
+        "submitted_at": _now_iso(),
+        "signature_name": body.signature_name.strip(),
+        "role": (body.role or "").strip(),
+        "concerns": body.concerns.strip(),
+        "ai_suggestions": body.ai_suggestions,
+    }
+    await db.projects.update_one(
+        {"share_token": token},
+        {"$set": {"share_status": "rejected", "share_review": review, "updated_at": _now_iso()}},
+    )
+    project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    return _public_view(project)
 
 
 # --- Mount router ---

@@ -223,3 +223,42 @@ Return JSON simulating 4 likely reactions. Mix: silence, "can we reduce this", s
 }}"""
     return await _run(prompt, engine)
 
+
+async def run_client_pushback_suggestions(project: dict, concerns: str, engine: str = "claude") -> dict:
+    """A client raised concerns on the shared document. Generate calm, specific suggestions
+    the designer can offer to move the conversation forward without collapsing the stance."""
+    framing = project.get("framing") or {}
+    context = project.get("context") or {}
+    decision = project.get("decision") or {}
+    rec = (decision.get("recommendation") or {})
+    artifacts = project.get("artifacts") or {}
+    scope = (artifacts.get("scope_doc") or {})
+    prompt = f"""A client has reviewed a sign-off document and raised concerns.
+Your job is to give the designer (the project owner) three short, specific suggestions
+to address the concerns WITHOUT collapsing on the original stance.
+
+PROJECT: {project.get('name', '')}
+DECISION: {rec.get('title', '')}
+WHY WE CHOSE THIS: {rec.get('rationale', '')}
+WHAT ACTUALLY MATTERS: {context.get('what_actually_matters', '')}
+IN SCOPE: {json.dumps(scope.get('in_scope', []))}
+DELIVERABLES: {json.dumps(scope.get('deliverables', []))}
+
+CLIENT'S CONCERNS (verbatim):
+\"\"\"{concerns}\"\"\"
+
+Return STRICT JSON:
+{{
+  "summary": "One calm sentence reading back what the client is actually worried about.",
+  "suggestions": [
+    {{
+      "title": "Short label, max 8 words",
+      "what_to_say": "1-3 sentences the designer can paste back to the client",
+      "what_to_change": "The smallest change that addresses the concern without losing the stance, or 'No change — defend the stance because…' if defense is the right move"
+    }}
+  ],
+  "watch_for": "One short warning about what NOT to concede on, so the designer doesn't unravel the whole decision."
+}}
+
+3 suggestions exactly. Pure JSON only."""
+    return await _run(prompt, engine)

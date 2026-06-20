@@ -58,5 +58,8 @@ class ProjectOut(BaseModel):
     artifacts: Optional[Dict[str, Any]] = None
     locked_at: Optional[str] = None
     feedback: Optional[Dict[str, Any]] = None
+    share_token: Optional[str] = None
+    share_status: str = "none"  # none | sent | accepted | rejected
+    share_review: Optional[Dict[str, Any]] = None
     created_at: str
     updated_at: str
