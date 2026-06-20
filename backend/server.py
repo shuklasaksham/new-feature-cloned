@@ -33,7 +33,7 @@ from ai_engine import (
     run_artifacts,
     run_client_pushback_suggestions,
 )
-from emailer import send_thanks_email
+from emailer import send_thanks_email, send_review_outcome_email
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
@@ -374,10 +374,15 @@ def _pdf_for(project: dict) -> bytes:
     p.set_margins(left=16, top=22, right=16)
     p.add_page()
 
-    # Title block
+    # Title block — long names get wrapped safely.
     p.set_font("Helvetica", "B", 28)
     p.set_text_color(10, 10, 10)
-    p.multi_cell(0, 11, _pdf_text(project.get("name") or "Bracket project"))
+    try:
+        p.multi_cell(0, 11, _pdf_text(project.get("name") or "Bracket project"))
+    except Exception as exc:
+        logger.warning(f"pdf title failed: {exc}")
+        p.set_x(p.l_margin)
+        p.cell(0, 11, _pdf_text((project.get("name") or "Bracket project")[:60]), ln=1)
 
     p.set_font("Helvetica", "", 10)
     p.set_text_color(110, 110, 110)
@@ -388,16 +393,47 @@ def _pdf_for(project: dict) -> bytes:
         p.cell(0, 5, _pdf_text(meta), ln=1)
     p.ln(4)
 
+    def _reset_x():
+        # fpdf2's cell(..., ln=1) doesn't always pull X back to the LEFT margin
+        # — it can leave it at the right edge. Call this before every multi_cell
+        # so we always have full row width to work with.
+        p.set_x(p.l_margin)
+
+    def _safe_multi_cell(width, height, text):
+        """multi_cell that survives weird AI output (super-long unbroken tokens,
+        unexpected control chars, etc). Always renders SOMETHING."""
+        _reset_x()
+        safe = _pdf_text(text)
+        if not safe:
+            return
+        try:
+            p.multi_cell(width, height, safe)
+        except Exception as exc:
+            logger.warning(f"pdf multi_cell failed for {safe[:60]!r}: {exc}")
+            # Last-ditch: force-break long tokens with soft breaks.
+            forced = " ".join(
+                [safe[i : i + 80] for i in range(0, len(safe), 80)]
+            )
+            try:
+                _reset_x()
+                p.multi_cell(width, height, forced)
+            except Exception as exc2:
+                logger.warning(f"pdf multi_cell second-pass failed: {exc2}")
+                _reset_x()
+                p.ln(height)
+
     def H(s: str):
         p.set_font("Helvetica", "B", 14)
         p.set_text_color(10, 10, 10)
         p.set_fill_color(244, 244, 240)
+        _reset_x()
         p.cell(0, 9, "  " + _pdf_text(s), ln=1, fill=True)
         p.ln(2)
 
     def SH(s: str, color=(0, 51, 255)):
         p.set_font("Helvetica", "B", 9)
         p.set_text_color(*color)
+        _reset_x()
         p.cell(0, 5, _pdf_text(s.upper()), ln=1)
         p.set_text_color(10, 10, 10)
 
@@ -406,7 +442,7 @@ def _pdf_for(project: dict) -> bytes:
             return
         p.set_font("Helvetica", "", 11)
         p.set_text_color(40, 40, 40)
-        p.multi_cell(0, 6, _pdf_text(s))
+        _safe_multi_cell(0, 6, s)
         p.ln(1)
 
     def L(items, bullet="-", muted=False):
@@ -416,9 +452,17 @@ def _pdf_for(project: dict) -> bytes:
         for it in items:
             txt = it if isinstance(it, str) else (it.get("text") or str(it))
             p.set_text_color(120, 120, 120) if muted else p.set_text_color(40, 40, 40)
+            _reset_x()
             p.set_x(20)
             p.cell(5, 6, _pdf_text(bullet), ln=0)
-            p.multi_cell(0, 6, _pdf_text(txt))
+            try:
+                p.multi_cell(0, 6, _pdf_text(txt))
+            except Exception as exc:
+                logger.warning(f"pdf list-item failed: {exc}")
+                _reset_x()
+                p.set_x(20)
+                p.cell(5, 6, _pdf_text(bullet), ln=0)
+                _safe_multi_cell(0, 6, txt)
         p.ln(1)
 
     framing = project.get("framing") or {}
@@ -454,7 +498,13 @@ def _pdf_for(project: dict) -> bytes:
         H("Decision")
         p.set_font("Helvetica", "B", 13)
         p.set_text_color(10, 10, 10)
-        p.multi_cell(0, 7, _pdf_text(rec.get("title") or ""))
+        _reset_x()
+        try:
+            p.multi_cell(0, 7, _pdf_text(rec.get("title") or ""))
+        except Exception as exc:
+            logger.warning(f"pdf decision-title failed: {exc}")
+            _reset_x()
+            p.ln(7)
         p.set_font("Helvetica", "I", 10)
         p.set_text_color(0, 51, 255)
         p.cell(0, 5, _pdf_text(f"Confidence: {rec.get('confidence', 0)}%"), ln=1)
@@ -467,13 +517,14 @@ def _pdf_for(project: dict) -> bytes:
             for alt in decision["alternatives"]:
                 p.set_text_color(10, 10, 10)
                 p.set_font("Helvetica", "B", 11)
+                _reset_x()
                 p.cell(0, 6, _pdf_text("- " + (alt.get("title") or "")), ln=1)
                 p.set_font("Helvetica", "", 10)
                 p.set_text_color(80, 80, 80)
                 if alt.get("when_to_choose"):
-                    p.multi_cell(0, 5, _pdf_text("   When: " + alt["when_to_choose"]))
+                    _safe_multi_cell(0, 5, "   When: " + alt["when_to_choose"])
                 if alt.get("cost"):
-                    p.multi_cell(0, 5, _pdf_text("   Cost: " + alt["cost"]))
+                    _safe_multi_cell(0, 5, "   Cost: " + alt["cost"])
             p.ln(1)
 
         if decision.get("tradeoffs"):
@@ -486,11 +537,12 @@ def _pdf_for(project: dict) -> bytes:
             for r in decision["risks"]:
                 p.set_text_color(208, 38, 32)
                 p.set_font("Helvetica", "B", 10)
+                _reset_x()
                 p.cell(0, 6, _pdf_text(f"[{r.get('severity', 'LOW')}] {r.get('risk', '')}"), ln=1)
                 p.set_text_color(80, 80, 80)
                 p.set_font("Helvetica", "", 10)
                 if r.get("mitigation"):
-                    p.multi_cell(0, 5, _pdf_text("   De-risk: " + r["mitigation"]))
+                    _safe_multi_cell(0, 5, "   De-risk: " + r["mitigation"])
             p.ln(1)
         p.ln(2)
 
@@ -527,11 +579,12 @@ def _pdf_for(project: dict) -> bytes:
             for r in artifacts["risk_flags"]:
                 p.set_text_color(208, 38, 32)
                 p.set_font("Helvetica", "B", 10)
+                _reset_x()
                 p.cell(0, 6, _pdf_text(f"[{r.get('severity','LOW')}] {r.get('flag','')}"), ln=1)
                 p.set_text_color(80, 80, 80)
                 p.set_font("Helvetica", "", 10)
                 if r.get("why"):
-                    p.multi_cell(0, 5, _pdf_text("   " + r["why"]))
+                    _safe_multi_cell(0, 5, "   " + r["why"])
             p.ln(1)
 
     # Footer line
@@ -541,7 +594,7 @@ def _pdf_for(project: dict) -> bytes:
     p.ln(3)
     p.set_font("Helvetica", "I", 9)
     p.set_text_color(120, 120, 120)
-    p.multi_cell(0, 5, _pdf_text("Generated by Bracket — decisions for designers."))
+    _safe_multi_cell(0, 5, "Generated by Bracket — decisions for designers.")
 
     out = p.output(dest="S")
     if isinstance(out, bytearray):
@@ -661,6 +714,17 @@ async def client_accept(token: str, body: AcceptIn):
         {"$set": {"share_status": "accepted", "share_review": review, "updated_at": _now_iso()}},
     )
     project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    # Fire-and-forget owner notification — must never block client response.
+    try:
+        await send_review_outcome_email(
+            owner_email=project.get("creator_email", ""),
+            owner_name=project.get("creator_name", ""),
+            project_name=project.get("name", ""),
+            project_id=project.get("id", ""),
+            review=review,
+        )
+    except Exception as e:
+        logger.warning(f"accept outcome email crashed: {e}")
     return _public_view(project)
 
 
@@ -714,6 +778,17 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
         {"$set": {"share_status": "rejected", "share_review": review, "updated_at": _now_iso()}},
     )
     project = await db.projects.find_one({"share_token": token}, {"_id": 0})
+    # Fire-and-forget owner notification.
+    try:
+        await send_review_outcome_email(
+            owner_email=project.get("creator_email", ""),
+            owner_name=project.get("creator_name", ""),
+            project_name=project.get("name", ""),
+            project_id=project.get("id", ""),
+            review=review,
+        )
+    except Exception as e:
+        logger.warning(f"reject outcome email crashed: {e}")
     return _public_view(project)
 
 

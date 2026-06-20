@@ -27,8 +27,8 @@ export default function ProjectDocument() {
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [shareOpen, setShareOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [feedbackDismissed, setFeedbackDismissed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -74,7 +74,6 @@ export default function ProjectDocument() {
     try {
       const { data } = await api.post(`/projects/${project.id}/share`);
       setProject(data);
-      setShareOpen(true);
     } catch (e) {
       toast.error(formatApiError(e));
     }
@@ -279,13 +278,19 @@ export default function ProjectDocument() {
             )}
 
             {!isReviewed && project.share_token && (
-              <ShareLinkPanel
-                url={shareUrl}
-                projectId={project.id}
-                onSent={() => setShareOpen(true)}
-              />
+              <ShareLinkPanel url={shareUrl} />
             )}
           </div>
+
+          {/* Subtle feedback nudge — only AFTER the client has responded
+              (true end of the Bracket flow). Dismissible. Shown once per project. */}
+          {isReviewed && !project.feedback && !feedbackDismissed && (
+            <FeedbackInline
+              project={project}
+              setProject={setProject}
+              onDismiss={() => setFeedbackDismissed(true)}
+            />
+          )}
 
           <div className="card-brut p-5 sm:p-6 bg-paper">
             <p className="mono-label">{"{ status }"}</p>
@@ -302,11 +307,6 @@ export default function ProjectDocument() {
           </div>
         </aside>
       </div>
-
-      {/* FEEDBACK MODAL — opens once after they share */}
-      {shareOpen && !project.feedback && (
-        <FeedbackModal project={project} setProject={setProject} onClose={() => setShareOpen(false)} />
-      )}
     </div>
   );
 }
@@ -441,13 +441,12 @@ function RejectedBadge({ review }) {
   );
 }
 
-function ShareLinkPanel({ url, projectId, onSent }) {
+function ShareLinkPanel({ url }) {
   const [copied, setCopied] = useState(false);
   const copy = () => {
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    onSent && onSent();
   };
   const subject = encodeURIComponent("Review the project document");
   const body = encodeURIComponent(
@@ -468,7 +467,6 @@ function ShareLinkPanel({ url, projectId, onSent }) {
       </div>
       <a
         href={`mailto:?subject=${subject}&body=${body}`}
-        onClick={onSent}
         className="btn-brut mt-3 w-full justify-center"
         data-testid="doc-share-email-btn"
       >
@@ -481,9 +479,10 @@ function ShareLinkPanel({ url, projectId, onSent }) {
   );
 }
 
-function FeedbackModal({ project, setProject, onClose }) {
+function FeedbackInline({ project, setProject, onDismiss }) {
   const [sentiment, setSentiment] = useState(null);
   const [text, setText] = useState("");
+  const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
@@ -496,7 +495,6 @@ function FeedbackModal({ project, setProject, onClose }) {
       });
       setProject(data);
       toast.success("Thanks — we read every one.");
-      onClose();
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -506,60 +504,73 @@ function FeedbackModal({ project, setProject, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-ink/60 flex items-end sm:items-center justify-center p-4"
-      data-testid="feedback-modal"
+      className="border border-ink bg-paper p-4"
+      data-testid="feedback-inline"
     >
-      <div className="bg-paper border border-ink shadow-brut max-w-md w-full p-5 sm:p-6">
-        <div className="flex items-center justify-between">
-          <p className="mono-label">{"{ quick · how was that? }"}</p>
-          <button onClick={onClose} className="mono-tag" data-testid="feedback-modal-close">
-            DISMISS
-          </button>
-        </div>
-        <p className="mt-3 text-sm text-muted">
-          You just sent your first review link. 30 seconds of feedback helps us sharpen Bracket.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <button
-            type="button"
-            onClick={() => setSentiment("up")}
-            className={`flex-1 py-3 border border-ink flex items-center justify-center gap-2 ${
-              sentiment === "up" ? "bg-signal text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-            }`}
-            data-testid="feedback-up-btn"
-          >
-            <span className="mono-tag">USEFUL</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setSentiment("down")}
-            className={`flex-1 py-3 border border-ink flex items-center justify-center gap-2 ${
-              sentiment === "down" ? "bg-danger text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-            }`}
-            data-testid="feedback-down-btn"
-          >
-            <span className="mono-tag">NOT YET</span>
-          </button>
-        </div>
-        <textarea
-          rows={3}
-          className="textarea-brut mt-4"
-          placeholder="One line on what worked / what didn't."
-          value={text}
-          onChange={(ev) => setText(ev.target.value)}
-          data-testid="feedback-text"
-          maxLength={1000}
-        />
+      <div className="flex items-center justify-between gap-3">
+        <p className="mono-tag text-muted">{"{ 30s · how was that flow? }"}</p>
         <button
           type="button"
-          onClick={submit}
-          disabled={submitting || !sentiment}
-          className="btn-brut mt-4 w-full justify-center"
-          data-testid="feedback-submit-btn"
+          onClick={onDismiss}
+          className="mono-tag text-muted hover:text-ink"
+          data-testid="feedback-dismiss-btn"
+          aria-label="Dismiss"
         >
-          {submitting ? "Sending…" : "Send"} <ArrowRight size={14} />
+          ×
         </button>
       </div>
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setSentiment("up");
+            setOpen(true);
+          }}
+          className={`flex-1 py-2 border border-ink flex items-center justify-center gap-2 transition ${
+            sentiment === "up" ? "bg-signal text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
+          }`}
+          data-testid="feedback-up-btn"
+          aria-pressed={sentiment === "up"}
+        >
+          <span className="mono-tag">USEFUL</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSentiment("down");
+            setOpen(true);
+          }}
+          className={`flex-1 py-2 border border-ink flex items-center justify-center gap-2 transition ${
+            sentiment === "down" ? "bg-danger text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
+          }`}
+          data-testid="feedback-down-btn"
+          aria-pressed={sentiment === "down"}
+        >
+          <span className="mono-tag">NOT YET</span>
+        </button>
+      </div>
+      {open && (
+        <>
+          <textarea
+            rows={2}
+            className="textarea-brut mt-3 text-sm"
+            placeholder="Optional: one line on what worked or didn't."
+            value={text}
+            onChange={(ev) => setText(ev.target.value)}
+            data-testid="feedback-text"
+            maxLength={1000}
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting || !sentiment}
+            className="btn-brut mt-3 w-full justify-center text-[11px] !py-2"
+            data-testid="feedback-submit-btn"
+          >
+            {submitting ? "Sending…" : "Send feedback"} <ArrowRight size={12} />
+          </button>
+        </>
+      )}
     </div>
   );
 }

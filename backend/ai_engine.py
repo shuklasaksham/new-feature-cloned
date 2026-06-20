@@ -227,7 +227,6 @@ Return JSON simulating 4 likely reactions. Mix: silence, "can we reduce this", s
 async def run_client_pushback_suggestions(project: dict, concerns: str, engine: str = "claude") -> dict:
     """A client raised concerns on the shared document. Generate calm, specific suggestions
     the designer can offer to move the conversation forward without collapsing the stance."""
-    framing = project.get("framing") or {}
     context = project.get("context") or {}
     decision = project.get("decision") or {}
     rec = (decision.get("recommendation") or {})
