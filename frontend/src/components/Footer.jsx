@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { Instagram, Linkedin } from "lucide-react";
 import BracketMark from "./BracketMark";
 
 export default function Footer() {
@@ -12,6 +13,29 @@ export default function Footer() {
             Bracket helps designers decide what to do, not just how to do it. A professional operating system — not another tool.
           </p>
           <p className="mt-5 md:mt-6 mono-label">v 1.0 · Built for people who take the call.</p>
+
+          <div className="mt-5 md:mt-6 flex items-center gap-3" data-testid="footer-socials">
+            <a
+              href="https://www.instagram.com/use_bracket/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Bracket on Instagram"
+              className="w-9 h-9 inline-flex items-center justify-center border border-ink bg-paper hover:bg-ink hover:text-chalk transition-colors"
+              data-testid="footer-instagram-link"
+            >
+              <Instagram size={16} />
+            </a>
+            <a
+              href="https://www.linkedin.com/company/bracket-app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Bracket on LinkedIn"
+              className="w-9 h-9 inline-flex items-center justify-center border border-ink bg-paper hover:bg-ink hover:text-chalk transition-colors"
+              data-testid="footer-linkedin-link"
+            >
+              <Linkedin size={16} />
+            </a>
+          </div>
         </div>
         <div>
           <p className="mono-label mb-3 md:mb-4">Product</p>
@@ -23,10 +47,38 @@ export default function Footer() {
           </ul>
         </div>
         <div>
-          <p className="mono-label mb-3 md:mb-4">Join</p>
+          <p className="mono-label mb-3 md:mb-4">Connect</p>
           <ul className="space-y-2 text-sm">
             <li><Link to="/start" className="link-u">Start a project</Link></li>
-            <li><a href="mailto:hi@bracket.design" className="link-u break-all">hi@bracket.design</a></li>
+            <li>
+              <a
+                href="mailto:support@use-bracket.com"
+                className="link-u break-all"
+                data-testid="footer-email-link"
+              >
+                support@use-bracket.com
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.instagram.com/use_bracket/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-u"
+              >
+                @use_bracket
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.linkedin.com/company/bracket-app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link-u"
+              >
+                LinkedIn
+              </a>
+            </li>
           </ul>
         </div>
       </div>

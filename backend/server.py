@@ -357,7 +357,7 @@ class _BracketPDF(FPDF):
         self.set_y(-14)
         self.set_font("Helvetica", "", 8)
         self.set_text_color(120, 120, 120)
-        self.cell(0, 6, f"Page {self.page_no()} / {{nb}}   ·   bracket.design", align="C")
+        self.cell(0, 6, f"Page {self.page_no()} / {{nb}}   ·   use-bracket.com", align="C")
 
 
 def _pdf_text(s: str) -> str:
