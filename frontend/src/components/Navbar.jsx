@@ -28,21 +28,18 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          <span className="mono-tag text-muted flex items-center gap-2" data-testid="nav-coming-soon">
-            <span className="dot-live" /> COMING SOON
-          </span>
-          <Link to="/waitlist" className="btn-brut" data-testid="nav-waitlist-btn">
-            Join the waitlist →
+          <Link to="/start" className="btn-brut" data-testid="nav-start-btn">
+            Start a project →
           </Link>
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
           <Link
-            to="/waitlist"
+            to="/start"
             className="hidden sm:inline-flex btn-brut !px-3 !py-2 !text-[11px]"
-            data-testid="nav-mobile-waitlist-cta"
+            data-testid="nav-mobile-start-cta"
           >
-            Join →
+            Start →
           </Link>
           <button
             className="p-2 border border-ink"
@@ -70,8 +67,8 @@ export default function Navbar() {
               </Link>
             ))}
             <div className="h-px bg-ink" />
-            <Link to="/waitlist" onClick={() => setOpen(false)} className="btn-brut justify-center" data-testid="nav-mobile-waitlist-btn">
-              Join the waitlist →
+            <Link to="/start" onClick={() => setOpen(false)} className="btn-brut justify-center" data-testid="nav-mobile-start-btn">
+              Start a project →
             </Link>
           </div>
         </div>

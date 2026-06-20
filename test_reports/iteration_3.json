@@ -1,0 +1,34 @@
+{
+  "summary": "Full backend + frontend regression for the Bracket anonymous-mode pivot. Backend: 19/19 pytest cases pass (POST /api/projects happy + 3 validation cases; GET friendly 404; 7 dead routes return 404; full 5-step AI walkthrough situation -> context -> decision -> artifacts -> lock with real EMERGENT_LLM_KEY, final status='locked'; export.md returns text/markdown with all 7 sections; legacy known project id resolves). Frontend (Playwright on REACT_APP_BACKEND_URL): Landing shows 'Start a project →' CTA, zero 'JOIN WAITLIST' / 'COMING SOON' text; /waitlist /login /signup /app /share/abc /billing/x all redirect to /; /start form has all 4 testids and validates email inline without navigating; valid submit POSTs /api/projects, navigates to /project/{id}, header shows project name; refresh on /project/{id} reloads state and shows step 1 form; 'New' returns to /start; Pricing hero says 'Free for now', the 'everything below is free' banner is visible, and all three tier CTAs read 'Start a project' linking to /start; zero /waitlist <a href> links on /, /how-it-works, /use-cases, /case-studies, /pricing; no horizontal scroll at 390/820/1440 on /, /start, /pricing, /project/{id}.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/start email input", "issues": ["<input> still uses type='text' (with inputMode='email'). Custom regex validation works, but a native type='email' would unlock browser-level validation and improve mobile keyboard UX. Minor — flagged in last iteration too."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bracket_anonymous.py",
+    "/app/test_reports/pytest/iteration_3_results.xml"
+  ],
+  "action_items": [
+    "(Optional polish) Change /start email input to type='email' for native validation + correct mobile keyboard."
+  ],
+  "critical_code_review_comments": [
+    "server.py is single-file (~318 lines) and within healthy size, good separation via ai_engine.py and emailer.py.",
+    "_get_project_or_404 already excludes _id via projection — clean. ProjectOut has ConfigDict(extra='ignore') so any stray internal fields are safe.",
+    "Thanks-email send is wrapped in try/except and logs warning — non-blocking as designed.",
+    "step_situation/context/decision wrap AI calls in try/except returning 502 — good. Re-running step1 mutates step via max(...) so progress never regresses.",
+    "Frontend: ProjectFlow.jsx is ~995 lines and contains 5 step components + many helpers in one file. Functional, but borderline of the 700-line code-review threshold — main agent may want to split Step1-5 into separate files for maintainability (non-blocking).",
+    "Frontend: downloadMd uses fetch directly instead of api.get; works because export.md is plaintext, but inconsistent with the rest of the file."
+  ],
+  "updated_files": ["/app/backend/tests/test_bracket_anonymous.py"],
+  "success_rate": {"backend": "100% (19/19 passed)", "frontend": "100% (15/15 review-request checks passed)"},
+  "test_credentials": "N/A — anonymous app, no auth.",
+  "seed_data_creation": "Created several TEST_-prefixed projects via POST /api/projects during the run (creator_email starts with 'TEST_'). One full 5-step locked project per pytest run. Nothing destructive.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All review-request features are working. Backend test file at /app/backend/tests/test_bracket_anonymous.py covers the entire anonymous flow including the AI walk (takes ~90s due to 4 real LLM calls). Key data-testids: nav-start-btn, nav-mobile-toggle, nav-mobile-start-btn, start-form, start-name-input, start-email-input, start-project-name-input, start-submit-btn, start-error, flow-project-name, flow-export-btn, flow-new-project-btn, step1-form, step1-submit-btn, step1-framing-output, step2-form, step2-submit-btn, step2-context-output, step3-form, step3-submit-btn, step3-decision-output, step4-generate-btn, step4-artifacts-output, step5-lock-btn, step5-locked, step5-export-btn, pricing-cta-{free|pro|studio}. Sample created project id from this run: 3362a58e-b466-45b9-8c58-54e1da35001d (step 1, not locked). Catch-all <Route path='*' element={<Navigate to='/' replace/>}> handles /waitlist, /login, /signup, /app, /share/*, /billing/* correctly.",
+  "rca of the issue": "N/A — no blocking issues. Pivot is fully functional end-to-end."
+}

@@ -13,13 +13,16 @@ export default function Pricing() {
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-20">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <p className="mono-label">{"{ pricing }"}</p>
+              <p className="mono-label">{"{ pricing · early access }"}</p>
               <h1 className="font-display text-5xl sm:text-6xl md:text-8xl uppercase mt-5 md:mt-6">
-                Pay for the <span className="text-signal">clarity.</span>
+                Free <span className="text-signal">for now.</span>
               </h1>
               <p className="mt-5 md:mt-6 text-muted max-w-xl text-sm md:text-base">
-                Final pricing. Founder-cohort members lock this in for life — no future price bumps.
+                Bracket is free to use during early access — no account, no card, no time limit. Paid tiers will arrive when the product graduates from early access; below is the shape they'll take.
               </p>
+              <Link to="/start" className="btn-brut mt-6" data-testid="pricing-hero-start-cta">
+                Start a project <ArrowRight size={14} />
+              </Link>
             </div>
             <div className="inline-flex items-center border border-ink self-start md:self-auto" data-testid="pricing-currency-toggle">
               {Object.keys(PRICING.currencies).map((c) => (
@@ -39,6 +42,17 @@ export default function Pricing() {
 
       <section className="bg-chalk border-b border-ink">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-16">
+          <div className="border border-ink bg-ink text-chalk p-5 sm:p-6 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" data-testid="pricing-early-access-banner">
+            <div>
+              <p className="mono-label text-signal">{"{ everything below is free }"}</p>
+              <p className="mt-2 text-sm sm:text-base text-chalk">
+                During early access, every feature in every tier is unlocked. No card. No upsell. Use it.
+              </p>
+            </div>
+            <Link to="/start" className="btn-brut bg-chalk text-ink border-chalk hover:bg-paper" data-testid="pricing-banner-start-cta">
+              Start a project →
+            </Link>
+          </div>
           <div className="grid md:grid-cols-3 gap-0 border border-ink">
             {PRICING.tiers.map((t, idx) => {
               const isStudio = t.id === "studio";
@@ -69,11 +83,11 @@ export default function Pricing() {
                     ))}
                   </ul>
                   <Link
-                    to="/waitlist"
+                    to="/start"
                     className={`mt-6 md:mt-8 w-full justify-center ${isStudio ? "btn-brut" : "btn-ghost"}`}
                     data-testid={`pricing-cta-${t.id}`}
                   >
-                    Join the waitlist <ArrowRight size={14} />
+                    Start a project <ArrowRight size={14} />
                   </Link>
                 </div>
               );
@@ -108,7 +122,7 @@ export default function Pricing() {
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-14 md:py-20">
           <h2 className="font-display text-4xl sm:text-5xl md:text-7xl uppercase">Decisions, priced fairly.</h2>
           <div className="mt-6 md:mt-8">
-            <Link to="/waitlist" className="btn-brut">Join the waitlist <ArrowRight size={16} /></Link>
+            <Link to="/start" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>
