@@ -6,12 +6,16 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 import os
+import io
 import logging
+from typing import List, Literal
 
-from fastapi import FastAPI, APIRouter, HTTPException
-from fastapi.responses import PlainTextResponse
+from fastapi import FastAPI, APIRouter, HTTPException, Query
+from fastapi.responses import PlainTextResponse, StreamingResponse
+from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
+from fpdf import FPDF
 
 from models import (
     ProjectStartIn,
@@ -51,14 +55,33 @@ async def root():
 # --- PROJECTS ---
 @api.post("/projects", response_model=ProjectOut)
 async def create_project(body: ProjectStartIn):
-    """Anyone can start a project. We capture name+email silently and fire a
-    'thanks for trying' email via Resend. No auth required."""
+    """Anyone can start a project. We capture name+email silently.
+    If the same email + project_name already exists, we resume the existing
+    project instead of creating a duplicate — that's how "returning users"
+    pick up their saved work."""
+    email = body.email.lower().strip()
+    pname = body.project_name.strip()
+
+    existing = await db.projects.find_one(
+        {"creator_email": email, "name": pname},
+        {"_id": 0},
+    )
+    if existing:
+        # Update name on the record (in case they changed how they spell it)
+        # and don't resend the thanks email.
+        await db.projects.update_one(
+            {"id": existing["id"]},
+            {"$set": {"creator_name": (body.name or "").strip(), "updated_at": _now_iso()}},
+        )
+        existing["creator_name"] = (body.name or "").strip()
+        return existing
+
     now = _now_iso()
     doc = {
         "id": _uuid(),
-        "name": body.project_name.strip(),
+        "name": pname,
         "creator_name": (body.name or "").strip(),
-        "creator_email": body.email.lower().strip(),
+        "creator_email": email,
         "engine": body.engine if body.engine in ("claude", "gpt") else "claude",
         "status": "draft",
         "step": 1,
@@ -70,6 +93,7 @@ async def create_project(body: ProjectStartIn):
         "decision": None,
         "artifacts": None,
         "locked_at": None,
+        "feedback": None,
         "created_at": now,
         "updated_at": now,
     }
@@ -81,6 +105,31 @@ async def create_project(body: ProjectStartIn):
     except Exception as e:
         logger.warning(f"thanks email crashed: {e}")
     return doc
+
+
+class ProjectSummary(BaseModel):
+    id: str
+    name: str
+    status: str
+    step: int
+    locked_at: str | None = None
+    created_at: str
+    updated_at: str
+
+
+@api.get("/projects/by-email", response_model=List[ProjectSummary])
+async def projects_by_email(email: EmailStr = Query(...)):
+    """List projects for a given email, most-recent first. Used by the
+    /start page to offer "resume your saved projects" to returning users."""
+    cur = (
+        db.projects.find(
+            {"creator_email": email.lower().strip()},
+            {"_id": 0, "id": 1, "name": 1, "status": 1, "step": 1, "locked_at": 1, "created_at": 1, "updated_at": 1},
+        )
+        .sort("updated_at", -1)
+        .limit(50)
+    )
+    return [doc async for doc in cur]
 
 
 async def _get_project_or_404(project_id: str) -> dict:
@@ -284,6 +333,250 @@ async def export_markdown(project_id: str):
     return PlainTextResponse(_markdown_for(project), media_type="text/markdown; charset=utf-8")
 
 
+# --- PDF EXPORT -----------------------------------------------------------
+class _BracketPDF(FPDF):
+    def header(self):
+        # Brand strip at top.
+        self.set_fill_color(10, 10, 10)
+        self.rect(0, 0, self.w, 14, "F")
+        self.set_xy(12, 4)
+        self.set_text_color(244, 244, 240)
+        self.set_font("Helvetica", "B", 9)
+        self.cell(0, 6, "BRACKET / DECISIONS FOR DESIGNERS", ln=0)
+        self.set_text_color(0, 51, 255)
+        self.set_x(self.w - 50)
+        self.cell(38, 6, "{ DECIDED }", ln=0, align="R")
+        self.set_text_color(10, 10, 10)
+        self.set_y(22)
+
+    def footer(self):
+        self.set_y(-14)
+        self.set_font("Helvetica", "", 8)
+        self.set_text_color(120, 120, 120)
+        self.cell(0, 6, f"Page {self.page_no()} / {{nb}}   ·   bracket.design", align="C")
+
+
+def _pdf_text(s: str) -> str:
+    """fpdf's core fonts are latin-1; convert any non-latin chars so we never crash."""
+    if not s:
+        return ""
+    return str(s).encode("latin-1", "replace").decode("latin-1")
+
+
+def _pdf_for(project: dict) -> bytes:
+    p = _BracketPDF(orientation="P", unit="mm", format="A4")
+    p.alias_nb_pages()
+    p.set_auto_page_break(auto=True, margin=18)
+    p.set_margins(left=16, top=22, right=16)
+    p.add_page()
+
+    # Title block
+    p.set_font("Helvetica", "B", 28)
+    p.set_text_color(10, 10, 10)
+    p.multi_cell(0, 11, _pdf_text(project.get("name") or "Bracket project"))
+
+    p.set_font("Helvetica", "", 10)
+    p.set_text_color(110, 110, 110)
+    by = project.get("creator_name") or ""
+    when = (project.get("locked_at") or project.get("updated_at") or "")[:10]
+    meta = f"By {by}  ·  {when}" if by else when
+    if meta:
+        p.cell(0, 5, _pdf_text(meta), ln=1)
+    p.ln(4)
+
+    def H(s: str):
+        p.set_font("Helvetica", "B", 14)
+        p.set_text_color(10, 10, 10)
+        p.set_fill_color(244, 244, 240)
+        p.cell(0, 9, "  " + _pdf_text(s), ln=1, fill=True)
+        p.ln(2)
+
+    def SH(s: str, color=(0, 51, 255)):
+        p.set_font("Helvetica", "B", 9)
+        p.set_text_color(*color)
+        p.cell(0, 5, _pdf_text(s.upper()), ln=1)
+        p.set_text_color(10, 10, 10)
+
+    def P(s: str):
+        if not s:
+            return
+        p.set_font("Helvetica", "", 11)
+        p.set_text_color(40, 40, 40)
+        p.multi_cell(0, 6, _pdf_text(s))
+        p.ln(1)
+
+    def L(items, bullet="-", muted=False):
+        if not items:
+            return
+        p.set_font("Helvetica", "", 11)
+        for it in items:
+            txt = it if isinstance(it, str) else (it.get("text") or str(it))
+            p.set_text_color(120, 120, 120) if muted else p.set_text_color(40, 40, 40)
+            p.set_x(20)
+            p.cell(5, 6, _pdf_text(bullet), ln=0)
+            p.multi_cell(0, 6, _pdf_text(txt))
+        p.ln(1)
+
+    framing = project.get("framing") or {}
+    if framing:
+        H("Reframed problem")
+        P(framing.get("reframed_problem") or "")
+        if framing.get("what_to_name"):
+            SH("What to name out loud")
+            P(framing["what_to_name"])
+        if framing.get("tensions"):
+            SH("Tensions to watch")
+            L(framing["tensions"])
+        p.ln(2)
+
+    ctx = project.get("context") or {}
+    if ctx:
+        H("What actually matters")
+        P(ctx.get("what_actually_matters") or "")
+        if ctx.get("key_signals"):
+            SH("Key signals", color=(0, 51, 255))
+            L(ctx["key_signals"], bullet="->")
+        if ctx.get("noise_removed"):
+            SH("Noise removed", color=(120, 120, 120))
+            L(ctx["noise_removed"], bullet="x", muted=True)
+        if ctx.get("hidden_assumptions"):
+            SH("Hidden assumptions", color=(208, 38, 32))
+            L(ctx["hidden_assumptions"], bullet="!")
+        p.ln(2)
+
+    decision = project.get("decision") or {}
+    if decision:
+        rec = decision.get("recommendation") or {}
+        H("Decision")
+        p.set_font("Helvetica", "B", 13)
+        p.set_text_color(10, 10, 10)
+        p.multi_cell(0, 7, _pdf_text(rec.get("title") or ""))
+        p.set_font("Helvetica", "I", 10)
+        p.set_text_color(0, 51, 255)
+        p.cell(0, 5, _pdf_text(f"Confidence: {rec.get('confidence', 0)}%"), ln=1)
+        p.ln(1)
+        P(rec.get("rationale") or "")
+
+        if decision.get("alternatives"):
+            SH("Alternatives")
+            p.set_font("Helvetica", "", 11)
+            for alt in decision["alternatives"]:
+                p.set_text_color(10, 10, 10)
+                p.set_font("Helvetica", "B", 11)
+                p.cell(0, 6, _pdf_text("- " + (alt.get("title") or "")), ln=1)
+                p.set_font("Helvetica", "", 10)
+                p.set_text_color(80, 80, 80)
+                if alt.get("when_to_choose"):
+                    p.multi_cell(0, 5, _pdf_text("   When: " + alt["when_to_choose"]))
+                if alt.get("cost"):
+                    p.multi_cell(0, 5, _pdf_text("   Cost: " + alt["cost"]))
+            p.ln(1)
+
+        if decision.get("tradeoffs"):
+            SH("Trade-offs")
+            L(decision["tradeoffs"], bullet="->")
+
+        if decision.get("risks"):
+            SH("Risks", color=(208, 38, 32))
+            p.set_font("Helvetica", "", 11)
+            for r in decision["risks"]:
+                p.set_text_color(208, 38, 32)
+                p.set_font("Helvetica", "B", 10)
+                p.cell(0, 6, _pdf_text(f"[{r.get('severity', 'LOW')}] {r.get('risk', '')}"), ln=1)
+                p.set_text_color(80, 80, 80)
+                p.set_font("Helvetica", "", 10)
+                if r.get("mitigation"):
+                    p.multi_cell(0, 5, _pdf_text("   De-risk: " + r["mitigation"]))
+            p.ln(1)
+        p.ln(2)
+
+    artifacts = project.get("artifacts") or {}
+    if artifacts:
+        scope = artifacts.get("scope_doc") or {}
+        if scope:
+            H(f"Scope — {scope.get('title','')}")
+            if scope.get("in_scope"):
+                SH("In scope")
+                L(scope["in_scope"])
+            if scope.get("out_of_scope"):
+                SH("Out of scope", color=(120, 120, 120))
+                L(scope["out_of_scope"], muted=True)
+            if scope.get("deliverables"):
+                SH("Deliverables")
+                L(scope["deliverables"])
+            if scope.get("timeline_note"):
+                SH("Timeline")
+                P(scope["timeline_note"])
+            p.ln(1)
+
+        if artifacts.get("client_message"):
+            H("Client message")
+            P(artifacts["client_message"])
+
+        if artifacts.get("assumptions"):
+            H("Assumptions")
+            L(artifacts["assumptions"])
+
+        if artifacts.get("risk_flags"):
+            H("Risk flags")
+            p.set_font("Helvetica", "", 11)
+            for r in artifacts["risk_flags"]:
+                p.set_text_color(208, 38, 32)
+                p.set_font("Helvetica", "B", 10)
+                p.cell(0, 6, _pdf_text(f"[{r.get('severity','LOW')}] {r.get('flag','')}"), ln=1)
+                p.set_text_color(80, 80, 80)
+                p.set_font("Helvetica", "", 10)
+                if r.get("why"):
+                    p.multi_cell(0, 5, _pdf_text("   " + r["why"]))
+            p.ln(1)
+
+    # Footer line
+    p.ln(6)
+    p.set_draw_color(10, 10, 10)
+    p.line(16, p.get_y(), p.w - 16, p.get_y())
+    p.ln(3)
+    p.set_font("Helvetica", "I", 9)
+    p.set_text_color(120, 120, 120)
+    p.multi_cell(0, 5, _pdf_text("Generated by Bracket — decisions for designers."))
+
+    out = p.output(dest="S")
+    if isinstance(out, bytearray):
+        out = bytes(out)
+    return out
+
+
+@api.get("/projects/{project_id}/export.pdf")
+async def export_pdf(project_id: str):
+    project = await _get_project_or_404(project_id)
+    safe = "".join(c if c.isalnum() else "-" for c in (project.get("name") or "bracket")).strip("-").lower() or "bracket"
+    pdf_bytes = _pdf_for(project)
+    headers = {"Content-Disposition": f'attachment; filename="{safe}.pdf"'}
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
+
+
+# --- FEEDBACK -------------------------------------------------------------
+class FeedbackIn(BaseModel):
+    sentiment: Literal["up", "down"]
+    text: str = Field(default="", max_length=1000)
+
+
+@api.post("/projects/{project_id}/feedback", response_model=ProjectOut)
+async def submit_feedback(project_id: str, body: FeedbackIn):
+    project = await _get_project_or_404(project_id)
+    if project.get("status") != "locked":
+        raise HTTPException(status_code=400, detail="Feedback is collected after lock-in.")
+    feedback = {
+        "sentiment": body.sentiment,
+        "text": (body.text or "").strip(),
+        "submitted_at": _now_iso(),
+    }
+    await db.projects.update_one(
+        {"id": project_id},
+        {"$set": {"feedback": feedback, "updated_at": _now_iso()}},
+    )
+    return await _get_project_or_404(project_id)
+
+
 # --- Mount router ---
 app.include_router(api)
 
@@ -309,6 +602,8 @@ else:
 @app.on_event("startup")
 async def on_startup():
     await db.projects.create_index("created_at")
+    await db.projects.create_index([("creator_email", 1), ("updated_at", -1)])
+    await db.projects.create_index([("creator_email", 1), ("name", 1)])
     logger.info("bracket api ready (anonymous mode)")
 
 

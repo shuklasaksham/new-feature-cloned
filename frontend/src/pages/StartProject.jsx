@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, Clock } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { api, formatApiError } from "../lib/api";
@@ -12,14 +12,40 @@ export default function StartProject() {
   const [projectName, setProjectName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [savedProjects, setSavedProjects] = useState([]); // returning-user list
+  const [lookupLoading, setLookupLoading] = useState(false);
+  const lookupTimer = useRef(null);
 
   const validateEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((val || "").trim());
+
+  // Debounced lookup of saved projects when the email looks valid.
+  useEffect(() => {
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    if (!validateEmail(email)) {
+      setSavedProjects([]);
+      return;
+    }
+    lookupTimer.current = setTimeout(async () => {
+      setLookupLoading(true);
+      try {
+        const { data } = await api.get("/projects/by-email", {
+          params: { email: email.trim().toLowerCase() },
+        });
+        setSavedProjects(Array.isArray(data) ? data : []);
+      } catch {
+        setSavedProjects([]);
+      } finally {
+        setLookupLoading(false);
+      }
+    }, 500);
+    return () => lookupTimer.current && clearTimeout(lookupTimer.current);
+  }, [email]);
 
   const submit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return setError("Tell us your name — first or full, your call.");
     if (!validateEmail(email)) return setError("That email doesn't look right. Try a real one.");
-    if (!projectName.trim()) return setError("Name the project so you can find it later in this session.");
+    if (!projectName.trim()) return setError("Name the project — you'll see it again if you come back.");
     setLoading(true);
     setError("");
     try {
@@ -74,7 +100,7 @@ export default function StartProject() {
               </div>
 
               <p className="mono-tag text-muted mt-8">
-                ONE NOTE · WE DON'T SAVE PROJECTS FOR LATER. KEEP THIS TAB OPEN.
+                COME BACK ANYTIME · USE THE SAME EMAIL TO PICK UP WHERE YOU LEFT OFF.
               </p>
             </div>
 
@@ -121,6 +147,44 @@ export default function StartProject() {
                     data-testid="start-email-input"
                   />
                 </div>
+
+                {(savedProjects.length > 0 || lookupLoading) && (
+                  <div className="border border-ink bg-chalk -mx-1 sm:mx-0" data-testid="saved-projects-panel">
+                    <div className="px-4 py-3 border-b border-ink bg-paper flex items-center justify-between gap-3">
+                      <p className="mono-tag text-signal">
+                        {lookupLoading
+                          ? "LOOKING UP…"
+                          : `WELCOME BACK · ${savedProjects.length} SAVED PROJECT${savedProjects.length === 1 ? "" : "S"}`}
+                      </p>
+                    </div>
+                    {!lookupLoading && (
+                      <ul className="max-h-48 overflow-y-auto divide-y divide-ink">
+                        {savedProjects.map((p) => (
+                          <li key={p.id}>
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/project/${p.id}`)}
+                              className="w-full text-left px-4 py-3 hover:bg-paper flex items-center justify-between gap-3 group"
+                              data-testid={`saved-project-${p.id}`}
+                            >
+                              <div className="min-w-0">
+                                <p className="font-display text-base truncate">{p.name}</p>
+                                <p className="mono-tag text-muted mt-1 flex items-center gap-2">
+                                  <Clock size={10} />
+                                  <span>STEP {p.step} / 5 · {p.status.toUpperCase()}</span>
+                                </p>
+                              </div>
+                              <ArrowRight
+                                size={14}
+                                className="shrink-0 group-hover:translate-x-1 transition-transform"
+                              />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <label className="mono-tag text-muted">PROJECT NAME · REQUIRED</label>

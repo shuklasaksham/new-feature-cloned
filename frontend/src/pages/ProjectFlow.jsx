@@ -8,6 +8,8 @@ import {
   Loader2,
   RefreshCw,
   Download,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
@@ -65,18 +67,16 @@ export default function ProjectFlow() {
   const isLocked = project?.status === "locked";
   const progress = (currentStep / 5) * 100;
 
-  const downloadMd = async () => {
-    const res = await fetch(`${API_BASE}/projects/${project.id}/export.md`);
-    const text = await res.text();
-    const blob = new Blob([text], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
+  const downloadPdf = () => {
+    const url = `${API_BASE}/projects/${project.id}/export.pdf`;
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.download = `${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.pdf`;
     document.body.appendChild(a);
     a.click();
     a.remove();
-    URL.revokeObjectURL(url);
   };
 
   return (
@@ -107,11 +107,11 @@ export default function ProjectFlow() {
             )}
             {project?.artifacts && (
               <button
-                onClick={downloadMd}
+                onClick={downloadPdf}
                 className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase flex items-center gap-2 bg-paper hover:bg-ink hover:text-chalk"
                 data-testid="flow-export-btn"
               >
-                <Download size={12} /> Export
+                <Download size={12} /> PDF
               </button>
             )}
             <Link
@@ -188,7 +188,7 @@ export default function ProjectFlow() {
             project={project}
             setProject={setProject}
             onBack={() => setCurrentStep(4)}
-            onExport={downloadMd}
+            onExport={downloadPdf}
           />
         )}
       </main>
@@ -816,7 +816,7 @@ function Step5({ project, setProject, onBack, onExport }) {
       num={5}
       label="CONFIDENCE LOCK-IN"
       title={isLocked ? "Locked. Go do the work." : "This is the direction."}
-      kicker="Lock the decision and download everything as a single markdown file. Once you close this tab, the project is gone — so export before you leave."
+      kicker="Lock the decision and download a polished PDF. We save your project to your email — come back anytime with the same address to pick it up."
     >
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -828,44 +828,46 @@ function Step5({ project, setProject, onBack, onExport }) {
             <p className="mt-3 text-muted">{project.decision?.recommendation?.rationale}</p>
           </div>
 
-          <div className="card-brut p-5 sm:p-6 bg-ink text-chalk">
+          <div className="card-brut p-5 sm:p-6 !bg-ink text-chalk">
             <p className="mono-label text-faint">{"{ what to expect }"}</p>
             <ul className="mt-4 space-y-2 text-sm">
               <li className="flex gap-3">
                 <span className="font-mono text-signal">→</span>
-                <span>Client will likely push back on scope items 2 and 3.</span>
+                <span className="text-chalk">Client will likely push back on scope items 2 and 3.</span>
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-signal">→</span>
-                <span>The trade-off on timeline will surface at week 2.</span>
+                <span className="text-chalk">The trade-off on timeline will surface at week 2.</span>
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-signal">→</span>
-                <span>
+                <span className="text-chalk">
                   If someone asks "can we reduce the price?" — your message is already drafted.
                 </span>
               </li>
             </ul>
           </div>
+
+          {isLocked && <FeedbackPrompt project={project} setProject={setProject} />}
         </div>
 
         <div className="space-y-4">
           {isLocked ? (
-            <div className="card-brut p-5 sm:p-6 bg-signal text-chalk" data-testid="step5-locked">
+            <div className="card-brut p-5 sm:p-6 !bg-signal text-chalk" data-testid="step5-locked">
               <div className="flex items-center gap-2">
                 <Lock size={16} /> <p className="mono-tag">LOCKED</p>
               </div>
               <h3 className="font-display text-3xl mt-3">Confidence, captured.</h3>
               <p className="mt-3 text-sm">
-                Download the full project as markdown before you close the tab — there's no
-                "my projects" page to come back to.
+                Download the full project as a PDF. Your project is also saved to your email —
+                use the same address on the start page to come back to it.
               </p>
               <button
                 onClick={onExport}
                 className="btn-brut bg-chalk text-ink border-chalk hover:bg-ink hover:text-chalk mt-6 w-full justify-center"
                 data-testid="step5-export-btn"
               >
-                <Download size={14} /> Download markdown
+                <Download size={14} /> Download PDF
               </button>
               <Link
                 to="/start"
@@ -879,8 +881,8 @@ function Step5({ project, setProject, onBack, onExport }) {
             <div className="card-brut p-5 sm:p-6">
               <p className="mono-label">{"{ ready? }"}</p>
               <p className="mt-3 text-sm">
-                Lock the decision to mark it final, then export the markdown. Closing this tab
-                ends the session.
+                Lock the decision to mark it final, then download the PDF. Your project is saved to
+                your email — you can come back later with the same address.
               </p>
               <button
                 onClick={onBack}
@@ -991,5 +993,112 @@ function CopyButton({ text }) {
     >
       {copied ? "Copied." : "Copy to clipboard"}
     </button>
+  );
+}
+
+function FeedbackPrompt({ project, setProject }) {
+  const existing = project.feedback;
+  const [sentiment, setSentiment] = useState(existing?.sentiment || null);
+  const [text, setText] = useState(existing?.text || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [submittedAt, setSubmittedAt] = useState(existing?.submitted_at || null);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!sentiment) return setError("Pick a thumb first.");
+    setSubmitting(true);
+    setError("");
+    try {
+      const { data } = await api.post(`/projects/${project.id}/feedback`, {
+        sentiment,
+        text: text.trim(),
+      });
+      setProject(data);
+      setSubmittedAt(data.feedback?.submitted_at || new Date().toISOString());
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submittedAt) {
+    return (
+      <div
+        className="card-brut p-5 sm:p-6 bg-paper"
+        data-testid="feedback-thanks"
+      >
+        <p className="mono-label text-signal">{"{ feedback · received }"}</p>
+        <p className="mt-3 text-sm">
+          Thank you. Notes like yours{" "}
+          {sentiment === "up" ? "tell us where to double down." : "tell us where to fix."}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-brut p-5 sm:p-6 bg-paper" data-testid="feedback-prompt">
+      <div className="flex items-center justify-between gap-3">
+        <p className="mono-label">{"{ how did that feel? }"}</p>
+        <span className="mono-tag text-muted">30 SECONDS</span>
+      </div>
+      <p className="mt-3 text-sm text-muted">
+        Two thumbs and an optional note. We read every one.
+      </p>
+      <div className="mt-5 flex gap-3">
+        <button
+          type="button"
+          onClick={() => setSentiment("up")}
+          className={`flex-1 py-3 border border-ink flex items-center justify-center gap-2 transition ${
+            sentiment === "up" ? "bg-signal text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
+          }`}
+          aria-pressed={sentiment === "up"}
+          data-testid="feedback-up-btn"
+        >
+          <ThumbsUp size={16} />
+          <span className="mono-tag">USEFUL</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setSentiment("down")}
+          className={`flex-1 py-3 border border-ink flex items-center justify-center gap-2 transition ${
+            sentiment === "down" ? "bg-danger text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
+          }`}
+          aria-pressed={sentiment === "down"}
+          data-testid="feedback-down-btn"
+        >
+          <ThumbsDown size={16} />
+          <span className="mono-tag">NOT YET</span>
+        </button>
+      </div>
+      <label className="block mt-4">
+        <span className="mono-tag text-muted">A LINE WE SHOULD READ (OPTIONAL)</span>
+        <textarea
+          rows={3}
+          className="textarea-brut mt-2"
+          placeholder="What worked, what didn't, what would have helped."
+          value={text}
+          onChange={(ev) => setText(ev.target.value)}
+          data-testid="feedback-text"
+          maxLength={1000}
+        />
+      </label>
+      {error && (
+        <div className="border border-danger bg-chalk p-3 mt-3" data-testid="feedback-error">
+          <p className="mono-tag text-danger">CAN'T SEND</p>
+          <p className="text-sm mt-1">{error}</p>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={submitting || !sentiment}
+        className="btn-brut mt-4 w-full justify-center"
+        data-testid="feedback-submit-btn"
+      >
+        {submitting ? "Sending…" : "Send feedback"} <ArrowRight size={14} />
+      </button>
+    </div>
   );
 }

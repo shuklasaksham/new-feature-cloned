@@ -57,5 +57,6 @@ class ProjectOut(BaseModel):
     decision: Optional[Dict[str, Any]] = None
     artifacts: Optional[Dict[str, Any]] = None
     locked_at: Optional[str] = None
+    feedback: Optional[Dict[str, Any]] = None
     created_at: str
     updated_at: str
