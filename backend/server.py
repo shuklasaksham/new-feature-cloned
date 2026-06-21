@@ -231,6 +231,15 @@ async def auth_logout(request: Request, response: Response):
     return {"ok": True}
 
 
+import re as _re
+
+
+def _email_match(email: str):
+    """Case-insensitive exact email match (anonymous-mode projects may have
+    stored creator_email with mixed casing)."""
+    return {"$regex": f"^{_re.escape((email or '').strip())}$", "$options": "i"}
+
+
 # ---- CLAIM ANONYMOUS PROJECTS -----------------------------------------------
 @api.get("/auth/claimable")
 async def auth_claimable(request: Request):
@@ -238,7 +247,14 @@ async def auth_claimable(request: Request):
     user = await current_user(request, db)
     cur = (
         db.projects.find(
-            {"creator_email": user["email"], "$or": [{"owner_user_id": {"$exists": False}}, {"owner_user_id": ""}]},
+            {
+                "creator_email": _email_match(user["email"]),
+                "$or": [
+                    {"owner_user_id": {"$exists": False}},
+                    {"owner_user_id": ""},
+                    {"owner_user_id": None},
+                ],
+            },
             {"_id": 0, "id": 1, "name": 1, "status": 1, "step": 1, "share_status": 1, "created_at": 1, "updated_at": 1},
         )
         .sort("updated_at", -1)
@@ -259,13 +275,13 @@ async def auth_claim(body: ClaimDecisionIn, request: Request):
     deleted = 0
     if body.keep_ids:
         res = await db.projects.update_many(
-            {"id": {"$in": body.keep_ids}, "creator_email": user["email"]},
+            {"id": {"$in": body.keep_ids}, "creator_email": _email_match(user["email"])},
             {"$set": {"owner_user_id": user["user_id"], "updated_at": auth_iso(auth_now())}},
         )
         claimed = res.modified_count
     if body.delete_ids:
         res = await db.projects.delete_many(
-            {"id": {"$in": body.delete_ids}, "creator_email": user["email"]},
+            {"id": {"$in": body.delete_ids}, "creator_email": _email_match(user["email"])},
         )
         deleted = res.deleted_count
     return {"claimed": claimed, "deleted": deleted}
