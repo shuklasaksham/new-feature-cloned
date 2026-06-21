@@ -1,12 +1,12 @@
 # Bracket — PRD
 
 ## Original problem statement
-Build "Bracket" — a decision operating system for designers. Not another tool. A senior-designer brain between input and output. Positioned against Notion / Figma plugins / AI writing tools.
+Build "Bracket" — an AI decision operating system for designers. Not another tool. A senior-designer brain between input and output. Positioned against Notion / Figma plugins / AI writing tools.
 
 Brand promise: "Designers don't need more tools. They need better decisions."
 
-## Current mode (Feb 2026 onward)
-**Anonymous, free during early access.** No accounts, no waitlist, no payment. Anyone can use the full 5-step flow with just a name + email + project name. Projects are ephemeral — there is no dashboard, no "my projects" listing. Users export the result as markdown before closing the tab.
+## Current mode (Feb 2026, post auth pivot)
+**Authenticated SaaS, free during early access.** Sign-in via Email OTP or Emergent-managed Google OAuth. Onboarding captures name, designation, avatar. Dashboard lists the user's projects; clicking one reopens the 5-step flow. A back-and-forth client-review loop is wired: clients can accept-with-signature or reject-with-AI-suggestions; the owner can reply to a rejection and bounce the document back for re-review.
 
 ## Users / personas
 1. **Freelancers** — clarity + confidence; scope creep, pricing anxiety.
@@ -15,93 +15,86 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 4. **Junior designers** — a senior brain sitting next to them.
 
 ## Architecture (current)
-- **Backend** — FastAPI + MongoDB (Motor). Files: `server.py`, `ai_engine.py`, `models.py`, `emailer.py`.
-- **No auth.** Project ids are random UUIDs; possessing the id is the only handle on the project.
+- **Backend** — FastAPI + MongoDB (Motor). Files: `server.py` (~1120 lines), `auth.py`, `ai_engine.py`, `models.py`, `emailer.py`.
+- **Auth** — JWT sessions via httpOnly `session_token` cookie. Sources: Email OTP (`bcrypt`-hashed code, 10-min TTL), Emergent Google session exchange, optional password.
 - **AI engine** — `emergentintegrations.llm.chat.LlmChat` wrapping Claude Sonnet 4.5 (default) and GPT-5.2 (alternate). Strict JSON-output prompts per step.
-- **Email** — Resend, fire-and-forget "thanks for trying" on project creation.
+- **Email** — Resend. OTP delivery + "thanks for trying" + client review outcome notifications.
 - **Frontend** — React 19 + React Router 7 + Tailwind + custom Swiss/brutalist design system. Cabinet Grotesk + Manrope + JetBrains Mono.
 - **Design aesthetic** — #F4F4F0 paper, pure black ink, electric blue #0033FF signal, sharp corners, brutalist shadow.
 
+## DB collections
+- `users` — `{user_id, email, name, designation, avatar, picture, password_hash, created_at, updated_at}`
+- `user_sessions` — `{user_id, session_token, expires_at, created_at}`
+- `email_otps` — `{email, code_hash, expires_at, attempts, issued_at}`
+- `projects` — `{id, owner_user_id, creator_name, creator_email, name, engine, status, step, situation_input, framing, context_input, context, decision_input, decision, artifacts, locked_at, feedback, share_token, share_status, share_review, owner_replies, created_at, updated_at}`
+
 ## API surface (current)
-- `POST /api/projects` — body `{name, email, project_name, engine?}` → ephemeral project doc with id; triggers thanks email.
-- `GET /api/projects/{id}` — fetch project (anyone with the id).
-- `POST /api/projects/{id}/situation` → framing
-- `POST /api/projects/{id}/context` → compressed context
-- `POST /api/projects/{id}/decision` → recommendation + alternatives + risks
-- `POST /api/projects/{id}/artifacts` → scope doc + client message + assumptions + risk flags
-- `POST /api/projects/{id}/lock` → locked decision
-- `GET /api/projects/{id}/export.md` → plain-text markdown export
+
+### Auth
+- `POST /api/auth/google/exchange` — body `{session_id}` → exchange Emergent fragment for httpOnly cookie.
+- `POST /api/auth/otp/request` — body `{email, name?}` → emails 6-digit code. **OTP_TEST_MODE=1 returns the code as `dev_code` in the response (tests only).**
+- `POST /api/auth/otp/verify` — body `{email, code, name?, designation?, avatar?}` → sets cookie, returns `{user, is_new}`.
+- `POST /api/auth/login` — body `{email, password}` → returns user + sets cookie.
+- `POST /api/auth/password/set` — body `{password}` (auth required).
+- `GET /api/auth/me` — returns public user (with correct `has_password` flag, never leaks `password_hash`).
+- `PATCH /api/auth/me` — body `{name?, designation?, avatar?}`.
+- `POST /api/auth/logout` — clears cookie + invalidates session.
+- `GET /api/auth/claimable` — list anonymous projects matching the user's email.
+- `POST /api/auth/claim` — body `{keep_ids:[], delete_ids:[]}` → per-project Keep/Delete.
+
+### Projects (auth required)
+- `POST /api/projects` — body `{project_name, engine?}` → creates owned project.
+- `GET /api/projects` — list owned projects.
+- `GET /api/projects/{id}` — fetch (public for client review).
+- `PATCH /api/projects/{id}` — body `{name}` (rename, owner only).
+- `DELETE /api/projects/{id}` — owner only.
+- `POST /api/projects/{id}/unlock` — owner only.
+- `POST /api/projects/{id}/reply` — body `{text}` → appends owner reply, flips share_status `rejected → awaiting_reply`.
+- `POST /api/projects/{id}/situation|context|decision|artifacts|lock` — the 5-step AI flow.
+- `GET /api/projects/{id}/export.md|export.pdf` — exports.
+- `POST /api/projects/{id}/feedback` — post-lock thumbs.
+
+### Share / client review (public, token-gated)
+- `POST /api/projects/{id}/share` — mint token.
+- `GET /api/share/{token}` — public read.
+- `POST /api/share/{token}/accept` — `{acceptances, signature_name, role}`.
+- `POST /api/share/{token}/reject/preview` — `{concerns}` → AI suggestions (no mutation).
+- `POST /api/share/{token}/reject/confirm` — `{concerns, signature_name, role, ai_suggestions}` → finalize.
 
 ## Routes (current)
-Marketing: `/` `/how-it-works` `/use-cases` `/pricing` (INR/USD toggle, framed as "Free for now") `/case-studies`.
-Tool: `/start` (name+email+project_name, returning-user resume via `/api/projects/by-email`) → `/project/:id` (5-step flow) → `/project/:id/document` (polished in-app sign-off document).
-Public client review: `/r/:token` (no nav header, public read of artifacts + accept-with-checkboxes-and-signature OR reject-with-AI-suggestions paths).
-Catch-all `*` redirects to `/`.
+- Marketing (public): `/` `/how-it-works` `/use-cases` `/pricing` `/case-studies`.
+- Auth: `/login` (`/signup` → `/login`), `/auth/callback`, `/onboarding`, `/claim` (all protected except login).
+- Tool (auth required): `/app` (Dashboard), `/app/new`, `/settings`, `/project/:id` (5-step flow), `/project/:id/document` (sign-off viewer).
+- Public client review: `/r/:token`.
+- `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
-## API surface (current)
-- `POST /api/projects` — body `{name, email, project_name, engine?}` → ephemeral or resumed project doc with id; triggers thanks email on first create; same (email, project_name) returns existing.
-- `GET /api/projects/by-email?email=...` — list a user's projects, most recent first.
-- `GET /api/projects/{id}` — fetch project (anyone with the id).
-- `POST /api/projects/{id}/situation` → framing
-- `POST /api/projects/{id}/context` → compressed context
-- `POST /api/projects/{id}/decision` → recommendation + alternatives + risks
-- `POST /api/projects/{id}/artifacts` → scope doc + client message + assumptions + risk flags
-- `POST /api/projects/{id}/lock` → locked decision
-- `GET /api/projects/{id}/export.md` → plain-text markdown
-- `GET /api/projects/{id}/export.pdf` → fpdf2-generated PDF (Bracket-branded)
-- `POST /api/projects/{id}/feedback` — thumbs + optional text (after lock-in only)
-- `POST /api/projects/{id}/share` → mint or reuse a public review token; sets `share_status=sent`
-- `GET /api/share/{token}` → public read-only project view (no email leaked)
-- `POST /api/share/{token}/accept` → body `{acceptances, signature_name, role}` → status=accepted
-- `POST /api/share/{token}/reject/preview` → body `{concerns}` → calls Claude for 3 suggestions + watch-for (no state mutation)
-- `POST /api/share/{token}/reject/confirm` → finalize with concerns + AI suggestions + signature → status=rejected
+## Changelog (recent)
+- 2025-12 — Initial MVP: marketing + JWT + 5-step flow + artifacts + lock-in.
+- 2026-01 — Currency toggle, Pricing, Stripe checkout, share/templates/revisions/simulator.
+- 2026-02 — **Waitlist pivot** → custom domain use-bracket.com.
+- 2026-02 — **Anonymous pivot** (removed auth temporarily for early access).
+- 2026-02 — Step 5 polish, fpdf2 PDF export, returning-user resume by email, post-lock feedback.
+- 2026-02 — **In-app document viewer + client review** (Accept-with-checkboxes-and-signature OR Reject-with-AI-suggestions).
+- 2026-02 — **Auth pivot back to authenticated SaaS** (current): JWT cookies, Email OTP + Emergent Google, Onboarding, Dashboard, per-project Keep/Delete on claim, Owner-reply loop, dashboard inline rename.
+- 2026-02 — Backend bug fix: `/auth/me` `has_password` flag (current_user_optional was projecting password_hash out before public_user computed the flag).
 
-## Changelog
-- 2025-12 — Initial MVP: marketing site + JWT auth + onboarding + dashboard + 5-step decision flow + artifacts + lock-in.
-- 2026-01 — Currency toggle INR↔USD; Pricing page; Stripe hosted checkout; Workspace + Templates + Revisions + Pushback simulator + share links + markdown export.
-- 2026-02 — **Waitlist pivot**: hid the full app behind a "Coming Soon" waitlist; custom domain `use-bracket.com`.
-- 2026-02 — **Network-error fix**: same-origin API + tightened CORS for credentialed wildcard.
-- 2026-02 — **Logo + favicon swap** to the `{B}` rounded-square lockup.
-- 2026-02 — **Waitlist duplicate handling**: 409 with friendly copy.
-- 2026-02 — **Full responsiveness pass** across all 6 public routes + Navbar/Footer.
-- 2026-02 — **Anonymous pivot**: removed waitlist + auth + dashboard + billing + share/templates/workspaces/revisions/simulate. New `/start` + 5-step flow. Thanks-email via Resend. Pricing reframed as "Free for now".
-- 2026-02 — **Step 5 polish + persistence**: returning-user resume by email; PDF export (fpdf2); post-lock feedback prompt; dark-card bg-ink visibility fix.
-- 2026-02 — **In-app document viewer + client review flow** (this iteration):
-  - `/project/:id/document` — polished sign-off document inside Bracket. Download PDF (fetch-as-blob, fixes the "Site wasn't available" download failure), Share-with-client button, back-to-flow.
-  - `/r/:token` — public client review. Accept path: per-section checkboxes (one each for: client message, every in-scope item, every deliverable, every assumption) + typed signature + role. Reject path: textarea → Claude generates 3 calm specific suggestions + "watch for" → client confirms with signature → owner sees concerns + AI suggestions back inside the document viewer.
-  - Feedback prompt moved out of Step 5: now appears as a one-shot modal *after* the owner clicks "Send via email" / copies the review link.
-  - Backend: new `share_token`, `share_status`, `share_review` fields on project; `run_client_pushback_suggestions` AI function. Verified end-to-end via curl (8 backend checks + Playwright smoke).
+## Verified status (post iteration_4)
+- ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
+- ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.
+- ✅ `/auth/me` `has_password` flag fixed and curl-verified.
 
 ## Backlog (P1)
-- Email notification to the project owner when client accepts or rejects (currently only visible if they open `/project/:id/document`).
-- "Email me my artifacts" — send the PDF to the project's email on lock-in.
+- Optionally enforce `OTP_RESEND_COOLDOWN_SECONDS` server-side (currently a constant but not enforced).
+- ProjectDocument owner-reply UI surface — backend verified, frontend UI exists but not E2E-covered yet.
+- ProtectedRoute `?next=` preservation — verify in a future pass.
+- Reintroduce paid tiers (Stripe) once early access ends.
 
 ## Backlog (P2)
-- Public case study CMS
-- Reintroduce paid tiers when graduating from early access
-- Embedded Stripe Elements
-
-## Changelog
-- 2025-12 — Initial MVP: marketing site + JWT auth + onboarding + dashboard + 5-step decision flow + artifacts + lock-in.
-- 2026-01 — Currency toggle INR↔USD; Pricing page; Stripe hosted checkout; Workspace + Templates + Revisions + Pushback simulator + share links + markdown export.
-- 2026-02 — **Waitlist pivot**: hid the full app behind a "Coming Soon" waitlist with terminal-style demo player, countdown, Resend welcome emails, custom domain `use-bracket.com`.
-- 2026-02 — **Network-error fix**: same-origin API + tightened CORS for credentialed wildcard.
-- 2026-02 — **Logo + favicon swap** to the `{B}` rounded-square lockup.
-- 2026-02 — **Waitlist duplicate handling**: 409 with friendly copy.
-- 2026-02 — **Full responsiveness pass** across all 6 public routes + Navbar/Footer. Verified across 42 viewport/route combinations.
-- 2026-02 — **Anonymous pivot**: removed waitlist + auth + dashboard + billing + share/templates/workspaces/revisions/simulate. New `/start` page (name+email+project_name) → `/project/:id` 5-step flow. Send "thanks for trying" email via Resend. Pricing page reframed as "Free for now". Verified by testing agent: 19/19 backend tests pass + all frontend flows green (dead routes 404, marketing CTAs all point to `/start`, no waitlist references remain, refresh on `/project/:id` restores state, export.md works).
-
-## Backlog (P1)
-- "Email me my artifacts" — at lock-in, optionally send the markdown to the project's email.
-- A short feedback prompt after lock-in (1-tap thumbs up/down + free text).
-- Replace ephemeral state with a 24-hour resume token if user opts in (no full account).
-
-## Backlog (P2)
-- Public case study CMS
-- Reintroduce paid tiers when the product graduates from early access (the Pricing page already telegraphs this)
-- Embedded Stripe Elements (was P2 before; will be P1 when paid tiers ship)
+- Split `server.py` (~1120 lines) into `routes_projects.py`, `routes_share.py`, `routes_export.py`.
+- Public case study CMS.
+- Email-the-PDF on lock-in.
 
 ## Next tasks
-1. Retention/lead nurture: email-the-artifacts at lock-in (P1 above).
-2. Virality: shareable read-only artifact link (would require persistence — defer).
-3. Quality: short post-lock feedback prompt.
+1. Verify the `/auth/me` has_password fix end-to-end with the testing agent (retest_needed=true from iteration_4).
+2. Add Playwright coverage for ProjectDocument owner-reply UI and Claim page (orphan-project setup).
+3. Enforce OTP cooldown server-side.

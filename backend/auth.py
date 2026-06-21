@@ -137,9 +137,11 @@ async def current_user_optional(request: Request, db) -> Optional[Dict[str, Any]
     session = await get_session(db, token)
     if not session:
         return None
+    # NOTE: we keep password_hash in the doc here so public_user() can compute
+    # the has_password flag correctly. public_user() strips it before returning.
     user = await db.users.find_one(
         {"user_id": session["user_id"]},
-        {"_id": 0, "password_hash": 0},
+        {"_id": 0},
     )
     if not user:
         return None
