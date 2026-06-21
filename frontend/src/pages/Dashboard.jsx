@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Loader2, Plus, FileText, Lock, AlertCircle, Check, X as XIcon } from "lucide-react";
+import { ArrowRight, Loader2, Plus, FileText, Lock, AlertCircle, Check, X as XIcon, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import AppHeader from "../components/AppHeader";
 import { api, formatApiError } from "../lib/api";
@@ -60,6 +60,35 @@ export default function Dashboard() {
       await api.delete(`/projects/${id}`);
       setProjects((cur) => cur.filter((p) => p.id !== id));
       toast.success("Deleted.");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    }
+  };
+
+  // Inline rename state
+  const [renameId, setRenameId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const renameInputRef = useRef(null);
+
+  const startRename = (p) => {
+    setRenameId(p.id);
+    setRenameValue(p.name);
+    setTimeout(() => renameInputRef.current?.focus(), 50);
+  };
+  const cancelRename = () => {
+    setRenameId(null);
+    setRenameValue("");
+  };
+  const saveRename = async () => {
+    const newName = renameValue.trim();
+    if (!newName) return toast.error("Project name can't be empty.");
+    const id = renameId;
+    if (!id) return;
+    try {
+      const { data } = await api.patch(`/projects/${id}`, { name: newName });
+      setProjects((cur) => cur.map((p) => (p.id === id ? { ...p, name: data.name, updated_at: data.updated_at } : p)));
+      toast.success("Renamed.");
+      cancelRename();
     } catch (e) {
       toast.error(formatApiError(e));
     }
@@ -126,14 +155,49 @@ export default function Dashboard() {
                 return (
                   <li key={p.id} className="bg-chalk hover:bg-paper transition-colors" data-testid={`dashboard-row-${p.id}`}>
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                      <Link to={`/project/${p.id}`} className="flex-1 min-w-0 group">
-                        <p className="font-display text-xl sm:text-2xl uppercase truncate group-hover:text-signal transition-colors">
-                          {p.name}
-                        </p>
-                        <p className="mono-tag text-muted mt-1">
-                          STEP {p.step}/5 · UPDATED {new Date(p.updated_at).toLocaleDateString()}
-                        </p>
-                      </Link>
+                      {renameId === p.id ? (
+                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                          <input
+                            ref={renameInputRef}
+                            type="text"
+                            className="input-line flex-1"
+                            value={renameValue}
+                            onChange={(e) => setRenameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveRename();
+                              if (e.key === "Escape") cancelRename();
+                            }}
+                            maxLength={120}
+                            data-testid={`dashboard-rename-input-${p.id}`}
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={saveRename}
+                              className="px-3 py-2 border border-ink mono-tag bg-signal text-chalk hover:bg-ink"
+                              data-testid={`dashboard-rename-save-${p.id}`}
+                            >
+                              <Check size={12} /> SAVE
+                            </button>
+                            <button
+                              onClick={cancelRename}
+                              className="px-3 py-2 border border-ink mono-tag bg-paper hover:bg-ink hover:text-chalk"
+                              data-testid={`dashboard-rename-cancel-${p.id}`}
+                            >
+                              CANCEL
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Link to={`/project/${p.id}`} className="flex-1 min-w-0 group">
+                          <p className="font-display text-xl sm:text-2xl uppercase truncate group-hover:text-signal transition-colors">
+                            {p.name}
+                          </p>
+                          <p className="mono-tag text-muted mt-1">
+                            STEP {p.step}/5 · UPDATED {new Date(p.updated_at).toLocaleDateString()}
+                          </p>
+                        </Link>
+                      )}
+                      {renameId !== p.id && (
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
                         <span className={`mono-tag px-2 py-1 ${sp.bg}`}>{sp.label}</span>
                         {ss && <span className={`mono-tag px-2 py-1 ${ss.bg}`}>{ss.label}</span>}
@@ -147,6 +211,14 @@ export default function Dashboard() {
                           </Link>
                         )}
                         <button
+                          onClick={() => startRename(p)}
+                          className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk inline-flex items-center gap-2"
+                          data-testid={`dashboard-rename-${p.id}`}
+                          aria-label="Rename project"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
                           onClick={() => remove(p.id)}
                           className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-danger hover:text-chalk inline-flex items-center gap-2"
                           data-testid={`dashboard-delete-${p.id}`}
@@ -155,6 +227,7 @@ export default function Dashboard() {
                           <XIcon size={12} />
                         </button>
                       </div>
+                      )}
                     </div>
                   </li>
                 );

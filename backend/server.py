@@ -135,7 +135,12 @@ async def auth_otp_request(body: OtpRequestIn):
         u = await db.users.find_one({"email": body.email.lower().strip()}, {"_id": 0, "name": 1})
         name = (u or {}).get("name", "")
     await send_otp_email(body.email, name, code)
-    return {"ok": True, "ttl_minutes": 10}
+    # Test-only convenience: return the OTP when OTP_TEST_MODE is set.
+    # In production this env var is NOT set, so the code is never exposed.
+    resp: Dict[str, Any] = {"ok": True, "ttl_minutes": 10}
+    if os.environ.get("OTP_TEST_MODE") == "1":
+        resp["dev_code"] = code
+    return resp
 
 
 @api.post("/auth/otp/verify")
