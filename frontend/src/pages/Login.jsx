@@ -1,15 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowRight, Loader2, Mail, Lock as LockIcon } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
-
-// REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-function googleSignInUrl() {
-  const redirect = window.location.origin + "/auth/callback";
-  return `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirect)}`;
-}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -112,26 +106,12 @@ export default function Login() {
           <h1 className="font-display text-4xl sm:text-5xl uppercase mt-4 leading-[0.95]">
             One door.
             <br />
-            <span className="text-signal">Two ways</span> through it.
+            <span className="text-signal">Email</span>, then in.
           </h1>
 
           <div className="card-brut p-5 sm:p-6 mt-8" data-testid="login-card">
             {phase === "pick" && (
               <>
-                <a
-                  href={googleSignInUrl()}
-                  className="btn-brut w-full justify-center"
-                  data-testid="login-google-btn"
-                >
-                  <GoogleGlyph /> Continue with Google
-                </a>
-
-                <div className="my-5 flex items-center gap-3">
-                  <span className="flex-1 h-px bg-ink/30" />
-                  <span className="mono-tag text-muted">OR EMAIL</span>
-                  <span className="flex-1 h-px bg-ink/30" />
-                </div>
-
                 <label className="block">
                   <span className="mono-tag text-muted">EMAIL</span>
                   <input
@@ -267,16 +247,5 @@ function ErrorLine({ msg }) {
       <span aria-hidden className="font-mono text-signal text-xs mt-[2px]">{"{!}"}</span>
       <p className="text-sm">{msg}</p>
     </div>
-  );
-}
-
-function GoogleGlyph() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 18 18" aria-hidden>
-      <path fill="#FFFFFF" d="M17.64 9.2c0-.64-.06-1.25-.17-1.84H9v3.49h4.84c-.21 1.13-.84 2.08-1.79 2.72v2.26h2.9c1.7-1.57 2.69-3.88 2.69-6.63z"/>
-      <path fill="#FFFFFF" d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.9-2.26c-.81.54-1.83.86-3.06.86-2.35 0-4.34-1.58-5.05-3.71H.92v2.33C2.42 16.06 5.46 18 9 18z" opacity=".95"/>
-      <path fill="#FFFFFF" d="M3.95 10.71A5.4 5.4 0 0 1 3.66 9c0-.59.1-1.16.29-1.71V4.96H.92A8.99 8.99 0 0 0 0 9c0 1.45.35 2.82.96 4.04l2.99-2.33z" opacity=".75"/>
-      <path fill="#FFFFFF" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0 5.46 0 2.42 1.94.92 4.96l3.03 2.33C4.66 5.16 6.65 3.58 9 3.58z" opacity=".55"/>
-    </svg>
   );
 }

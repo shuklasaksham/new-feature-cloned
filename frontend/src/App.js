@@ -19,6 +19,7 @@ import ClaimProjects from "./pages/ClaimProjects";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import ProjectFlow from "./pages/ProjectFlow";
+import ProjectOverview from "./pages/ProjectOverview";
 import ProjectDocument from "./pages/ProjectDocument";
 import ClientReview from "./pages/ClientReview";
 
@@ -51,7 +52,8 @@ export default function App() {
           <Route path="/app/new" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/project/:id" element={<ProtectedRoute><ProjectFlow /></ProtectedRoute>} />
+          <Route path="/project/:id" element={<ProtectedRoute><ProjectOverview /></ProtectedRoute>} />
+          <Route path="/project/:id/flow" element={<ProtectedRoute><ProjectFlow /></ProtectedRoute>} />
           <Route path="/project/:id/document" element={<ProtectedRoute><ProjectDocument /></ProtectedRoute>} />
 
           {/* Public client review */}

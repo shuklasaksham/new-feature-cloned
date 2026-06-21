@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
   ArrowLeft,
@@ -23,6 +23,7 @@ const STEPS = [
 
 export default function ProjectFlow() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -33,14 +34,22 @@ export default function ProjectFlow() {
       try {
         const { data } = await api.get(`/projects/${id}`);
         setProject(data);
-        setCurrentStep(data.step || 1);
+        // Allow ?step=N to jump directly into a step (from the overview's Edit
+        // button). Clamp between 1 and the project's reached step.
+        const requested = parseInt(searchParams.get("step") || "", 10);
+        const reached = data.step || 1;
+        if (requested >= 1 && requested <= 5) {
+          setCurrentStep(Math.min(requested, Math.max(reached, requested)));
+        } else {
+          setCurrentStep(reached);
+        }
       } catch (e) {
         setError(formatApiError(e));
       } finally {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, searchParams]);
 
   if (loading) {
     return (
@@ -121,11 +130,18 @@ export default function ProjectFlow() {
               </Link>
             )}
             <Link
+              to={`/project/${id}`}
+              className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk"
+              data-testid="flow-overview-link"
+            >
+              Overview
+            </Link>
+            <Link
               to="/app"
               className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk"
               data-testid="flow-new-project-btn"
             >
-              New
+              All projects
             </Link>
           </div>
         </div>

@@ -46,7 +46,7 @@ export default function Dashboard() {
     setCreating(true);
     try {
       const { data } = await api.post("/projects", { project_name: name });
-      navigate(`/project/${data.id}`);
+      navigate(`/project/${data.id}/flow`);
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {

@@ -151,10 +151,8 @@ class TestPasswordAndLogin:
         me = s2.get(f"{API}/auth/me")
         assert me.status_code == 200
         assert me.json()["email"] == email
-        # BACKEND BUG (reported): current_user_optional strips password_hash
-        # before public_user runs, so has_password is always False on /me.
-        # Asserting actual current behaviour so the rest of the suite is green.
-        assert me.json()["has_password"] is False
+        # iteration_5: has_password fix is verified — should be True now.
+        assert me.json()["has_password"] is True
 
         # Wrong password
         s3 = _sess()
