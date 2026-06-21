@@ -1,14 +1,23 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "sonner";
+
 import MarketingLayout from "./components/MarketingLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { AuthProvider } from "./lib/AuthContext";
 
 import Landing from "./pages/Landing";
 import HowItWorks from "./pages/HowItWorks";
 import UseCases from "./pages/UseCases";
 import Pricing from "./pages/Pricing";
 import CaseStudies from "./pages/CaseStudies";
-import StartProject from "./pages/StartProject";
+
+import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
+import Onboarding from "./pages/Onboarding";
+import ClaimProjects from "./pages/ClaimProjects";
+import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 import ProjectFlow from "./pages/ProjectFlow";
 import ProjectDocument from "./pages/ProjectDocument";
 import ClientReview from "./pages/ClientReview";
@@ -17,28 +26,40 @@ import "./App.css";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" richColors />
-      <Routes>
-        {/* Marketing */}
-        <Route element={<MarketingLayout />}>
-          <Route path="/" element={<Landing />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/use-cases" element={<UseCases />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/case-studies" element={<CaseStudies />} />
-        </Route>
+    <AuthProvider>
+      <BrowserRouter>
+        <Toaster position="top-right" richColors />
+        <Routes>
+          {/* Marketing — public */}
+          <Route element={<MarketingLayout />}>
+            <Route path="/" element={<Landing />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/use-cases" element={<UseCases />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/case-studies" element={<CaseStudies />} />
+          </Route>
 
-        {/* Tool — anonymous, no account required */}
-        <Route path="/start" element={<StartProject />} />
-        <Route path="/project/:id" element={<ProjectFlow />} />
-        <Route path="/project/:id/document" element={<ProjectDocument />} />
+          {/* Auth flow */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Navigate to="/login" replace />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+          <Route path="/claim" element={<ProtectedRoute><ClaimProjects /></ProtectedRoute>} />
 
-        {/* Public client review */}
-        <Route path="/r/:token" element={<ClientReview />} />
+          {/* Tool (auth required) */}
+          <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/app/new" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/start" element={<Navigate to="/app" replace />} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/project/:id" element={<ProtectedRoute><ProjectFlow /></ProtectedRoute>} />
+          <Route path="/project/:id/document" element={<ProtectedRoute><ProjectDocument /></ProtectedRoute>} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Public client review */}
+          <Route path="/r/:token" element={<ClientReview />} />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }

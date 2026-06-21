@@ -80,7 +80,7 @@ export default function Landing() {
                   installed between your input and your output.
                 </p>
                 <div className="mt-6 flex flex-col gap-3">
-                  <Link to="/start" className="btn-brut justify-center" data-testid="hero-primary-cta">
+                  <Link to="/app" className="btn-brut justify-center" data-testid="hero-primary-cta">
                     Start a project <ArrowRight size={16} />
                   </Link>
                   <Link to="/how-it-works" className="btn-ghost justify-center" data-testid="hero-secondary-cta">
@@ -402,7 +402,7 @@ export default function Landing() {
                     ))}
                   </ul>
                   <Link
-                    to="/start"
+                    to="/app"
                     className={`mt-8 w-full justify-center ${isStudio ? "btn-brut" : "btn-ghost"}`}
                     data-testid={`pricing-cta-${t.id}`}
                   >
@@ -438,7 +438,7 @@ export default function Landing() {
             <span className="text-signal">Start deciding.</span>
           </h2>
           <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-4">
-            <Link to="/start" className="btn-brut" data-testid="final-primary-cta">
+            <Link to="/app" className="btn-brut" data-testid="final-primary-cta">
               Start a project <ArrowRight size={16} />
             </Link>
             <Link to="/how-it-works" className="btn-ghost text-chalk border-chalk hover:bg-chalk hover:text-ink" data-testid="final-secondary-cta">

@@ -55,7 +55,7 @@ export default function ProjectFlow() {
         <div className="border border-danger p-6 bg-chalk" data-testid="flow-load-error">
           <p className="mono-tag text-danger">ERROR</p>
           <p className="mt-2">{error}</p>
-          <Link to="/start" className="btn-ghost mt-4">
+          <Link to="/app" className="btn-ghost mt-4">
             Start a new project
           </Link>
         </div>
@@ -121,7 +121,7 @@ export default function ProjectFlow() {
               </Link>
             )}
             <Link
-              to="/start"
+              to="/app"
               className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk"
               data-testid="flow-new-project-btn"
             >
@@ -882,7 +882,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
                 <Download size={14} /> Quick PDF download
               </button>
               <Link
-                to="/start"
+                to="/app"
                 className="btn-ghost text-chalk border-chalk hover:bg-chalk hover:text-ink mt-3 w-full justify-center"
                 data-testid="step5-new-project-btn"
               >

@@ -57,6 +57,8 @@ export default function ClientReview() {
   }
 
   const alreadyReviewed = doc.share_status === "accepted" || doc.share_status === "rejected";
+  const ownerReplied = doc.share_status === "awaiting_reply";
+  const ownerReplies = doc.owner_replies || [];
 
   return (
     <div className="min-h-screen bg-paper" data-testid="client-review-page">
@@ -69,10 +71,17 @@ export default function ClientReview() {
 
         {/* SIDEBAR */}
         <aside className="lg:col-span-4 lg:sticky lg:top-24 self-start">
+          {ownerReplied && (
+            <OwnerReplyDisplay replies={ownerReplies} />
+          )}
           {alreadyReviewed ? (
             <ReviewedState doc={doc} />
           ) : mode === "read" ? (
-            <ChooseAction onAccept={() => setMode("accept")} onReject={() => setMode("reject")} />
+            <ChooseAction
+              ownerReplied={ownerReplied}
+              onAccept={() => setMode("accept")}
+              onReject={() => setMode("reject")}
+            />
           ) : mode === "accept" ? (
             <AcceptForm doc={doc} token={token} onDone={(updated) => setDoc(updated)} onCancel={() => setMode("read")} />
           ) : (
@@ -218,16 +227,17 @@ function SimpleList({ title, items, accent = "ink", strike = false }) {
   );
 }
 
-function ChooseAction({ onAccept, onReject }) {
+function ChooseAction({ onAccept, onReject, ownerReplied = false }) {
   return (
     <div className="card-brut p-5 sm:p-6" data-testid="review-choose-action">
       <div className="flex items-center gap-2">
         <ShieldCheck size={16} className="text-signal" />
-        <p className="mono-label">{"{ your move }"}</p>
+        <p className="mono-label">{ownerReplied ? "{ designer replied — your move }" : "{ your move }"}</p>
       </div>
       <p className="mt-3 text-sm text-muted">
-        Read through the document. When you're ready, accept and sign it off, or send the project owner
-        your concerns.
+        {ownerReplied
+          ? "Read the designer's reply above, then accept or send back more notes."
+          : "Read through the document. When you're ready, accept and sign it off, or send the project owner your concerns."}
       </p>
       <button
         type="button"
@@ -243,8 +253,26 @@ function ChooseAction({ onAccept, onReject }) {
         className="btn-ghost mt-3 w-full justify-center"
         data-testid="review-reject-cta"
       >
-        I have concerns
+        I {ownerReplied ? "still have" : "have"} concerns
       </button>
+    </div>
+  );
+}
+
+function OwnerReplyDisplay({ replies }) {
+  return (
+    <div className="card-brut p-5 sm:p-6 mb-4" data-testid="review-owner-replies">
+      <p className="mono-label text-signal">{"{ reply from the designer }"}</p>
+      <div className="mt-3 space-y-3">
+        {replies.map((r, i) => (
+          <div key={i} className="border-l-2 border-signal pl-3">
+            <p className="text-xs text-muted">
+              {r.from_name} · {new Date(r.sent_at).toLocaleString()}
+            </p>
+            <p className="text-sm mt-1 whitespace-pre-wrap">{r.text}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

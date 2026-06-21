@@ -59,7 +59,9 @@ class ProjectOut(BaseModel):
     locked_at: Optional[str] = None
     feedback: Optional[Dict[str, Any]] = None
     share_token: Optional[str] = None
-    share_status: str = "none"  # none | sent | accepted | rejected
+    share_status: str = "none"  # none | sent | accepted | rejected | awaiting_reply
     share_review: Optional[Dict[str, Any]] = None
+    owner_replies: Optional[list] = None
+    owner_user_id: Optional[str] = ""
     created_at: str
     updated_at: str

@@ -8,9 +8,9 @@ load_dotenv(ROOT_DIR / ".env")
 import os
 import io
 import logging
-from typing import List, Literal, Dict, Any
+from typing import List, Literal, Dict, Any, Optional
 
-from fastapi import FastAPI, APIRouter, HTTPException, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -34,6 +34,27 @@ from ai_engine import (
     run_client_pushback_suggestions,
 )
 from emailer import send_thanks_email, send_review_outcome_email
+from auth import (
+    SESSION_COOKIE,
+    current_user,
+    current_user_optional,
+    create_session,
+    delete_session,
+    set_session_cookie,
+    clear_session_cookie,
+    exchange_emergent_session,
+    get_or_create_user_by_email,
+    gen_otp,
+    store_otp,
+    verify_otp as auth_verify_otp,
+    send_otp_email,
+    hash_password,
+    verify_password,
+    public_user,
+    iso as auth_iso,
+    now_utc as auth_now,
+)
+from pydantic import BaseModel as _BM, EmailStr as _Em, Field as _Fd
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
@@ -53,36 +74,218 @@ async def root():
     return {"service": "bracket", "status": "ok"}
 
 
-# --- PROJECTS ---
-@api.post("/projects", response_model=ProjectOut)
-async def create_project(body: ProjectStartIn):
-    """Anyone can start a project. We capture name+email silently.
-    If the same email + project_name already exists, we resume the existing
-    project instead of creating a duplicate — that's how "returning users"
-    pick up their saved work."""
-    email = body.email.lower().strip()
-    pname = body.project_name.strip()
+# ===========================================================================
+# AUTH — Emergent Google + Email OTP + optional password
+# ===========================================================================
+class GoogleSessionIn(_BM):
+    session_id: str = _Fd(min_length=8, max_length=400)
 
-    existing = await db.projects.find_one(
-        {"creator_email": email, "name": pname},
-        {"_id": 0},
+
+class OtpRequestIn(_BM):
+    email: _Em
+    name: str = _Fd(default="", max_length=120)
+
+
+class OtpVerifyIn(_BM):
+    email: _Em
+    code: str = _Fd(min_length=4, max_length=8)
+    # Optional onboarding fields when the user is brand new.
+    name: str = _Fd(default="", max_length=120)
+    designation: str = _Fd(default="", max_length=120)
+    avatar: str = _Fd(default="mono-1", max_length=20)
+
+
+class LoginIn(_BM):
+    email: _Em
+    password: str = _Fd(min_length=6, max_length=200)
+
+
+class SetPasswordIn(_BM):
+    password: str = _Fd(min_length=8, max_length=200)
+
+
+class UpdateProfileIn(_BM):
+    name: Optional[str] = _Fd(default=None, max_length=120)
+    designation: Optional[str] = _Fd(default=None, max_length=120)
+    avatar: Optional[str] = _Fd(default=None, max_length=20)
+
+
+@api.post("/auth/google/exchange")
+async def auth_google_exchange(body: GoogleSessionIn, response: Response):
+    """Exchange the Emergent session_id (from #session_id=... fragment) for an
+    httpOnly cookie that the rest of the app uses."""
+    data = await exchange_emergent_session(body.session_id)
+    user = await get_or_create_user_by_email(
+        db,
+        data["email"],
+        name=data.get("name") or "",
+        picture=data.get("picture") or "",
     )
-    if existing:
-        # Update name on the record (in case they changed how they spell it)
-        # and don't resend the thanks email.
-        await db.projects.update_one(
-            {"id": existing["id"]},
-            {"$set": {"creator_name": (body.name or "").strip(), "updated_at": _now_iso()}},
-        )
-        existing["creator_name"] = (body.name or "").strip()
-        return existing
+    token = await create_session(db, user["user_id"])
+    set_session_cookie(response, token)
+    return {"user": public_user(user), "session_token": token, "is_new": not bool(user.get("name"))}
 
+
+@api.post("/auth/otp/request")
+async def auth_otp_request(body: OtpRequestIn):
+    code = gen_otp()
+    await store_otp(db, body.email, code)
+    name = (body.name or "").strip()
+    if not name:
+        u = await db.users.find_one({"email": body.email.lower().strip()}, {"_id": 0, "name": 1})
+        name = (u or {}).get("name", "")
+    await send_otp_email(body.email, name, code)
+    return {"ok": True, "ttl_minutes": 10}
+
+
+@api.post("/auth/otp/verify")
+async def auth_otp_verify(body: OtpVerifyIn, response: Response):
+    await auth_verify_otp(db, body.email, body.code)
+    existing = await db.users.find_one({"email": body.email.lower().strip()}, {"_id": 0})
+    if existing:
+        # Update any fields the user passed (onboarding for fresh accounts).
+        updates: Dict[str, Any] = {}
+        if body.name and not existing.get("name"):
+            updates["name"] = body.name.strip()
+        if body.designation and not existing.get("designation"):
+            updates["designation"] = body.designation.strip()
+        if body.avatar:
+            updates["avatar"] = body.avatar
+        if updates:
+            updates["updated_at"] = auth_iso(auth_now())
+            await db.users.update_one({"user_id": existing["user_id"]}, {"$set": updates})
+            existing.update(updates)
+        user = existing
+        is_new = False
+    else:
+        user = await get_or_create_user_by_email(
+            db,
+            body.email,
+            name=body.name,
+            designation=body.designation,
+            avatar=body.avatar or "mono-1",
+        )
+        is_new = True
+    token = await create_session(db, user["user_id"])
+    set_session_cookie(response, token)
+    return {"user": public_user(user), "session_token": token, "is_new": is_new}
+
+
+@api.post("/auth/login")
+async def auth_password_login(body: LoginIn, response: Response):
+    user = await db.users.find_one({"email": body.email.lower().strip()}, {"_id": 0})
+    if not user or not user.get("password_hash"):
+        raise HTTPException(status_code=401, detail="No password set for this email. Sign in with OTP first.")
+    if not verify_password(body.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Wrong email or password.")
+    token = await create_session(db, user["user_id"])
+    set_session_cookie(response, token)
+    return {"user": public_user(user), "session_token": token, "is_new": False}
+
+
+@api.post("/auth/password/set")
+async def auth_set_password(body: SetPasswordIn, request: Request):
+    user = await current_user(request, db)
+    h = hash_password(body.password)
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"password_hash": h, "updated_at": auth_iso(auth_now())}},
+    )
+    return {"ok": True}
+
+
+@api.get("/auth/me")
+async def auth_me(request: Request):
+    user = await current_user(request, db)
+    return public_user(user)
+
+
+@api.patch("/auth/me")
+async def auth_update_me(body: UpdateProfileIn, request: Request):
+    user = await current_user(request, db)
+    updates = {k: (v or "").strip() if isinstance(v, str) else v
+               for k, v in body.model_dump(exclude_unset=True).items() if v is not None}
+    if not updates:
+        return public_user(user)
+    updates["updated_at"] = auth_iso(auth_now())
+    await db.users.update_one({"user_id": user["user_id"]}, {"$set": updates})
+    fresh = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    return public_user(fresh)
+
+
+@api.post("/auth/logout")
+async def auth_logout(request: Request, response: Response):
+    token = request.cookies.get(SESSION_COOKIE) or ""
+    if not token:
+        ah = request.headers.get("authorization", "")
+        if ah.lower().startswith("bearer "):
+            token = ah.split(" ", 1)[1]
+    if token:
+        await delete_session(db, token)
+    clear_session_cookie(response)
+    return {"ok": True}
+
+
+# ---- CLAIM ANONYMOUS PROJECTS -----------------------------------------------
+@api.get("/auth/claimable")
+async def auth_claimable(request: Request):
+    """Projects in the DB that match this user's email but have no owner yet."""
+    user = await current_user(request, db)
+    cur = (
+        db.projects.find(
+            {"creator_email": user["email"], "$or": [{"owner_user_id": {"$exists": False}}, {"owner_user_id": ""}]},
+            {"_id": 0, "id": 1, "name": 1, "status": 1, "step": 1, "share_status": 1, "created_at": 1, "updated_at": 1},
+        )
+        .sort("updated_at", -1)
+        .limit(100)
+    )
+    return [d async for d in cur]
+
+
+class ClaimDecisionIn(_BM):
+    keep_ids: list[str] = _Fd(default_factory=list)
+    delete_ids: list[str] = _Fd(default_factory=list)
+
+
+@api.post("/auth/claim")
+async def auth_claim(body: ClaimDecisionIn, request: Request):
+    user = await current_user(request, db)
+    claimed = 0
+    deleted = 0
+    if body.keep_ids:
+        res = await db.projects.update_many(
+            {"id": {"$in": body.keep_ids}, "creator_email": user["email"]},
+            {"$set": {"owner_user_id": user["user_id"], "updated_at": auth_iso(auth_now())}},
+        )
+        claimed = res.modified_count
+    if body.delete_ids:
+        res = await db.projects.delete_many(
+            {"id": {"$in": body.delete_ids}, "creator_email": user["email"]},
+        )
+        deleted = res.deleted_count
+    return {"claimed": claimed, "deleted": deleted}
+
+
+# ===========================================================================
+# PROJECTS — now auth-required
+# ===========================================================================
+class CreateProjectIn(_BM):
+    project_name: str = _Fd(min_length=1, max_length=120)
+    engine: str = "claude"
+
+
+@api.post("/projects", response_model=ProjectOut)
+async def create_project(body: CreateProjectIn, request: Request):
+    """Auth required. Owner is whoever is signed in."""
+    user = await current_user(request, db)
+    pname = body.project_name.strip()
     now = _now_iso()
     doc = {
         "id": _uuid(),
         "name": pname,
-        "creator_name": (body.name or "").strip(),
-        "creator_email": email,
+        "creator_name": user.get("name", ""),
+        "creator_email": user["email"],
+        "owner_user_id": user["user_id"],
         "engine": body.engine if body.engine in ("claude", "gpt") else "claude",
         "status": "draft",
         "step": 1,
@@ -98,17 +301,105 @@ async def create_project(body: ProjectStartIn):
         "share_token": None,
         "share_status": "none",
         "share_review": None,
+        "owner_replies": [],
         "created_at": now,
         "updated_at": now,
     }
     await db.projects.insert_one(doc)
     doc.pop("_id", None)
-    # Fire-and-forget thanks email; never block on it.
-    try:
-        await send_thanks_email(doc["creator_email"], doc["creator_name"], doc["name"])
-    except Exception as e:
-        logger.warning(f"thanks email crashed: {e}")
     return doc
+
+
+@api.get("/projects")
+async def list_my_projects(request: Request):
+    user = await current_user(request, db)
+    cur = (
+        db.projects.find(
+            {"owner_user_id": user["user_id"]},
+            {
+                "_id": 0, "id": 1, "name": 1, "status": 1, "step": 1,
+                "locked_at": 1, "share_status": 1, "created_at": 1, "updated_at": 1,
+            },
+        )
+        .sort("updated_at", -1)
+        .limit(200)
+    )
+    return [d async for d in cur]
+
+
+async def _get_owned_project_or_404(project_id: str, request: Request) -> dict:
+    """Fetch a project the current user owns (or 404). Used by all mutating routes."""
+    user = await current_user(request, db)
+    p = await db.projects.find_one({"id": project_id, "owner_user_id": user["user_id"]}, {"_id": 0})
+    if not p:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return p
+
+
+class RenameProjectIn(_BM):
+    name: str = _Fd(min_length=1, max_length=120)
+
+
+@api.patch("/projects/{project_id}")
+async def rename_project(project_id: str, body: RenameProjectIn, request: Request):
+    p = await _get_owned_project_or_404(project_id, request)
+    await db.projects.update_one(
+        {"id": p["id"]},
+        {"$set": {"name": body.name.strip(), "updated_at": _now_iso()}},
+    )
+    return await _get_project_or_404(project_id)
+
+
+@api.delete("/projects/{project_id}")
+async def delete_project(project_id: str, request: Request):
+    p = await _get_owned_project_or_404(project_id, request)
+    await db.projects.delete_one({"id": p["id"]})
+    return {"ok": True}
+
+
+@api.post("/projects/{project_id}/unlock")
+async def unlock_project(project_id: str, request: Request):
+    p = await _get_owned_project_or_404(project_id, request)
+    await db.projects.update_one(
+        {"id": p["id"]},
+        {"$set": {"status": "in_progress", "locked_at": None, "updated_at": _now_iso()}},
+    )
+    return await _get_project_or_404(project_id)
+
+
+# ---- OWNER REPLY (after client raises concerns) -----------------------------
+class OwnerReplyIn(_BM):
+    text: str = _Fd(min_length=4, max_length=4000)
+
+
+@api.post("/projects/{project_id}/reply", response_model=ProjectOut)
+async def owner_reply_to_client(project_id: str, body: OwnerReplyIn, request: Request):
+    p = await _get_owned_project_or_404(project_id, request)
+    if p.get("share_status") != "rejected":
+        raise HTTPException(status_code=400, detail="Replies are only sent when a client has raised concerns.")
+    user = await current_user(request, db)
+    reply = {
+        "from_name": user.get("name") or user.get("email"),
+        "text": body.text.strip(),
+        "sent_at": _now_iso(),
+    }
+    existing_replies = p.get("owner_replies") or []
+    existing_replies.append(reply)
+    await db.projects.update_one(
+        {"id": p["id"]},
+        {
+            "$set": {
+                "owner_replies": existing_replies,
+                # Bounce the share back to "awaiting" so the client can re-review.
+                "share_status": "awaiting_reply",
+                "updated_at": _now_iso(),
+            }
+        },
+    )
+    return await _get_project_or_404(project_id)
+
+
+
 
 
 class ProjectSummary(BaseModel):
@@ -121,19 +412,9 @@ class ProjectSummary(BaseModel):
     updated_at: str
 
 
-@api.get("/projects/by-email", response_model=List[ProjectSummary])
-async def projects_by_email(email: EmailStr = Query(...)):
-    """List projects for a given email, most-recent first. Used by the
-    /start page to offer "resume your saved projects" to returning users."""
-    cur = (
-        db.projects.find(
-            {"creator_email": email.lower().strip()},
-            {"_id": 0, "id": 1, "name": 1, "status": 1, "step": 1, "locked_at": 1, "created_at": 1, "updated_at": 1},
-        )
-        .sort("updated_at", -1)
-        .limit(50)
-    )
-    return [doc async for doc in cur]
+# Disabled — replaced by GET /api/projects (auth-required, owner-scoped).
+# Kept as a comment so anyone searching for the route sees why it's gone.
+# @api.get("/projects/by-email", response_model=List[ProjectSummary]) ...
 
 
 async def _get_project_or_404(project_id: str) -> dict:
@@ -647,7 +928,7 @@ def _public_view(project: dict) -> dict:
     """Strip private fields before exposing to client-side share URL viewers."""
     keep = {
         "id", "name", "creator_name", "framing", "decision", "artifacts",
-        "share_status", "share_review", "locked_at",
+        "share_status", "share_review", "locked_at", "owner_replies",
     }
     return {k: v for k, v in project.items() if k in keep}
 
@@ -819,7 +1100,13 @@ async def on_startup():
     await db.projects.create_index("created_at")
     await db.projects.create_index([("creator_email", 1), ("updated_at", -1)])
     await db.projects.create_index([("creator_email", 1), ("name", 1)])
-    logger.info("bracket api ready (anonymous mode)")
+    await db.projects.create_index([("owner_user_id", 1), ("updated_at", -1)])
+    await db.users.create_index("email", unique=True)
+    await db.users.create_index("user_id", unique=True)
+    await db.user_sessions.create_index("session_token", unique=True)
+    await db.user_sessions.create_index("user_id")
+    await db.email_otps.create_index("email", unique=True)
+    logger.info("bracket api ready (auth mode)")
 
 
 @app.on_event("shutdown")

@@ -78,7 +78,7 @@ export default function HowItWorks() {
             <span className="text-signal">Start deciding.</span>
           </h2>
           <div className="mt-6 md:mt-8">
-            <Link to="/start" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
+            <Link to="/app" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

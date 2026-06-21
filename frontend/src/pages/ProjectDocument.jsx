@@ -92,7 +92,7 @@ export default function ProjectDocument() {
         <div className="border border-danger p-6 bg-chalk">
           <p className="mono-tag text-danger">ERROR</p>
           <p className="mt-2">{error || "Project not found"}</p>
-          <Link to="/start" className="btn-ghost mt-4">Start a new project</Link>
+          <Link to="/app" className="btn-ghost mt-4">Start a new project</Link>
         </div>
       </div>
     );
@@ -258,7 +258,18 @@ export default function ProjectDocument() {
               <AcceptedBadge review={project.share_review} />
             )}
             {project.share_status === "rejected" && (
-              <RejectedBadge review={project.share_review} />
+              <RejectedBadge
+                review={project.share_review}
+                project={project}
+                setProject={setProject}
+              />
+            )}
+            {project.share_status === "awaiting_reply" && (
+              <RejectedBadge
+                review={project.share_review}
+                project={project}
+                setProject={setProject}
+              />
             )}
 
             {!isReviewed && !project.share_token && (
@@ -404,27 +415,60 @@ function AcceptedBadge({ review }) {
   );
 }
 
-function RejectedBadge({ review }) {
+function RejectedBadge({ review, project, setProject }) {
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+  const replies = project?.owner_replies || [];
+  const awaitingReply = project?.share_status === "awaiting_reply";
+  const usableSuggestions = review?.ai_suggestions?.suggestions || [];
+
+  const applySuggestion = (s) => {
+    const draft = (s.what_to_say || s.what_to_change || "").trim();
+    if (draft) setReplyText(draft);
+  };
+
+  const send = async () => {
+    if (replyText.trim().length < 4) {
+      toast.error("Write a reply first — even one line is fine.");
+      return;
+    }
+    setSending(true);
+    try {
+      const { data } = await api.post(`/projects/${project.id}/reply`, { text: replyText.trim() });
+      setProject(data);
+      setReplyText("");
+      toast.success("Reply sent. Your client can re-review the same link.");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className="mt-4 border-l-4 border-danger pl-4 py-1" data-testid="doc-rejected-badge">
       <p className="mono-tag text-danger">CONCERNS RAISED</p>
       <p className="mt-2 text-sm whitespace-pre-wrap">{review?.concerns}</p>
-      {review?.ai_suggestions?.suggestions?.length > 0 && (
+      {usableSuggestions.length > 0 && (
         <div className="mt-4 border border-ink p-3 bg-paper">
           <p className="mono-tag text-signal">BRACKET SUGGESTIONS</p>
           {review.ai_suggestions.summary && (
             <p className="text-xs text-muted mt-2 italic">{review.ai_suggestions.summary}</p>
           )}
           <ul className="mt-3 space-y-3">
-            {review.ai_suggestions.suggestions.map((s, i) => (
-              <li key={i}>
+            {usableSuggestions.map((s, i) => (
+              <li key={i} data-testid={`doc-suggestion-${i}`}>
                 <p className="font-semibold text-sm">{i + 1}. {s.title}</p>
-                <p className="text-xs mt-1">
-                  <span className="mono-tag">SAY →</span> {s.what_to_say}
-                </p>
-                <p className="text-xs mt-1">
-                  <span className="mono-tag">CHANGE →</span> {s.what_to_change}
-                </p>
+                <p className="text-xs mt-1"><span className="mono-tag">SAY →</span> {s.what_to_say}</p>
+                <p className="text-xs mt-1"><span className="mono-tag">CHANGE →</span> {s.what_to_change}</p>
+                <button
+                  type="button"
+                  onClick={() => applySuggestion(s)}
+                  className="mt-2 mono-tag text-signal hover:text-ink"
+                  data-testid={`doc-use-suggestion-${i}`}
+                >
+                  USE THIS DRAFT →
+                </button>
               </li>
             ))}
           </ul>
@@ -437,6 +481,58 @@ function RejectedBadge({ review }) {
         Signed by {review?.signature_name}
         {review?.submitted_at ? ` · ${new Date(review.submitted_at).toLocaleString()}` : ""}
       </p>
+
+      {/* Thread of replies the owner has already sent. */}
+      {replies.length > 0 && (
+        <div className="mt-5 border-t border-ink pt-4 space-y-3" data-testid="doc-owner-replies">
+          <p className="mono-tag text-signal">YOUR REPLIES</p>
+          {replies.map((r, i) => (
+            <div key={i} className="border-l-2 border-signal pl-3">
+              <p className="text-xs text-muted">
+                {r.from_name} · {new Date(r.sent_at).toLocaleString()}
+              </p>
+              <p className="text-sm mt-1 whitespace-pre-wrap">{r.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Compose box — only when not yet replied OR when we want to send another. */}
+      {!awaitingReply && (
+        <div className="mt-5 border-t border-ink pt-4" data-testid="doc-owner-reply-form">
+          <p className="mono-label">{"{ reply to your client }"}</p>
+          <textarea
+            rows={4}
+            className="textarea-brut mt-3"
+            placeholder="Write your reply (or click 'use this draft' above)."
+            value={replyText}
+            onChange={(ev) => setReplyText(ev.target.value)}
+            maxLength={4000}
+            data-testid="doc-owner-reply-text"
+          />
+          <button
+            type="button"
+            onClick={send}
+            disabled={sending || replyText.trim().length < 4}
+            className="btn-brut mt-3 w-full justify-center"
+            data-testid="doc-owner-reply-submit"
+          >
+            {sending ? "Sending…" : "Send reply to client"} <ArrowRight size={14} />
+          </button>
+          <p className="mono-tag text-muted mt-3">
+            THE SAME REVIEW LINK BOUNCES BACK TO YOUR CLIENT FOR ANOTHER LOOK.
+          </p>
+        </div>
+      )}
+
+      {awaitingReply && (
+        <div className="mt-5 border-t border-ink pt-4">
+          <p className="mono-tag text-signal" data-testid="doc-awaiting-reply">REPLY SENT · AWAITING CLIENT</p>
+          <p className="text-sm text-muted mt-2">
+            Client can now reopen the same link and respond to your reply.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

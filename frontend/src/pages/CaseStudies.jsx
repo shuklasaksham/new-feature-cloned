@@ -61,7 +61,7 @@ export default function CaseStudies() {
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-14 md:py-20">
           <h2 className="font-display text-4xl sm:text-5xl md:text-7xl uppercase">Your turn.</h2>
           <div className="mt-6 md:mt-8">
-            <Link to="/start" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
+            <Link to="/app" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

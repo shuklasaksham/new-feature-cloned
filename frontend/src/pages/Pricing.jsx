@@ -20,7 +20,7 @@ export default function Pricing() {
               <p className="mt-5 md:mt-6 text-muted max-w-xl text-sm md:text-base">
                 Bracket is free to use during early access — no account, no card, no time limit. Paid tiers will arrive when the product graduates from early access; below is the shape they'll take.
               </p>
-              <Link to="/start" className="btn-brut mt-6" data-testid="pricing-hero-start-cta">
+              <Link to="/app" className="btn-brut mt-6" data-testid="pricing-hero-start-cta">
                 Start a project <ArrowRight size={14} />
               </Link>
             </div>
@@ -49,7 +49,7 @@ export default function Pricing() {
                 During early access, every feature in every tier is unlocked. No card. No upsell. Use it.
               </p>
             </div>
-            <Link to="/start" className="btn-brut bg-chalk text-ink border-chalk hover:bg-paper" data-testid="pricing-banner-start-cta">
+            <Link to="/app" className="btn-brut bg-chalk text-ink border-chalk hover:bg-paper" data-testid="pricing-banner-start-cta">
               Start a project →
             </Link>
           </div>
@@ -83,7 +83,7 @@ export default function Pricing() {
                     ))}
                   </ul>
                   <Link
-                    to="/start"
+                    to="/app"
                     className={`mt-6 md:mt-8 w-full justify-center ${isStudio ? "btn-brut" : "btn-ghost"}`}
                     data-testid={`pricing-cta-${t.id}`}
                   >
@@ -122,7 +122,7 @@ export default function Pricing() {
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-14 md:py-20">
           <h2 className="font-display text-4xl sm:text-5xl md:text-7xl uppercase">Decisions, priced fairly.</h2>
           <div className="mt-6 md:mt-8">
-            <Link to="/start" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
+            <Link to="/app" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
           </div>
         </div>
       </section>

@@ -8,7 +8,8 @@ const BACKEND_URL =
     : ENV_BACKEND;
 export const API_BASE = `${BACKEND_URL}/api`;
 
-export const api = axios.create({ baseURL: API_BASE });
+// withCredentials=true so the httpOnly session_token cookie flows on every call.
+export const api = axios.create({ baseURL: API_BASE, withCredentials: true });
 
 export function formatApiError(err) {
   const detail = err?.response?.data?.detail;

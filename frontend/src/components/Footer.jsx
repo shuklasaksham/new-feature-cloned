@@ -49,7 +49,7 @@ export default function Footer() {
         <div>
           <p className="mono-label mb-3 md:mb-4">Connect</p>
           <ul className="space-y-2 text-sm">
-            <li><Link to="/start" className="link-u">Start a project</Link></li>
+            <li><Link to="/app" className="link-u">Start a project</Link></li>
             <li>
               <a
                 href="mailto:support@use-bracket.com"

@@ -28,14 +28,14 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          <Link to="/start" className="btn-brut" data-testid="nav-start-btn">
+          <Link to="/app" className="btn-brut" data-testid="nav-start-btn">
             Start a project →
           </Link>
         </div>
 
         <div className="flex items-center gap-2 lg:hidden">
           <Link
-            to="/start"
+            to="/app"
             className="hidden sm:inline-flex btn-brut !px-3 !py-2 !text-[11px]"
             data-testid="nav-mobile-start-cta"
           >
@@ -67,7 +67,7 @@ export default function Navbar() {
               </Link>
             ))}
             <div className="h-px bg-ink" />
-            <Link to="/start" onClick={() => setOpen(false)} className="btn-brut justify-center" data-testid="nav-mobile-start-btn">
+            <Link to="/app" onClick={() => setOpen(false)} className="btn-brut justify-center" data-testid="nav-mobile-start-btn">
               Start a project →
             </Link>
           </div>
