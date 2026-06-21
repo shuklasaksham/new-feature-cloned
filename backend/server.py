@@ -1125,15 +1125,85 @@ else:
 
 @app.on_event("startup")
 async def on_startup():
-    await db.projects.create_index("created_at")
-    await db.projects.create_index([("creator_email", 1), ("updated_at", -1)])
-    await db.projects.create_index([("creator_email", 1), ("name", 1)])
-    await db.projects.create_index([("owner_user_id", 1), ("updated_at", -1)])
-    await db.users.create_index("email", unique=True)
-    await db.users.create_index("user_id", unique=True)
-    await db.user_sessions.create_index("session_token", unique=True)
-    await db.user_sessions.create_index("user_id")
-    await db.email_otps.create_index("email", unique=True)
+    """Defensive startup: index creation must NEVER crash the server.
+
+    Production hit a bug here when the legacy `users` collection contained
+    documents with `user_id: null` or `email: null` (left over from earlier
+    deploy attempts). The original unique index on those fields then refused
+    to build → uvicorn exited → every request returned Cloudflare 520.
+
+    The fixes below are layered:
+      1. Each create_index is wrapped in its own try/except — one failure
+         can't take down the whole startup hook.
+      2. Unique indexes use `partialFilterExpression` so legacy null/missing
+         values are excluded from the uniqueness constraint.
+      3. Best-effort cleanup of orphan rows BEFORE indexing.
+    """
+    async def _safe_index(coll, keys, **kwargs):
+        try:
+            await coll.create_index(keys, **kwargs)
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[startup] index {keys} on {coll.name} skipped: {e}")
+
+    # 1) Best-effort cleanup of orphan rows that would block unique indexes.
+    try:
+        r = await db.users.delete_many({
+            "$or": [
+                {"user_id": {"$in": [None, ""]}},
+                {"email":   {"$in": [None, ""]}},
+            ]
+        })
+        if r.deleted_count:
+            logger.info(f"[startup] removed {r.deleted_count} orphan user rows")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] orphan-user cleanup skipped: {e}")
+    try:
+        r = await db.user_sessions.delete_many({
+            "$or": [
+                {"session_token": {"$in": [None, ""]}},
+                {"user_id":       {"$in": [None, ""]}},
+            ]
+        })
+        if r.deleted_count:
+            logger.info(f"[startup] removed {r.deleted_count} orphan session rows")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] orphan-session cleanup skipped: {e}")
+    try:
+        r = await db.email_otps.delete_many({"email": {"$in": [None, ""]}})
+        if r.deleted_count:
+            logger.info(f"[startup] removed {r.deleted_count} orphan otp rows")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] orphan-otp cleanup skipped: {e}")
+
+    # 2) Project indexes — non-unique, safe.
+    await _safe_index(db.projects, "created_at")
+    await _safe_index(db.projects, [("creator_email", 1), ("updated_at", -1)])
+    await _safe_index(db.projects, [("creator_email", 1), ("name", 1)])
+    await _safe_index(db.projects, [("owner_user_id", 1), ("updated_at", -1)])
+
+    # 3) Auth indexes — unique but partial so legacy nulls don't poison them.
+    # Use string-type filter so only real values participate in the constraint.
+    await _safe_index(
+        db.users, "email",
+        unique=True,
+        partialFilterExpression={"email": {"$type": "string"}},
+    )
+    await _safe_index(
+        db.users, "user_id",
+        unique=True,
+        partialFilterExpression={"user_id": {"$type": "string"}},
+    )
+    await _safe_index(
+        db.user_sessions, "session_token",
+        unique=True,
+        partialFilterExpression={"session_token": {"$type": "string"}},
+    )
+    await _safe_index(db.user_sessions, "user_id")
+    await _safe_index(
+        db.email_otps, "email",
+        unique=True,
+        partialFilterExpression={"email": {"$type": "string"}},
+    )
     logger.info("bracket api ready (auth mode)")
 
 
