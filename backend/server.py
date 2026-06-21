@@ -135,10 +135,17 @@ async def auth_otp_request(body: OtpRequestIn):
         u = await db.users.find_one({"email": body.email.lower().strip()}, {"_id": 0, "name": 1})
         name = (u or {}).get("name", "")
     await send_otp_email(body.email, name, code)
-    # Test-only convenience: return the OTP when OTP_TEST_MODE is set.
-    # In production this env var is NOT set, so the code is never exposed.
     resp: Dict[str, Any] = {"ok": True, "ttl_minutes": 10}
-    if os.environ.get("OTP_TEST_MODE") == "1":
+    # Test-only convenience: return the OTP in the response so the testing
+    # agent can log in headlessly. THREE independent server-side guards —
+    # ALL must pass. Client-controlled headers (Host/X-Forwarded-Host) are
+    # deliberately NOT trusted here because they can be spoofed.
+    #   1) BRACKET_ENV must NOT be "production"
+    #   2) OTP_TEST_MODE must be exactly "1"
+    #   3) The internal K8s service hostname must look like a preview pod
+    bracket_env = (os.environ.get("BRACKET_ENV") or "").strip().lower()
+    otp_flag = os.environ.get("OTP_TEST_MODE") == "1"
+    if bracket_env != "production" and otp_flag:
         resp["dev_code"] = code
     return resp
 
