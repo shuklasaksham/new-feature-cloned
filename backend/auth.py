@@ -155,11 +155,35 @@ async def current_user(request: Request, db) -> Dict[str, Any]:
     return user
 
 
+# ---------- admin guard ----------
+def admin_emails() -> set[str]:
+    """Comma-separated allowlist from env. All comparisons lowercased."""
+    raw = os.environ.get("ADMIN_EMAILS", "")
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+
+
+def is_admin(user: Dict[str, Any]) -> bool:
+    return (user.get("email") or "").lower() in admin_emails()
+
+
+async def current_admin(request: Request, db) -> Dict[str, Any]:
+    """Admin guard. ANY failure (no session, non-admin) returns 404 so the
+    existence of the admin surface is never revealed to end users."""
+    try:
+        user = await current_user(request, db)
+    except HTTPException:
+        raise HTTPException(status_code=404, detail="Not found")
+    if not is_admin(user):
+        raise HTTPException(status_code=404, detail="Not found")
+    return user
+
+
 # ---------- users ----------
 def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
     """Strip sensitive fields and add has_password flag for the UI."""
     out = {k: v for k, v in user.items() if k not in ("password_hash", "_id")}
     out["has_password"] = bool(user.get("password_hash"))
+    out["is_admin"] = is_admin(user)
     return out
 
 

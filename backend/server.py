@@ -295,6 +295,86 @@ async def auth_claim(body: ClaimDecisionIn, request: Request):
 
 
 # ===========================================================================
+# ADMIN — hidden, gated by ADMIN_EMAILS env var. Not linked from anywhere
+# public. Non-admin sessions get 404 (deliberately misleading) so the
+# existence of /api/admin is never revealed to end users.
+# ===========================================================================
+from auth import current_admin as auth_current_admin  # local import to keep group
+
+
+class AdminResetPasswordIn(_BM):
+    new_password: str = _Fd(min_length=8, max_length=128)
+
+
+@api.get("/admin/users")
+async def admin_list_users(request: Request):
+    admin = await auth_current_admin(request, db)
+    # Project counts per user_id, in one aggregation pass.
+    counts: Dict[str, int] = {}
+    pipeline = [
+        {"$match": {"owner_user_id": {"$type": "string"}}},
+        {"$group": {"_id": "$owner_user_id", "n": {"$sum": 1}}},
+    ]
+    async for row in db.projects.aggregate(pipeline):
+        counts[row["_id"]] = row["n"]
+
+    users_out = []
+    cur = db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).limit(500)
+    async for u in cur:
+        users_out.append({
+            "user_id": u.get("user_id"),
+            "email": u.get("email"),
+            "name": u.get("name", ""),
+            "designation": u.get("designation", ""),
+            "avatar": u.get("avatar", ""),
+            "picture": u.get("picture", ""),
+            "created_at": u.get("created_at"),
+            "updated_at": u.get("updated_at"),
+            "is_admin": (u.get("email") or "").lower() in {admin["email"].lower(), *_admin_emails_set()},
+            "project_count": counts.get(u.get("user_id", ""), 0),
+        })
+    return {"users": users_out, "admin_email": admin["email"]}
+
+
+def _admin_emails_set() -> set:
+    """Helper that resolves the env at call time (cannot import circularly)."""
+    from auth import admin_emails as _ae
+    return _ae()
+
+
+@api.get("/admin/users/{user_id}/projects")
+async def admin_user_projects(user_id: str, request: Request):
+    await auth_current_admin(request, db)
+    cur = (
+        db.projects.find(
+            {"owner_user_id": user_id},
+            {"_id": 0, "id": 1, "name": 1, "status": 1, "step": 1, "share_status": 1, "created_at": 1, "updated_at": 1, "locked_at": 1},
+        )
+        .sort("updated_at", -1)
+        .limit(500)
+    )
+    return {"projects": [d async for d in cur]}
+
+
+@api.post("/admin/users/{user_id}/reset-password")
+async def admin_reset_password(user_id: str, body: AdminResetPasswordIn, request: Request):
+    admin = await auth_current_admin(request, db)
+    target = await db.users.find_one({"user_id": user_id}, {"_id": 0, "email": 1, "user_id": 1})
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    new_hash = hash_password(body.new_password)
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"password_hash": new_hash, "updated_at": auth_iso(auth_now())}},
+    )
+    # Invalidate ALL of the target's existing sessions so the new password
+    # is required immediately. The admin's own session is unaffected.
+    await db.user_sessions.delete_many({"user_id": user_id})
+    logger.info(f"[admin] {admin['email']} reset password for {target['email']}")
+    return {"ok": True, "email": target["email"]}
+
+
+# ===========================================================================
 # PROJECTS — now auth-required
 # ===========================================================================
 class CreateProjectIn(_BM):
@@ -1204,6 +1284,41 @@ async def on_startup():
         unique=True,
         partialFilterExpression={"email": {"$type": "string"}},
     )
+
+    # 4) Seed admin user(s) declared via ADMIN_EMAILS env var. Idempotent —
+    #    if the user already exists their password is left alone; only the
+    #    bootstrap admin (matching BOOTSTRAP_ADMIN_EMAIL with BOOTSTRAP_ADMIN_PASSWORD)
+    #    is seeded with a default password the first time.
+    try:
+        bootstrap_email = (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").strip().lower()
+        bootstrap_pw = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or ""
+        if bootstrap_email and bootstrap_pw:
+            existing = await db.users.find_one({"email": bootstrap_email}, {"_id": 0, "user_id": 1, "password_hash": 1})
+            if not existing:
+                from auth import gen_user_id as _gen_uid
+                doc = {
+                    "user_id": _gen_uid(),
+                    "email": bootstrap_email,
+                    "name": "Saksham Shukla",
+                    "designation": "Founder",
+                    "avatar": "mono-1",
+                    "picture": "",
+                    "password_hash": hash_password(bootstrap_pw),
+                    "created_at": auth_iso(auth_now()),
+                    "updated_at": auth_iso(auth_now()),
+                }
+                await db.users.insert_one(doc)
+                logger.info(f"[startup] seeded bootstrap admin {bootstrap_email}")
+            elif not existing.get("password_hash"):
+                # User exists but has no password — set the bootstrap one once.
+                await db.users.update_one(
+                    {"user_id": existing["user_id"]},
+                    {"$set": {"password_hash": hash_password(bootstrap_pw), "updated_at": auth_iso(auth_now())}},
+                )
+                logger.info(f"[startup] set initial password for bootstrap admin {bootstrap_email}")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] bootstrap admin seed skipped: {e}")
+
     logger.info("bracket api ready (auth mode)")
 
 

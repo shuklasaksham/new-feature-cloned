@@ -23,6 +23,10 @@ import ProjectOverview from "./pages/ProjectOverview";
 import ProjectDocument from "./pages/ProjectDocument";
 import ClientReview from "./pages/ClientReview";
 
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+
 import "./App.css";
 
 export default function App() {
@@ -58,6 +62,10 @@ export default function App() {
 
           {/* Public client review */}
           <Route path="/r/:token" element={<ClientReview />} />
+
+          {/* Hidden admin console — not linked from anywhere public */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
