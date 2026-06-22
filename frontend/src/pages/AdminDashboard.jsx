@@ -110,6 +110,30 @@ export default function AdminDashboard() {
     navigate("/admin/login", { replace: true });
   };
 
+  // Self-serve set/change own password
+  const [showSetPw, setShowSetPw] = useState(false);
+  const [myPw, setMyPw] = useState("");
+  const [settingPw, setSettingPw] = useState(false);
+  const setMyPassword = async (e) => {
+    e?.preventDefault?.();
+    if (myPw.length < 8) {
+      toast.error("Min 8 characters.");
+      return;
+    }
+    setSettingPw(true);
+    try {
+      await api.post("/auth/password/set", { password: myPw });
+      await refresh();
+      toast.success("Password updated. Use it next time.");
+      setShowSetPw(false);
+      setMyPw("");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setSettingPw(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-ink text-chalk" data-testid="admin-dashboard-page">
       <header className="border-b border-chalk/15">
@@ -122,6 +146,14 @@ export default function AdminDashboard() {
             <span className="mono-tag text-chalk/60 hidden sm:inline" data-testid="admin-current">
               {user?.email}
             </span>
+            <button
+              onClick={() => setShowSetPw(true)}
+              className="px-3 py-2 border border-chalk/30 mono-tag hover:bg-chalk hover:text-ink inline-flex items-center gap-2"
+              data-testid="admin-set-my-pw"
+              title={user?.has_password ? "Change your password" : "Set a password"}
+            >
+              <KeyRound size={12} /> {user?.has_password ? "CHANGE PW" : "SET PW"}
+            </button>
             <button
               onClick={logout}
               className="px-3 py-2 border border-chalk/30 mono-tag hover:bg-chalk hover:text-ink inline-flex items-center gap-2"
@@ -304,6 +336,68 @@ export default function AdminDashboard() {
               >
                 {resetting ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
                 {resetting ? "RESETTING…" : "RESET PASSWORD"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      {/* Set/change MY password modal */}
+      {showSetPw && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-5 z-50"
+          onClick={() => !settingPw && setShowSetPw(false)}
+          data-testid="admin-self-pw-modal"
+        >
+          <form
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={setMyPassword}
+            className="w-full max-w-md bg-ink text-chalk border border-chalk/30 p-6 sm:p-8"
+          >
+            <div className="flex items-center justify-between">
+              <span className="mono-tag text-signal">
+                {user?.has_password ? "{ change your password }" : "{ set a password }"}
+              </span>
+              <button type="button" onClick={() => setShowSetPw(false)} className="text-chalk/50 hover:text-chalk" data-testid="admin-self-pw-close">
+                <XIcon size={16} />
+              </button>
+            </div>
+            <p className="font-mono text-sm mt-4 break-all">{user?.email}</p>
+            <p className="mono-tag text-chalk/50 mt-1">
+              {user?.has_password
+                ? "Replaces your current password. You stay signed in."
+                : "Enables password sign-in at /admin/login (otherwise you can only enter via OTP)."}
+            </p>
+            <label className="block mt-5">
+              <span className="mono-tag text-chalk/70">NEW PASSWORD (min 8)</span>
+              <input
+                type="text"
+                autoFocus
+                value={myPw}
+                onChange={(e) => setMyPw(e.target.value)}
+                minLength={8}
+                maxLength={128}
+                className="mt-2 w-full bg-transparent border-b-2 border-chalk/40 focus:border-signal outline-none py-2 font-mono text-sm"
+                data-testid="admin-self-pw-input"
+              />
+            </label>
+            <div className="mt-6 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowSetPw(false)}
+                disabled={settingPw}
+                className="px-3 py-2 border border-chalk/30 mono-tag hover:bg-chalk hover:text-ink"
+                data-testid="admin-self-pw-cancel"
+              >
+                CANCEL
+              </button>
+              <button
+                type="submit"
+                disabled={settingPw || myPw.length < 8}
+                className="px-3 py-2 bg-signal border border-signal mono-tag disabled:opacity-40 inline-flex items-center gap-2"
+                data-testid="admin-self-pw-confirm"
+              >
+                {settingPw ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                {settingPw ? "SAVING…" : "SAVE PASSWORD"}
               </button>
             </div>
           </form>
