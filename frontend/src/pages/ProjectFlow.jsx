@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   ArrowLeft,
@@ -28,6 +28,8 @@ export default function ProjectFlow() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
+  const dirtyRef = useRef(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -94,14 +96,27 @@ export default function ProjectFlow() {
     }
   };
 
+  // Logo click: take user to dashboard, but warn if they have unsaved input
+  // in the current step. We track this via the `dirty` ref each step writes to.
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    if (dirtyRef.current) {
+      const ok = window.confirm(
+        "You may have unsaved input in this step. Generate the AI output before leaving, or it'll be lost. Leave anyway?",
+      );
+      if (!ok) return;
+    }
+    navigate("/app");
+  };
+
   return (
     <div className="min-h-screen bg-paper" data-testid="project-flow-page">
       <header className="sticky top-0 z-30 bg-paper border-b border-ink">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-4 sm:gap-6 min-w-0">
-            <Link to="/" className="shrink-0">
+            <a href="/app" onClick={handleLogoClick} className="shrink-0 cursor-pointer" data-testid="flow-logo-link">
               <BracketMark label={false} size={24} />
-            </Link>
+            </a>
             <div className="min-w-0">
               <p
                 className="font-display text-base sm:text-lg leading-none truncate"
@@ -179,12 +194,13 @@ export default function ProjectFlow() {
         key={currentStep}
       >
         {currentStep === 1 && (
-          <Step1 project={project} setProject={setProject} onDone={() => setCurrentStep(2)} />
+          <Step1 project={project} setProject={setProject} dirtyRef={dirtyRef} onDone={() => setCurrentStep(2)} />
         )}
         {currentStep === 2 && (
           <Step2
             project={project}
             setProject={setProject}
+            dirtyRef={dirtyRef}
             onDone={() => setCurrentStep(3)}
             onBack={() => setCurrentStep(1)}
           />
@@ -193,6 +209,7 @@ export default function ProjectFlow() {
           <Step3
             project={project}
             setProject={setProject}
+            dirtyRef={dirtyRef}
             onDone={() => setCurrentStep(4)}
             onBack={() => setCurrentStep(2)}
           />
@@ -201,6 +218,7 @@ export default function ProjectFlow() {
           <Step4
             project={project}
             setProject={setProject}
+            dirtyRef={dirtyRef}
             onDone={() => setCurrentStep(5)}
             onBack={() => setCurrentStep(3)}
           />
@@ -240,12 +258,19 @@ function ErrorBox({ msg }) {
   );
 }
 
-function Step1({ project, setProject, onDone }) {
+function Step1({ project, setProject, dirtyRef, onDone }) {
   const initial = project.situation_input || { what: "", who: "", unclear: "" };
   const [form, setForm] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const framing = project.framing;
+
+  // Track unsaved input so the logo-click handler can warn
+  useEffect(() => {
+    if (!dirtyRef) return;
+    dirtyRef.current = !!(form.what || form.who || form.unclear) && !framing;
+    return () => { if (dirtyRef) dirtyRef.current = false; };
+  }, [form, framing, dirtyRef]);
 
   const run = async () => {
     setLoading(true);
@@ -259,6 +284,8 @@ function Step1({ project, setProject, onDone }) {
       setLoading(false);
     }
   };
+
+  const pick = (field) => (s, v) => setForm({ ...form, [field]: mergeSuggestion(v, s) });
 
   return (
     <StepShell
@@ -277,6 +304,12 @@ function Step1({ project, setProject, onDone }) {
               value={form.what}
               onChange={(e) => setForm({ ...form, what: e.target.value })}
             />
+            <Suggestions
+              testid="step1-what-suggest"
+              items={["Landing page redesign", "Mobile app onboarding", "SaaS dashboard", "Brand identity refresh", "Marketing site"]}
+              value={form.what}
+              onPick={pick("what")}
+            />
           </Field>
           <Field label="Who is it for?" testid="step1-who">
             <textarea
@@ -286,6 +319,12 @@ function Step1({ project, setProject, onDone }) {
               value={form.who}
               onChange={(e) => setForm({ ...form, who: e.target.value })}
             />
+            <Suggestions
+              testid="step1-who-suggest"
+              items={["Early-stage startup founder", "Enterprise marketing lead", "D2C brand owner", "Internal product team", "Series-A SaaS CEO"]}
+              value={form.who}
+              onPick={pick("who")}
+            />
           </Field>
           <Field label="What's unclear or feels off?" testid="step1-unclear">
             <textarea
@@ -294,6 +333,12 @@ function Step1({ project, setProject, onDone }) {
               placeholder="What's the thing you'd normally not say out loud?"
               value={form.unclear}
               onChange={(e) => setForm({ ...form, unclear: e.target.value })}
+            />
+            <Suggestions
+              testid="step1-unclear-suggest"
+              items={["Budget undefined", "Timeline too tight", "No clear success metric", "Stakeholder alignment missing", "Scope keeps shifting"]}
+              value={form.unclear}
+              onPick={pick("unclear")}
             />
           </Field>
 
@@ -328,19 +373,12 @@ function Step1({ project, setProject, onDone }) {
         </div>
 
         <div>
-          {!framing ? (
-            <div className="card-brut p-5 sm:p-6 bg-paper">
-              <p className="mono-label">{"{ output · pending }"}</p>
-              <p className="mt-5 text-muted">
-                Bracket hasn't seen it yet. Fill the three fields on the left. It'll name what's
-                happening.
-              </p>
-              <div className="mt-10 space-y-3">
-                <SkeletonLine />
-                <SkeletonLine />
-                <SkeletonLine short />
-              </div>
-            </div>
+          {!framing || loading ? (
+            <OutputPending
+              title={loading ? "{ output · generating }" : "{ output · pending }"}
+              blurb="Bracket hasn't seen it yet. Fill the three fields on the left. It'll name what's happening."
+              loading={loading}
+            />
           ) : (
             <div className="card-brut p-5 sm:p-6" data-testid="step1-framing-output">
               <div className="flex items-center justify-between gap-3">
@@ -368,12 +406,18 @@ function Step1({ project, setProject, onDone }) {
   );
 }
 
-function Step2({ project, setProject, onDone, onBack }) {
+function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   const initial = project.context_input || { requirements: "", constraints: "", inspirations: "" };
   const [form, setForm] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const compressed = project.context;
+
+  useEffect(() => {
+    if (!dirtyRef) return;
+    dirtyRef.current = !!(form.requirements || form.constraints || form.inspirations) && !compressed;
+    return () => { if (dirtyRef) dirtyRef.current = false; };
+  }, [form, compressed, dirtyRef]);
 
   const run = async () => {
     setLoading(true);
@@ -387,6 +431,8 @@ function Step2({ project, setProject, onDone, onBack }) {
       setLoading(false);
     }
   };
+
+  const pick = (field) => (s, v) => setForm({ ...form, [field]: mergeSuggestion(v, s) });
 
   return (
     <StepShell
@@ -405,6 +451,12 @@ function Step2({ project, setProject, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, requirements: e.target.value })}
               placeholder="Paste the brief. Paste the Slack dump. It's fine."
             />
+            <Suggestions
+              testid="step2-req-suggest"
+              items={["Conversion focus", "Modern aesthetic", "Mobile-first", "Match competitor X", "Built-in analytics"]}
+              value={form.requirements}
+              onPick={pick("requirements")}
+            />
           </Field>
           <Field label="Constraints" testid="step2-con">
             <textarea
@@ -414,6 +466,12 @@ function Step2({ project, setProject, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, constraints: e.target.value })}
               placeholder="Budget, timeline, brand rules, tech limits."
             />
+            <Suggestions
+              testid="step2-con-suggest"
+              items={["Budget ₹50,000", "2-week timeline", "Brand colours locked", "Webflow only", "No third-party fonts"]}
+              value={form.constraints}
+              onPick={pick("constraints")}
+            />
           </Field>
           <Field label="Inspirations / references (optional)" testid="step2-insp">
             <textarea
@@ -422,6 +480,12 @@ function Step2({ project, setProject, onDone, onBack }) {
               value={form.inspirations}
               onChange={(e) => setForm({ ...form, inspirations: e.target.value })}
               placeholder="Only what you genuinely want to pull from."
+            />
+            <Suggestions
+              testid="step2-insp-suggest"
+              items={["Linear", "Stripe", "Vercel", "Apple", "Notion"]}
+              value={form.inspirations}
+              onPick={pick("inspirations")}
             />
           </Field>
 
@@ -459,18 +523,12 @@ function Step2({ project, setProject, onDone, onBack }) {
         </div>
 
         <div>
-          {!compressed ? (
-            <div className="card-brut p-5 sm:p-6 bg-paper">
-              <p className="mono-label">{"{ output · pending }"}</p>
-              <p className="mt-5 text-muted">
-                Paste as much as you want. Bracket will keep what moves the needle.
-              </p>
-              <div className="mt-10 space-y-3">
-                <SkeletonLine />
-                <SkeletonLine />
-                <SkeletonLine short />
-              </div>
-            </div>
+          {!compressed || loading ? (
+            <OutputPending
+              title={loading ? "{ output · generating }" : "{ output · pending }"}
+              blurb="Paste as much as you want. Bracket will keep what moves the needle."
+              loading={loading}
+            />
           ) : (
             <div className="card-brut p-5 sm:p-6" data-testid="step2-context-output">
               <p className="mono-label">{"{ what actually matters }"}</p>
@@ -517,12 +575,18 @@ function Step2({ project, setProject, onDone, onBack }) {
   );
 }
 
-function Step3({ project, setProject, onDone, onBack }) {
+function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
   const initial = project.decision_input || { optimizing_for: "", tradeoffs: "", risks: "" };
   const [form, setForm] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const decision = project.decision;
+
+  useEffect(() => {
+    if (!dirtyRef) return;
+    dirtyRef.current = !!(form.optimizing_for || form.tradeoffs || form.risks) && !decision;
+    return () => { if (dirtyRef) dirtyRef.current = false; };
+  }, [form, decision, dirtyRef]);
 
   const run = async () => {
     setLoading(true);
@@ -536,6 +600,8 @@ function Step3({ project, setProject, onDone, onBack }) {
       setLoading(false);
     }
   };
+
+  const pick = (field) => (s, v) => setForm({ ...form, [field]: mergeSuggestion(v, s) });
 
   return (
     <StepShell
@@ -554,6 +620,12 @@ function Step3({ project, setProject, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, optimizing_for: e.target.value })}
               placeholder="e.g. Conversion over aesthetic polish. Or speed to launch over perfection."
             />
+            <Suggestions
+              testid="step3-opt-suggest"
+              items={["Conversion", "Speed to launch", "Long-term scalability", "Brand consistency", "Low maintenance"]}
+              value={form.optimizing_for}
+              onPick={pick("optimizing_for")}
+            />
           </Field>
           <Field label="Trade-offs you already feel" testid="step3-tr">
             <textarea
@@ -563,6 +635,12 @@ function Step3({ project, setProject, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, tradeoffs: e.target.value })}
               placeholder="What are you giving up?"
             />
+            <Suggestions
+              testid="step3-tr-suggest"
+              items={["Polish for speed", "Custom for templated", "Scope for budget", "Originality for trust", "Animation for performance"]}
+              value={form.tradeoffs}
+              onPick={pick("tradeoffs")}
+            />
           </Field>
           <Field label="Risks you suspect" testid="step3-rs">
             <textarea
@@ -571,6 +649,12 @@ function Step3({ project, setProject, onDone, onBack }) {
               value={form.risks}
               onChange={(e) => setForm({ ...form, risks: e.target.value })}
               placeholder="Stakeholders, scope, skill gaps, timeline…"
+            />
+            <Suggestions
+              testid="step3-rs-suggest"
+              items={["Scope creep", "Stakeholder misalignment", "Tight timeline", "Budget overrun", "Tech debt"]}
+              value={form.risks}
+              onPick={pick("risks")}
             />
           </Field>
 
@@ -608,18 +692,12 @@ function Step3({ project, setProject, onDone, onBack }) {
         </div>
 
         <div>
-          {!decision ? (
-            <div className="card-brut p-5 sm:p-6 bg-paper">
-              <p className="mono-label">{"{ the call · pending }"}</p>
-              <p className="mt-5 text-muted">
-                A stance, not a menu. Bracket will name the move and the cost of it.
-              </p>
-              <div className="mt-10 space-y-3">
-                <SkeletonLine />
-                <SkeletonLine />
-                <SkeletonLine short />
-              </div>
-            </div>
+          {!decision || loading ? (
+            <OutputPending
+              title={loading ? "{ the call · generating }" : "{ the call · pending }"}
+              blurb="A stance, not a menu. Bracket will name the move and the cost of it."
+              loading={loading}
+            />
           ) : (
             <div className="space-y-6" data-testid="step3-decision-output">
               <div className="card-brut p-5 sm:p-6">
@@ -697,7 +775,7 @@ function Step3({ project, setProject, onDone, onBack }) {
   );
 }
 
-function Step4({ project, setProject, onDone, onBack }) {
+function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const artifacts = project.artifacts;
@@ -714,6 +792,24 @@ function Step4({ project, setProject, onDone, onBack }) {
       setLoading(false);
     }
   };
+
+  // Auto-start generation on mount IF artifacts don't yet exist for the
+  // current decision. Run only once per mount; user can still re-trigger via
+  // the "Regenerate" button below.
+  const autoRanRef = useRef(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (autoRanRef.current) return;
+    autoRanRef.current = true;
+    if (!artifacts && !loading) {
+      run();
+    }
+  }, []);
+
+  // No editable inputs on this step, so dirty state is always false.
+  useEffect(() => {
+    if (dirtyRef) dirtyRef.current = false;
+  }, [dirtyRef]);
 
   return (
     <StepShell
@@ -754,16 +850,13 @@ function Step4({ project, setProject, onDone, onBack }) {
       </div>
       <ErrorBox msg={error} />
 
-      {!artifacts ? (
-        <div className="mt-10 grid md:grid-cols-2 gap-6">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="card-brut p-5 sm:p-6 bg-paper">
-              <p className="mono-label">{"{ pending }"}</p>
-              <SkeletonLine />
-              <SkeletonLine />
-              <SkeletonLine short />
-            </div>
-          ))}
+      {!artifacts || loading ? (
+        <div className="mt-10">
+          <OutputPending
+            title={loading ? "{ artifacts · generating }" : "{ artifacts · pending }"}
+            blurb="Bracket is drafting scope, message, assumptions and risk flags from your stance."
+            loading={loading}
+          />
         </div>
       ) : (
         <div className="mt-10 grid md:grid-cols-2 gap-6" data-testid="step4-artifacts-output">
@@ -1022,5 +1115,71 @@ function CopyButton({ text }) {
       {copied ? "Copied." : "Copy to clipboard"}
     </button>
   );
+}
+
+// Consistent pending/loading output card used by every step. While loading,
+// the animated { } bracket loader takes over the card so the user clearly
+// sees that the AI is working — not just the CTA spinner.
+function OutputPending({ title, blurb, loading }) {
+  return (
+    <div className="card-brut p-5 sm:p-6 bg-paper min-h-[280px]" data-testid="step-output-pending">
+      <p className="mono-label">{title}</p>
+      {loading ? (
+        <div className="mt-10 flex flex-col items-center justify-center gap-5 py-6">
+          <div className="bracket-loader" aria-label="Loading">
+            <span>{"{"}</span>
+            <span className="dot" />
+            <span className="dot" />
+            <span className="dot" />
+            <span>{"}"}</span>
+          </div>
+          <p className="mono-tag text-signal">BRACKET IS THINKING…</p>
+        </div>
+      ) : (
+        <>
+          <p className="mt-5 text-muted">{blurb}</p>
+          <div className="mt-10 space-y-3">
+            <SkeletonLine />
+            <SkeletonLine />
+            <SkeletonLine short />
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Tiny pickable keyword chips shown below required fields. Clicking a chip
+// appends (or replaces, if empty) the suggestion into the input.
+function Suggestions({ items = [], value = "", onPick, testid }) {
+  if (!items?.length) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5" data-testid={testid}>
+      <span className="mono-tag text-muted self-center pr-1">TRY ↘</span>
+      {items.map((s, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => onPick(s, value)}
+          className="suggest-chip"
+          data-testid={testid ? `${testid}-${i}` : undefined}
+        >
+          + {s}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Helper to merge a suggestion into the current field value, preserving
+// what the user has already typed.
+function mergeSuggestion(current, suggestion) {
+  const c = (current || "").trim();
+  if (!c) return suggestion;
+  // Avoid duplicates
+  if (c.toLowerCase().includes(suggestion.toLowerCase())) return c;
+  // Append on a new line if the existing content looks like a list, else inline
+  if (c.endsWith(".") || c.endsWith(",")) return `${c} ${suggestion}`;
+  return `${c}, ${suggestion}`;
 }
 

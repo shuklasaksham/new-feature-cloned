@@ -245,7 +245,7 @@ function ChooseAction({ onAccept, onReject, ownerReplied = false }) {
         className="btn-brut mt-5 w-full justify-center"
         data-testid="review-accept-cta"
       >
-        Accept &amp; sign <ArrowRight size={14} />
+        Accept & sign <ArrowRight size={14} />
       </button>
       <button
         type="button"
@@ -415,7 +415,7 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
         className="btn-brut mt-5 w-full justify-center"
         data-testid="review-accept-submit"
       >
-        {submitting ? "Signing…" : "Sign &amp; send"} <ArrowRight size={14} />
+        {submitting ? "Signing…" : "Sign & send"} <ArrowRight size={14} />
       </button>
       <button
         type="button"

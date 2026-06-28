@@ -3,14 +3,19 @@ import { Link, NavLink } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import BracketMark from "./BracketMark";
 import { NAV_LINKS } from "../lib/constants";
+import { useAuth } from "../lib/AuthContext";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  // Signed-in users should always land on their dashboard from the logo,
+  // not be sent back to the marketing landing page.
+  const logoHref = user ? "/app" : "/";
 
   return (
     <header className="sticky top-0 z-40 bg-paper border-b border-ink" data-testid="site-navbar">
       <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-        <Link to="/" className="flex items-center shrink-0" data-testid="nav-logo-link">
+        <Link to={logoHref} className="flex items-center shrink-0" data-testid="nav-logo-link">
           <BracketMark size={26} />
         </Link>
 

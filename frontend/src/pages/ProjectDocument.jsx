@@ -327,7 +327,7 @@ function DocHeader({ project }) {
   return (
     <header className="sticky top-0 z-30 bg-paper border-b border-ink">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-        <Link to="/" className="shrink-0">
+        <Link to="/app" className="shrink-0" data-testid="doc-logo-link">
           <BracketMark size={24} />
         </Link>
         <p className="mono-tag text-muted truncate hidden sm:block max-w-[40%]">
