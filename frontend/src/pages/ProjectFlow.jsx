@@ -380,25 +380,17 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               loading={loading}
             />
           ) : (
-            <div className="card-brut p-5 sm:p-6" data-testid="step1-framing-output">
-              <div className="flex items-center justify-between gap-3">
-                <p className="mono-label">{"{ reframed }"}</p>
-                <ClarityPill score={framing.clarity_score} label={framing.clarity_label} />
-              </div>
-              <h3 className="font-display text-2xl mt-4 leading-tight">{framing.reframed_problem}</h3>
-              {framing.what_to_name && (
-                <p className="mt-5 border-l-2 border-signal pl-4 italic">{framing.what_to_name}</p>
-              )}
-              <p className="mono-tag text-muted mt-8">TENSIONS TO WATCH</p>
-              <ul className="mt-3 space-y-2">
-                {(framing.tensions || []).map((t, i) => (
-                  <li key={i} className="flex gap-3 text-sm">
-                    <span className="font-mono text-signal">{String(i + 1).padStart(2, "0")}</span>
-                    <span>{t}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <OutputCard
+              testid="step1-framing-output"
+              label={"{ 01 · reframed }"}
+              badge={<ClarityPill score={framing.clarity_score} label={framing.clarity_label} />}
+              title={framing.reframed_problem}
+              blockquote={framing.what_to_name}
+            >
+              <OutputSection label="TENSIONS TO WATCH">
+                <OutputList items={framing.tensions || []} variant="numbered" />
+              </OutputSection>
+            </OutputCard>
           )}
         </div>
       </div>
@@ -530,44 +522,23 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               loading={loading}
             />
           ) : (
-            <div className="card-brut p-5 sm:p-6" data-testid="step2-context-output">
-              <p className="mono-label">{"{ what actually matters }"}</p>
-              <p className="mt-4 text-lg leading-relaxed">{compressed.what_actually_matters}</p>
-
-              <p className="mono-tag text-muted mt-8">KEY SIGNALS</p>
-              <ul className="mt-3 space-y-2">
-                {(compressed.key_signals || []).map((s, i) => (
-                  <li key={i} className="flex gap-3 text-sm">
-                    <span className="font-mono text-signal">→</span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <p className="mono-tag text-muted mt-8">NOISE REMOVED</p>
-              <ul className="mt-3 space-y-2">
-                {(compressed.noise_removed || []).map((s, i) => (
-                  <li key={i} className="flex gap-3 text-sm line-through text-muted">
-                    <span className="font-mono">×</span>
-                    <span>{s}</span>
-                  </li>
-                ))}
-              </ul>
-
+            <OutputCard
+              testid="step2-context-output"
+              label={"{ 02 · what actually matters }"}
+              title={compressed.what_actually_matters}
+            >
+              <OutputSection label="KEY SIGNALS">
+                <OutputList items={compressed.key_signals || []} variant="arrow" />
+              </OutputSection>
+              <OutputSection label="NOISE REMOVED">
+                <OutputList items={compressed.noise_removed || []} variant="strike" />
+              </OutputSection>
               {compressed.hidden_assumptions?.length > 0 && (
-                <>
-                  <p className="mono-tag text-muted mt-8">HIDDEN ASSUMPTIONS</p>
-                  <ul className="mt-3 space-y-2">
-                    {compressed.hidden_assumptions.map((s, i) => (
-                      <li key={i} className="flex gap-3 text-sm">
-                        <span className="font-mono text-danger">!</span>
-                        <span>{s}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                <OutputSection label="HIDDEN ASSUMPTIONS">
+                  <OutputList items={compressed.hidden_assumptions} variant="danger" />
+                </OutputSection>
               )}
-            </div>
+            </OutputCard>
           )}
         </div>
       </div>
@@ -700,23 +671,20 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
             />
           ) : (
             <div className="space-y-6" data-testid="step3-decision-output">
-              <div className="card-brut p-5 sm:p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="mono-label">{"{ recommendation }"}</p>
+              <OutputCard
+                label={"{ 03 · recommendation }"}
+                badge={
                   <span className="mono-tag text-signal">
                     CONF · {decision.recommendation?.confidence ?? 0}%
                   </span>
-                </div>
-                <h3 className="font-display text-2xl sm:text-3xl uppercase mt-3 leading-tight">
-                  {decision.recommendation?.title}
-                </h3>
-                <p className="mt-3 text-muted">{decision.recommendation?.rationale}</p>
-              </div>
+                }
+                title={decision.recommendation?.title}
+                blockquote={decision.recommendation?.rationale}
+              />
 
               {decision.alternatives?.length > 0 && (
-                <div className="card-brut p-5 sm:p-6">
-                  <p className="mono-label">{"{ alternatives }"}</p>
-                  <div className="mt-3 space-y-4">
+                <OutputCard label={"{ 03 · alternatives }"}>
+                  <div className="space-y-4">
                     {decision.alternatives.map((a, i) => (
                       <div
                         key={i}
@@ -732,40 +700,19 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                       </div>
                     ))}
                   </div>
-                </div>
+                </OutputCard>
               )}
 
               {decision.tradeoffs?.length > 0 && (
-                <div className="card-brut p-5 sm:p-6">
-                  <p className="mono-label">{"{ trade-offs }"}</p>
-                  <ul className="mt-3 space-y-2">
-                    {decision.tradeoffs.map((t, i) => (
-                      <li key={i} className="flex gap-3 text-sm">
-                        <span className="font-mono text-signal">→</span>
-                        <span>{t}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <OutputCard label={"{ 03 · trade-offs }"}>
+                  <OutputList items={decision.tradeoffs} variant="arrow" />
+                </OutputCard>
               )}
 
               {decision.risks?.length > 0 && (
-                <div className="card-brut p-5 sm:p-6">
-                  <p className="mono-label">{"{ risks }"}</p>
-                  <ul className="mt-3 space-y-3">
-                    {decision.risks.map((r, i) => (
-                      <li key={i} className="flex gap-3 text-sm">
-                        <SeverityPill level={r.severity} />
-                        <div>
-                          <p>{r.risk}</p>
-                          <p className="text-muted mt-1">
-                            <span className="mono-tag">DE-RISK →</span> {r.mitigation}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <OutputCard label={"{ 03 · risks }"}>
+                  <OutputList items={decision.risks} variant="severity" />
+                </OutputCard>
               )}
             </div>
           )}
@@ -860,7 +807,12 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
         </div>
       ) : (
         <div className="mt-10 grid md:grid-cols-2 gap-6" data-testid="step4-artifacts-output">
-          <ArtifactCard title={artifacts.scope_doc?.title || "Scope"} kind="SCOPE_DOC">
+          <OutputCard
+            testid="artifact-SCOPE_DOC"
+            label={"{ 04 · scope }"}
+            badge={<span className="mono-tag text-signal">DRAFT</span>}
+            title={artifacts.scope_doc?.title || "Scope"}
+          >
             <BlockList label="IN SCOPE" items={artifacts.scope_doc?.in_scope} />
             <BlockList label="OUT OF SCOPE" items={artifacts.scope_doc?.out_of_scope} muted />
             <BlockList label="DELIVERABLES" items={artifacts.scope_doc?.deliverables} />
@@ -870,39 +822,44 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
                 <p className="mt-1 text-sm">{artifacts.scope_doc.timeline_note}</p>
               </div>
             )}
-          </ArtifactCard>
+          </OutputCard>
 
-          <ArtifactCard title="Client message" kind="CLIENT_MESSAGE">
+          <OutputCard
+            testid="artifact-CLIENT_MESSAGE"
+            label={"{ 04 · client message }"}
+            badge={<span className="mono-tag text-signal">DRAFT</span>}
+            title="Client message"
+          >
             <div className="whitespace-pre-wrap leading-relaxed text-sm">
               {artifacts.client_message}
             </div>
             <CopyButton text={artifacts.client_message} />
-          </ArtifactCard>
+          </OutputCard>
 
-          <ArtifactCard title="Assumptions" kind="ASSUMPTIONS">
-            <ul className="space-y-2 text-sm">
-              {(artifacts.assumptions || []).map((a, i) => (
-                <li key={i} className="flex gap-3">
-                  <span className="font-mono text-signal">{String(i + 1).padStart(2, "0")}</span>
-                  <span>{a}</span>
-                </li>
-              ))}
-            </ul>
-          </ArtifactCard>
+          <OutputCard
+            testid="artifact-ASSUMPTIONS"
+            label={"{ 04 · assumptions }"}
+            badge={<span className="mono-tag text-signal">DRAFT</span>}
+            title="Assumptions"
+          >
+            <OutputList items={artifacts.assumptions || []} variant="numbered" />
+          </OutputCard>
 
-          <ArtifactCard title="Risk flags" kind="RISK_FLAGS">
-            <ul className="space-y-3 text-sm">
-              {(artifacts.risk_flags || []).map((r, i) => (
-                <li key={i} className="flex gap-3">
-                  <SeverityPill level={r.severity} />
-                  <div>
-                    <p className="font-semibold">{r.flag}</p>
-                    <p className="text-muted">{r.why}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </ArtifactCard>
+          <OutputCard
+            testid="artifact-RISK_FLAGS"
+            label={"{ 04 · risk flags }"}
+            badge={<span className="mono-tag text-signal">DRAFT</span>}
+            title="Risk flags"
+          >
+            <OutputList
+              items={(artifacts.risk_flags || []).map((r) => ({
+                severity: r.severity,
+                flag: r.flag,
+                why: r.why,
+              }))}
+              variant="severity"
+            />
+          </OutputCard>
         </div>
       )}
     </StepShell>
@@ -936,13 +893,11 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
     >
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="card-brut p-5 sm:p-6">
-            <p className="mono-label">{"{ the stance }"}</p>
-            <h3 className="font-display text-2xl sm:text-3xl uppercase mt-3">
-              {project.decision?.recommendation?.title}
-            </h3>
-            <p className="mt-3 text-muted">{project.decision?.recommendation?.rationale}</p>
-          </div>
+          <OutputCard
+            label={"{ 05 · the stance }"}
+            title={project.decision?.recommendation?.title}
+            blockquote={project.decision?.recommendation?.rationale}
+          />
 
           <div className="card-brut p-5 sm:p-6 !bg-ink text-chalk">
             <p className="mono-label text-faint">{"{ what to expect }"}</p>
@@ -1077,9 +1032,102 @@ function ArtifactCard({ title, kind, children }) {
         <p className="mono-label">{kind.replace("_", " ")}</p>
         <span className="mono-tag text-signal">DRAFT</span>
       </div>
-      <h3 className="font-display text-2xl mt-3">{title}</h3>
+      <h3 className="font-display text-2xl sm:text-3xl mt-3 leading-tight">{title}</h3>
       <div className="mt-5 space-y-4">{children}</div>
     </div>
+  );
+}
+
+// ---- Unified output primitives ----
+// Used by every step so the AI-generated output looks identical in card style,
+// header layout, title size, section labels, and list item formatting.
+
+function OutputCard({ label, badge, title, blockquote, children, testid }) {
+  return (
+    <div className="card-brut p-5 sm:p-6 bg-chalk" data-testid={testid}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="mono-label">{label}</p>
+        {badge}
+      </div>
+      {title && (
+        <h3 className="font-display text-2xl sm:text-3xl mt-4 leading-tight">{title}</h3>
+      )}
+      {blockquote && (
+        <p className="mt-5 border-l-2 border-signal pl-4 italic text-sm sm:text-base">
+          {blockquote}
+        </p>
+      )}
+      {children && <div className="mt-2">{children}</div>}
+    </div>
+  );
+}
+
+function OutputSection({ label, children }) {
+  return (
+    <div className="mt-8">
+      <p className="mono-tag text-muted">{label}</p>
+      <div className="mt-3">{children}</div>
+    </div>
+  );
+}
+
+function OutputList({ items = [], variant = "numbered", testid }) {
+  if (!items.length) return null;
+
+  if (variant === "severity") {
+    return (
+      <ul className="space-y-3 text-sm" data-testid={testid}>
+        {items.map((r, i) => (
+          <li key={i} className="flex gap-3">
+            <SeverityPill level={r.severity} />
+            <div>
+              <p className="font-semibold">{r.risk || r.flag}</p>
+              <p className="text-muted mt-1">{r.mitigation || r.why}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <ul className="space-y-2 text-sm" data-testid={testid}>
+      {items.map((t, i) => {
+        if (variant === "strike") {
+          return (
+            <li key={i} className="flex gap-3 line-through text-muted">
+              <span className="font-mono">×</span>
+              <span>{t}</span>
+            </li>
+          );
+        }
+        if (variant === "arrow") {
+          return (
+            <li key={i} className="flex gap-3">
+              <span className="font-mono text-signal">→</span>
+              <span>{t}</span>
+            </li>
+          );
+        }
+        if (variant === "danger") {
+          return (
+            <li key={i} className="flex gap-3">
+              <span className="font-mono text-danger">!</span>
+              <span>{t}</span>
+            </li>
+          );
+        }
+        // default: numbered
+        return (
+          <li key={i} className="flex gap-3">
+            <span className="font-mono text-signal w-6 shrink-0">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span>{t}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
