@@ -46,6 +46,8 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+  // Fire-once on mount. See Dashboard.jsx for rationale.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     load();
   }, []);
@@ -105,7 +107,10 @@ export default function AdminDashboard() {
   const logout = async () => {
     try {
       await api.post("/auth/logout");
-    } catch { /* ignore */ }
+    } catch {
+      // Best-effort logout — proceed to clear local state and bounce to
+      // the admin login page even if the server is unreachable.
+    }
     await refresh();
     navigate("/admin/login", { replace: true });
   };

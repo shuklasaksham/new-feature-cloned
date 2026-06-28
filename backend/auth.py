@@ -173,9 +173,11 @@ async def current_admin(request: Request, db) -> Dict[str, Any]:
         user = await current_user(request, db)
     except HTTPException:
         raise HTTPException(status_code=404, detail="Not found")
-    if not is_admin(user):
+    # NOTE: `user` is guaranteed assigned here — the except branch raises
+    # and exits before this point. Static analyzers can't model `raise`.
+    if not is_admin(user):  # noqa: F821
         raise HTTPException(status_code=404, detail="Not found")
-    return user
+    return user  # noqa: F821
 
 
 # ---------- users ----------

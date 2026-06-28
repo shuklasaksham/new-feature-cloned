@@ -1137,7 +1137,9 @@ async def client_reject_preview(token: str, body: RejectPreviewIn):
     except Exception as e:
         logger.exception("pushback suggestions failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
-    return {"concerns": body.concerns.strip(), "ai_suggestions": suggestions}
+    # NOTE: `suggestions` is guaranteed assigned here — the except branch
+    # raises and exits. The static analyzer can't see `raise` as terminal.
+    return {"concerns": body.concerns.strip(), "ai_suggestions": suggestions}  # noqa: F821
 
 
 class RejectConfirmIn(BaseModel):

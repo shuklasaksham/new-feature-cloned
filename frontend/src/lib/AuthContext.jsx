@@ -16,6 +16,10 @@ export function AuthProvider({ children }) {
       setUser(null);
       return null;
     }
+    // `api` is a module-level singleton (axios instance); `setUser` is a
+    // useState setter with stable identity per React docs. Neither belongs
+    // in deps. The empty array is deliberate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -26,15 +30,22 @@ export function AuthProvider({ children }) {
       return;
     }
     refresh().finally(() => setLoading(false));
+    // `refresh` is memoized with [] above (stable); `setLoading` is a
+    // useState setter (stable). Only `refresh` needs to be acknowledged.
   }, [refresh]);
 
   const logout = useCallback(async () => {
     try {
       await api.post("/auth/logout");
     } catch {
-      /* ignore */
+      // Best-effort: even if the network is down, we still want to clear
+      // local user state and let them out. Logging here would spam on
+      // every offline logout.
     }
     setUser(null);
+    // Same rationale as `refresh` above — module-level `api`, stable
+    // `setUser` from useState; empty deps is correct.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

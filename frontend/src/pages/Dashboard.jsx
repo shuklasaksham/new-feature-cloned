@@ -38,6 +38,11 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+  // Fire-once on mount. `load` is a stable closure over component state
+  // and re-creating it every render is intentional — we don't want this
+  // effect to re-run. Adding `load` to deps without useCallback would
+  // cause an infinite re-render loop.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   const create = async () => {
