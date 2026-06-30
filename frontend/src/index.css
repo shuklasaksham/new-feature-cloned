@@ -191,44 +191,95 @@ body::before {
 .clay-signal:disabled { background: var(--surface-3); color: var(--text-3); border-color: var(--hairline); cursor: not-allowed; }
 
 /* ============================================================
-   Cards — Linear dark + tasteful glassmorphism
-   Translucent surface over the dark page, backdrop-blur,
-   hairline highlight on the top edge for "glass" depth.
+   Cards — Lifted dark surface with edge-light + soft floating glow.
+   Solid deep-black surface (no blur), 1px gradient top highlight,
+   ambient drop shadow that gives the card a quiet floating presence.
    ============================================================ */
 .card-brut {
-  background: rgba(24, 24, 27, 0.62);
-  backdrop-filter: saturate(150%) blur(14px);
-  -webkit-backdrop-filter: saturate(150%) blur(14px);
-  border: 1px solid var(--hairline);
-  border-radius: 8px;
+  position: relative;
+  background: #0E0F12;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.35);
-  transition: border-color 180ms var(--ease-out-spring), background 180ms var(--ease-out-spring), transform 180ms var(--ease-out-spring);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 12px 32px -16px rgba(0, 0, 0, 0.7),
+    0 24px 64px -24px rgba(0, 0, 0, 0.55);
+  transition: border-color 220ms var(--ease-out-spring),
+              background 220ms var(--ease-out-spring),
+              transform 220ms var(--ease-out-spring),
+              box-shadow 220ms var(--ease-out-spring);
+}
+/* Top edge light — 1px gradient that catches like a bezel highlight */
+.card-brut::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.02) 28%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
 }
 .card-brut-hover:hover {
-  background: rgba(28, 28, 33, 0.72);
-  border-color: #2f3447;
-  transform: translateY(-1px);
+  background: #111216;
+  border-color: rgba(255, 255, 255, 0.10);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 18px 40px -18px rgba(0, 0, 0, 0.75),
+    0 32px 80px -28px rgba(124, 92, 255, 0.12);
 }
 
-/* Liquid-glass — AI elevated surface. Brighter translucent base,
-   refractive sheen drift on hover, violet edge accent on hover. */
+/* Liquid-glass — AI elevated surface. Same lifted feel, slightly
+   brighter base, faint violet ambient glow underneath. */
 .liquid-glass {
   position: relative;
-  background:
-    linear-gradient(135deg, rgba(28, 28, 33, 0.78) 0%, rgba(22, 24, 29, 0.70) 50%, rgba(28, 28, 33, 0.78) 100%);
-  backdrop-filter: saturate(170%) blur(20px);
-  -webkit-backdrop-filter: saturate(170%) blur(20px);
-  border: 1px solid var(--hairline);
-  border-radius: 10px;
+  background: #101116;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 10px 32px -16px rgba(124, 92, 255, 0.18);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 14px 36px -16px rgba(0, 0, 0, 0.75),
+    0 28px 72px -28px rgba(124, 92, 255, 0.18);
   overflow: hidden;
-  transition: border-color 220ms var(--ease-out-spring);
+  transition: border-color 240ms var(--ease-out-spring),
+              transform 240ms var(--ease-out-spring),
+              box-shadow 240ms var(--ease-out-spring);
 }
+/* Top edge bezel highlight */
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.03) 30%,
+    rgba(255, 255, 255, 0) 65%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+/* Slow refractive sheen — drifts on hover */
 .liquid-glass::after {
   content: "";
   position: absolute;
@@ -236,13 +287,21 @@ body::before {
   pointer-events: none;
   background: linear-gradient(115deg,
     transparent 0%, transparent 38%,
-    rgba(255, 255, 255, 0.06) 50%,
+    rgba(255, 255, 255, 0.04) 50%,
     transparent 62%, transparent 100%);
   background-size: 220% 100%;
   background-position: 200% 0;
   transition: background-position 1.6s var(--ease-snap);
 }
-.liquid-glass:hover { border-color: rgba(124, 92, 255, 0.35); }
+.liquid-glass:hover {
+  border-color: rgba(124, 92, 255, 0.30);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 1px 0 rgba(0, 0, 0, 0.6),
+    0 20px 44px -18px rgba(0, 0, 0, 0.8),
+    0 36px 88px -30px rgba(124, 92, 255, 0.28);
+}
 .liquid-glass:hover::after { background-position: -20% 0; }
 
 /* Glass / sticky chrome */
