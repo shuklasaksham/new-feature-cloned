@@ -49,8 +49,8 @@ body,
   font-feature-settings: "ss01", "cv11";
 }
 
-/* Paper-grain (skeuomorphic): faint fibre noise + a single warm caustic blob
-   in the top-left. Sits behind everything; never interferes with clicks. */
+/* Soft caustic blobs only — no noise/grain (Linear stays flat & clean).
+   Sits behind everything; never interferes with clicks. */
 body::before {
   content: "";
   position: fixed;
@@ -58,12 +58,9 @@ body::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    radial-gradient(800px circle at 12% 0%,  rgba(0, 51, 255, 0.045), transparent 60%),
-    radial-gradient(700px circle at 110% 105%, rgba(255, 87, 51, 0.035), transparent 60%),
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.045 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: auto, auto, 160px 160px;
-  mix-blend-mode: multiply;
-  opacity: 0.9;
+    radial-gradient(900px circle at 10% -10%,  rgba(0, 51, 255, 0.05), transparent 55%),
+    radial-gradient(800px circle at 110% 110%, rgba(255, 87, 51, 0.03), transparent 55%);
+  opacity: 1;
 }
 #root { position: relative; z-index: 1; }
 
@@ -286,29 +283,57 @@ body {
 }
 .textarea-brut::placeholder { color: #9a9a95; }
 
-/* brutalist card — now softened toward Linear/Notion polish */
+/* brutalist card — now retuned to Linear-light: barely-there 1px border,
+   soft ambient shadow, minimal blur. Depth comes from the background
+   contrast, not from heavy frost. */
 .card-brut {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: saturate(140%) blur(10px);
-  -webkit-backdrop-filter: saturate(140%) blur(10px);
-  border: 1px solid rgba(10, 10, 10, 0.10);
+  background: #ffffff;
+  border: 1px solid rgba(10, 10, 10, 0.08);
   border-radius: 14px;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 12px 32px -18px rgba(10, 10, 10, 0.18),
-    0 2px 6px -3px rgba(10, 10, 10, 0.08);
+    0 1px 2px rgba(10, 10, 10, 0.04),
+    0 8px 24px -16px rgba(10, 10, 10, 0.12);
   transition: transform 220ms var(--ease-out-spring),
               box-shadow 220ms var(--ease-snap),
               border-color 220ms var(--ease-snap);
 }
 .card-brut-hover:hover {
-  transform: translateY(-2px);
-  border-color: rgba(0, 51, 255, 0.35);
+  transform: translateY(-1px);
+  border-color: rgba(10, 10, 10, 0.14);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.7) inset,
-    0 22px 48px -20px rgba(0, 51, 255, 0.30),
-    0 3px 8px -3px rgba(10, 10, 10, 0.10);
+    0 1px 2px rgba(10, 10, 10, 0.04),
+    0 14px 32px -16px rgba(0, 51, 255, 0.16);
 }
+
+/* Linear-style accent tint cards — solid pastel backgrounds for testimonials,
+   highlight moments, marketing emphasis. Black text always. */
+.tint-sky    { background: linear-gradient(135deg, #dceaff 0%, #eaf2ff 100%); color: #0a0a0a; border-radius: 18px; border: none; }
+.tint-lime   { background: #d6ee2e; color: #0a0a0a; border-radius: 18px; border: none; }
+.tint-lilac  { background: linear-gradient(135deg, #ece8ff 0%, #f5f2ff 100%); color: #0a0a0a; border-radius: 18px; border: none; }
+.tint-peach  { background: linear-gradient(135deg, #ffe4d6 0%, #fff1ea 100%); color: #0a0a0a; border-radius: 18px; border: none; }
+
+/* Status dot — Linear's "At risk" / "On track" pattern */
+.status-dot {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px; letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+.status-dot::before {
+  content: ""; width: 8px; height: 8px; border-radius: 9999px;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.02);
+}
+.status-dot.is-risk::before  { background: #e2453c; box-shadow: 0 0 0 3px rgba(226, 69, 60, 0.12); }
+.status-dot.is-track::before { background: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12); }
+.status-dot.is-wait::before  { background: #d4a017; box-shadow: 0 0 0 3px rgba(212, 160, 23, 0.12); }
+.status-dot.is-live::before  { background: #0033ff; box-shadow: 0 0 0 3px rgba(0, 51, 255, 0.14); }
+
+/* Tabular numerals globally on monospace tags + counters */
+.mono-tag, .mono-label, .t-tag, .t-numeral, .counter {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Liquid glass retuned — less aggressive blur, cleaner border */
 
 /* blueprint grid background */
 .blueprint-bg {
@@ -507,10 +532,10 @@ body {
 
 /* glass surfaces — used on sticky headers + AI accent elements */
 .glass {
-  background: rgba(244, 244, 240, 0.72);
-  backdrop-filter: saturate(140%) blur(18px);
-  -webkit-backdrop-filter: saturate(140%) blur(18px);
-  border-bottom: 1px solid rgba(10, 10, 10, 0.08);
+  background: rgba(244, 244, 240, 0.78);
+  backdrop-filter: saturate(120%) blur(14px);
+  -webkit-backdrop-filter: saturate(120%) blur(14px);
+  border-bottom: 1px solid rgba(10, 10, 10, 0.06);
 }
 .glass-dark {
   background: rgba(10, 10, 10, 0.72);
@@ -729,20 +754,12 @@ body {
    than printed on paper. */
 .liquid-glass {
   position: relative;
-  background:
-    linear-gradient(135deg,
-      rgba(255, 255, 255, 0.82) 0%,
-      rgba(255, 255, 255, 0.68) 45%,
-      rgba(255, 255, 255, 0.82) 100%);
-  backdrop-filter: saturate(180%) blur(22px);
-  -webkit-backdrop-filter: saturate(180%) blur(22px);
-  border: 1px solid rgba(10, 10, 10, 0.10);
+  background: #ffffff;
+  border: 1px solid rgba(10, 10, 10, 0.08);
   border-radius: 16px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(10, 10, 10, 0.04),
-    0 18px 44px -20px rgba(0, 51, 255, 0.20),
-    0 4px 10px -3px rgba(10, 10, 10, 0.08);
+    0 1px 2px rgba(10, 10, 10, 0.04),
+    0 12px 32px -16px rgba(0, 51, 255, 0.14);
   overflow: hidden;
 }
 .liquid-glass::after {
@@ -817,35 +834,28 @@ body {
 }
 
 .clay-signal {
-  background:
-    linear-gradient(180deg, #2d54ff 0%, #0033ff 55%, #0026c2 100%);
+  background: #0033ff;
   color: #ffffff;
   border: 1px solid #0033ff;
   border-radius: 12px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.30),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.20),
-    0 12px 28px -12px rgba(0, 51, 255, 0.50),
-    0 2px 4px -2px rgba(0, 24, 120, 0.40);
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 1px 2px rgba(10, 10, 10, 0.06),
+    0 6px 18px -8px rgba(0, 51, 255, 0.40);
   transition: transform 220ms var(--ease-out-spring),
-              box-shadow 220ms var(--ease-snap),
-              filter 220ms var(--ease-snap);
+              filter 220ms var(--ease-snap),
+              box-shadow 220ms var(--ease-snap);
 }
 .clay-signal:hover:not(:disabled) {
   transform: translateY(-1px);
-  filter: brightness(1.06);
+  filter: brightness(1.08);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.20),
-    0 18px 38px -14px rgba(0, 51, 255, 0.65),
-    0 3px 6px -2px rgba(0, 24, 120, 0.40);
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 10px 24px -10px rgba(0, 51, 255, 0.55);
 }
 .clay-signal:active:not(:disabled) {
-  transform: translateY(1px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.20),
-    inset 0 1px 2px rgba(0, 0, 0, 0.20),
-    0 4px 8px -2px rgba(0, 24, 120, 0.40);
+  transform: translateY(0);
+  filter: brightness(0.95);
 }
 
 /* Universal disabled state for ALL clay variants */
