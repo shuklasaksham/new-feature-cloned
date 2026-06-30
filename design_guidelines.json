@@ -1,124 +1,124 @@
 {
-  "project_name": "Bracket",
-  "tagline": "Designers don't need more tools. They need better decisions.",
-  "theme": "Swiss & High-Contrast (Editorial Brutalism)",
-  "archetype": "Archetype 4 (Swiss & High-Contrast) - Light Theme",
-  "colors": {
-    "background": {
-      "page": "#F4F4F0",
-      "surface": "#FFFFFF",
-      "inverse": "#0A0A0A"
+  "brand": {
+    "name": "Bracket",
+    "promise": "Designers don't need more tools. They need better decisions.",
+    "archetype": "High-End SaaS / Linear-Grade (Swiss + Minimalist Dark)",
+    "theme": "Dark"
+  },
+  "design_tokens": {
+    "colors": {
+      "background": "#000000",
+      "surface_1": "#0D0D12",
+      "surface_2": "#17181D",
+      "surface_3": "#22242B",
+      "hairline": "rgba(255, 255, 255, 0.08)",
+      "hairline_hover": "rgba(255, 255, 255, 0.16)",
+      "text_primary": "#F7F7F8",
+      "text_secondary": "#A0A0AB",
+      "text_tertiary": "#70707B",
+      "accent_primary": "#7C5CFF",
+      "accent_glow": "rgba(124, 92, 255, 0.15)",
+      "danger": "#FF5C5C",
+      "success": "#4ade80"
     },
-    "text": {
-      "primary": "#0A0A0A",
-      "secondary": "#525252",
-      "inverse": "#FFFFFF",
-      "accent": "#0033FF"
+    "typography": {
+      "primary_font": "Inter, sans-serif (features: cv11, ss01, ss03)",
+      "mono_font": "JetBrains Mono, monospace",
+      "scale": {
+        "h1": "text-5xl tracking-[-0.03em] font-medium leading-tight",
+        "h2": "text-3xl tracking-[-0.02em] font-medium leading-snug",
+        "h3": "text-xl tracking-[-0.01em] font-medium",
+        "body": "text-[14px] leading-relaxed tracking-normal font-normal",
+        "label_mono": "text-[11px] uppercase tracking-[0.1em] font-medium",
+        "step_motif": "text-[12px] text-text_tertiary tracking-widest font-mono"
+      }
     },
-    "border": {
-      "default": "#0A0A0A",
-      "subtle": "#D4D4D0"
+    "spacing_and_radii": {
+      "page_padding": "px-6 md:px-12 lg:px-24 py-12 md:py-24",
+      "section_gap": "gap-24 md:gap-32",
+      "element_gap": "gap-4 md:gap-6",
+      "radius_sm": "rounded-[4px]",
+      "radius_md": "rounded-[8px]",
+      "radius_lg": "rounded-[12px]",
+      "radius_xl": "rounded-[16px]",
+      "radius_full": "rounded-full"
     },
-    "accent": {
-      "primary": "#0033FF",
-      "hover": "#0029CC",
-      "danger": "#FF331F"
+    "shadows": {
+      "none": "none",
+      "glow": "0 0 40px -10px var(--accent-glow)",
+      "dropdown": "0 12px 32px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08)"
     }
   },
-  "typography": {
-    "fonts": {
-      "heading": "'Cabinet Grotesk', sans-serif",
-      "body": "'Manrope', sans-serif",
-      "mono": "'JetBrains Mono', monospace"
+  "motion_language": {
+    "easings": {
+      "spring": "cubic-bezier(0.16, 1, 0.3, 1)",
+      "out": "cubic-bezier(0.0, 0.0, 0.2, 1)"
     },
-    "scales": {
-      "h1": "text-5xl sm:text-6xl+ tracking-tighter leading-none font-black uppercase",
-      "h2": "text-4xl sm:text-5xl tracking-tight leading-none font-extrabold uppercase",
-      "h3": "text-2xl sm:text-3xl tracking-tight leading-none font-bold",
-      "h4": "text-xl sm:text-2xl tracking-tight font-semibold",
-      "body": "text-base leading-relaxed font-normal",
-      "overline": "text-xs tracking-[0.2em] font-mono uppercase text-secondary",
-      "mono_accent": "text-sm font-mono tracking-tight text-accent-primary"
+    "durations": {
+      "fast": "150ms",
+      "base": "300ms",
+      "slow": "600ms",
+      "ambient": "4000ms"
+    },
+    "choreography": {
+      "page_enter": {
+        "initial": { "opacity": 0, "y": 8, "filter": "blur(4px)" },
+        "animate": { "opacity": 1, "y": 0, "filter": "blur(0px)" },
+        "transition": { "duration": 0.6, "ease": [0.16, 1, 0.3, 1], "stagger": 0.05 }
+      },
+      "hover_micro_interaction": "Scale to 0.98 on press, border color shifts to hairline_hover, slight bg brighten. 150ms ease-out."
     }
   },
-  "visual_motifs": {
-    "brackets": "Oversized { } used as background watermarks, section dividers, or framing elements. Use JetBrains Mono for the braces.",
-    "borders": "Exposed 1px solid black grid lines (Grid Borders / The Technical Look) to frame content like an architectural blueprint. border-collapse styles.",
-    "shadows": "Sharp, solid 1px or 4px drop shadows (e.g., shadow-[4px_4px_0px_#0A0A0A]) instead of soft blurs.",
-    "corners": "Strictly sharp (rounded-none). No rounded cards."
+  "component_refinements": {
+    "card-brut": "Rename/Refine to `.card-linear`: bg-surface_1, border border-hairline, rounded-lg, overflow-hidden, no box-shadow.",
+    "liquid-glass": "Refine to `.glass-panel`: bg-[#000000]/60, backdrop-blur-xl, border-b border-hairline.",
+    "btn-brut": "Refine to `.btn-primary`: bg-accent_primary text-white rounded-md px-4 py-2 font-medium text-[13px] transition-all hover:brightness-110 active:scale-[0.98] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]",
+    "btn-ghost": "Refine to `.btn-ghost`: bg-transparent text-text_secondary hover:text-text_primary hover:bg-surface_2 rounded-md transition-all active:scale-[0.98]",
+    "input-line": "Refine to `.input-linear`: bg-surface_1 border border-hairline rounded-md px-3 py-2 text-[14px] text-text_primary focus:border-accent_primary focus:ring-1 focus:ring-accent_primary/30 outline-none transition-all",
+    "textarea-brut": "Refine to `.textarea-linear`: same as input-linear but min-h-[120px] resize-none leading-relaxed",
+    "suggest-chip": "Refine to `.suggest-chip`: border border-hairline bg-surface_1 text-text_secondary text-[12px] px-3 py-1.5 rounded-full hover:bg-surface_2 hover:text-text_primary cursor-pointer transition-all",
+    "status-pill": "Refine to `.status-pill`: flex items-center gap-2 text-[12px] font-medium px-2.5 py-1 rounded-full border border-hairline bg-surface_1.",
+    "icon-tile": "Refine to `.icon-tile`: w-8 h-8 rounded-md bg-surface_2 border border-hairline flex items-center justify-center text-text_secondary",
+    "app-shell": "Sidebar 240px expanded / 64px collapsed. bg-background. border-r border-hairline. Content area bg-surface_1 (slightly lifted from pure black).",
+    "nav-item": "text-[13px] font-medium text-text_secondary hover:text-text_primary hover:bg-surface_2 px-2 py-1.5 rounded-md flex items-center gap-2 transition-colors",
+    "step-pipeline": "flex items-center gap-2 overflow-x-auto no-scrollbar py-4 border-b border-hairline. Nodes are 24px circles, connected by 1px hairline lines. Active step gets border-accent_primary."
   },
-  "spacing_and_layout": {
-    "system": "Generous Spacing Philosophy. Use p-8 to p-24 for section padding.",
-    "grid": "Bento Grid (The 'Tetris' Grid Mode A). Asymmetrical layout, mixing wide and tall structural boxes with visible 1px borders.",
-    "alignment": "Optical alignment, left-aligned heavy text for raw brutalist feel."
+  "page_blueprints": {
+    "Marketing_Header": "Fixed top, w-full, z-50, `.glass-panel`. Left: {B} Bracket. Right: Ghost button (Login), Primary button (Get Started). Height: 60px.",
+    "Landing_Page": {
+      "Hero": "Centered. Ambient mesh gradient background behind hero (subtle). H1 (text-5xl), Subtitle (text-lg text-text_secondary max-w-2xl). CTA group. Staggered fade-up entry.",
+      "Problem_Walkthrough": "Bento-box grid structure. Cards with `border-hairline`. Asymmetric layout.",
+      "Social_Proof": "Mono logos at 40% opacity, hover to 100%. Single row marquee or grid.",
+      "Pricing": "3-column grid. Middle card has 1px solid accent_primary border and subtle accent_glow. Features listed with 14px text and crisp check icons."
+    },
+    "Auth": "Centered card (max-w-md), bg-surface_1, border-hairline. Clean typography. Minimalist input-linear. 'Back to home' ghost link.",
+    "App_Dashboard": "Top header: Breadcrumb or Greeting. Action bar: 'New Project' button right-aligned. Grid of projects (card-linear). Empty state: subtle dashed border, ghost icon, clear CTA.",
+    "Project_Flow": "Left Pane (60%): Textarea, AI suggestion chips below it. Right Pane (40%): Live artifact preview in a sticky card. Top: Step pipeline indicator '{ 01 / 05 }'. Ambient pulse when AI is generating.",
+    "Project_Document": "Centered, max-w-3xl. Pure white or #F7F7F8 text. Looks like a pristine, locked, high-end document. Read-only. Action bar floating at bottom for Export/Share.",
+    "Client_Review": "Similar to Project Document but wrapped in a 'Review Mode' shell. Fixed bottom bar with 'Approve' (Primary, Green/Accent) and 'Request Changes' (Ghost/Danger) buttons."
   },
-  "components": {
-    "buttons": {
-      "primary": "bg-[#0A0A0A] text-white hover:bg-[#0033FF] rounded-none px-6 py-4 font-mono uppercase text-sm tracking-widest transition-colors",
-      "secondary": "bg-transparent border border-[#0A0A0A] text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white rounded-none px-6 py-4 font-mono uppercase text-sm tracking-widest transition-colors"
-    },
-    "cards": {
-      "default": "bg-white border border-[#0A0A0A] rounded-none shadow-[4px_4px_0px_#0A0A0A] p-8",
-      "interactive": "hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0A0A0A] transition-all cursor-pointer"
-    },
-    "inputs": {
-      "default": "border-b-2 border-[#0A0A0A] bg-transparent focus:border-[#0033FF] focus:ring-0 rounded-none font-mono text-sm px-0 py-3 placeholder:text-neutral-400"
-    },
-    "navigation": {
-      "header": "Solid background (#F4F4F0) with a hard 1px bottom border (#0A0A0A). High contrast logo. Monospace nav links."
-    }
-  },
-  "pages": {
-    "landing": {
-      "hero": "Asymmetric split layout. Left: Massive 'Cabinet Grotesk' tagline 'DESIGNERS DON\\'T NEED MORE TOOLS.' with '{ }' motif overlapping text. Right: Blueprint architectural image with multiply blend mode. Dual CTA.",
-      "philosophy": "3-layer horizontal flex or grid timeline (Situation Framing, Context Compression, Decision Engine) connected by a solid 1px horizontal black line.",
-      "walkthrough": "5 stark brutalist cards. Minimal text, heavy use of mono fonts for labels (e.g., '01. FRAMING').",
-      "artifacts": "Overlapping artifact examples styled as physical paper documents with stark borders.",
-      "pricing": "3 columns. Free / Pro / Studio. The 'Studio' tier uses black background (#0A0A0A) with white text and electric blue accent. Currency toggle styled as a mechanical switch."
-    },
-    "dashboard": {
-      "layout": "The 'Control Room' Grid Mode B. Dense, data-heavy, 1px border grid system (border-collapse).",
-      "sections": "Active Projects list, Decisions in Progress, Locked Decisions.",
-      "styling": "Cardless layout where possible, using borders to separate widgets."
-    },
-    "new_project_flow": {
-      "layout": "5-step wizard. Progress indicator is a stark line filling with #0033FF. Steps are separated by literal bracket motifs '{' and '}'. Content area is a focused, minimal terminal-like interface for intent capture."
-    }
-  },
-  "image_urls": [
-    {
-      "category": "hero_background",
-      "description": "Abstract architectural curves and lines, used with a multiply blend mode to look like a blueprint sketch.",
-      "url": "https://images.pexels.com/photos/31500951/pexels-photo-31500951.jpeg"
-    },
-    {
-      "category": "blueprint_texture",
-      "description": "Technical architectural drawing for the 3-layer philosophy section.",
-      "url": "https://images.pexels.com/photos/4491829/pexels-photo-4491829.jpeg"
-    },
-    {
-      "category": "designer_workspace",
-      "description": "Minimalist designer desk setup for the Artifacts and Dashboard context.",
-      "url": "https://images.unsplash.com/photo-1612093991429-acd0fc7b1804?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBtaW5pbWFsaXN0JTIwZGVzaWduZXIlMjBkZXNrJTIwc2V0dXB8ZW58MHx8fHwxNzc2NzA1MjM4fDA&ixlib=rb-4.1.0&q=85"
-    },
-    {
-      "category": "editorial_poster",
-      "description": "Minimalist editorial typography poster for Case Studies section.",
-      "url": "https://images.unsplash.com/photo-1543487945-139a97f387d5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwZWRpdG9yaWFsJTIwdHlwb2dyYXBoeSUyMHBvc3RlcnxlbnwwfHx8fDE3NzY3MDUyMTN8MA&ixlib=rb-4.1.0&q=85"
-    }
+  "what_to_remove": [
+    "Shouty all-caps display headings - replace with sentence case, tight-tracking Inter.",
+    "Brutalist `{ first project }` chrome - replace with clean `.card-linear` borders.",
+    "Giant gradient-text 'yet.' pop - replace with subtle, solid white or brand-accent text highlights.",
+    "Mono `{ 01 / 05 }` over-use - restrict to the active step indicator only, make it 11px and muted.",
+    "Oversized drop shadows - use hairline borders and surface color differentiation instead.",
+    "Thick dark mode borders (e.g., 2px+) - everything must be 1px solid rgba(255, 255, 255, 0.08)."
   ],
-  "accessibility_and_interactions": {
-    "hover": "Hover states must invert colors (e.g. black to blue) or shift position (-translate-y-1). Do not rely solely on opacity changes.",
-    "focus": "focus:ring-2 focus:ring-[#0033FF] focus:outline-none rounded-none.",
-    "testing": "All interactive elements MUST include data-testid attribute using kebab-case role-based names."
+  "hero_ambient_art_direction": "Linear-style subtle ambience. Use a CSS-only radial gradient overlay placed absolutely behind the hero text. `background: radial-gradient(circle at 50% 0%, rgba(124, 92, 255, 0.15), transparent 50%);` paired with a very faint absolute SVG grid (`opacity-10`, `stroke-hairline`, 1px stroke-width, 32px cell size). NO 'AI' glowing brains, NO complex 3D renders. Just geometric, ultra-clean light emission.",
+  "testing_and_accessibility": {
+    "data_testid": "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., `data-testid='login-submit-btn'`).",
+    "focus_rings": "Keyboard navigation must show `focus:ring-2 focus:ring-accent_primary/50 focus:outline-none`. Do NOT use default blue outlines.",
+    "contrast": "Text-secondary must remain legible (minimum `#A0A0AB` on `#000000` gives ~4.5:1).",
+    "file_extensions": "Guideline is tailored strictly for `.js` environments (React 19 + Tailwind). Avoid `.tsx` patterns."
   },
-  "instructions_to_main_agent": [
-    "Install Cabinet Grotesk (from Fontshare) or fallback to Oswald, Manrope (Google Fonts), and JetBrains Mono.",
-    "Implement pure HTML/Tailwind for marketing layouts to achieve the 1px grid border ('border-collapse' style) and sharp brutalist aesthetic.",
-    "Do NOT use rounded corners on cards, buttons, or inputs (use 'rounded-none').",
-    "Do NOT use soft shadows; use solid harsh shadows like 'shadow-[4px_4px_0px_#0A0A0A]'.",
-    "Liberally use the characters '{' and '}' as decorative text elements with a large font size and low opacity, or as structural dividers.",
-    "Prioritize optical alignment over strict geometric alignment for typography.",
-    "For the App/Dashboard, use heavily customized Shadcn components (strip out all border-radius and default soft shadows to match the Brutalist aesthetic)."
+  "pixel_checklist": [
+    "Are all borders exactly 1px using `--hairline`?",
+    "Are there any accidental default box-shadows? (Must be removed)",
+    "Are button hit areas at least 40x40px on mobile, despite visual height?",
+    "Is the body text exactly 14px (or 13px for dense UI) with `leading-relaxed`?",
+    "Do all hover states transition smoothly (150ms ease-out)?",
+    "Is the spacing rhythm mathematically consistent (multiples of 4px)?",
+    "Do all pages implement the `page_enter` fade/blur stagger?"
   ]
 }
