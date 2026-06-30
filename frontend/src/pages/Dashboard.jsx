@@ -7,16 +7,16 @@ import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 
 const STATUS_PILL = {
-  draft:      { bg: "bg-paper border border-ink", label: "DRAFT" },
-  in_progress:{ bg: "bg-ink text-chalk",          label: "IN PROGRESS" },
-  locked:     { bg: "bg-signal text-chalk",       label: "LOCKED" },
+  draft:      { bg: "bg-white border border-ink/15 text-ink", label: "DRAFT" },
+  in_progress:{ bg: "bg-ink text-chalk border border-ink",    label: "IN PROGRESS" },
+  locked:     { bg: "bg-signal text-chalk border border-signal", label: "LOCKED" },
 };
 
 const SHARE_PILL = {
-  sent:           { bg: "bg-ink text-chalk",     label: "AWAITING REVIEW" },
-  accepted:       { bg: "bg-signal text-chalk",  label: "ACCEPTED" },
-  rejected:       { bg: "bg-danger text-chalk",  label: "CONCERNS RAISED" },
-  awaiting_reply: { bg: "bg-ink text-chalk",     label: "REPLY SENT" },
+  sent:           { bg: "bg-ink text-chalk",    label: "AWAITING REVIEW" },
+  accepted:       { bg: "bg-signal text-chalk", label: "ACCEPTED" },
+  rejected:       { bg: "bg-danger text-chalk", label: "CONCERNS RAISED" },
+  awaiting_reply: { bg: "bg-ink text-chalk",    label: "REPLY SENT" },
 };
 
 export default function Dashboard() {
@@ -224,14 +224,14 @@ export default function Dashboard() {
                           <div className="flex gap-2">
                             <button
                               onClick={saveRename}
-                              className="px-3 py-2 border border-ink mono-tag bg-signal text-chalk hover:bg-ink"
+                              className="px-3 py-2 rounded-lg mono-tag bg-signal text-chalk hover:brightness-110 transition-all inline-flex items-center gap-2"
                               data-testid={`dashboard-rename-save-${p.id}`}
                             >
                               <Check size={12} /> SAVE
                             </button>
                             <button
                               onClick={cancelRename}
-                              className="px-3 py-2 border border-ink mono-tag bg-paper hover:bg-ink hover:text-chalk"
+                              className="px-3 py-2 rounded-lg mono-tag bg-white border border-ink/15 hover:bg-ink hover:text-chalk transition-all"
                               data-testid={`dashboard-rename-cancel-${p.id}`}
                             >
                               CANCEL
@@ -250,12 +250,12 @@ export default function Dashboard() {
                       )}
                       {renameId !== p.id && (
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        <span className={`mono-tag px-2 py-1 ${sp.bg}`}>{sp.label}</span>
-                        {ss && <span className={`mono-tag px-2 py-1 ${ss.bg}`}>{ss.label}</span>}
+                        <span className={`mono-tag px-2.5 py-1.5 rounded-full ${sp.bg}`}>{sp.label}</span>
+                        {ss && <span className={`mono-tag px-2.5 py-1.5 rounded-full ${ss.bg}`}>{ss.label}</span>}
                         {p.status === "locked" && (
                           <Link
                             to={`/project/${p.id}/document`}
-                            className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk inline-flex items-center gap-2"
+                            className="px-3 py-2 rounded-lg border border-ink/15 bg-white font-mono text-[11px] tracking-widest uppercase hover:bg-ink hover:text-chalk hover:border-ink transition-all inline-flex items-center gap-2"
                             data-testid={`dashboard-doc-${p.id}`}
                           >
                             <FileText size={12} /> DOC
@@ -263,19 +263,21 @@ export default function Dashboard() {
                         )}
                         <button
                           onClick={() => startRename(p)}
-                          className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk inline-flex items-center gap-2"
+                          className="w-9 h-9 rounded-lg border border-ink/15 bg-white text-ink hover:bg-ink hover:text-chalk hover:border-ink transition-all inline-flex items-center justify-center"
                           data-testid={`dashboard-rename-${p.id}`}
                           aria-label="Rename project"
+                          title="Rename"
                         >
-                          <Pencil size={12} />
+                          <Pencil size={13} />
                         </button>
                         <button
                           onClick={() => remove(p.id)}
-                          className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-danger hover:text-chalk inline-flex items-center gap-2"
+                          className="w-9 h-9 rounded-lg border border-ink/15 bg-white text-ink hover:bg-danger hover:text-chalk hover:border-danger transition-all inline-flex items-center justify-center"
                           data-testid={`dashboard-delete-${p.id}`}
                           aria-label="Delete project"
+                          title="Delete"
                         >
-                          <XIcon size={12} />
+                          <XIcon size={13} />
                         </button>
                       </div>
                       )}

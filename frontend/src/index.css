@@ -49,6 +49,33 @@ body,
   font-feature-settings: "ss01", "cv11";
 }
 
+/* Site-wide Linear-light intervention: soften every existing
+   `border-ink` / `divide-ink` / `shadow-brut` so legacy markup
+   blends with the new flat aesthetic without touching every file. */
+.border-ink   { border-color: rgba(10, 10, 10, 0.12); }
+.divide-ink > * + *,
+.divide-y.divide-ink > * + *,
+.divide-x.divide-ink > * + * { border-color: rgba(10, 10, 10, 0.08); }
+.shadow-brut, .shadow-brutBlue { box-shadow: 0 1px 2px rgba(10, 10, 10, 0.04), 0 8px 24px -16px rgba(10, 10, 10, 0.10); }
+.shadow-none-mobile { box-shadow: none; }
+
+/* Generic action-icon button — the unified pencil / X / share / etc.
+   icon tile that replaces inline `border border-ink bg-paper` clusters. */
+.icon-tile {
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #ffffff;
+  border: 1px solid rgba(10, 10, 10, 0.12);
+  border-radius: 10px;
+  color: #0a0a0a;
+  transition: background 160ms var(--ease-snap),
+              color 160ms var(--ease-snap),
+              border-color 160ms var(--ease-snap),
+              transform 160ms var(--ease-out-spring);
+}
+.icon-tile:hover { background: #0a0a0a; color: #ffffff; border-color: #0a0a0a; transform: translateY(-1px); }
+.icon-tile.is-danger:hover { background: #d63a2e; border-color: #d63a2e; }
+
 /* Soft caustic blobs only — no noise/grain (Linear stays flat & clean).
    Sits behind everything; never interferes with clicks. */
 body::before {

@@ -1,0 +1,64 @@
+{
+  "summary": "Iteration 11 (= the agent-to-agent iteration_14) — Linear-light Dashboard pill + icon-tile bug-fix verification at 1280x900 viewport. Guest session created via POST /api/auth/guest, two test projects created (TEST_PillQA_Alpha, TEST_PillQA_Beta), navigated to /app dashboard. Inspected computed styles of DRAFT pill, rename button, delete button, inline SAVE button, inline CANCEL button. Also verified site-wide overrides (border-ink softening, shadow-brut softening, .liquid-glass solid-white) and basic regression on Navbar + HowItWorks. RESULT: Site-wide overrides + DRAFT pill behave EXACTLY as spec — BUT the new icon-tile / SAVE / CANCEL buttons are STILL rendered as hard-cornered squares because tailwind.config.js line 35 hard-overrides `borderRadius: { none, DEFAULT, sm, md, lg, xl } = '0'`. The inline Tailwind class `rounded-lg` the main agent applied to dashboard-rename / dashboard-delete / dashboard-rename-save / dashboard-rename-cancel resolves to 0px at runtime. Only `rounded-full` (DRAFT pill) survives. The user's original complaint about the harsh look of the pencil + X cluster is therefore HALF-FIXED: borders softened to rgba(10,10,10,0.15) and shadow-brut halos are gone, but the corners are still square instead of the spec'd 8-10px rounding.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Dashboard project-row action cluster (icon tiles + inline rename buttons)",
+        "issue": "rename, delete, inline SAVE and inline CANCEL buttons all render with border-radius: 0px instead of the spec'd rounded-lg (~8-10px). Root cause: tailwind.config.js line 35 declares `borderRadius: { none: '0', DEFAULT: '0', sm: '0', md: '0', lg: '0', xl: '0' }` — a leftover brutalist override. The inline `rounded-lg` Tailwind class therefore compiles to 0px. The `.icon-tile` CSS utility in index.css (line 64-77) DOES define border-radius: 10px, but Dashboard.jsx never applies it — it inlined the styles instead.",
+        "selector": "[data-testid='dashboard-rename-<id>'], [data-testid='dashboard-delete-<id>'], [data-testid='dashboard-rename-save-<id>'], [data-testid='dashboard-rename-cancel-<id>']",
+        "priority": "HIGH",
+        "evidence_computed_styles": {
+          "rename-btn":  { "width":"36px", "height":"36px", "borderRadius":"0px", "backgroundColor":"rgb(255,255,255)", "borderColor":"rgba(10,10,10,0.15)", "borderWidth":"1px", "boxShadow":"none" },
+          "delete-btn":  { "width":"36px", "height":"36px", "borderRadius":"0px", "backgroundColor":"rgb(255,255,255)", "borderColor":"rgba(10,10,10,0.15)", "borderWidth":"1px", "boxShadow":"none" },
+          "rename-save": { "borderRadius":"0px", "backgroundColor":"rgb(0,51,255)", "color":"rgb(255,255,255)" },
+          "rename-cancel":{ "borderRadius":"0px", "backgroundColor":"rgb(10,10,10) (hover state captured)", "borderColor":"rgba(10,10,10,0.15)" },
+          "tailwind-utility-probe": { "rounded-sm":"0px", "rounded-md":"0px", "rounded-lg":"0px", "rounded-xl":"0px", "rounded-full":"9999px" }
+        }
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      { "screen": "Dashboard project row right cluster", "issues": [
+        "DRAFT pill is correctly rounded-full + hairline 15% border — looks Linear-light ✓",
+        "Pencil + X icon tiles look square — corners are 0px instead of 8-10px. Visually still feels mildly brutalist next to the rounded DRAFT pill (see .screenshots/dashboard_cluster_zoomed.png).",
+        "Once cancel-rename is clicked, the mouse remains over the delete button's new position which triggers hover:bg-danger — captured as red X in the cluster screenshot. This is correct hover behavior but the screenshot is therefore not a 'resting' state."
+      ]}
+    ]
+  },
+  "verified_OK_in_this_iteration": [
+    "DRAFT pill: bg-white, border 1px rgba(10,10,10,0.15), border-radius 9999px, box-shadow none, color rgb(10,10,10), padding 6px 10px — matches spec exactly.",
+    "Rename + Delete buttons are 36x36px with bg-white, border 1px rgba(10,10,10,0.15), box-shadow none, color rgb(10,10,10) — only the radius is wrong.",
+    "Click pencil -> inline rename mode shows: input + SAVE (bg signal-blue rgb(0,51,255), white text) + CANCEL (white-ish, hairline border). Click CANCEL -> returns to button row (rename btn visible again). Flow works.",
+    ".border-ink site-wide override resolves to rgba(10,10,10,0.12) — verified on Navbar.",
+    ".liquid-glass on ProjectFlow output card resolves to bg=rgb(255,255,255), border-color rgba(10,10,10,0.08) 1px, soft layered shadow incl. signal-blue ambient — spec ✓.",
+    "shadow-brut box-shadow on icon tiles = 'none' (no harsh black halo) ✓.",
+    "Navbar (marketing) loads at / and renders correctly with softened border-ink.",
+    "HowItWorks route /how-it-works loads with no console errors.",
+    "Zero pageerror events captured. No console errors (other than expected things) during the run."
+  ],
+  "test_report_links": [],
+  "screenshot_evidence": [
+    ".screenshots/dashboard_rows.png — full dashboard with 2 TEST_PillQA_* rows showing DRAFT pill + pencil + X (square corners visible at native size)",
+    ".screenshots/dashboard_cluster_zoomed.png — zoomed right cluster: rounded DRAFT pill, SQUARE pencil tile, SQUARE X tile (in hover-danger red because cursor lingered post-cancel)"
+  ],
+  "action_items": [
+    "FIX tailwind.config.js: drop the brutalist `borderRadius: { none:'0', DEFAULT:'0', sm:'0', md:'0', lg:'0', xl:'0' }` override (line 35) and let Tailwind's defaults (sm:2px, md:6px, lg:8px, xl:12px) flow through. This single edit will unlock the rounded-lg corners the main agent already coded into Dashboard.jsx, ProjectFlow CTAs, btn-brut, etc. — many places already write `rounded-lg` expecting 8-10px.",
+    "ALTERNATIVE quick fix: in Dashboard.jsx, swap the inline `w-9 h-9 rounded-lg border border-ink/15 bg-white …` on the rename + delete buttons for `className='icon-tile' + className='icon-tile is-danger'` — those classes already exist in index.css (lines 64-77) with border-radius: 10px and the correct ink/danger hover transitions. The SAVE + CANCEL inline rename buttons would still need an explicit radius (or a new shared `.btn-pill-sm` utility) because they are wider than 36px.",
+    "PICK ONE of the two fixes — preferably the tailwind.config edit because it also fixes ProjectFlow's `btn-brut/btn-ghost` consumers and any other `rounded-lg` site-wide. Audit any place that previously RELIED on the 0px override for the brutalist look (e.g. card-brut, btn-brut) — those classes set their own explicit border-radius via index.css so they are unaffected.",
+    "Carried over from iteration_10 (still open, non-blocking): (a) Step 2 OutputCard references non-existent form.audience; (b) OutputCard clipboard silent failure in non-secure contexts; (c) ProjectFlow.jsx is 1618+ lines and needs splitting into per-step modules."
+  ],
+  "critical_code_review_comments": [
+    "tailwind.config.js line 35 — `borderRadius: { none:'0', DEFAULT:'0', sm:'0', md:'0', lg:'0', xl:'0' }` is the ROOT CAUSE of the only remaining visual regression on the Dashboard cluster. Removing it is a one-line fix that also benefits every other site that uses Tailwind rounding utilities. It should also be coordinated with a quick visual audit of card-brut/btn-brut to confirm no place still depends on 0px from Tailwind utilities.",
+    "Dashboard.jsx duplicates the icon-tile styling inline (lines 264-281) instead of using the .icon-tile utility class that already exists in index.css (line 64-77). DRY violation + risk of drift. Recommend collapsing to `className='icon-tile'` + `className='icon-tile is-danger'`.",
+    "index.css site-wide overrides at lines 55-60 are correctly scoped and verified at runtime (.border-ink → rgba(10,10,10,0.12), shadow-brut → soft Linear stack, .liquid-glass white solid). Good fix, well-targeted."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (frontend-only run)", "frontend": "85% — site-wide overrides + DRAFT pill + flow work, but rounded-lg corners regress on 4 buttons due to tailwind.config" },
+  "test_credentials": "Guest session via POST /api/auth/guest {name:'Pill QA', designation:'Designer', avatar:'mono-1'} returned 200 with session_token httpOnly cookie. POST /api/projects {project_name, engine:'free'} returns 200 — engine is forced to 'claude' regardless of payload (informational, not in scope).",
+  "seed_data_creation": "Created 2 transient guest projects: TEST_PillQA_Alpha (id 99624624-…), TEST_PillQA_Beta (id 8fa40dc8-… / 3b214646-…), and 1 TEST_FlowRegress project — all under a throwaway guest user. No cleanup script run; they will be garbage-collected with the guest user.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Dashboard route is /app, NOT /dashboard (App.js line 55). Auth is httpOnly session cookie set by POST /api/auth/guest with credentials:'include' — no Bearer token in response body; localStorage is not used. POST /api/projects payload must be {project_name, engine} (NOT {name}). When verifying corner radii anywhere in the app, always evaluate computed borderRadius — visually small squares are easy to miss in screenshots. The Tailwind utilities rounded-sm/md/lg/xl are all 0px right now because of tailwind.config.js line 35 — only rounded-full works.",
+  "rca of the issue": "User's screenshot complaint was about 3 things visually fused: (1) hard 1px black border, (2) dark drop-shadow halo, (3) square corners. Main agent fixed (1) via `.border-ink → rgba(10,10,10,0.12)` site-wide override and (2) via `.shadow-brut → soft Linear shadow` site-wide override. Both verified at runtime. (3) was supposed to be fixed by inlining `rounded-lg` Tailwind classes on the new icon tile + inline rename buttons in Dashboard.jsx, BUT tailwind.config.js line 35 already overrides Tailwind's default radius scale to 0 for sm/md/lg/xl (a leftover from the brutalist design era). So `rounded-lg` compiles to `border-radius: 0`. Net effect: corners are still square. Mitigation = one-line edit to tailwind.config.js to drop the override; OR refactor Dashboard.jsx to use the existing `.icon-tile` CSS utility (index.css line 64) which already encodes border-radius: 10px."
+}
