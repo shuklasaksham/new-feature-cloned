@@ -89,8 +89,11 @@ export default function AppSidebar() {
       {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
         <Link to="/app" className="brand-mark" data-testid="sidebar-brand">
-          <BracketMark size={22} label={false} variant="chalk" />
-          {!collapsed && <span className="brand-text">Bracket</span>}
+          {collapsed ? (
+            <BracketMark size={26} label={false} />
+          ) : (
+            <BracketMark size={24} label={true} />
+          )}
         </Link>
         <button
           type="button"

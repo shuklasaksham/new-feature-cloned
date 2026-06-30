@@ -186,6 +186,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Section-label pill dots switched from neutral gray to coral (`var(--coral)` with soft halo glow) for warmth.
   - FAQ page numbered category headers (01-04) cycle through the same 4-color palette.
 
+- 2026-06-30 — **Design v7 — Official brand assets wired**:
+  - Downloaded official assets to `/app/frontend/public/`:
+    - `logo-icon1.png` — boxed `{B}` mark (used in collapsed sidebar)
+    - `logo-mark1.png` — `{B}racket` wordmark (used in expanded sidebar + top marketing nav + Login/Onboarding/Footer headers)
+    - `illustration.svg` — official two-people-presenting-a-chart illustration (used on dashboard empty state)
+  - `<BracketMark />` simplified to render the PNG directly — `label={true}` → wordmark, `label={false}` → icon. Removed the inline SVG fallback.
+  - `<EmptyStateIllustration />` rewritten to render `/illustration.svg` directly.
+  - Updated Navbar / Login / Onboarding / Footer / AppSidebar to use the wordmark in headers (removed the separate `<span>Bracket</span>` text).
+  - AppSidebar swaps logo automatically: icon when collapsed, wordmark when expanded.
+
 ## Verified status (post iteration_18)
 - ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
 - ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.

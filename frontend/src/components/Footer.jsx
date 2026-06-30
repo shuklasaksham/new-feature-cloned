@@ -12,8 +12,7 @@ export default function Footer() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-14 md:py-20 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
         <div className="col-span-2 md:col-span-2">
           <Link to="/" className="inline-flex items-center gap-2">
-            <BracketMark size={22} label={false} variant="chalk" />
-            <span className="font-semibold text-[14px] tracking-[-0.012em]">Bracket</span>
+            <BracketMark size={24} label={true} />
           </Link>
           <p className="mt-4 max-w-sm text-[13px] leading-[1.65] text-[var(--text-2)]">
             A senior creative peer&apos;s judgement, installed between your input and your output. Decide what to do — not just how to do it.

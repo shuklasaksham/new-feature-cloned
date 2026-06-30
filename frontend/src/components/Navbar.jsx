@@ -15,8 +15,7 @@ export default function Navbar() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center justify-between gap-3">
         {/* Brand */}
         <Link to={logoHref} className="flex items-center gap-2 shrink-0 group" data-testid="nav-logo-link">
-          <BracketMark size={22} label={false} variant="chalk" />
-          <span className="font-semibold text-[14px] tracking-[-0.012em] text-[var(--text)] group-hover:opacity-90 transition-opacity">Bracket</span>
+          <BracketMark size={26} label={true} />
         </Link>
 
         {/* Center nav */}
