@@ -24,7 +24,7 @@ export default function Navbar() {
             <NavLink
               key={l.to}
               to={l.to}
-              className={({ isActive }) => `nav-link text-ink ${isActive ? "active" : ""}`}
+              className={({ isActive }) => `nav-link u-line text-ink ${isActive ? "active is-active" : ""}`}
               data-testid={`nav-link-${l.to.replace("/", "")}`}
             >
               {l.label}

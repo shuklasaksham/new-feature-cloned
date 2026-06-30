@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 9 P1 visual+UX bundle verification (frontend only). Drove end-to-end via API + UI: guest auth → POST /projects (correct schema is project_name) → POST /situation → POST /context → navigated Steps 1..5 in the browser. All new visual primitives verified: story-divider with `{ 0N / 05 }` counter, story-rail previously + is-next hints, liquid-glass on OutputCard, clay-signal on all primary CTAs (step1/2/3-submit-btn, step4-generate-btn), reasoning + source <details> disclosures with body opening cleanly (dashed top border + blue left accent visible in screenshot), conf-ribbon support wired, navbar NavLink u-line + is-active, body::before paper-grain at z-index 0 with #root at z-index 1 (no stacking regressions on .glass header or modals). No console/page errors on any step transition. Suggestion chips, copy-to-clipboard (with grant_permissions), and login/admin routes all working.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: Step 2 OutputCard source disclosure lists `form.audience` (line 624 of ProjectFlow.jsx) but Step2 form only has requirements/constraints/inspirations — there's no `audience` field captured. The `source` panel for step 2 will always show `audience · —`. Likely a copy-paste from a prior schema. Either remove the audience line or wire an audience input.",
+    "Optional: OutputCard's clipboard catch is silent (lines 1288-1290 of ProjectFlow.jsx). In a sandboxed or non-secure context the Copy button gives no feedback at all (label stays 'Copy'). Consider showing a toast.error('Copy failed') so users aren't confused."
+  ],
+  "critical_code_review_comments": [
+    "ProjectFlow.jsx is now 1620 lines — keeps growing. Strongly recommend splitting into per-step files (Step1.jsx, Step2.jsx, …) plus a shared OutputCard.jsx / StepShell.jsx / AISuggestions.jsx before the next feature pass. This was already flagged in iteration_8.",
+    "Step2 source ul references `form.audience` which doesn't exist in Step2's form state — see line 624. Renders as `audience · —` always.",
+    "Module-level _suggestCache (carried over from iteration_8) still not keyed by user — minor, low-risk."
+  ],
+  "verified_in_this_iteration": [
+    "Navbar NavLinks carry `u-line` class (4 nav anchors confirmed); is-active toggles on active route via NavLink isActive prop",
+    "body::before CSS rule defined with radial-gradient paper grain at position:fixed z-index:0; #root is position:relative z-index:1 — interactive elements not covered",
+    "POST /api/auth/guest 200 (returns session_token); POST /api/projects 200 with body {project_name, engine}; POST /api/projects/:id/situation 200 with flat {what, who, unclear}; POST /api/projects/:id/context 200 with {requirements, constraints, inspirations}",
+    "Step 1: step1-divider with counter `{ 01 / 05 }` + SITUATION FRAMING tag; NO step1-previously (correct — it's the start); step1-next-hint rendered with story-rail.is-next",
+    "Step 1: step1-submit-btn className contains 'clay-signal'; step1-framing-output className contains 'liquid-glass'; step1-framing-output-reasoning and step1-framing-output-source both <details>; clicking reasoning opens with body height >0 and dashed top border + blue left accent rendered",
+    "Step 1: clipboard write of 1399 chars succeeds when grant_permissions(['clipboard-read','clipboard-write']) is given; label swaps Copy → Copied; without perms, label stays Copy silently (test env artifact, not a regression)",
+    "Step 1: AISuggestions chips appear under step1-what-suggest after typing ≥3 chars (verified)",
+    "Step 2: step2-divider `{ 02 / 05 }` + CONTEXT COMPRESSION; step2-previously rail renders project.framing.reframed_problem; step2-next-hint renders is-next variant; step2-submit-btn has clay-signal; step2-context-output has liquid-glass; both reasoning & source disclosures are <details>; reasoning opens cleanly (133px body height)",
+    "Step 3: step3-divider + step3-previously (project.context.what_actually_matters) + step3-next-hint all rendered; step3-submit-btn has clay-signal",
+    "Step 4: step4-divider + step4-next-hint rendered; step4-generate-btn has clay-signal; step4-previously is hidden because project.decision is null (we intentionally skipped POST /decision per review request — conditional render is correct, no crash)",
+    "Step 5: step5-divider + step5-next-hint rendered; step5-previously hidden because decision is null (same conditional render, no crash)",
+    "Sticky header on /project/:id/flow still has .glass class (z-30); paper-grain pseudo-element does not obscure header, step-pipeline, or interactive elements",
+    "/login and /admin/login both load (>100 chars of content, no 500)",
+    "Zero pageerror events across all navigations; only console errors observed were from an intentional 400 on /api/suggest when partial was empty (expected)"
+  ],
+  "screenshot_evidence": [
+    ".screenshots/step2_narrative.png — proves the narrative thread: divider counter + previously rail with reframed problem + new title 'You named the problem. Now strip it to bone.' + clay-signal Compress button",
+    ".screenshots/step2_reasoning_open.png — proves the reasoning disclosure body renders with dashed top border + blue left accent"
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run)", "frontend": "100% (all P1 acceptance criteria met)"},
+  "test_credentials": "Guest session via POST /api/auth/guest {name:'P1 QA', designation:'Designer', avatar:'mono-1'}",
+  "seed_data_creation": "Created 2 transient guest projects ('P1 QA test', 'P1 QA Copy Test') during testing. No cleanup script run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All P1 visual+UX upgrades verified working with zero functional regressions. Two non-blocking issues for E1 to consider: (1) Step 2 source disclosure references a non-existent `form.audience` field — cosmetic, always renders as `audience · —`. (2) OutputCard's clipboard catch is silent; in non-secure/sandboxed contexts the button gives no feedback. ProjectFlow.jsx is now 1620 lines and badly needs splitting per iteration_8's recommendation. The CreateProjectIn server model expects {project_name, engine}, NOT {name} — review prompts have been mis-describing this in multiple iterations.",
+  "rca of the issue": "n/a — no bugs found. The initial test-script failure (project create returned 422) was a test-side payload mistake (`name` vs `project_name`), corrected on retry. The 'copy_works=false' first observation was a headless-browser clipboard permission default; granting clipboard permissions made it work (Copied label + 1399 chars written). Both are environment/test-script artifacts, not product regressions."
+}

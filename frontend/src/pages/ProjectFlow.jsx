@@ -256,13 +256,32 @@ export default function ProjectFlow() {
   );
 }
 
-function StepShell({ num, label, title, kicker, children }) {
+function StepShell({ num, label, title, kicker, previously, nextHint, children }) {
   return (
     <div>
-      <p className="mono-label">{`{ step 0${num} · ${label} }`}</p>
-      <h1 className="font-display text-4xl sm:text-5xl md:text-7xl uppercase mt-4">{title}</h1>
+      <div className="story-divider" data-testid={`step${num}-divider`}>
+        <span className="counter">{`{ 0${num} / 05 }`}</span>
+        <span className="t-tag">{label}</span>
+      </div>
+      {previously && (
+        <div className="mb-4 flex" data-testid={`step${num}-previously`}>
+          <div className="story-rail">
+            <span className="label">↩ previously</span>
+            <span>{previously}</span>
+          </div>
+        </div>
+      )}
+      <h1 className="t-hero mt-2">{title}</h1>
       {kicker && <p className="mt-4 text-muted max-w-2xl text-sm md:text-base">{kicker}</p>}
       <div className="mt-8 md:mt-10">{children}</div>
+      {nextHint && (
+        <div className="mt-10 flex" data-testid={`step${num}-next-hint`}>
+          <div className="story-rail is-next">
+            <span className="label">next ↪</span>
+            <span>{nextHint}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -312,6 +331,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
       label="SITUATION FRAMING"
       title="Name what's really happening."
       kicker="Skip the brief. Describe the situation like you'd tell it to a friend over coffee. Bracket will mirror it back clearly."
+      nextHint={framing ? "compress this into what actually matters" : "we name it before we decide it"}
     >
       <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
         <div className="space-y-6" data-testid="step1-form">
@@ -371,7 +391,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
             <button
               onClick={run}
               disabled={loading || !form.what.trim()}
-              className="btn-brut"
+              className="clay-signal px-5 py-3 t-tag press"
               data-testid="step1-submit-btn"
             >
               {loading ? (
@@ -413,6 +433,25 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               blockquote={framing.what_to_name}
               copyText={[framing.reframed_problem, framing.what_to_name, ...(framing.tensions || []).map((t, i) => `${i + 1}. ${t}`)].filter(Boolean).join("\n\n")}
               onRegenerate={run}
+              reasoning={
+                <>
+                  <p>
+                    Bracket re-read what you wrote and looked for the gap between <em>what you said</em> and <em>what the project actually is</em>. The reframed problem is the version of the brief your future self would have written if they&apos;d started with all the context.
+                  </p>
+                  {framing.clarity_label && (
+                    <p className="mt-2 t-helper">
+                      <span className="t-tag">clarity ·</span> {framing.clarity_label.toLowerCase()} ({framing.clarity_score}/100). Higher means the situation is well-defined; lower means there are still unknowns to surface.
+                    </p>
+                  )}
+                </>
+              }
+              source={
+                <ul className="space-y-1.5 text-sm">
+                  <li><span className="t-tag text-muted">what · </span>{form.what || project.situation_input?.what}</li>
+                  <li><span className="t-tag text-muted">who · </span>{form.who || project.situation_input?.who || "—"}</li>
+                  <li><span className="t-tag text-muted">unclear · </span>{form.unclear || project.situation_input?.unclear || "—"}</li>
+                </ul>
+              }
             >
               <OutputSection label="TENSIONS TO WATCH">
                 <OutputList items={framing.tensions || []} variant="numbered" />
@@ -457,8 +496,10 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
     <StepShell
       num={2}
       label="CONTEXT COMPRESSION"
-      title="Less context. Better judgement."
-      kicker="Dump what you've got. Bracket will strip the noise and surface only what changes the call."
+      title="You named the problem. Now strip it to bone."
+      kicker="Dump what you've got. Bracket will pull the signal out and tell you the few things that actually move the call."
+      previously={project?.framing?.reframed_problem}
+      nextHint={compressed ? "pick the call · and own it" : "after this, we make a recommendation"}
     >
       <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
         <div className="space-y-6" data-testid="step2-form">
@@ -521,7 +562,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             <button
               onClick={run}
               disabled={loading}
-              className="btn-brut"
+              className="clay-signal px-5 py-3 t-tag press"
               data-testid="step2-submit-btn"
             >
               {loading ? (
@@ -566,6 +607,23 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
                 (compressed.hidden_assumptions || []).length ? `HIDDEN ASSUMPTIONS\n${(compressed.hidden_assumptions || []).map((s) => `! ${s}`).join("\n")}` : "",
               ].filter(Boolean).join("\n\n")}
               onRegenerate={run}
+              reasoning={
+                <>
+                  <p>
+                    Bracket compared your inputs against the reframe from Step 01. Anything that didn&apos;t <em>change the call</em> was moved to &quot;noise removed&quot;. The signals listed are the few inputs that should actually steer Step 03.
+                  </p>
+                  <p className="mt-2 t-helper">
+                    Hidden assumptions are the things nobody asked aloud but everyone is acting on — usually where projects quietly go wrong.
+                  </p>
+                </>
+              }
+              source={
+                <ul className="space-y-1.5 text-sm">
+                  <li><span className="t-tag text-muted">requirements · </span>{(form.requirements || project.context_input?.requirements || "—").slice(0, 220)}{(form.requirements || "").length > 220 ? "…" : ""}</li>
+                  <li><span className="t-tag text-muted">constraints · </span>{form.constraints || project.context_input?.constraints || "—"}</li>
+                  <li><span className="t-tag text-muted">audience · </span>{form.audience || project.context_input?.audience || "—"}</li>
+                </ul>
+              }
             >
               <OutputSection label="KEY SIGNALS">
                 <OutputList items={compressed.key_signals || []} variant="arrow" />
@@ -618,8 +676,10 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
     <StepShell
       num={3}
       label="DECISION ENGINE"
-      title="Take the call."
-      kicker="One line of optimisation. Bracket takes a stance — with alternatives, trade-offs, and honest risks."
+      title="We know what it is. Now call the shot."
+      kicker="One line of what matters most. Bracket picks a side, names the trade-offs, and tells you what could go wrong — so you can decide with eyes open."
+      previously={project?.context?.what_actually_matters}
+      nextHint={decision ? "give it a paper trail" : "next: artifacts the client can sign"}
     >
       <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
         <div className="space-y-6" data-testid="step3-form">
@@ -682,7 +742,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
             <button
               onClick={run}
               disabled={loading || !form.optimizing_for.trim()}
-              className="btn-brut"
+              className="clay-signal px-5 py-3 t-tag press"
               data-testid="step3-submit-btn"
             >
               {loading ? (
@@ -718,16 +778,30 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
           ) : (
             <div className="space-y-6" data-testid="step3-decision-output">
               <OutputCard
+                testid="step3-recommendation-output"
                 label={"{ 03 · recommendation }"}
-                badge={
-                  <span className="mono-tag text-signal">
-                    CONF · {decision.recommendation?.confidence ?? 0}%
-                  </span>
-                }
+                confidence={decision.recommendation?.confidence}
                 title={decision.recommendation?.title}
                 blockquote={decision.recommendation?.rationale}
                 copyText={`THE CALL\n${decision.recommendation?.title || ""}\n\n${decision.recommendation?.rationale || ""}\n\nConfidence: ${decision.recommendation?.confidence ?? 0}%`}
                 onRegenerate={run}
+                reasoning={
+                  <>
+                    <p>
+                      Given your optimisation target — <em>{form.optimizing_for || project.decision_input?.optimizing_for || "—"}</em> — Bracket scored each plausible direction against your signals from Step 02, then picked the one with the cleanest path to the target.
+                    </p>
+                    <p className="mt-2 t-helper">
+                      Confidence is shown above. Anything below ~70% means the inputs are still ambiguous — go back to Step 01 / 02 and tighten them before locking in.
+                    </p>
+                  </>
+                }
+                source={
+                  <ul className="space-y-1.5 text-sm">
+                    <li><span className="t-tag text-muted">optimising for · </span>{form.optimizing_for || project.decision_input?.optimizing_for || "—"}</li>
+                    <li><span className="t-tag text-muted">don&apos;t break · </span>{form.dont_break || project.decision_input?.dont_break || "—"}</li>
+                    <li><span className="t-tag text-muted">key signals · </span>{(project.context?.key_signals || []).join(", ") || "—"}</li>
+                  </ul>
+                }
               />
 
               {decision.alternatives?.length > 0 && (
@@ -809,8 +883,10 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
     <StepShell
       num={4}
       label="ARTIFACTS"
-      title="Output with intent."
-      kicker="Scope. Message. Assumptions. Risk flags. Drafted from your stance, ready to send."
+      title="The call is made. Give it a paper trail."
+      kicker="Scope, message to the client, assumptions, and risk flags — drafted from your stance, ready to send."
+      previously={project?.decision?.recommendation?.title}
+      nextHint={artifacts ? "lock it in · so it survives the 3am rethink" : "next: confidence lock-in"}
     >
       <div className="flex gap-3 items-center flex-wrap">
         <button onClick={onBack} className="btn-ghost" data-testid="step4-back-btn">
@@ -819,7 +895,7 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
         <button
           onClick={run}
           disabled={loading}
-          className="btn-brut"
+          className="clay-signal px-5 py-3 t-tag press"
           data-testid="step4-generate-btn"
         >
           {loading ? (
@@ -1031,8 +1107,10 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
     <StepShell
       num={5}
       label="CONFIDENCE LOCK-IN"
-      title={isLocked ? "Locked. Open the document." : "This is the direction."}
-      kicker="Lock the decision, then open the polished document inside Bracket — download the PDF or send your client a review link straight from there."
+      title={isLocked ? "Locked. The decision survives the room." : "Lock the call. Before someone changes the brief."}
+      kicker="Lock the decision, then open the polished document — download the PDF or send your client a review link straight from there."
+      previously={project?.decision?.recommendation?.title}
+      nextHint={isLocked ? "open the document · send the review link" : "after this: download · sign · ship"}
     >
       <GuestUpgradeBanner />
       <div className="grid lg:grid-cols-3 gap-6">
@@ -1041,6 +1119,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
             label={"{ 05 · the stance }"}
             title={project.decision?.recommendation?.title}
             blockquote={project.decision?.recommendation?.rationale}
+            copyText={`THE STANCE\n${project.decision?.recommendation?.title || ""}\n\n${project.decision?.recommendation?.rationale || ""}`}
           />
 
           <div className="card-brut p-5 sm:p-6 !bg-ink text-chalk">
@@ -1186,7 +1265,20 @@ function ArtifactCard({ title, kind, children }) {
 // Used by every step so the AI-generated output looks identical in card style,
 // header layout, title size, section labels, and list item formatting.
 
-function OutputCard({ label, badge, title, blockquote, children, testid, copyText, onRegenerate, onEdit }) {
+function OutputCard({
+  label,
+  badge,
+  title,
+  blockquote,
+  children,
+  testid,
+  copyText,
+  onRegenerate,
+  onEdit,
+  reasoning,
+  source,
+  confidence,
+}) {
   const [copied, setCopied] = useState(false);
   const doCopy = async () => {
     try {
@@ -1200,11 +1292,18 @@ function OutputCard({ label, badge, title, blockquote, children, testid, copyTex
   const hasActions = Boolean(copyText || onRegenerate || onEdit);
   return (
     <div
-      className="output-card-wrap card-brut p-5 sm:p-6 bg-chalk animate-scale-in"
+      className="output-card-wrap liquid-glass p-5 sm:p-6 animate-scale-in"
       data-testid={testid}
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="mono-label">{label}</p>
+      <div className="flex items-start justify-between gap-3 relative z-10">
+        <div className="flex items-center gap-3 flex-wrap min-w-0">
+          <p className="t-tag text-muted">{label}</p>
+          {confidence !== undefined && confidence !== null && (
+            <span className="conf-ribbon" data-testid={testid ? `${testid}-confidence` : undefined}>
+              CONF <span className="num">{confidence}%</span>
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           {badge}
           {hasActions && (
@@ -1251,14 +1350,34 @@ function OutputCard({ label, badge, title, blockquote, children, testid, copyTex
         </div>
       </div>
       {title && (
-        <h3 className="font-display text-2xl sm:text-3xl mt-4 leading-tight">{title}</h3>
+        <h3 className="t-display mt-4 relative z-10">{title}</h3>
       )}
       {blockquote && (
-        <p className="mt-5 border-l-2 border-signal pl-4 italic text-sm sm:text-base">
+        <p className="mt-5 border-l-2 border-signal pl-4 italic text-sm sm:text-base relative z-10">
           {blockquote}
         </p>
       )}
-      {children && <div className="mt-2">{children}</div>}
+      {children && <div className="mt-2 relative z-10">{children}</div>}
+      {(reasoning || source) && (
+        <div className="relative z-10">
+          {reasoning && (
+            <details className="disc" data-testid={testid ? `${testid}-reasoning` : undefined}>
+              <summary>
+                <span className="chev">›</span> Reasoning
+              </summary>
+              <div className="disc-body">{reasoning}</div>
+            </details>
+          )}
+          {source && (
+            <details className="disc" data-testid={testid ? `${testid}-source` : undefined}>
+              <summary>
+                <span className="chev">›</span> What this is based on
+              </summary>
+              <div className="disc-body">{source}</div>
+            </details>
+          )}
+        </div>
+      )}
     </div>
   );
 }
