@@ -13,7 +13,7 @@ export default function Navbar() {
   const logoHref = user ? "/app" : "/";
 
   return (
-    <header className="sticky top-0 z-40 bg-paper border-b border-ink" data-testid="site-navbar">
+    <header className="sticky top-0 z-40 glass" data-testid="site-navbar">
       <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
         <Link to={logoHref} className="flex items-center shrink-0" data-testid="nav-logo-link">
           <BracketMark size={26} />

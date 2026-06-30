@@ -147,12 +147,59 @@ export default function Dashboard() {
               <Loader2 size={14} className="animate-spin"/> LOADING…
             </div>
           ) : projects.length === 0 ? (
-            <div className="mt-6 border border-ink p-8 bg-chalk text-center" data-testid="dashboard-empty">
-              <p className="font-display text-2xl">No projects yet.</p>
-              <p className="text-muted mt-2 text-sm">Type a name above and hit &quot;New project&quot;. Two minutes per step.</p>
+            <div
+              className="mt-6 card-brut bg-chalk p-6 sm:p-8 animate-scale-in"
+              data-testid="dashboard-empty"
+            >
+              <div className="grid md:grid-cols-2 gap-6 items-center">
+                <div>
+                  <p className="mono-label text-signal">{"{ first project }"}</p>
+                  <h3 className="font-display text-3xl sm:text-4xl mt-3 leading-[0.95]">
+                    Nothing decided
+                    <br />
+                    <span className="text-signal">yet.</span>
+                  </h3>
+                  <p className="text-muted mt-4 text-sm max-w-sm">
+                    Type a name above. Or pick a starter below — Bracket will fill the first 3 fields for you so you can feel the loop in 60 seconds.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2" data-testid="empty-starter-chips">
+                    {[
+                      "Acme rebrand · landing",
+                      "Logo direction for fintech",
+                      "Pricing page audit",
+                    ].map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => {
+                          setCreatingName(name);
+                          setTimeout(() => {
+                            document
+                              .querySelector('[data-testid="dashboard-new-input"]')
+                              ?.focus();
+                          }, 0);
+                        }}
+                        className="suggest-chip press"
+                        data-testid={`empty-starter-${name.split(" ")[0].toLowerCase()}`}
+                      >
+                        + {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="hidden md:block">
+                  <pre className="empty-frame">{`{
+  step_01  →  reframe the brief
+  step_02  →  compress context
+  step_03  →  pick the call
+  step_04  →  draft artifacts
+  step_05  →  lock + send
+}`}</pre>
+                </div>
+              </div>
             </div>
           ) : (
-            <ul className="mt-6 border border-ink divide-y divide-ink">
+            <ul className="mt-6 border border-ink divide-y divide-ink stagger-in" data-testid="dashboard-projects-list">
               {projects.map((p) => {
                 const sp = STATUS_PILL[p.status] || STATUS_PILL.draft;
                 const ss = SHARE_PILL[p.share_status];

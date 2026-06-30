@@ -24,7 +24,7 @@ export default function AppHeader({ rightExtra }) {
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-30 bg-paper border-b border-ink" data-testid="app-header">
+    <header className="sticky top-0 z-30 glass" data-testid="app-header">
       <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
         <Link to="/app" className="flex items-center gap-3 shrink-0">
           <BracketMark size={26} />

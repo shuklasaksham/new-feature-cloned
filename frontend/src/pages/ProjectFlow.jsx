@@ -11,6 +11,8 @@ import {
   FileText,
   Layers,
   FolderOpen,
+  Copy,
+  Pencil,
 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
@@ -115,7 +117,7 @@ export default function ProjectFlow() {
 
   return (
     <div className="min-h-screen bg-paper" data-testid="project-flow-page">
-      <header className="sticky top-0 z-30 bg-paper border-b border-ink">
+      <header className="sticky top-0 z-30 glass">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-4 sm:gap-6 min-w-0">
             <a href="/app" onClick={handleLogoClick} className="shrink-0 cursor-pointer" data-testid="flow-logo-link">
@@ -170,29 +172,36 @@ export default function ProjectFlow() {
             </Link>
           </div>
         </div>
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-3">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-3 border-b border-ink/10">
           <div className="step-line">
             <span style={{ width: `${progress}%` }} />
           </div>
-          <div className="flex flex-wrap gap-x-5 sm:gap-x-6 gap-y-2 mt-2">
-            {STEPS.map((s) => {
+          <div className="step-pipeline mt-3">
+            {STEPS.map((s, i) => {
               const done =
                 (project?.step || 1) > s.n ||
                 (project?.step === s.n && project?.status === "locked");
               const active = currentStep === s.n;
               return (
-                <button
-                  key={s.n}
-                  onClick={() => setCurrentStep(s.n)}
-                  className={`mono-tag flex items-center gap-2 ${
-                    active ? "text-ink" : done ? "text-signal" : "text-muted"
-                  } hover:text-ink`}
-                  data-testid={`step-nav-${s.n}`}
-                >
-                  <span>{s.glyph}</span>
-                  <span className="hidden sm:inline">{s.label}</span>
-                  {done && <Check size={12} />}
-                </button>
+                <React.Fragment key={s.n}>
+                  <button
+                    onClick={() => setCurrentStep(s.n)}
+                    className={`step-node mono-tag press ${active ? "is-active" : done ? "is-done text-signal" : "text-muted"}`}
+                    data-testid={`step-nav-${s.n}`}
+                    aria-current={active ? "step" : undefined}
+                  >
+                    <span className="dot" aria-hidden="true" />
+                    <span>{s.glyph}</span>
+                    <span className="hidden sm:inline">{s.label}</span>
+                    {done && !active && <Check size={12} />}
+                  </button>
+                  {i < STEPS.length - 1 && (
+                    <span
+                      className={`step-connector hidden sm:inline-block ${done ? "is-done" : ""}`}
+                      aria-hidden="true"
+                    />
+                  )}
+                </React.Fragment>
               );
             })}
           </div>
@@ -402,6 +411,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               badge={<ClarityPill score={framing.clarity_score} label={framing.clarity_label} />}
               title={framing.reframed_problem}
               blockquote={framing.what_to_name}
+              copyText={[framing.reframed_problem, framing.what_to_name, ...(framing.tensions || []).map((t, i) => `${i + 1}. ${t}`)].filter(Boolean).join("\n\n")}
+              onRegenerate={run}
             >
               <OutputSection label="TENSIONS TO WATCH">
                 <OutputList items={framing.tensions || []} variant="numbered" />
@@ -548,6 +559,13 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               testid="step2-context-output"
               label={"{ 02 · what actually matters }"}
               title={compressed.what_actually_matters}
+              copyText={[
+                compressed.what_actually_matters,
+                (compressed.key_signals || []).length ? `KEY SIGNALS\n${(compressed.key_signals || []).map((s) => `→ ${s}`).join("\n")}` : "",
+                (compressed.noise_removed || []).length ? `NOISE REMOVED\n${(compressed.noise_removed || []).map((s) => `× ${s}`).join("\n")}` : "",
+                (compressed.hidden_assumptions || []).length ? `HIDDEN ASSUMPTIONS\n${(compressed.hidden_assumptions || []).map((s) => `! ${s}`).join("\n")}` : "",
+              ].filter(Boolean).join("\n\n")}
+              onRegenerate={run}
             >
               <OutputSection label="KEY SIGNALS">
                 <OutputList items={compressed.key_signals || []} variant="arrow" />
@@ -708,6 +726,8 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                 }
                 title={decision.recommendation?.title}
                 blockquote={decision.recommendation?.rationale}
+                copyText={`THE CALL\n${decision.recommendation?.title || ""}\n\n${decision.recommendation?.rationale || ""}\n\nConfidence: ${decision.recommendation?.confidence ?? 0}%`}
+                onRegenerate={run}
               />
 
               {decision.alternatives?.length > 0 && (
@@ -1166,12 +1186,69 @@ function ArtifactCard({ title, kind, children }) {
 // Used by every step so the AI-generated output looks identical in card style,
 // header layout, title size, section labels, and list item formatting.
 
-function OutputCard({ label, badge, title, blockquote, children, testid }) {
+function OutputCard({ label, badge, title, blockquote, children, testid, copyText, onRegenerate, onEdit }) {
+  const [copied, setCopied] = useState(false);
+  const doCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(copyText || `${title || ""}\n\n${blockquote || ""}`.trim());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {
+      // clipboard can fail on insecure origins / sandboxed iframes; silent
+    }
+  };
+  const hasActions = Boolean(copyText || onRegenerate || onEdit);
   return (
-    <div className="card-brut p-5 sm:p-6 bg-chalk" data-testid={testid}>
+    <div
+      className="output-card-wrap card-brut p-5 sm:p-6 bg-chalk animate-scale-in"
+      data-testid={testid}
+    >
       <div className="flex items-start justify-between gap-3">
         <p className="mono-label">{label}</p>
-        {badge}
+        <div className="flex items-center gap-2 shrink-0">
+          {badge}
+          {hasActions && (
+            <div className="output-actions" data-testid={testid ? `${testid}-actions` : undefined}>
+              {copyText !== undefined && (
+                <button
+                  type="button"
+                  onClick={doCopy}
+                  className={`output-action-btn ${copied ? "is-success" : ""}`}
+                  data-testid={testid ? `${testid}-copy` : "output-copy"}
+                  title="Copy output"
+                  aria-label="Copy output"
+                >
+                  {copied ? <Check size={11} /> : <Copy size={11} />}
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              )}
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  className="output-action-btn"
+                  data-testid={testid ? `${testid}-edit` : "output-edit"}
+                  title="Edit input"
+                  aria-label="Edit input"
+                >
+                  <Pencil size={11} /> Edit
+                </button>
+              )}
+              {onRegenerate && (
+                <button
+                  type="button"
+                  onClick={onRegenerate}
+                  className="output-action-btn"
+                  data-testid={testid ? `${testid}-regenerate` : "output-regenerate"}
+                  title="Regenerate"
+                  aria-label="Regenerate"
+                >
+                  <RefreshCw size={11} /> Redo
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       {title && (
         <h3 className="font-display text-2xl sm:text-3xl mt-4 leading-tight">{title}</h3>
@@ -1324,21 +1401,35 @@ function OutputPending({ title, blurb, loading }) {
 // Tiny pickable keyword chips shown below required fields. Clicking a chip
 // appends (or replaces, if empty) the suggestion into the input.
 //
-// AISuggestions calls /api/suggest as the user types (600ms debounce after
-// the last keystroke). When the field is empty or shorter than 3 chars,
-// nothing is rendered — we don't spam the AI for empty fields.
+// AISuggestions calls /api/suggest as the user types (220ms debounce after
+// the last keystroke — fast enough to feel "live"). Results are cached per
+// (step,field,partial,contextHash) so re-typing the same prefix is instant.
+const _suggestCache = new Map(); // simple LRU-ish: at most 200 entries
+
+function _cacheKey(step, field, partial, context) {
+  return `${step}:${field}:${(partial || "").trim().toLowerCase()}:${JSON.stringify(context || {})}`;
+}
+
 function AISuggestions({ step, field, value, context, onPick, testid }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const text = (value || "").trim();
-    // No AI call for very short input — would just give generic noise.
     if (text.length < 3) {
       setItems([]);
       setLoading(false);
       return undefined;
     }
+    // Cache hit — show instantly, skip the network roundtrip + debounce
+    const key = _cacheKey(step, field, text, context);
+    const cached = _suggestCache.get(key);
+    if (cached) {
+      setItems(cached);
+      setLoading(false);
+      return undefined;
+    }
+
     let cancelled = false;
     setLoading(true);
     const timer = setTimeout(async () => {
@@ -1349,15 +1440,22 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
           partial: text,
           context: context || {},
         });
+        const next = Array.isArray(data.suggestions) ? data.suggestions : [];
         if (!cancelled) {
-          setItems(Array.isArray(data.suggestions) ? data.suggestions : []);
+          setItems(next);
+          // Stash in cache. Bound size to avoid leaks.
+          if (_suggestCache.size > 200) {
+            const firstKey = _suggestCache.keys().next().value;
+            _suggestCache.delete(firstKey);
+          }
+          _suggestCache.set(key, next);
         }
       } catch {
         if (!cancelled) setItems([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }, 600);
+    }, 220);
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -1366,7 +1464,7 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
 
   if (!loading && items.length === 0) return null;
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5" data-testid={testid}>
+    <div className="mt-2 flex flex-wrap gap-1.5 stagger-in" data-testid={testid}>
       <span className="mono-tag text-muted self-center pr-1">
         {loading ? "BRACKET ↘" : "TRY ↘"}
       </span>
@@ -1375,10 +1473,10 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
       )}
       {items.map((s, i) => (
         <button
-          key={i}
+          key={`${s}-${i}`}
           type="button"
           onClick={() => onPick(s, value)}
-          className="suggest-chip"
+          className="suggest-chip press"
           data-testid={testid ? `${testid}-${i}` : undefined}
         >
           + {s}

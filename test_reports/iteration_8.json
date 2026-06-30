@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 8 P0 visual+UX upgrade verification (frontend only). Verified marketing nav glass, Dashboard empty state with 3 starter chips + ASCII frame, sticky glass AppHeader, step-pipeline with active pulsing dot + connectors, Step 1 OutputCard contextual actions (Copy + Regenerate testids), Copy → clipboard write (1328 chars, multi-line) + 'Copied' state swap, mobile always-visible output-actions (opacity=1), no console/page errors when navigating step-nav-1..5 (including Step 4/5 which intentionally don't pass new OutputCard props), and login/admin routes load without 500.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/projects/:id/situation", "issue": "Review request claimed body shape is { situation_input: { what, who, unclear } } but server's SituationIn model expects FLAT { what, who, unclear }. Frontend posts the flat shape correctly so this is just a documentation drift in the review prompt — not a code bug."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ProjectFlow.jsx is now 1501 lines — well over the 700-line guideline. Recommend splitting Step1/Step2/Step3/Step4/Step5/OutputCard/AISuggestions into separate files for maintainability before adding more steps.",
+    "module-level _suggestCache in ProjectFlow.jsx is shared across all sessions/users in the same browser tab. Not a security risk (suggestions are not sensitive), but if a future tenant switches users without full reload, prior suggestions could surface. Consider keying cache by user.id or clearing on logout.",
+    "Dashboard starter-chip handler calls document.querySelector inside setTimeout(0) — works, but a ref-based focus() would be more idiomatic React and resilient if the testid attribute is ever renamed."
+  ],
+  "verified_in_this_iteration": [
+    "marketing /  → site-navbar has .glass class (sticky top-0 z-40 glass)",
+    "POST /api/auth/guest returns 200 with session_token (no regression)",
+    "Dashboard /app empty state: testid 'dashboard-empty' present, headline 'Nothing decided yet.', 3 chips empty-starter-acme / -logo / -pricing visible, ASCII pipeline visible on desktop md+",
+    "Clicking empty-starter-acme fills dashboard-new-input with 'Acme rebrand · landing' and focuses the input (document.activeElement testid match)",
+    "POST /api/projects → 200, navigation to /project/:id/flow",
+    "AppHeader on /project/:id/flow uses .glass (class='sticky top-0 z-30 glass')",
+    "Engine subtitle 'CLAUDE SONNET 4.5' rendered on sm+",
+    "step-pipeline rendered with 5 step-nodes and 4 step-connector spans",
+    "Active step has step-node.is-active class (pulsing dot via nodePulse keyframe)",
+    "step-nav-1..5, flow-overview-link, flow-new-project-btn all present and clickable; no errors when navigating to step 4 and step 5 (which don't pass new OutputCard props)",
+    "After POST /api/projects/:id/situation (200, returns framing): step1-framing-output renders; step1-framing-output-copy and step1-framing-output-regenerate testids present",
+    "Click step1-framing-output-copy → clipboard contains 1328-char multi-line string starting with the reframed problem, button label swaps from 'Copy' → 'Copied'",
+    "Mobile (375px): .output-actions natural opacity = 1 (always visible without hover)",
+    "Mobile (375px): step-connector elements correctly hidden (sm:inline-block + base hidden)",
+    "AISuggestions widget renders chips quickly after typing (visible in mobile screenshot under 'TRY ↘'); source confirms 220ms debounce and module-level LRU cache (max 200 entries)",
+    "/login route loads with form (no 500)",
+    "/admin route redirects to /admin/login and loads (no 500)",
+    "Zero page errors and zero React key/Fragment warnings across all navigations (step-nav 4 → 5 → 1 → ...)"
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run)", "frontend": "100%"},
+  "test_credentials": "Guest session via POST /api/auth/guest {name:'QA P0', designation:'Designer', avatar:'mono-1'}",
+  "seed_data_creation": "Created 4 transient guest projects during testing (QA P0 test, QA OutputCard, QA OCard2, QA OC3). All remain in DB tagged to guest sessions; no cleanup script run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All P0 visual upgrades verified working. No functional regressions. The review prompt incorrectly described situation_input as a wrapper key — the actual SituationIn model is flat {what,who,unclear}. ProjectFlow.jsx is 1501 lines and should be refactored into smaller files before the next feature pass.",
+  "rca of the issue": "n/a — no bugs found"
+}

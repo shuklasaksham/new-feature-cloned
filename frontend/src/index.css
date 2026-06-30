@@ -406,3 +406,203 @@ body {
   color: #ffffff;
 }
 .suggest-chip:active { transform: translateY(1px); }
+
+/* ============================================================
+   MOTION + GLASS + AI POLISH (P0 visual upgrade · 2026-06)
+   ============================================================ */
+
+/* glass surfaces — used on sticky headers + AI accent elements */
+.glass {
+  background: rgba(244, 244, 240, 0.72);
+  backdrop-filter: saturate(140%) blur(18px);
+  -webkit-backdrop-filter: saturate(140%) blur(18px);
+  border-bottom: 1px solid rgba(10, 10, 10, 0.08);
+}
+.glass-dark {
+  background: rgba(10, 10, 10, 0.72);
+  backdrop-filter: saturate(140%) blur(18px);
+  -webkit-backdrop-filter: saturate(140%) blur(18px);
+  color: #fafafa;
+}
+.glass-card {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  border: 1px solid rgba(10, 10, 10, 0.10);
+}
+
+/* Smooth-spring easing for almost everything that moves */
+:root {
+  --ease-out-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Press affordance — micro feedback on click */
+.press {
+  transition: transform 120ms var(--ease-snap), box-shadow 120ms var(--ease-snap);
+}
+.press:active { transform: scale(0.97); }
+
+/* Smoother global anchor / button hover via inheritance — leave existing
+   .btn-brut / .btn-ghost overrides intact, just lift the ease curve */
+.btn-brut, .btn-ghost {
+  transition: transform 180ms var(--ease-out-spring),
+              background 180ms var(--ease-snap),
+              box-shadow 180ms var(--ease-snap),
+              color 180ms var(--ease-snap);
+}
+.btn-brut:active, .btn-ghost:active { transform: translate(-1px, -1px) scale(0.985); }
+
+/* Stagger entrance — children fade-up with progressive delay */
+.stagger-in > * {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeUp 0.55s var(--ease-out-spring) forwards;
+}
+.stagger-in > *:nth-child(1)  { animation-delay: 40ms; }
+.stagger-in > *:nth-child(2)  { animation-delay: 90ms; }
+.stagger-in > *:nth-child(3)  { animation-delay: 140ms; }
+.stagger-in > *:nth-child(4)  { animation-delay: 190ms; }
+.stagger-in > *:nth-child(5)  { animation-delay: 240ms; }
+.stagger-in > *:nth-child(6)  { animation-delay: 290ms; }
+.stagger-in > *:nth-child(7)  { animation-delay: 340ms; }
+.stagger-in > *:nth-child(8)  { animation-delay: 390ms; }
+.stagger-in > *:nth-child(n+9){ animation-delay: 440ms; }
+
+/* Soft scale entrance for output cards */
+.animate-scale-in {
+  animation: scaleIn 0.45s var(--ease-out-spring) both;
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+
+/* AI-thinking shimmer — a subtle gradient sweep used on cards or text
+   to signal "the model is mid-thought" without being a full spinner */
+.ai-shimmer {
+  background: linear-gradient(90deg,
+              rgba(0, 51, 255, 0.0)  0%,
+              rgba(0, 51, 255, 0.18) 50%,
+              rgba(0, 51, 255, 0.0)  100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* Skeleton line (kept compatible w/ existing usage) */
+.skeleton-line {
+  height: 10px;
+  background: linear-gradient(90deg, #e9e9e3 0%, #d4d4d0 50%, #e9e9e3 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+/* Step navigator — connected pipeline that pulses on the active node */
+.step-pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.step-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 4px 0;
+  position: relative;
+  transition: color 200ms var(--ease-snap);
+}
+.step-node .dot {
+  width: 8px; height: 8px;
+  background: #d4d4d0;
+  display: inline-block;
+  border-radius: 9999px;
+  transition: background 200ms var(--ease-snap), box-shadow 200ms var(--ease-snap), transform 200ms var(--ease-out-spring);
+}
+.step-node.is-done .dot { background: #0033ff; }
+.step-node.is-active .dot {
+  background: #0033ff;
+  transform: scale(1.25);
+  box-shadow: 0 0 0 0 rgba(0, 51, 255, 0.6);
+  animation: nodePulse 1.6s var(--ease-snap) infinite;
+}
+.step-node.is-active {
+  color: #0a0a0a;
+  font-weight: 600;
+}
+@keyframes nodePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 51, 255, 0.55); }
+  70%  { box-shadow: 0 0 0 8px rgba(0, 51, 255, 0);  }
+  100% { box-shadow: 0 0 0 0 rgba(0, 51, 255, 0);    }
+}
+.step-connector {
+  width: 18px;
+  height: 1px;
+  background: #d4d4d0;
+  transition: background 200ms var(--ease-snap);
+}
+.step-connector.is-done { background: #0033ff; }
+
+/* Output-card action row — contextual quick actions (Copy / Regenerate /
+   Edit). Visible on hover/focus on desktop, persistent on mobile so touch
+   users can always reach them. */
+.output-actions {
+  display: inline-flex;
+  gap: 6px;
+  opacity: 1;
+  transition: opacity 180ms var(--ease-snap), transform 180ms var(--ease-out-spring);
+}
+@media (min-width: 640px) {
+  .output-actions {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  .output-card-wrap:hover .output-actions,
+  .output-card-wrap:focus-within .output-actions { opacity: 1; transform: translateY(0); }
+}
+.output-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border: 1px solid #0a0a0a;
+  background: #ffffff;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 140ms var(--ease-snap);
+}
+.output-action-btn:hover {
+  background: #0a0a0a;
+  color: #ffffff;
+}
+.output-action-btn:active { transform: translateY(1px); }
+.output-action-btn.is-success {
+  background: #0033ff;
+  border-color: #0033ff;
+  color: #ffffff;
+}
+
+/* Empty-state brutalist diagram (Dashboard etc) */
+.empty-frame {
+  font-family: "JetBrains Mono", monospace;
+  white-space: pre;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #9a9a95;
+  user-select: none;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
