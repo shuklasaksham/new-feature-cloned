@@ -57,15 +57,30 @@ export default function AppSidebar() {
   const navigate = useNavigate();
 
   const [collapsed, setCollapsed] = useState(() => {
-    try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
+    try {
+      if (typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches) return true;
+      return localStorage.getItem(STORAGE_KEY) === "1";
+    } catch { return false; }
   });
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches
+  );
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0"); } catch { /* ignore */ }
+    const mq = window.matchMedia("(max-width: 768px)");
+    const onChange = (e) => {
+      setIsMobile(e.matches);
+      if (e.matches) setCollapsed(true);
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  useEffect(() => {
+    try { if (!isMobile) localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0"); } catch { /* ignore */ }
     document.documentElement.style.setProperty(
       "--sidebar-w",
-      collapsed ? "64px" : "240px"
+      isMobile ? "52px" : (collapsed ? "64px" : "240px")
     );
-  }, [collapsed]);
+  }, [collapsed, isMobile]);
 
   const path = location.pathname;
   const isProjectsActive =

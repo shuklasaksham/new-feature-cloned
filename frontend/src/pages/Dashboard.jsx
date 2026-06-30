@@ -151,7 +151,7 @@ export default function Dashboard() {
               <div className="flex justify-center">
                 <EmptyStateIllustration size={300} />
               </div>
-              <h3 className="t-h1 mt-8">No bracket created yet</h3>
+              <h2 className="t-h1 mt-8">No bracket created yet</h2>
               <p className="t-h3 mt-2 text-[var(--text-2)] font-normal">
                 Define your first project clearly, before work begins
               </p>
