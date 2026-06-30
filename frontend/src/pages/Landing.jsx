@@ -4,7 +4,7 @@ import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, CASE_STUDIES, PRICING } from "../lib/constants";
 
 const Section = ({ id, label, children, className = "" }) => (
-  <section id={id} className={`relative border-t border-ink ${className}`}>
+  <section id={id} className={`relative border-t border-ink/10 ${className}`}>
     {label && (
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 pt-10">
         <p className="mono-label">{label}</p>
@@ -93,7 +93,7 @@ export default function Landing() {
         </div>
 
         {/* marquee */}
-        <div className="border-t border-ink bg-ink text-chalk overflow-hidden">
+        <div className="mx-5 sm:mx-6 md:mx-10 mt-2 mb-2 clay-dark overflow-hidden rounded-2xl">
           <div className="marquee-track py-4">
             {[...marquee, ...marquee].map((w, i) => (
               <span
@@ -122,14 +122,14 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-0 border border-ink">
+          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-4">
             {[
               ["Clients ask vague things", "\"Make it pop.\" \"More premium.\" \"Bolder but cleaner.\" Decoded into nothing."],
               ["Scope creeps silently", "Each small \"just one more\" lands on your plate. The budget doesn't move. You do."],
               ["Decisions feel subjective", "You know it's right. You can't say why. The stakeholder wins the argument, not the work."],
               ["The brief is never the problem", "The real problem is underneath. No tool has helped you surface it."],
             ].map(([t, c], i) => (
-              <div key={i} className="p-7 border border-ink -m-[0.5px] bg-chalk">
+              <div key={i} className="card-brut card-brut-hover p-7">
                 <p className="mono-label">0{i + 1}</p>
                 <h3 className="font-display text-2xl mt-2">{t}</h3>
                 <p className="text-sm text-muted mt-3 leading-relaxed">{c}</p>
@@ -158,9 +158,9 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-3 gap-0 border border-ink">
-            {LAYERS.map((l, i) => (
-              <div key={l.num} className={`p-8 bg-paper ${i < LAYERS.length - 1 ? "md:border-r border-ink" : ""} border-b md:border-b-0 border-ink`}>
+          <div className="mt-12 grid md:grid-cols-3 gap-4">
+            {LAYERS.map((l) => (
+              <div key={l.num} className="card-brut card-brut-hover p-8">
                 <div className="flex items-center justify-between">
                   <span className="mono-label text-ink">{l.num}</span>
                   <span className="font-mono text-signal text-sm">→</span>
@@ -221,7 +221,7 @@ export default function Landing() {
       </Section>
 
       {/* ============ ARTIFACTS ============ */}
-      <Section id="artifacts" label="{ real output }" className="bg-ink text-chalk">
+      <Section id="artifacts" label="{ real output }" className="clay-dark !rounded-none text-chalk">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
           <div className="grid lg:grid-cols-12 gap-10 items-end">
             <div className="lg:col-span-7">
@@ -242,7 +242,7 @@ export default function Landing() {
             {ARTIFACTS_SAMPLES.map((a) => (
               <div
                 key={a.kind}
-                className="bg-paper text-ink p-7 border border-chalk shadow-brutBlue"
+                className="liquid-glass text-ink p-7"
                 data-testid={`artifact-sample-${a.kind}`}
               >
                 <div className="flex items-center justify-between">
@@ -271,9 +271,9 @@ export default function Landing() {
             Built for <span className="text-signal">creative pros</span> who ship decisions, not just deliverables.
           </h2>
 
-          <div className="mt-12 grid md:grid-cols-2 gap-0 border border-ink">
+          <div className="mt-12 grid md:grid-cols-2 gap-4">
             {USE_CASES.map((u, i) => (
-              <div key={u.who} className={`p-8 bg-chalk ${i % 2 === 0 ? "md:border-r border-ink" : ""} ${i < USE_CASES.length - 2 ? "border-b border-ink" : ""}`}>
+              <div key={u.who} className="card-brut card-brut-hover p-8">
                 <div className="flex items-center justify-between">
                   <span className="font-display text-3xl uppercase">{u.who}</span>
                   <span className="mono-tag text-signal">USE CASE 0{i + 1}</span>
@@ -309,8 +309,8 @@ export default function Landing() {
             </Link>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-2 gap-0 border border-ink">
-            <div className="p-6 sm:p-8 bg-paper md:border-r border-b md:border-b-0 border-ink">
+          <div className="mt-12 grid md:grid-cols-2 gap-4">
+            <div className="card-brut p-6 sm:p-8">
               <p className="mono-label text-danger">BEFORE</p>
               <h3 className="font-display text-3xl mt-2">{CASE_STUDIES[0].brand}</h3>
               <p className="mono-tag text-muted mt-1">{CASE_STUDIES[0].category}</p>
@@ -323,7 +323,7 @@ export default function Landing() {
                 ))}
               </ul>
             </div>
-            <div className="p-8 bg-ink text-chalk">
+            <div className="clay-dark p-8 rounded-2xl">
               <p className="mono-label text-signal">AFTER</p>
               <h3 className="font-display text-3xl mt-2 text-chalk">Structured decisions</h3>
               <p className="mono-tag text-faint mt-1">Same client. Different posture.</p>
@@ -355,12 +355,12 @@ export default function Landing() {
               <br />
               <span className="text-signal">No tier tetris.</span>
             </h2>
-            <div className="inline-flex items-center border border-ink" data-testid="pricing-currency-toggle">
+            <div className="inline-flex items-center rounded-full glass p-1" data-testid="pricing-currency-toggle">
               {Object.keys(PRICING.currencies).map((c) => (
                 <button
                   key={c}
                   onClick={() => setCurrency(c)}
-                  className={`px-5 py-3 mono-tag ${currency === c ? "bg-ink text-chalk" : "bg-paper text-ink"}`}
+                  className={`px-4 py-2 mono-tag rounded-full transition-all ${currency === c ? "clay-dark text-chalk" : "text-ink hover:bg-white/30"}`}
                   data-testid={`currency-toggle-${c}`}
                 >
                   {c}
@@ -369,14 +369,14 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-3 gap-0 border border-ink">
-            {PRICING.tiers.map((t, idx) => {
+          <div className="mt-12 grid md:grid-cols-3 gap-4">
+            {PRICING.tiers.map((t) => {
               const isStudio = t.id === "studio";
               const price = cur[t.id];
               return (
                 <div
                   key={t.id}
-                  className={`p-8 ${isStudio ? "bg-ink text-chalk" : "bg-chalk"} ${idx < 2 ? "md:border-r border-ink" : ""} ${idx < 2 ? "border-b md:border-b-0 border-ink" : ""}`}
+                  className={`p-8 rounded-2xl ${isStudio ? "clay-dark text-chalk" : "card-brut card-brut-hover"}`}
                   data-testid={`pricing-tier-${t.id}`}
                 >
                   <div className="flex items-center justify-between">
@@ -416,7 +416,7 @@ export default function Landing() {
       </Section>
 
       {/* ============ FINAL CTA ============ */}
-      <Section id="final" className="bg-ink text-chalk">
+      <Section id="final" className="clay-dark text-chalk">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-16 md:py-32 relative">
           <span
             className="bracket-mark absolute -top-6 sm:-top-10 -left-4 sm:-left-6 text-[180px] sm:text-[280px] md:text-[380px]"

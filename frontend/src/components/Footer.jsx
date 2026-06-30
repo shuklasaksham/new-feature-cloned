@@ -5,7 +5,7 @@ import BracketMark from "./BracketMark";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-ink bg-paper" data-testid="site-footer">
+    <footer className="border-t border-ink/10" data-testid="site-footer">
       <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
         <div className="col-span-2">
           <BracketMark size={28} />
@@ -20,7 +20,7 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Bracket on Instagram"
-              className="w-9 h-9 inline-flex items-center justify-center border border-ink bg-paper hover:bg-ink hover:text-chalk transition-colors"
+              className="w-9 h-9 inline-flex items-center justify-center rounded-full glass hover:bg-ink hover:text-chalk transition-all"
               data-testid="footer-instagram-link"
             >
               <Instagram size={16} />
@@ -30,7 +30,7 @@ export default function Footer() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Bracket on LinkedIn"
-              className="w-9 h-9 inline-flex items-center justify-center border border-ink bg-paper hover:bg-ink hover:text-chalk transition-colors"
+              className="w-9 h-9 inline-flex items-center justify-center rounded-full glass hover:bg-ink hover:text-chalk transition-all"
               data-testid="footer-linkedin-link"
             >
               <Linkedin size={16} />
@@ -82,7 +82,7 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="border-t border-ink">
+      <div className="border-t border-ink/10">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <p className="mono-tag text-muted">© {new Date().getFullYear()} Bracket. All rights reserved.</p>
           <p className="mono-tag text-muted">{"{ designed to decide }"}</p>

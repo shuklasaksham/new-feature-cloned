@@ -257,7 +257,7 @@ export default function ProjectOverview() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
+      <div className="min-h-screen flex items-center justify-center">
         <p className="mono-label">LOADING…</p>
       </div>
     );
@@ -265,10 +265,10 @@ export default function ProjectOverview() {
 
   if (error || !project) {
     return (
-      <div className="min-h-screen bg-paper">
+      <div className="min-h-screen">
         <AppHeader />
         <main className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-12">
-          <div className="border border-danger p-6 bg-chalk" data-testid="overview-error">
+          <div className="card-brut border-danger p-6" data-testid="overview-error">
             <p className="mono-tag text-danger">CAN&apos;T LOAD PROJECT</p>
             <p className="mt-2">{error || "Not found."}</p>
             <Link to="/app" className="btn-ghost mt-4">Back to dashboard</Link>
@@ -283,7 +283,7 @@ export default function ProjectOverview() {
   const currentStep = project.step || 1;
 
   return (
-    <div className="min-h-screen bg-paper" data-testid="overview-page">
+    <div className="min-h-screen" data-testid="overview-page">
       <AppHeader />
 
       <main className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12">
@@ -390,7 +390,7 @@ export default function ProjectOverview() {
         {/* Client review summary — only if shared */}
         {project.share_status && project.share_status !== "none" && (
           <section
-            className="mt-10 border border-ink p-5 sm:p-6 bg-chalk"
+            className="mt-10 card-brut p-5 sm:p-6"
             data-testid="overview-client-review"
           >
             <p className="mono-label">{"{ client review }"}</p>
@@ -433,7 +433,7 @@ export default function ProjectOverview() {
                     <p className="mono-tag text-muted">YOUR REPLIES</p>
                     <ul className="mt-2 space-y-3">
                       {project.owner_replies.map((r, i) => (
-                        <li key={i} className="border border-ink p-3 bg-paper">
+                        <li key={i} className="card-brut p-3">
                           <p className="mono-tag text-muted">
                             {r.from_name} · {(r.sent_at || "").slice(0, 10)}
                           </p>
@@ -490,7 +490,7 @@ export default function ProjectOverview() {
         {/* Step grid */}
         <section className="mt-10" data-testid="overview-steps">
           <p className="mono-label">{"{ five steps · status + edit }"}</p>
-          <ul className="mt-4 border border-ink divide-y divide-ink">
+          <ul className="mt-4 card-brut overflow-hidden divide-y divide-ink/10">
             {STEPS.map((step) => {
               const done =
                 (step.outputKey && !!project[step.outputKey]) ||
@@ -499,7 +499,7 @@ export default function ProjectOverview() {
               return (
                 <li
                   key={step.n}
-                  className="p-5 sm:p-6 bg-chalk flex flex-col sm:flex-row sm:items-start gap-4"
+                  className="p-5 sm:p-6 hover:bg-white/40 flex flex-col sm:flex-row sm:items-start gap-4"
                   data-testid={`overview-step-${step.n}`}
                 >
                   <div className="shrink-0 w-16 text-signal font-display text-3xl">

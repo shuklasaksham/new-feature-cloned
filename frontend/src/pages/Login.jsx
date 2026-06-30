@@ -109,7 +109,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-paper flex flex-col" data-testid="login-page">
-      <header className="border-b border-ink">
+      <header className="glass sticky top-0 z-30">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center" aria-label="Bracket home">
             <BracketMark size={26} />

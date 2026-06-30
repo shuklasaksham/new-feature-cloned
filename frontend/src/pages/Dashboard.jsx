@@ -99,7 +99,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-paper" data-testid="dashboard-page">
+    <div className="min-h-screen" data-testid="dashboard-page">
       <AppHeader />
 
       <main className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12">
@@ -148,7 +148,7 @@ export default function Dashboard() {
             </div>
           ) : projects.length === 0 ? (
             <div
-              className="mt-6 card-brut bg-chalk p-6 sm:p-8 animate-scale-in"
+              className="mt-6 card-brut p-6 sm:p-8 animate-scale-in"
               data-testid="dashboard-empty"
             >
               <div className="grid md:grid-cols-2 gap-6 items-center">
@@ -199,12 +199,12 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <ul className="mt-6 border border-ink divide-y divide-ink stagger-in" data-testid="dashboard-projects-list">
+            <ul className="mt-6 card-brut overflow-hidden divide-y divide-ink/10 stagger-in" data-testid="dashboard-projects-list">
               {projects.map((p) => {
                 const sp = STATUS_PILL[p.status] || STATUS_PILL.draft;
                 const ss = SHARE_PILL[p.share_status];
                 return (
-                  <li key={p.id} className="bg-chalk hover:bg-paper transition-colors" data-testid={`dashboard-row-${p.id}`}>
+                  <li key={p.id} className="hover:bg-white/40 transition-colors" data-testid={`dashboard-row-${p.id}`}>
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       {renameId === p.id ? (
                         <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
