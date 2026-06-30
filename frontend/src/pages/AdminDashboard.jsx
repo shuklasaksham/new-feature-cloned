@@ -47,7 +47,6 @@ export default function AdminDashboard() {
     }
   };
   // Fire-once on mount. See Dashboard.jsx for rationale.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     load();
   }, []);
@@ -280,7 +279,7 @@ export default function AdminDashboard() {
               );
             })}
             {filtered.length === 0 && (
-              <li className="px-5 py-8 mono-tag text-chalk/40">No users match "{q}".</li>
+              <li className="px-5 py-8 mono-tag text-chalk/40">No users match &quot;{q}&quot;.</li>
             )}
           </ul>
         )}

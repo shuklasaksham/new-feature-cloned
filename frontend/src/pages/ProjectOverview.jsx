@@ -98,7 +98,7 @@ function StepSummary({ step, project }) {
         )}
         {project.framing.reframed_problem && (
           <p className="border-l-2 border-signal pl-3 italic">
-            "{project.framing.reframed_problem}"
+            &quot;{project.framing.reframed_problem}&quot;
           </p>
         )}
       </div>
@@ -110,7 +110,7 @@ function StepSummary({ step, project }) {
       <div className="mt-3 text-sm space-y-2">
         {project.context.what_actually_matters && (
           <p className="border-l-2 border-signal pl-3 italic">
-            "{project.context.what_actually_matters}"
+            &quot;{project.context.what_actually_matters}&quot;
           </p>
         )}
         {project.context.key_signals?.length > 0 && (
@@ -193,7 +193,6 @@ export default function ProjectOverview() {
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const isLocked = project?.status === "locked";
@@ -270,7 +269,7 @@ export default function ProjectOverview() {
         <AppHeader />
         <main className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-12">
           <div className="border border-danger p-6 bg-chalk" data-testid="overview-error">
-            <p className="mono-tag text-danger">CAN'T LOAD PROJECT</p>
+            <p className="mono-tag text-danger">CAN&apos;T LOAD PROJECT</p>
             <p className="mt-2">{error || "Not found."}</p>
             <Link to="/app" className="btn-ghost mt-4">Back to dashboard</Link>
           </div>

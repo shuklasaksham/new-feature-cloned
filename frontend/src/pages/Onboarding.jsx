@@ -26,7 +26,6 @@ export default function Onboarding() {
       if (!designation) setDesignation(user.designation || "");
       if (!user.avatar && !avatar) setAvatar("mono-1");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const submit = async () => {
@@ -67,7 +66,7 @@ export default function Onboarding() {
         <div className="w-full max-w-xl">
           <p className="mono-label">{"{ set yourself up }"}</p>
           <h1 className="font-display text-4xl sm:text-5xl uppercase mt-3 leading-[0.95]">
-            Tell us <span className="text-signal">who's deciding.</span>
+            Tell us <span className="text-signal">who&apos;s deciding.</span>
           </h1>
           <p className="mt-3 text-muted text-sm">Two minutes. Your docs will go out under your name.</p>
 
@@ -123,7 +122,7 @@ export default function Onboarding() {
                   onChange={(e) => setSetPwdToggle(e.target.checked)}
                   className="accent-signal w-4 h-4"
                 />
-                <span>Set a password so I don't need to use OTP next time.</span>
+                <span>Set a password so I don&apos;t need to use OTP next time.</span>
               </label>
               {setPwdToggle && (
                 <input

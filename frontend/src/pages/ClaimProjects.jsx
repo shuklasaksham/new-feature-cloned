@@ -30,7 +30,6 @@ export default function ClaimProjects() {
         setLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setAll = (val) =>
@@ -73,7 +72,7 @@ export default function ClaimProjects() {
             We found projects under <span className="text-signal">your email.</span>
           </h1>
           <p className="mt-3 text-muted text-sm">
-            Keep what's still useful. Delete the rest. We'll never auto-merge anything you didn't pick.
+            Keep what&apos;s still useful. Delete the rest. We&apos;ll never auto-merge anything you didn&apos;t pick.
           </p>
 
           {loading ? (

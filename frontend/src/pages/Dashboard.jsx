@@ -42,7 +42,6 @@ export default function Dashboard() {
   // and re-creating it every render is intentional — we don't want this
   // effect to re-run. Adding `load` to deps without useCallback would
   // cause an infinite re-render loop.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, []);
 
   const create = async () => {
@@ -150,7 +149,7 @@ export default function Dashboard() {
           ) : projects.length === 0 ? (
             <div className="mt-6 border border-ink p-8 bg-chalk text-center" data-testid="dashboard-empty">
               <p className="font-display text-2xl">No projects yet.</p>
-              <p className="text-muted mt-2 text-sm">Type a name above and hit "New project". Two minutes per step.</p>
+              <p className="text-muted mt-2 text-sm">Type a name above and hit &quot;New project&quot;. Two minutes per step.</p>
             </div>
           ) : (
             <ul className="mt-6 border border-ink divide-y divide-ink">

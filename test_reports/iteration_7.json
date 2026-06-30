@@ -1,0 +1,32 @@
+{
+  "summary": "Regression test of UI-text/lint cleanup (HTML entity escapes + removed redundant eslint-disable). Ran the happy-path: guest login -> dashboard -> create project -> Step 1 (AISuggestions) -> Step 5 (guest upgrade banner with SKIP — I'M GOOD) -> dismiss banner -> logout. Visited Onboarding, ClaimProjects, and AdminLogin to verify text rendering. ALL apostrophes/quotes that were converted to &apos;/&quot; render correctly as ' / \" in the DOM — zero literal HTML entities leaked to users. Zero functional regressions observed. Backend testing skipped per request.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ProjectFlow.jsx is still ~1404 lines — exceeds 700-line guideline. Recommend splitting into per-step sub-files (carry-over from iteration_6).",
+    "No new code-quality issues introduced by this iteration's entity-escape + eslint-disable cleanup."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100%"},
+  "test_credentials": "Guest mode (POST /api/auth/guest with name='QA Tester'). No static creds needed for this regression.",
+  "seed_data_creation": "Created 2 guest sessions + 1 project named 'Regression Test Project' (id=346e9ecb-7942-4de8-b07d-a513d98a2eb0). Safe to purge.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration_7 verified the entity-escape cleanup. Concrete evidence: (a) Step 5 SKIP button innerText is exactly 'SKIP — I'M GOOD' (literal apostrophe glyph, NOT '&apos;') — captured both via DOM read and screenshot; (b) Dashboard empty-state phrase 'Type a name above and hit \"New project\". Two minutes per step.' renders with literal double quotes; (c) Step 5 black 'What to expect' card shows 'If someone asks \"can we reduce the price?\" — your message is already drafted.' with literal quotes; (d) Onboarding heading 'TELL US WHO'S DECIDING.' and password caption 'Set a password so I don't need to use OTP next time.' both show literal apostrophes; (e) On every page tested, document.body.innerText was scanned for the substrings '&apos;' and '&quot;' and NEITHER was found. Guest login + project creation + step navigation + SKIP dismiss + logout all functional. /api/auth/me returns 401 after POST /api/auth/logout (200). The ClaimProjects route /claim redirected to /app because guest had no orphaned projects to claim — not a bug, expected behavior. AdminDashboard search empty-state ('No users match \"foo\".') was NOT exercised in the browser because guest accounts can't access /admin; source-level inspection confirms the &quot; entities are in place in AdminDashboard.jsx:282 and Onboarding/Dashboard/ClaimProjects/ProjectOverview/ProjectFlow/ProjectDocument files match the iteration_7 expected lines.",
+  "verification_evidence": {
+    "guest_login_status": 200,
+    "logout_status": 200,
+    "me_after_logout": 401,
+    "step5_skip_button_innerText": "SKIP — I'M GOOD",
+    "dashboard_empty_state_present": true,
+    "onboarding_heading_present": "TELL US WHO'S DECIDING.",
+    "literal_html_entities_found_on_any_page": false,
+    "ai_suggestions_widget_loaded_after_debounce": "step1-what-suggest testid present (showed 'BRACKET ↘ THINKING…' — debounce fired, awaiting LLM)"
+  }
+}

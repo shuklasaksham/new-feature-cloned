@@ -19,7 +19,6 @@ export function AuthProvider({ children }) {
     // `api` is a module-level singleton (axios instance); `setUser` is a
     // useState setter with stable identity per React docs. Neither belongs
     // in deps. The empty array is deliberate.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -45,7 +44,6 @@ export function AuthProvider({ children }) {
     setUser(null);
     // Same rationale as `refresh` above — module-level `api`, stable
     // `setUser` from useState; empty deps is correct.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

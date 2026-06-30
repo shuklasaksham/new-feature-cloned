@@ -772,7 +772,6 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
   // current decision. Run only once per mount; user can still re-trigger via
   // the "Regenerate" button below.
   const autoRanRef = useRef(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (autoRanRef.current) return;
     autoRanRef.current = true;
@@ -982,7 +981,7 @@ function GuestUpgradeBanner() {
             className="mono-tag text-chalk/70 hover:text-chalk"
             data-testid="guest-upgrade-skip"
           >
-            SKIP — I'M GOOD
+            SKIP — I&apos;M GOOD
           </button>
         </div>
       </form>
@@ -1038,7 +1037,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
               <li className="flex gap-3">
                 <span className="font-mono text-signal">→</span>
                 <span className="text-chalk">
-                  If someone asks "can we reduce the price?" — your message is already drafted.
+                  If someone asks &quot;can we reduce the price?&quot; — your message is already drafted.
                 </span>
               </li>
             </ul>

@@ -275,7 +275,7 @@ export default function ProjectDocument() {
             {!isReviewed && !project.share_token && (
               <>
                 <p className="mt-3 text-sm text-muted">
-                  Send a clean, branded link to your client. They'll check off each scope item and sign,
+                  Send a clean, branded link to your client. They&apos;ll check off each scope item and sign,
                   or send back concerns with AI-assisted suggestions.
                 </p>
                 <button
@@ -569,7 +569,7 @@ function ShareLinkPanel({ url }) {
         <Send size={14} /> Send via email
       </a>
       <p className="mono-tag text-muted mt-3">
-        ANYONE WITH THE LINK CAN REVIEW. THEY DON'T NEED AN ACCOUNT.
+        ANYONE WITH THE LINK CAN REVIEW. THEY DON&apos;T NEED AN ACCOUNT.
       </p>
     </div>
   );
