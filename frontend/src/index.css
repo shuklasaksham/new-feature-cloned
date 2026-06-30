@@ -1187,7 +1187,8 @@ body::before {
 }
 .section-label .dot {
   width: 6px; height: 6px; border-radius: 9999px;
-  background: var(--text-2);
+  background: var(--coral);
+  box-shadow: 0 0 8px rgba(255, 122, 107, 0.45);
 }
 
 /* Bento grid (used on Landing problem section) */

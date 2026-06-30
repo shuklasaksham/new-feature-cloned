@@ -13,6 +13,7 @@ import HowItWorks from "./pages/HowItWorks";
 import UseCases from "./pages/UseCases";
 import Pricing from "./pages/Pricing";
 import CaseStudies from "./pages/CaseStudies";
+import FAQ from "./pages/FAQ";
 
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/use-cases" element={<UseCases />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/case-studies" element={<CaseStudies />} />
+            <Route path="/faq" element={<FAQ />} />
           </Route>
 
           {/* Auth flow */}

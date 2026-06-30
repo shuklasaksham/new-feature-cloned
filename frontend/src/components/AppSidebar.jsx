@@ -2,10 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
-  FolderKanban,
-  CheckSquare,
-  FileText,
-  Users,
   LogOut,
   PanelLeftClose,
   PanelLeft,
@@ -120,40 +116,8 @@ export default function AppSidebar() {
           icon={LayoutGrid}
           label="Dashboard"
           collapsed={collapsed}
-          active={path === "/app" || path === "/app/new"}
+          active={isProjectsActive}
           dataTestId="sidebar-nav-dashboard"
-        />
-        <NavItem
-          to="/app"
-          icon={FolderKanban}
-          label="Projects"
-          collapsed={collapsed}
-          active={path.startsWith("/project/")}
-          dataTestId="sidebar-nav-projects"
-        />
-        <NavItem
-          to="/app"
-          icon={CheckSquare}
-          label="Decisions"
-          collapsed={collapsed}
-          active={false}
-          dataTestId="sidebar-nav-decisions"
-        />
-        <NavItem
-          to="/app"
-          icon={FileText}
-          label="Artifacts"
-          collapsed={collapsed}
-          active={false}
-          dataTestId="sidebar-nav-artifacts"
-        />
-        <NavItem
-          to="/app"
-          icon={Users}
-          label="Clients"
-          collapsed={collapsed}
-          active={false}
-          dataTestId="sidebar-nav-clients"
         />
       </nav>
 
@@ -171,12 +135,12 @@ export default function AppSidebar() {
           dataTestId="sidebar-nav-settings"
         />
         <NavItem
-          to="/settings"
+          to="/faq"
           icon={HelpCircle}
-          label="Help"
+          label="FAQ"
           collapsed={collapsed}
-          active={false}
-          dataTestId="sidebar-nav-help"
+          active={path === "/faq"}
+          dataTestId="sidebar-nav-faq"
         />
         {isAdmin && (
           <NavItem

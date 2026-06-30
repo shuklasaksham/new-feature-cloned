@@ -131,13 +131,13 @@ export default function Landing() {
 
             <div className="lg:col-span-7 grid sm:grid-cols-2 gap-3">
               {[
-                ["Clients ask vague things", "\"Make it pop.\" \"More premium.\" \"Bolder but cleaner.\" Decoded into nothing."],
-                ["Scope creeps silently", "Each small \"just one more\" lands on your plate. The budget doesn't move. You do."],
-                ["Decisions feel subjective", "You know it's right. You can't say why. The stakeholder wins the argument."],
-                ["The brief is never the problem", "The real problem is underneath. No tool has helped you surface it."],
-              ].map(([t, c], i) => (
+                ["Clients ask vague things", "\"Make it pop.\" \"More premium.\" \"Bolder but cleaner.\" Decoded into nothing.", "#FF7A6B"],
+                ["Scope creeps silently", "Each small \"just one more\" lands on your plate. The budget doesn't move. You do.", "#F59E0B"],
+                ["Decisions feel subjective", "You know it's right. You can't say why. The stakeholder wins the argument.", "#22C55E"],
+                ["The brief is never the problem", "The real problem is underneath. No tool has helped you surface it.", "#7C5CFF"],
+              ].map(([t, c, color], i) => (
                 <div key={i} className="card-linear card-linear-hover p-5">
-                  <p className="t-meta">{String(i + 1).padStart(2, "0")}</p>
+                  <p className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color }}>{String(i + 1).padStart(2, "0")}</p>
                   <h3 className="t-h2 mt-2.5">{t}</h3>
                   <p className="text-[13.5px] leading-[1.65] text-[var(--text-2)] mt-2.5">{c}</p>
                 </div>
@@ -160,26 +160,29 @@ export default function Landing() {
           </div>
 
           <div className="mt-12 grid md:grid-cols-3 gap-3">
-            {LAYERS.map((l, idx) => (
-              <div key={l.num} className="card-linear card-linear-hover p-6">
-                <div className="flex items-center justify-between">
-                  <span className="t-meta">{l.num}</span>
-                  <ArrowRight size={14} className="text-[var(--text-3)]" />
-                </div>
-                <h3 className="t-h2 mt-4">{l.title}</h3>
-                <p className="mt-3 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{l.copy}</p>
-                <div className="mt-5 space-y-2.5 pt-4 border-t border-[var(--hairline)]">
-                  <div className="flex gap-2.5 items-start">
-                    <X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" />
-                    <p className="text-[12.5px] leading-[1.6] text-[var(--text-3)]">{l.bad}</p>
+            {LAYERS.map((l, idx) => {
+              const colors = ["#22C55E", "#F59E0B", "#FF7A6B"];
+              return (
+                <div key={l.num} className="card-linear card-linear-hover p-6">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color: colors[idx] }}>{l.num}</span>
+                    <ArrowRight size={14} className="text-[var(--text-3)]" />
                   </div>
-                  <div className="flex gap-2.5 items-start">
-                    <Check size={13} className="mt-0.5 text-[var(--success)] shrink-0" />
-                    <p className="text-[12.5px] leading-[1.6] text-[var(--text)]">{l.good}</p>
+                  <h3 className="t-h2 mt-4">{l.title}</h3>
+                  <p className="mt-3 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{l.copy}</p>
+                  <div className="mt-5 space-y-2.5 pt-4 border-t border-[var(--hairline)]">
+                    <div className="flex gap-2.5 items-start">
+                      <X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" />
+                      <p className="text-[12.5px] leading-[1.6] text-[var(--text-3)]">{l.bad}</p>
+                    </div>
+                    <div className="flex gap-2.5 items-start">
+                      <Check size={13} className="mt-0.5 text-[var(--success)] shrink-0" />
+                      <p className="text-[12.5px] leading-[1.6] text-[var(--text)]">{l.good}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </Section>
@@ -197,25 +200,28 @@ export default function Landing() {
           </div>
 
           <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {WALKTHROUGH.map((w) => (
-              <div key={w.num} className="card-linear card-linear-hover p-6" data-testid={`walkthrough-card-${w.num}`}>
-                <div className="flex items-center justify-between">
-                  <span className="t-meta">{"{ "}{w.num}{" / 05 }"}</span>
-                </div>
-                <h3 className="t-h2 mt-4">{w.title}</h3>
-                <div className="mt-5 space-y-4 text-[13px] leading-[1.65]">
-                  <div>
-                    <p className="t-meta mb-1.5">What it does</p>
-                    <p className="text-[var(--text)]">{w.what}</p>
+            {WALKTHROUGH.map((w, idx) => {
+              const colors = ["#22C55E", "#F59E0B", "#FF7A6B", "#7C5CFF", "#38BDF8"];
+              return (
+                <div key={w.num} className="card-linear card-linear-hover p-6" data-testid={`walkthrough-card-${w.num}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color: colors[idx] }}>{"{ "}{w.num}{" / 05 }"}</span>
                   </div>
-                  <div>
-                    <p className="t-meta mb-1.5">Why it matters</p>
-                    <p className="text-[var(--text-2)]">{w.why}</p>
+                  <h3 className="t-h2 mt-4">{w.title}</h3>
+                  <div className="mt-5 space-y-4 text-[13px] leading-[1.65]">
+                    <div>
+                      <p className="t-meta mb-1.5">What it does</p>
+                      <p className="text-[var(--text)]">{w.what}</p>
+                    </div>
+                    <div>
+                      <p className="t-meta mb-1.5">Why it matters</p>
+                      <p className="text-[var(--text-2)]">{w.why}</p>
+                    </div>
                   </div>
+                  <p className="mt-5 pt-4 border-t border-[var(--hairline)] text-[13.5px] italic text-[var(--text)]">{w.quote}</p>
                 </div>
-                <p className="mt-5 pt-4 border-t border-[var(--hairline)] text-[13.5px] italic text-[var(--text)]">{w.quote}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </Section>

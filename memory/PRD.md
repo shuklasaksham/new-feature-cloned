@@ -178,6 +178,14 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Sidebar restructured** — two sections: `Workspace` (Dashboard, Projects, Decisions, Artifacts, Clients) and `Account` (Settings, Help, Admin*). Active nav item uses inset hairline border for definition.
   - Verified visually: Dashboard empty (illustration + coral CTA + sidebar sections), ProjectFlow (Poppins + amber step 3 active + sentence-case labels), Login, etc.
 
+- 2026-06-30 — **Design v6 — Color, FAQ, sidebar cleanup, PNG logo**:
+  - `<BracketMark />` now uses the PNG files directly (`/bracket-mark.png` for chalk, `/bracket-mark-ink.png` for ink, `/bracket-logo.png` for wordmark) — exact pixel-for-pixel match to user's brand asset.
+  - Sidebar simplified to only real routes: **Workspace** (Dashboard) + **Account** (Settings, FAQ, Admin*). Removed Projects/Decisions/Artifacts/Clients/Help that didn't have backing routes.
+  - New **`/faq`** page (`/app/frontend/src/pages/FAQ.jsx`) with 4 categories (Getting started, Workflow, Pricing & billing, Privacy & data) and collapsible accordion items. Wired into App.js routes, NAV_LINKS, and sidebar.
+  - Landing page de-blanded — numbered counters now use a 4-color palette (green `#22C55E` / amber `#F59E0B` / coral `#FF7A6B` / violet `#7C5CFF`) on the Problem cards, Three layers cards, and Walkthrough cards.
+  - Section-label pill dots switched from neutral gray to coral (`var(--coral)` with soft halo glow) for warmth.
+  - FAQ page numbered category headers (01-04) cycle through the same 4-color palette.
+
 ## Verified status (post iteration_18)
 - ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
 - ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.

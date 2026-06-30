@@ -5,6 +5,7 @@ export const NAV_LINKS = [
   { to: "/use-cases", label: "Use Cases" },
   { to: "/pricing", label: "Pricing" },
   { to: "/case-studies", label: "Case Studies" },
+  { to: "/faq", label: "FAQ" },
 ];
 
 export const LAYERS = [
