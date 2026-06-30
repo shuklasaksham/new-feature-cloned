@@ -20,7 +20,7 @@ export default function Landing() {
 
   const marquee = useMemo(
     () => [
-      "DECIDE BEFORE YOU DESIGN",
+      "DECIDE BEFORE YOU SHIP",
       "{",
       "LESS INPUT. BETTER JUDGEMENT.",
       "}",
@@ -28,7 +28,7 @@ export default function Landing() {
       "{",
       "CONFIDENCE WITHOUT ARROGANCE",
       "}",
-      "STRUCTURE WITHOUT RIGIDITY",
+      "FOR DESIGNERS + FREELANCERS",
       "{",
       "AUTHORITY WITHOUT EGO",
       "}",
@@ -60,12 +60,14 @@ export default function Landing() {
 
           <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 mt-8 md:mt-10 items-end">
             <div className="lg:col-span-8">
-              <h1 className="font-display text-[44px] sm:text-[72px] md:text-[104px] lg:text-[148px] uppercase animate-fade-up">
+              <h1 className="font-display text-[40px] sm:text-[64px] md:text-[88px] lg:text-[112px] uppercase animate-fade-up leading-[0.95]">
                 Designers
                 <br />
-                don't need
+                & freelancers
                 <br />
-                more <span className="text-signal">tools.</span>
+                don't need more
+                <br />
+                <span className="text-signal">tools.</span>
               </h1>
               <h2 className="font-display text-[24px] sm:text-[36px] md:text-[52px] lg:text-[64px] mt-4 text-muted uppercase animate-fade-up">
                 They need better decisions<span className="blink" />
@@ -273,7 +275,7 @@ export default function Landing() {
 
           <div className="mt-12 grid md:grid-cols-2 gap-0 border border-ink">
             {USE_CASES.map((u, i) => (
-              <div key={u.who} className={`p-8 bg-chalk ${i % 2 === 0 ? "md:border-r border-ink" : ""} ${i < 2 ? "border-b border-ink" : ""}`}>
+              <div key={u.who} className={`p-8 bg-chalk ${i % 2 === 0 ? "md:border-r border-ink" : ""} ${i < USE_CASES.length - 2 ? "border-b border-ink" : ""}`}>
                 <div className="flex items-center justify-between">
                   <span className="font-display text-3xl uppercase">{u.who}</span>
                   <span className="mono-tag text-signal">USE CASE 0{i + 1}</span>

@@ -82,21 +82,33 @@ export const USE_CASES = [
     example: "\"Can you just add one more revision?\" → Bracket gives you the exact boundary and the exact words.",
   },
   {
-    who: "Agencies",
-    pain: "Junior designers making inconsistent calls",
-    win: "Shared decision systems, consistent output",
-    example: "Every designer on every project reasons the same way. Not the same taste — the same rigour.",
+    who: "Independent Designers",
+    pain: "Subjective feedback, vague briefs, decisions that come back to haunt you",
+    win: "Decisions you can defend, in writing, with a stance",
+    example: "You stop debating taste. You start defending choices. Stakeholders feel the shift in week one.",
   },
   {
-    who: "Product Designers",
+    who: "Indie Creatives (writers, photo, video, illustration, dev)",
+    pain: "Every project starts at zero. No framework. Every quote feels like a guess.",
+    win: "A repeatable thinking shape that fits ANY discipline",
+    example: "Writer pricing a brand voice doc? Photographer scoping a campaign? Bracket handles it the same way — frame, decide, ship.",
+  },
+  {
+    who: "Small Agencies & Studios",
+    pain: "Junior team-mates making inconsistent calls",
+    win: "Shared decision systems, consistent output",
+    example: "Every freelancer on every project reasons the same way. Not the same taste — the same rigour.",
+  },
+  {
+    who: "In-house Product Designers",
     pain: "PM pressure, unclear asks, shifting priorities",
     win: "Structured thinking that survives stakeholders",
     example: "You bring a decision, not a draft. The conversation changes.",
   },
   {
-    who: "Junior Designers",
+    who: "Juniors levelling up",
     pain: "Don't know what to prioritise or how to push back",
-    win: "A senior designer sitting next to you, every project",
+    win: "A senior peer sitting next to you, every project",
     example: "Before you send the file, Bracket tells you what's missing. Before you lose the argument, Bracket shows you the counter.",
   },
 ];
@@ -162,7 +174,7 @@ export const PRICING = {
     {
       id: "pro",
       name: "PRO",
-      tagline: "For designers running real work.",
+      tagline: "For designers + freelancers running real work.",
       badge: "POPULAR",
       features: [
         "Unlimited projects",

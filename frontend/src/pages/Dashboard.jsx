@@ -108,7 +108,7 @@ export default function Dashboard() {
           <div>
             <p className="mono-label">{"{ your projects }"}</p>
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase mt-3">
-              Hi {(user?.name || "designer").split(" ")[0]}.
+              Hi {(user?.name || "there").split(" ")[0]}.
               <br />
               <span className="text-signal">What are we deciding today?</span>
             </h1>

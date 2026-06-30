@@ -89,7 +89,7 @@ export default function Onboarding() {
                 className="input-line mt-2"
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
-                placeholder="e.g. Independent designer · Founder · Design lead"
+                placeholder="e.g. Freelance designer · Copywriter · Founder · Indie dev"
                 data-testid="onboarding-designation"
               />
             </label>

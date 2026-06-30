@@ -10,10 +10,10 @@ export default function UseCases() {
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-20">
           <p className="mono-label">{"{ use cases }"}</p>
           <h1 className="font-display text-5xl sm:text-6xl md:text-8xl uppercase mt-5 md:mt-6 max-w-5xl">
-            For designers who <span className="text-signal">take</span> the call.
+            For the people who <span className="text-signal">take</span> the call.
           </h1>
           <p className="mt-5 md:mt-6 text-muted max-w-2xl text-sm md:text-base">
-            Bracket doesn't care about job titles. It cares who has to make the decision at 11pm on a Sunday.
+            Bracket doesn't care about job titles. Designer, freelancer, copywriter, illustrator, photographer, indie dev — it cares who has to make the decision at 11pm on a Sunday.
           </p>
         </div>
       </section>

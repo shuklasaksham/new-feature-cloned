@@ -232,11 +232,11 @@ function ChooseAction({ onAccept, onReject, ownerReplied = false }) {
     <div className="card-brut p-5 sm:p-6" data-testid="review-choose-action">
       <div className="flex items-center gap-2">
         <ShieldCheck size={16} className="text-signal" />
-        <p className="mono-label">{ownerReplied ? "{ designer replied — your move }" : "{ your move }"}</p>
+        <p className="mono-label">{ownerReplied ? "{ they replied — your move }" : "{ your move }"}</p>
       </div>
       <p className="mt-3 text-sm text-muted">
         {ownerReplied
-          ? "Read the designer's reply above, then accept or send back more notes."
+          ? "Read their reply above, then accept or send back more notes."
           : "Read through the document. When you're ready, accept and sign it off, or send the project owner your concerns."}
       </p>
       <button
@@ -262,7 +262,7 @@ function ChooseAction({ onAccept, onReject, ownerReplied = false }) {
 function OwnerReplyDisplay({ replies }) {
   return (
     <div className="card-brut p-5 sm:p-6 mb-4" data-testid="review-owner-replies">
-      <p className="mono-label text-signal">{"{ reply from the designer }"}</p>
+      <p className="mono-label text-signal">{"{ reply from the creator }"}</p>
       <div className="mt-3 space-y-3">
         {replies.map((r, i) => (
           <div key={i} className="border-l-2 border-signal pl-3">
@@ -439,7 +439,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
   const [err, setErr] = useState("");
 
   const getSuggestions = async () => {
-    if (concerns.trim().length < 10) return setErr("Give the designer something useful to work with — a sentence or two minimum.");
+    if (concerns.trim().length < 10) return setErr("Give them something useful to work with — a sentence or two minimum.");
     setLoading(true);
     setErr("");
     try {
@@ -480,7 +480,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
           <p className="mono-label">{"{ raise concerns }"}</p>
         </div>
         <p className="mt-3 text-sm text-muted">
-          Tell the designer what isn't working. Bracket will help shape your concern into specific suggestions
+          Tell them what isn't working. Bracket will help shape your concern into specific suggestions
           before it's sent.
         </p>
         <textarea
@@ -575,7 +575,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
         className="btn-brut mt-5 w-full justify-center"
         data-testid="review-reject-confirm"
       >
-        {loading ? "Sending…" : "Send concerns to designer"} <ArrowRight size={14} />
+        {loading ? "Sending…" : "Send concerns"} <ArrowRight size={14} />
       </button>
       <button
         type="button"
@@ -604,7 +604,7 @@ function ReviewedState({ doc }) {
       <p className="mt-3 text-sm text-chalk">
         {isAccept
           ? "The project owner has been notified you accepted the sign-off. They'll be in touch with next steps."
-          : "Your concerns have been delivered. The designer will reply with how they want to proceed."}
+          : "Your concerns have been delivered. They'll reply with how they want to proceed."}
       </p>
       <p className="mono-tag mt-5 text-faint">
         SIGNED · {doc.share_review?.signature_name}
