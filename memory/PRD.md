@@ -168,6 +168,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Quote marks**: violet → muted gray on Landing/CaseStudies hero quotes.
   - Verified visually across Landing, Login, Dashboard, ProjectFlow, Pricing, How It Works, Use Cases.
 
+- 2026-06-30 — **Design v5 — Poppins + illustrative empty state + colored steps**:
+  - Switched ENTIRE site font from Inter → **Poppins** (300/400/500/600/700). Tailwind `font-display` / `font-body` remapped to Poppins.
+  - Added **coral CTA** (`--coral: #FF7A6B`) — used on Dashboard empty-state "Start a new project" button with soft shadow.
+  - Added **new `<EmptyStateIllustration />`** SVG component — two people pointing at a chart with colored bars (green/coral/amber). Used on Dashboard empty state, replacing the ASCII art.
+  - Rewrote **`<BracketMark />` as inline SVG** — `{B}` rounded-square boxed glyph (white tile + dark `{` and `B` shapes). Supports `chalk` (dark UI) and `ink` (light UI) variants.
+  - **Step indicators now use semantic colors**: active = amber (`#F59E0B`) circle with halo, done = green (`#22C55E`) circle with check, pending = gray hairline ring.
+  - Step labels (in both `WALKTHROUGH` constants and `ProjectFlow.STEPS`) converted to sentence case.
+  - **Sidebar restructured** — two sections: `Workspace` (Dashboard, Projects, Decisions, Artifacts, Clients) and `Account` (Settings, Help, Admin*). Active nav item uses inset hairline border for definition.
+  - Verified visually: Dashboard empty (illustration + coral CTA + sidebar sections), ProjectFlow (Poppins + amber step 3 active + sentence-case labels), Login, etc.
+
 ## Verified status (post iteration_18)
 - ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
 - ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2, Plus, FileText, Lock, AlertCircle, Check, X as XIcon, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import EmptyStateIllustration from "../components/EmptyStateIllustration";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 
@@ -144,52 +145,54 @@ export default function Dashboard() {
             </div>
           ) : projects.length === 0 ? (
             <div
-              className="mt-6 card-brut p-6 sm:p-8 animate-scale-in"
+              className="mt-6 card-brut px-6 sm:px-10 py-12 sm:py-16 animate-scale-in text-center"
               data-testid="dashboard-empty"
             >
-              <div className="grid md:grid-cols-2 gap-6 items-center">
-                <div>
-                  <p className="mono-label">First project</p>
-                  <h3 className="t-display mt-2">
-                    Nothing decided yet.
-                  </h3>
-                  <p className="text-muted mt-3 text-sm max-w-sm">
-                    Type a name above. Or pick a starter below — Bracket will fill the first 3 fields for you so you can feel the loop in 60 seconds.
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-2" data-testid="empty-starter-chips">
-                    {[
-                      "Acme rebrand · landing",
-                      "Logo direction for fintech",
-                      "Pricing page audit",
-                    ].map((name) => (
-                      <button
-                        key={name}
-                        type="button"
-                        onClick={() => {
-                          setCreatingName(name);
-                          setTimeout(() => {
-                            document
-                              .querySelector('[data-testid="dashboard-new-input"]')
-                              ?.focus();
-                          }, 0);
-                        }}
-                        className="suggest-chip press"
-                        data-testid={`empty-starter-${name.split(" ")[0].toLowerCase()}`}
-                      >
-                        + {name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="hidden md:block">
-                  <pre className="empty-frame">{`{
-  step_01  →  reframe the brief
-  step_02  →  compress context
-  step_03  →  pick the call
-  step_04  →  draft artifacts
-  step_05  →  lock + send
-}`}</pre>
-                </div>
+              <div className="flex justify-center">
+                <EmptyStateIllustration size={300} />
+              </div>
+              <h3 className="t-h1 mt-8">No bracket created yet</h3>
+              <p className="t-h3 mt-2 text-[var(--text-2)] font-normal">
+                Define your first project clearly, before work begins
+              </p>
+              <p className="text-[13px] text-[var(--text-3)] mt-3">
+                Enter your details to proceed further
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  document.querySelector('[data-testid="dashboard-new-input"]')?.focus();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="btn-coral mt-8"
+                data-testid="dashboard-empty-start-cta"
+              >
+                Start a new project
+              </button>
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-2" data-testid="empty-starter-chips">
+                <span className="t-meta">Or try a starter:</span>
+                {[
+                  "Acme rebrand · landing",
+                  "Logo direction for fintech",
+                  "Pricing page audit",
+                ].map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      setCreatingName(name);
+                      setTimeout(() => {
+                        document
+                          .querySelector('[data-testid="dashboard-new-input"]')
+                          ?.focus();
+                      }, 0);
+                    }}
+                    className="suggest-chip press"
+                    data-testid={`empty-starter-${name.split(" ")[0].toLowerCase()}`}
+                  >
+                    + {name}
+                  </button>
+                ))}
               </div>
             </div>
           ) : (

@@ -37,8 +37,8 @@ module.exports = {
         hairline:  "#262A36",
       },
       fontFamily: {
-        display: ["'Inter Variable'", "'Inter'", "sans-serif"],
-        body:    ["'Inter Variable'", "'Inter'", "sans-serif"],
+        display: ["'Poppins'", "sans-serif"],
+        body:    ["'Poppins'", "sans-serif"],
         mono:    ["'JetBrains Mono'", "ui-monospace", "monospace"],
       },
       borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "8px", lg: "10px", xl: "14px", "2xl": "18px" },

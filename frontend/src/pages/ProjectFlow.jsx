@@ -20,11 +20,11 @@ import { useAuth } from "../lib/AuthContext";
 import { toast } from "sonner";
 
 const STEPS = [
-  { n: 1, key: "situation", label: "SITUATION FRAMING", glyph: "{ 01 }" },
-  { n: 2, key: "context", label: "CONTEXT COMPRESSION", glyph: "{ 02 }" },
-  { n: 3, key: "decision", label: "DECISION ENGINE", glyph: "{ 03 }" },
-  { n: 4, key: "artifacts", label: "ARTIFACTS", glyph: "{ 04 }" },
-  { n: 5, key: "lock", label: "CONFIDENCE LOCK-IN", glyph: "{ 05 }" },
+  { n: 1, key: "situation", label: "Situation framing", glyph: "{ 01 }" },
+  { n: 2, key: "context", label: "Context compression", glyph: "{ 02 }" },
+  { n: 3, key: "decision", label: "Decision engine", glyph: "{ 03 }" },
+  { n: 4, key: "artifacts", label: "Artifacts", glyph: "{ 04 }" },
+  { n: 5, key: "lock", label: "Confidence lock-in", glyph: "{ 05 }" },
 ];
 
 export default function ProjectFlow() {

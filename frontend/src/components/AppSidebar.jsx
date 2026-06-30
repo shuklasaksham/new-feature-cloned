@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
+  LayoutGrid,
   FolderKanban,
-  Settings as SettingsIcon,
+  CheckSquare,
+  FileText,
+  Users,
   LogOut,
   PanelLeftClose,
   PanelLeft,
   ShieldCheck,
+  Settings as SettingsIcon,
+  HelpCircle,
 } from "lucide-react";
 import BracketMark from "./BracketMark";
 import Avatar from "./Avatar";
@@ -112,12 +117,51 @@ export default function AppSidebar() {
       <nav className="sidebar-nav" aria-label="Primary">
         <NavItem
           to="/app"
+          icon={LayoutGrid}
+          label="Dashboard"
+          collapsed={collapsed}
+          active={path === "/app" || path === "/app/new"}
+          dataTestId="sidebar-nav-dashboard"
+        />
+        <NavItem
+          to="/app"
           icon={FolderKanban}
           label="Projects"
           collapsed={collapsed}
-          active={isProjectsActive}
+          active={path.startsWith("/project/")}
           dataTestId="sidebar-nav-projects"
         />
+        <NavItem
+          to="/app"
+          icon={CheckSquare}
+          label="Decisions"
+          collapsed={collapsed}
+          active={false}
+          dataTestId="sidebar-nav-decisions"
+        />
+        <NavItem
+          to="/app"
+          icon={FileText}
+          label="Artifacts"
+          collapsed={collapsed}
+          active={false}
+          dataTestId="sidebar-nav-artifacts"
+        />
+        <NavItem
+          to="/app"
+          icon={Users}
+          label="Clients"
+          collapsed={collapsed}
+          active={false}
+          dataTestId="sidebar-nav-clients"
+        />
+      </nav>
+
+      {/* Account section */}
+      {!collapsed && (
+        <div className="sidebar-section-label mt-5">Account</div>
+      )}
+      <nav className="sidebar-nav" aria-label="Account">
         <NavItem
           to="/settings"
           icon={SettingsIcon}
@@ -125,6 +169,14 @@ export default function AppSidebar() {
           collapsed={collapsed}
           active={isSettingsActive}
           dataTestId="sidebar-nav-settings"
+        />
+        <NavItem
+          to="/settings"
+          icon={HelpCircle}
+          label="Help"
+          collapsed={collapsed}
+          active={false}
+          dataTestId="sidebar-nav-help"
         />
         {isAdmin && (
           <NavItem
