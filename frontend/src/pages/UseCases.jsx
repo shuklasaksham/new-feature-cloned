@@ -12,7 +12,7 @@ export default function UseCases() {
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-16 md:pb-20 text-center">
           <span className="section-label"><span className="dot" />Use cases</span>
           <h1 className="t-display mt-7 max-w-[820px] mx-auto">
-            For the people who <span className="text-[var(--accent)]">take</span> the call.
+            For the people who <span className="text-[var(--text-2)]">take</span> the call.
           </h1>
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto">
             Bracket doesn&apos;t care about job titles. Designer, freelancer, copywriter, illustrator, photographer, indie dev — it cares who has to make the decision at 11pm on a Sunday.
@@ -56,7 +56,7 @@ export default function UseCases() {
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
           <span className="section-label"><span className="dot" />Tell us</span>
           <h2 className="t-display mt-7">
-            Which one are <span className="text-[var(--accent)]">you</span>?
+            Which one are <span className="text-[var(--text-2)]">you</span>?
           </h2>
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
             We&apos;ll ask in the onboarding. Bracket thinks differently based on how you work.

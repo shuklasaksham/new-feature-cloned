@@ -15,7 +15,7 @@ export default function Pricing() {
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-12 md:pb-16 text-center">
           <span className="section-label"><span className="dot" />Pricing · early access</span>
           <h1 className="t-display mt-7 max-w-[820px] mx-auto">
-            Free <span className="text-[var(--accent)]">for now</span>.
+            Free <span className="text-[var(--text-2)]">for now</span>.
           </h1>
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto">
             Bracket is free to use during early access — no account, no card, no time limit. Paid tiers will arrive when the product graduates from early access; below is the shape they&apos;ll take.
@@ -33,7 +33,7 @@ export default function Pricing() {
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20">
           {/* Early access banner */}
           <div
-            className="card-linear p-5 sm:p-6 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-[rgba(124,92,255,0.30)] bg-[rgba(124,92,255,0.04)]"
+            className="card-linear p-5 sm:p-6 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-[var(--hairline-strong)] bg-[var(--surface-2)]"
             data-testid="pricing-early-access-banner"
           >
             <div>
@@ -70,9 +70,9 @@ export default function Pricing() {
               return (
                 <div
                   key={t.id}
-                  className={`p-7 rounded-[12px] relative ${isPro ? "border border-[rgba(124,92,255,0.45)] bg-[rgba(124,92,255,0.04)]" : "card-linear card-linear-hover"}`}
+                  className={`p-7 rounded-[12px] relative ${isPro ? "border border-[var(--hairline-strong)] bg-[var(--surface-2)]" : "card-linear card-linear-hover"}`}
                   data-testid={`pricing-tier-${t.id}`}
-                  style={isPro ? { boxShadow: "0 24px 64px -24px rgba(124,92,255,0.30)" } : undefined}
+                  style={isPro ? { boxShadow: "0 24px 64px -24px rgba(0,0,0,0.6)" } : undefined}
                 >
                   <div className="flex items-center justify-between">
                     <span className="t-meta">{t.name}</span>
@@ -86,7 +86,7 @@ export default function Pricing() {
                   <ul className="mt-7 space-y-2.5 min-h-[140px]">
                     {t.features.map((f, i) => (
                       <li key={i} className="flex gap-2.5 text-[13px] leading-[1.55]">
-                        <Check size={13} className="mt-1 shrink-0 text-[var(--accent)]" />
+                        <Check size={13} className="mt-1 shrink-0 text-[var(--text-2)]" />
                         <span className="text-[var(--text)]">{f}</span>
                       </li>
                     ))}
@@ -134,7 +134,7 @@ export default function Pricing() {
       <section className="relative overflow-hidden border-t border-[var(--hairline)]">
         <div className="hero-ambient" aria-hidden="true" />
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
-          <h2 className="t-display">Decisions, <span className="text-[var(--accent)]">priced fairly</span>.</h2>
+          <h2 className="t-display">Decisions, <span className="text-[var(--text-2)]">priced fairly</span>.</h2>
           <div className="mt-9">
             <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>
           </div>

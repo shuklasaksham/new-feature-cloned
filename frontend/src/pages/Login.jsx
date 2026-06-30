@@ -126,7 +126,7 @@ export default function Login() {
             <span className="section-label"><span className="dot" />Sign in or join</span>
             <h1 className="t-hero mt-6">
               One door.<br />
-              <span className="text-[var(--accent)]">Email</span>, then in.
+              <span className="text-[var(--text-2)]">Email</span>, then in.
             </h1>
             <p className="mt-3 text-[14px] text-[var(--text-2)]">Six-digit code · No passwords required</p>
           </div>
@@ -260,7 +260,7 @@ export default function Login() {
                     type="button"
                     onClick={requestOtp}
                     disabled={resendIn > 0 || loading}
-                    className="text-[12px] text-[var(--accent)] disabled:text-[var(--text-3)] transition-colors"
+                    className="text-[12px] text-[var(--text-2)] disabled:text-[var(--text-3)] transition-colors"
                     data-testid="login-otp-resend"
                   >
                     {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}

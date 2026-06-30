@@ -69,7 +69,7 @@ export default function Onboarding() {
           <div className="text-center">
             <span className="section-label"><span className="dot" />Set yourself up</span>
             <h1 className="t-hero mt-6">
-              Tell us <span className="text-[var(--accent)]">who&apos;s deciding</span>.
+              Tell us <span className="text-[var(--text-2)]">who&apos;s deciding</span>.
             </h1>
             <p className="mt-3 text-[14px] text-[var(--text-2)]">Two minutes. Your docs will go out under your name.</p>
           </div>

@@ -153,6 +153,21 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - `.liquid-glass`: bg `#101116`, same bezel `::before` highlight, deeper ambient violet shadow under the card (`0 28px 72px -28px rgba(124,92,255,0.18)`), refractive sheen `::after` kept and softened. Hover lifts `-2px` with a stronger violet glow.
   - Verified visually via landing, login, and dashboard smoke screenshots.
 
+- 2026-06-30 — **Linear-grade Design v4 (user-aligned)**:
+  - Background switched to `#08090A` (warm near-black, not pure black).
+  - **All violet/purple removed from text and CTA chrome.** Accent retained ONLY for status dots, icons, and decorative data-viz dots (never on headings, body, buttons).
+  - **Primary CTA**: WHITE pill (38px, `#FAFAFA` bg, dark text, fully rounded). **Secondary CTA**: DARK pill (`#1A1B1F` bg, white text, hairline border).
+  - **Cards**: Weekly-Pulse reference style — `var(--surface)` bg, hairline border, top-edge bezel highlight, soft layered shadow.
+  - **Status pills**: icon + colored text (success/danger/warning use semantic colors), but neutral pills for draft/active/locked use just text + dot.
+  - **Marketing header**: 60px, frosted blur 28px @ 55% bg opacity, neutral white underline for active route.
+  - **Sidebar**: removed "New project" CTA (quick-create lives on dashboard). Active nav state is neutral surface-2, no violet. Added left accent bar in white. Sidebar alignment fixed.
+  - **Step pipeline (ProjectFlow)**: redesigned to numbered circle stepper (22px round, active = white filled, done = gray filled w/ check, pending = hairline ring). Flex connector between nodes.
+  - **ScrollToTop**: new `<ScrollToTop />` component added inside `<BrowserRouter>` — scrolls to top on every route change (fixes nav-click landing on previous scroll position).
+  - **Step labels**: STEPS constants converted to sentence case ("Situation framing", not "SITUATION FRAMING").
+  - **Hero ambient**: violet radial → neutral white radial w/ subtle dot grid.
+  - **Quote marks**: violet → muted gray on Landing/CaseStudies hero quotes.
+  - Verified visually across Landing, Login, Dashboard, ProjectFlow, Pricing, How It Works, Use Cases.
+
 ## Verified status (post iteration_18)
 - ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
 - ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.

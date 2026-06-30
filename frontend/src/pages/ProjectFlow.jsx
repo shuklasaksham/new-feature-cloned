@@ -116,35 +116,35 @@ export default function ProjectFlow() {
   };
 
   return (
-    <div className="min-h-screen bg-paper" data-testid="project-flow-page">
+    <div className="min-h-screen" data-testid="project-flow-page">
       <header className="sticky top-0 z-30 glass">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-4 sm:gap-6 min-w-0">
             <a href="/app" onClick={handleLogoClick} className="shrink-0 cursor-pointer" data-testid="flow-logo-link">
-              <BracketMark label={false} size={24} />
+              <BracketMark label={false} size={22} variant="chalk" />
             </a>
             <div className="min-w-0 flex-1">
               <p
-                className="font-display text-base sm:text-lg leading-none truncate"
+                className="font-semibold text-[15px] tracking-[-0.012em] leading-none truncate"
                 data-testid="flow-project-name"
               >
                 {project?.name}
               </p>
-              <p className="mono-tag text-muted hidden sm:block truncate">
-                {project?.engine === "gpt" ? "GPT-5.2" : "CLAUDE SONNET 4.5"}
+              <p className="text-[11px] text-[var(--text-3)] hidden sm:block truncate mt-1.5">
+                {project?.engine === "gpt" ? "GPT-5.2" : "Claude Sonnet 4.5"}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             {isLocked && (
-              <span className="mono-tag text-signal hidden sm:flex items-center gap-2">
-                <Lock size={12} /> LOCKED
+              <span className="status-pill status-pill--active hidden sm:inline-flex">
+                <Lock size={11} className="-ml-0.5" /> Locked
               </span>
             )}
             {project?.artifacts && (
               <Link
                 to={`/project/${project.id}/document`}
-                className="px-2.5 sm:px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase flex items-center gap-2 bg-paper hover:bg-ink hover:text-chalk"
+                className="btn-secondary btn-sm"
                 data-testid="flow-document-link"
                 title="Document"
                 aria-label="Document"
@@ -154,7 +154,7 @@ export default function ProjectFlow() {
             )}
             <Link
               to={`/project/${id}`}
-              className="px-2.5 sm:px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk flex items-center gap-2"
+              className="btn-secondary btn-sm"
               data-testid="flow-overview-link"
               title="Overview"
               aria-label="Overview"
@@ -163,7 +163,7 @@ export default function ProjectFlow() {
             </Link>
             <Link
               to="/app"
-              className="px-2.5 sm:px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk flex items-center gap-2"
+              className="btn-secondary btn-sm"
               data-testid="flow-new-project-btn"
               title="All projects"
               aria-label="All projects"
@@ -172,11 +172,8 @@ export default function ProjectFlow() {
             </Link>
           </div>
         </div>
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-3 border-b border-ink/10">
-          <div className="step-line">
-            <span style={{ width: `${progress}%` }} />
-          </div>
-          <div className="step-pipeline mt-3">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-4 pt-1 border-b border-[var(--hairline)]">
+          <div className="step-pipeline">
             {STEPS.map((s, i) => {
               const done =
                 (project?.step || 1) > s.n ||
@@ -186,18 +183,16 @@ export default function ProjectFlow() {
                 <React.Fragment key={s.n}>
                   <button
                     onClick={() => setCurrentStep(s.n)}
-                    className={`step-node mono-tag press ${active ? "is-active" : done ? "is-done text-signal" : "text-muted"}`}
+                    className={`step-node press ${active ? "is-active" : done ? "is-done" : ""}`}
                     data-testid={`step-nav-${s.n}`}
                     aria-current={active ? "step" : undefined}
                   >
-                    <span className="dot" aria-hidden="true" />
-                    <span>{s.glyph}</span>
+                    <span className="step-num">{done && !active ? <Check size={11} strokeWidth={2.5} /> : s.n}</span>
                     <span className="hidden sm:inline">{s.label}</span>
-                    {done && !active && <Check size={12} />}
                   </button>
                   {i < STEPS.length - 1 && (
                     <span
-                      className={`step-connector hidden sm:inline-block ${done ? "is-done" : ""}`}
+                      className={`step-connector ${done ? "is-done" : ""}`}
                       aria-hidden="true"
                     />
                   )}

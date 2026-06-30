@@ -13,7 +13,7 @@ export default function HowItWorks() {
           <span className="section-label"><span className="dot" />How it works</span>
           <h1 className="t-display mt-7 max-w-[820px] mx-auto">
             Less a tool.<br />
-            More a way of <span className="text-[var(--accent)]">thinking</span>.
+            More a way of <span className="text-[var(--text-2)]">thinking</span>.
           </h1>
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[560px] mx-auto">
             Every Bracket project moves through the same five steps. Same for a ₹15k landing page. Same for a Series-A dashboard. The rigour doesn&apos;t change — the stakes do.
@@ -62,7 +62,7 @@ export default function HowItWorks() {
                 <div className="lg:col-span-4 lg:border-l border-[var(--hairline)] lg:pl-6">
                   <p className="t-meta">Why it matters</p>
                   <p className="mt-2 text-[13.5px] leading-[1.65] text-[var(--text)]">{w.why}</p>
-                  <p className="mt-4 text-[13.5px] italic text-[var(--accent)]">{w.quote}</p>
+                  <p className="mt-4 text-[13.5px] italic text-[var(--text-2)]">{w.quote}</p>
                 </div>
               </div>
             ))}
@@ -77,7 +77,7 @@ export default function HowItWorks() {
           <span className="section-label"><span className="dot" />Last word</span>
           <h2 className="t-display mt-7">
             Stop guessing.<br />
-            <span className="text-[var(--accent)]">Start deciding</span>.
+            <span className="text-[var(--text-2)]">Start deciding</span>.
           </h2>
           <div className="mt-9">
             <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>

@@ -7,7 +7,6 @@ import {
   PanelLeftClose,
   PanelLeft,
   ShieldCheck,
-  Plus,
 } from "lucide-react";
 import BracketMark from "./BracketMark";
 import Avatar from "./Avatar";
@@ -139,18 +138,7 @@ export default function AppSidebar() {
         )}
       </nav>
 
-      {/* New project quick action */}
-      <div className="sidebar-cta">
-        <Link
-          to="/app/new"
-          className={`new-project-btn ${collapsed ? "is-collapsed" : ""}`}
-          title={collapsed ? "New project" : undefined}
-          data-testid="sidebar-new-project"
-        >
-          <Plus size={14} strokeWidth={2} />
-          {!collapsed && <span>New project</span>}
-        </Link>
-      </div>
+      {/* New project CTA removed per design — quick-create lives on the dashboard itself */}
 
       <div className="sidebar-spacer" />
 

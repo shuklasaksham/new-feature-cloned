@@ -96,7 +96,7 @@ export default function Landing() {
                 <p className="text-[13px] text-[var(--text)] mt-3 leading-[1.7]">
                   The client&apos;s real ask isn&apos;t a redesign — it&apos;s validation. They want their brand to feel more confident, not different. Anchor the conversation on hierarchy and tone before pixels.
                 </p>
-                <div className="mt-4 inline-flex items-center gap-2 t-meta text-[var(--accent)]">
+                <div className="mt-4 inline-flex items-center gap-2 t-meta text-[var(--text-2)]">
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
                   AI thinking — confidence 92%
                 </div>
@@ -122,7 +122,7 @@ export default function Landing() {
             <div className="lg:col-span-5">
               <h2 className="t-hero">
                 Too many tools.<br />
-                Not enough <span className="text-[var(--accent)]">clarity</span>.
+                Not enough <span className="text-[var(--text-2)]">clarity</span>.
               </h2>
               <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-md">
                 Every designer, freelancer, or indie creative has 40 tabs open and 3 Notion pages of &quot;requirements.&quot; None of it tells you what to do.
@@ -152,7 +152,7 @@ export default function Landing() {
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
             <h2 className="t-hero lg:col-span-7">
-              Three layers between <span className="text-[var(--accent)]">chaos</span> and clarity.
+              Three layers between <span className="text-[var(--text-2)]">chaos</span> and clarity.
             </h2>
             <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
               Bracket isn&apos;t a feature checklist. It&apos;s a mental model. Every project moves through three layers before you open Figma.
@@ -189,7 +189,7 @@ export default function Landing() {
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <h2 className="t-hero max-w-3xl">
-              Five steps. One <span className="text-[var(--accent)]">stance</span>.
+              Five steps. One <span className="text-[var(--text-2)]">stance</span>.
             </h2>
             <Link to="/how-it-works" className="btn-ghost" data-testid="walkthrough-deepdive-cta">
               Full walkthrough <ArrowUpRight size={14} />
@@ -225,7 +225,7 @@ export default function Landing() {
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="grid lg:grid-cols-12 gap-10 items-end">
             <h2 className="t-hero lg:col-span-7">
-              This is <span className="text-[var(--accent)]">trust</span>. On paper.
+              This is <span className="text-[var(--text-2)]">trust</span>. On paper.
             </h2>
             <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
               Every project ends in artifacts you can send. No blank templates. No generic prose. Your stance, translated.
@@ -258,7 +258,7 @@ export default function Landing() {
       <Section id="use-cases" label="Who it's for">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <h2 className="t-hero max-w-3xl">
-            Built for <span className="text-[var(--accent)]">creative pros</span> who ship decisions, not just deliverables.
+            Built for <span className="text-[var(--text-2)]">creative pros</span> who ship decisions, not just deliverables.
           </h2>
 
           <div className="mt-12 grid md:grid-cols-2 gap-3">
@@ -290,7 +290,7 @@ export default function Landing() {
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="grid lg:grid-cols-12 gap-10 items-end">
             <h2 className="t-hero lg:col-span-8">
-              Before Bracket: <span className="text-[var(--accent)]">chaos</span>.
+              Before Bracket: <span className="text-[var(--text-2)]">chaos</span>.
             </h2>
             <Link to="/case-studies" className="btn-ghost lg:col-span-4 lg:justify-self-end" data-testid="case-study-all-cta">
               All case studies <ArrowUpRight size={14} />
@@ -311,14 +311,14 @@ export default function Landing() {
                 ))}
               </ul>
             </div>
-            <div className="card-linear p-6 border-[rgba(124,92,255,0.30)] bg-[rgba(124,92,255,0.05)]">
+            <div className="card-linear p-6 border-[var(--hairline-strong)] bg-[var(--surface-2)]">
               <span className="status-pill status-pill--active">After</span>
               <h3 className="t-h1 mt-4">Structured decisions</h3>
               <p className="t-meta mt-1">Same client. Different posture.</p>
               <ul className="mt-5 space-y-2.5">
                 {CASE_STUDIES[0].after.map((b, i) => (
                   <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text)]">
-                    <Check size={13} className="mt-0.5 text-[var(--accent)] shrink-0" />
+                    <Check size={13} className="mt-0.5 text-[var(--text-2)] shrink-0" />
                     <span>{b}</span>
                   </li>
                 ))}
@@ -327,7 +327,7 @@ export default function Landing() {
           </div>
 
           <blockquote className="mt-14 max-w-3xl t-display text-[var(--text)]">
-            <span className="text-[var(--accent)]">&ldquo;</span>{CASE_STUDIES[0].quote}<span className="text-[var(--accent)]">&rdquo;</span>
+            <span className="text-[var(--text-2)]">&ldquo;</span>{CASE_STUDIES[0].quote}<span className="text-[var(--text-2)]">&rdquo;</span>
           </blockquote>
         </div>
       </Section>
@@ -337,7 +337,7 @@ export default function Landing() {
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <h2 className="t-hero max-w-3xl">
-              Simple pricing. <span className="text-[var(--accent)]">No tier tetris</span>.
+              Simple pricing. <span className="text-[var(--text-2)]">No tier tetris</span>.
             </h2>
             <div className="inline-flex items-center rounded-full p-1 border border-[var(--hairline)] bg-[var(--surface)]" data-testid="pricing-currency-toggle">
               {Object.keys(PRICING.currencies).map((c) => (
@@ -360,9 +360,9 @@ export default function Landing() {
               return (
                 <div
                   key={t.id}
-                  className={`p-7 rounded-[12px] relative ${isPro ? "border border-[rgba(124,92,255,0.45)] bg-[rgba(124,92,255,0.04)]" : "card-linear card-linear-hover"}`}
+                  className={`p-7 rounded-[12px] relative ${isPro ? "border border-[var(--hairline-strong)] bg-[var(--surface-2)]" : "card-linear card-linear-hover"}`}
                   data-testid={`pricing-tier-${t.id}`}
-                  style={isPro ? { boxShadow: "0 24px 64px -24px rgba(124,92,255,0.30)" } : undefined}
+                  style={isPro ? { boxShadow: "0 24px 64px -24px rgba(0,0,0,0.6)" } : undefined}
                 >
                   <div className="flex items-center justify-between">
                     <span className="t-meta">{t.name}</span>
@@ -380,7 +380,7 @@ export default function Landing() {
                   <ul className="mt-7 space-y-2.5 min-h-[140px]">
                     {t.features.map((f, i) => (
                       <li key={i} className="flex gap-2.5 text-[13px] leading-[1.55]">
-                        <Check size={13} className="mt-1 shrink-0 text-[var(--accent)]" />
+                        <Check size={13} className="mt-1 shrink-0 text-[var(--text-2)]" />
                         <span className="text-[var(--text)]">{f}</span>
                       </li>
                     ))}
@@ -406,7 +406,7 @@ export default function Landing() {
           <span className="section-label"><span className="dot" />Last word</span>
           <h2 className="t-display mt-7">
             Stop guessing.<br />
-            <span className="text-[var(--accent)]">Start deciding</span>.
+            <span className="text-[var(--text-2)]">Start deciding</span>.
           </h2>
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
             Five quiet steps. Fifteen minutes per project. The reasoning is documented, so the call survives the room.

@@ -34,7 +34,7 @@ export const LAYERS = [
 export const WALKTHROUGH = [
   {
     num: "01",
-    label: "SITUATION FRAMING",
+    label: "Situation framing",
     title: "Name what's really happening",
     what: "Bracket mirrors common client patterns and surfaces the tensions you already feel.",
     why: "Because clarity starts with naming reality — not writing a brief.",
@@ -42,7 +42,7 @@ export const WALKTHROUGH = [
   },
   {
     num: "02",
-    label: "CONTEXT COMPRESSION",
+    label: "Context compression",
     title: "Keep only what matters",
     what: "Asks the 3–4 questions that actually change the answer. Ignores everything else.",
     why: "Because more input makes worse decisions. Signal beats surface area.",
@@ -50,7 +50,7 @@ export const WALKTHROUGH = [
   },
   {
     num: "03",
-    label: "DECISION ENGINE",
+    label: "Decision engine",
     title: "Take a stance",
     what: "Weighs risk, leverage, and clarity — then recommends with alternatives and trade-offs.",
     why: "Because a menu isn't a decision. You need someone to say what they'd do.",
@@ -58,7 +58,7 @@ export const WALKTHROUGH = [
   },
   {
     num: "04",
-    label: "ARTIFACTS",
+    label: "Artifacts",
     title: "Outputs with intent",
     what: "Scope doc, client message, assumptions, risk flags — all reflecting your stance.",
     why: "Because generic templates don't protect boundaries. Positioned ones do.",
@@ -66,7 +66,7 @@ export const WALKTHROUGH = [
   },
   {
     num: "05",
-    label: "CONFIDENCE LOCK-IN",
+    label: "Confidence lock-in",
     title: "Prepare for the pushback",
     what: "Simulates likely reactions and drafts your response before the awkward follow-up.",
     why: "Because confidence is knowing you're prepared — not pretending you are.",

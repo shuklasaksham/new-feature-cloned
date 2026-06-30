@@ -12,7 +12,7 @@ export default function CaseStudies() {
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-16 md:pb-20 text-center">
           <span className="section-label"><span className="dot" />Case studies</span>
           <h1 className="t-display mt-7 max-w-[820px] mx-auto">
-            Chaos → <span className="text-[var(--accent)]">clarity</span>.
+            Chaos → <span className="text-[var(--text-2)]">clarity</span>.
           </h1>
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto">
             Five products you already know. The thing they share: the breakthrough wasn&apos;t the feature set — it was the decision they dared to make.
@@ -43,12 +43,12 @@ export default function CaseStudies() {
                   ))}
                 </ul>
               </div>
-              <div className="card-linear p-6 border-[rgba(124,92,255,0.30)] bg-[rgba(124,92,255,0.05)]">
+              <div className="card-linear p-6 border-[var(--hairline-strong)] bg-[var(--surface-2)]">
                 <span className="status-pill status-pill--active">After</span>
                 <ul className="mt-5 space-y-2.5">
                   {cs.after.map((b, i) => (
                     <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text)]">
-                      <Check size={13} className="mt-0.5 text-[var(--accent)] shrink-0" />
+                      <Check size={13} className="mt-0.5 text-[var(--text-2)] shrink-0" />
                       <span>{b}</span>
                     </li>
                   ))}
@@ -57,7 +57,7 @@ export default function CaseStudies() {
             </div>
 
             <blockquote className="mt-12 max-w-3xl t-h1 text-[var(--text)]">
-              <span className="text-[var(--accent)]">&ldquo;</span>{cs.quote}<span className="text-[var(--accent)]">&rdquo;</span>
+              <span className="text-[var(--text-2)]">&ldquo;</span>{cs.quote}<span className="text-[var(--text-2)]">&rdquo;</span>
             </blockquote>
           </div>
         </section>
@@ -69,7 +69,7 @@ export default function CaseStudies() {
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
           <span className="section-label"><span className="dot" />Your move</span>
           <h2 className="t-display mt-7">
-            Your <span className="text-[var(--accent)]">turn</span>.
+            Your <span className="text-[var(--text-2)]">turn</span>.
           </h2>
           <div className="mt-9">
             <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>

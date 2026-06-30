@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import MarketingLayout from "./components/MarketingLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
+import ScrollToTop from "./components/ScrollToTop";
 import { AuthProvider } from "./lib/AuthContext";
 
 import Landing from "./pages/Landing";
@@ -34,6 +35,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Toaster position="top-right" richColors />
         <Routes>
           {/* Marketing — public */}
