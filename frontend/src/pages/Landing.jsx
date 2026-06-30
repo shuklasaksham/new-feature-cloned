@@ -39,54 +39,45 @@ export default function Landing() {
   return (
     <div data-testid="landing-page">
       {/* ============ HERO ============ */}
-      <section className="relative overflow-hidden blueprint-bg" data-testid="hero-section">
-        {/* giant brackets */}
-        <span
-          className="bracket-mark absolute -top-16 sm:-top-24 -left-6 sm:-left-10 select-none text-[260px] sm:text-[380px] lg:text-[560px]"
-        >
-          {"{"}
-        </span>
-        <span
-          className="bracket-mark absolute -bottom-28 sm:-bottom-40 -right-6 sm:-right-10 select-none text-[260px] sm:text-[380px] lg:text-[560px]"
-        >
-          {"}"}
-        </span>
+      <section className="relative overflow-hidden" data-testid="hero-section">
 
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pt-10 md:pt-14 pb-10">
+        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 md:px-10 pt-16 md:pt-24 pb-16 md:pb-20">
           <div className="flex items-center gap-3">
             <span className="dot-live" />
-            <p className="mono-label">BRACKET · PROFESSIONAL OPERATING SYSTEM · V1.0</p>
+            <p className="mono-label">Bracket — Decision OS · v1.0</p>
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 mt-8 md:mt-10 items-end">
-            <div className="lg:col-span-8">
-              <h1 className="font-display text-[40px] sm:text-[64px] md:text-[88px] lg:text-[112px] uppercase animate-fade-up leading-[0.95]">
-                You
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 mt-10 md:mt-12 items-start">
+            <div className="lg:col-span-7">
+              <h1 className="font-display text-[32px] sm:text-[40px] md:text-[48px] leading-[1.1] tracking-tight animate-fade-up max-w-[640px]">
+                You don&apos;t need more tools.
                 <br />
-                don't need
-                <br />
-                more <span className="text-signal">tools.</span>
+                <span className="text-muted">You need better decisions.</span>
               </h1>
-              <h2 className="font-display text-[24px] sm:text-[36px] md:text-[52px] lg:text-[64px] mt-4 text-muted uppercase animate-fade-up leading-[0.95]">
-                You need better decisions<span className="blink" />
-              </h2>
+              <p className="mt-5 t-helper text-[15px] leading-relaxed max-w-[560px]">
+                Bracket helps you decide <em>what to do</em>, not just how to do it — a senior creative peer&apos;s judgement, installed between your input and your output.
+              </p>
+              <div className="mt-7 flex flex-wrap items-center gap-3">
+                <Link to="/app" className="btn-brut" data-testid="hero-primary-cta">
+                  Start a project <ArrowRight size={14} />
+                </Link>
+                <Link to="/how-it-works" className="btn-ghost" data-testid="hero-secondary-cta">
+                  See how it works
+                </Link>
+              </div>
             </div>
 
-            <div className="lg:col-span-4">
-              <div className="card-brut p-5 sm:p-7 relative">
+            <div className="lg:col-span-5">
+              <div className="card-brut p-6">
                 <p className="mono-label">{"{ the pitch }"}</p>
-                <p className="mt-4 text-base md:text-lg leading-relaxed">
-                  Bracket helps you decide <em>what to do</em>, not just how to do it. A senior creative peer's brain,
-                  installed between your input and your output.
+                <p className="mt-3 t-body">
+                  Most tools help you <em>execute</em>. Bracket helps you <em>decide</em>: reframe the brief, compress the context, name the trade-offs, draft the artifacts, then lock it before anyone reopens the conversation.
                 </p>
-                <div className="mt-6 flex flex-col gap-3">
-                  <Link to="/app" className="btn-brut justify-center" data-testid="hero-primary-cta">
-                    Start a project <ArrowRight size={16} />
-                  </Link>
-                  <Link to="/how-it-works" className="btn-ghost justify-center" data-testid="hero-secondary-cta">
-                    See how it works
-                  </Link>
-                </div>
+                <ul className="mt-5 space-y-2.5 t-helper">
+                  <li>· Five quiet steps. Fifteen minutes per project.</li>
+                  <li>· The reasoning is documented, so the call survives the room.</li>
+                  <li>· Free during early access.</li>
+                </ul>
               </div>
             </div>
           </div>
