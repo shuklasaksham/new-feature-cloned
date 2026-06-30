@@ -191,31 +191,59 @@ body::before {
 .clay-signal:disabled { background: var(--surface-3); color: var(--text-3); border-color: var(--hairline); cursor: not-allowed; }
 
 /* ============================================================
-   Cards — Linear: surface + hairline border, no big shadow
+   Cards — Linear dark + tasteful glassmorphism
+   Translucent surface over the dark page, backdrop-blur,
+   hairline highlight on the top edge for "glass" depth.
    ============================================================ */
 .card-brut {
-  background: var(--surface);
+  background: rgba(24, 24, 27, 0.62);
+  backdrop-filter: saturate(150%) blur(14px);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
   border: 1px solid var(--hairline);
   border-radius: 8px;
-  box-shadow: none;
-  transition: border-color 180ms var(--ease-out-spring), transform 180ms var(--ease-out-spring);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: border-color 180ms var(--ease-out-spring), background 180ms var(--ease-out-spring), transform 180ms var(--ease-out-spring);
 }
 .card-brut-hover:hover {
+  background: rgba(28, 28, 33, 0.72);
   border-color: #2f3447;
   transform: translateY(-1px);
 }
 
-/* Liquid-glass is now: AI elevated surface — slightly raised, accent edge on hover */
+/* Liquid-glass — AI elevated surface. Brighter translucent base,
+   refractive sheen drift on hover, violet edge accent on hover. */
 .liquid-glass {
   position: relative;
-  background: var(--surface-2);
+  background:
+    linear-gradient(135deg, rgba(28, 28, 33, 0.78) 0%, rgba(22, 24, 29, 0.70) 50%, rgba(28, 28, 33, 0.78) 100%);
+  backdrop-filter: saturate(170%) blur(20px);
+  -webkit-backdrop-filter: saturate(170%) blur(20px);
   border: 1px solid var(--hairline);
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 10px 32px -16px rgba(124, 92, 255, 0.18);
   overflow: hidden;
-  transition: border-color 180ms var(--ease-out-spring);
+  transition: border-color 220ms var(--ease-out-spring);
+}
+.liquid-glass::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg,
+    transparent 0%, transparent 38%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 62%, transparent 100%);
+  background-size: 220% 100%;
+  background-position: 200% 0;
+  transition: background-position 1.6s var(--ease-snap);
 }
 .liquid-glass:hover { border-color: rgba(124, 92, 255, 0.35); }
+.liquid-glass:hover::after { background-position: -20% 0; }
 
 /* Glass / sticky chrome */
 .glass {
