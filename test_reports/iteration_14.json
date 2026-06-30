@@ -1,0 +1,69 @@
+{
+  "summary": "iteration_17 (file: iteration_14.json) — Surgical re-verification of the --accent variable collision fix. All 5 failed probes from iteration_13 now pass. Full happy-path navigation (/login guest → /app dashboard → /project/:id/flow) works end-to-end. Marketing pages and regression baselines intact.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "bug_fix_verification": {
+    "probe1_accent_var": {"expected": "#7C5CFF", "actual": "#7C5CFF", "status": "PASS"},
+    "probe1b_sc_accent_namespaced": {"expected": "253 100% 68%", "actual": "253 100% 68%", "status": "PASS"},
+    "probe2_btn_brut_active": {
+      "bg": "rgb(124, 92, 255)",
+      "border": "rgb(124, 92, 255)",
+      "color": "rgb(243, 244, 246)",
+      "height": "36px",
+      "radius": "6px",
+      "status": "PASS — matches spec exactly on both landing 'Start a project →' and dashboard 'New project'"
+    },
+    "probe3_textarea_focus": {
+      "idle_bg": "rgb(22, 24, 29)",
+      "idle_border": "rgb(38, 42, 54)",
+      "focus_border": "rgb(124, 92, 255)",
+      "focus_box_shadow": "rgba(124, 92, 255, 0.18) 0px 0px 0px 3px",
+      "status": "PASS — violet focus border + 3px outer glow"
+    },
+    "probe4_suggest_chip": {
+      "bg": "rgb(17, 17, 19)",
+      "border": "1px solid rgb(38, 42, 54)",
+      "radius": "6px",
+      "hover_border_color": "rgba(124, 92, 255, 0.35)",
+      "status": "PASS"
+    },
+    "probe5_conf_ribbon": {
+      "status": "SKIPPED — .conf-ribbon does not render until AI run completes (Step 1 form shows OutputPending card initially, per agent note). No regression: textareas/buttons on /project flow render violet correctly."
+    }
+  },
+  "regression_verification": {
+    "body_bg": "rgb(9, 9, 11)",
+    "body_color": "rgb(243, 244, 246)",
+    "body_font": "Inter var, Inter, sans-serif",
+    "glass_nav_backdrop_filter": "saturate(1.4) blur(12px)",
+    "glass_nav_border_bottom": "1px rgb(38, 42, 54)",
+    "card_brut_landing": {"bg": "rgb(17, 17, 19)", "border": "rgb(38, 42, 54)", "radius": "8px"},
+    "btn_ghost": "not directly probed in this run — visible 'See how it works' on landing renders dark surface with hairline (visible in screenshot)",
+    "step_pipeline_active": {"bg": "rgba(124, 92, 255, 0.1)", "border": "rgba(124, 92, 255, 0.35)"},
+    "marketing_pages_body_bg": {"/pricing": "rgb(9,9,11)", "/use-cases": "rgb(9,9,11)", "/how-it-works": "rgb(9,9,11)", "/case-studies": "rgb(9,9,11)"},
+    "marketing_pages_accent_var": "all 4 pages → #7C5CFF",
+    "disabled_cta": {"bg": "rgb(27, 29, 35) (=surface-3)", "color": "rgb(107, 114, 128) (=text-3)", "cursor": "not-allowed"},
+    "happy_path": "PASS — /login → click login-guest-btn → /app dashboard → type 'TEST_iter17' → click 'New project' → /project/<uuid>/flow → Step 1 form renders with violet step pipeline + OutputPending card, no fatal console errors"
+  },
+  "console_errors_observed": [
+    "401 GET /api/auth/me on unauthenticated marketing pages (pre-existing, non-blocking — background auth probe)"
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fix looks clean and minimal — only :root vars in /app/frontend/src/index.css lines 33-55 were re-namespaced to --sc-*. Bracket tokens at lines 9-23 are now uncontested. No JSX/Tailwind changes required.",
+    "Note: shadcn-flavoured components in /app/frontend/src/components/ui/ still reference hsl(var(--background)), hsl(var(--accent)) etc. (NOT --sc-*). If any shadcn UI primitive is used in the app it will now resolve to invalid hsl(#7C5CFF) and fall back to inherit/initial. None of the currently-tested screens use shadcn primitives, so this is latent. Suggest a follow-up sweep to either (a) migrate shadcn components to hsl(var(--sc-*)), or (b) reintroduce a separate scope for shadcn vars under a .shadcn-scope class."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% (5/5 probes + all regression baselines pass)"},
+  "test_credentials": "Guest login via [data-testid=login-guest-btn] on /login — no creds needed",
+  "seed_data_creation": "Created one project 'TEST_iter17' (id 173756cb-93ad-4350-ac73-a1bff46468a3) under guest user for nav verification. Safe to leave or purge.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iteration_17 closes out the --accent collision saga. If shadcn primitives are reintroduced in any future screen, re-check hsl(var(--accent)) usages — they will now fail silently because --accent is a hex literal. The pre-existing 400 on partial Step 1 autosave was not retriggered this run (only navigated to flow, did not type into Step 1 fields).",
+  "rca of the issue": "iteration_13 RCA: :root had two --accent declarations — Bracket hex token #7C5CFF (line 19) was overridden by a later shadcn HSL fragment '253 100% 68%' (line ~49). When .btn-brut used `background: var(--accent)` it resolved to a bare HSL fragment without the hsl() wrapper → invalid → transparent. Fix: namespace all shadcn HSL fragments to --sc-* so Bracket tokens remain authoritative. Verified by reading document.documentElement.style + computed styles on .btn-brut, .textarea-brut:focus, .suggest-chip, and step pipeline."
+}

@@ -30,26 +30,29 @@
   --faint:  var(--hairline);
   --radius: 8px;
 
-  /* shadcn semantic vars (HSL) — dark mapping */
-  --background:    240 7% 5%;
-  --foreground:    220 14% 96%;
-  --card:          240 6% 8%;
-  --card-foreground: 220 14% 96%;
-  --popover:       228 11% 12%;
-  --popover-foreground: 220 14% 96%;
-  --primary:       220 14% 96%;
-  --primary-foreground: 240 7% 5%;
-  --secondary:     228 11% 11%;
-  --secondary-foreground: 220 14% 96%;
-  --muted-color:   228 11% 12%;
-  --muted-foreground: 217 11% 65%;
-  --accent:        253 100% 68%;
-  --accent-foreground: 220 14% 96%;
-  --destructive:   0 84% 60%;
-  --destructive-foreground: 220 14% 96%;
-  --border:        225 17% 18%;
-  --input:         228 11% 11%;
-  --ring:          253 100% 68%;
+  /* shadcn semantic vars (HSL) — dark mapping, namespaced --sc-* to avoid
+     collision with the Bracket design tokens above. shadcn-flavoured
+     components that reference hsl(var(--accent)) etc. should be migrated
+     to hsl(var(--sc-accent)) — for now nothing in-app depends on these. */
+  --sc-background:    240 7% 5%;
+  --sc-foreground:    220 14% 96%;
+  --sc-card:          240 6% 8%;
+  --sc-card-foreground: 220 14% 96%;
+  --sc-popover:       228 11% 12%;
+  --sc-popover-foreground: 220 14% 96%;
+  --sc-primary:       220 14% 96%;
+  --sc-primary-foreground: 240 7% 5%;
+  --sc-secondary:     228 11% 11%;
+  --sc-secondary-foreground: 220 14% 96%;
+  --sc-muted:         228 11% 12%;
+  --sc-muted-foreground: 217 11% 65%;
+  --sc-accent:        253 100% 68%;
+  --sc-accent-foreground: 220 14% 96%;
+  --sc-destructive:   0 84% 60%;
+  --sc-destructive-foreground: 220 14% 96%;
+  --sc-border:        225 17% 18%;
+  --sc-input:         228 11% 11%;
+  --sc-ring:          253 100% 68%;
 
   --ease-out-spring: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
