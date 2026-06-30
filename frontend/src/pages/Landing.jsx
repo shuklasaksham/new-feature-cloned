@@ -61,16 +61,14 @@ export default function Landing() {
           <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 mt-8 md:mt-10 items-end">
             <div className="lg:col-span-8">
               <h1 className="font-display text-[40px] sm:text-[64px] md:text-[88px] lg:text-[112px] uppercase animate-fade-up leading-[0.95]">
-                Designers
+                You
                 <br />
-                & freelancers
+                don't need
                 <br />
-                don't need more
-                <br />
-                <span className="text-signal">tools.</span>
+                more <span className="text-signal">tools.</span>
               </h1>
-              <h2 className="font-display text-[24px] sm:text-[36px] md:text-[52px] lg:text-[64px] mt-4 text-muted uppercase animate-fade-up">
-                They need better decisions<span className="blink" />
+              <h2 className="font-display text-[24px] sm:text-[36px] md:text-[52px] lg:text-[64px] mt-4 text-muted uppercase animate-fade-up leading-[0.95]">
+                You need better decisions<span className="blink" />
               </h2>
             </div>
 

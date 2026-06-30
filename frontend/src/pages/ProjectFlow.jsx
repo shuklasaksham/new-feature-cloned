@@ -9,6 +9,8 @@ import {
   RefreshCw,
   Download,
   FileText,
+  Layers,
+  FolderOpen,
 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
@@ -119,14 +121,14 @@ export default function ProjectFlow() {
             <a href="/app" onClick={handleLogoClick} className="shrink-0 cursor-pointer" data-testid="flow-logo-link">
               <BracketMark label={false} size={24} />
             </a>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p
                 className="font-display text-base sm:text-lg leading-none truncate"
                 data-testid="flow-project-name"
               >
                 {project?.name}
               </p>
-              <p className="mono-tag text-muted">
+              <p className="mono-tag text-muted hidden sm:block truncate">
                 {project?.engine === "gpt" ? "GPT-5.2" : "CLAUDE SONNET 4.5"}
               </p>
             </div>
@@ -140,25 +142,31 @@ export default function ProjectFlow() {
             {project?.artifacts && (
               <Link
                 to={`/project/${project.id}/document`}
-                className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase flex items-center gap-2 bg-paper hover:bg-ink hover:text-chalk"
+                className="px-2.5 sm:px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase flex items-center gap-2 bg-paper hover:bg-ink hover:text-chalk"
                 data-testid="flow-document-link"
+                title="Document"
+                aria-label="Document"
               >
-                <FileText size={12} /> Document
+                <FileText size={12} /> <span className="hidden sm:inline">Document</span>
               </Link>
             )}
             <Link
               to={`/project/${id}`}
-              className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk"
+              className="px-2.5 sm:px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk flex items-center gap-2"
               data-testid="flow-overview-link"
+              title="Overview"
+              aria-label="Overview"
             >
-              Overview
+              <Layers size={12} /> <span className="hidden sm:inline">Overview</span>
             </Link>
             <Link
               to="/app"
-              className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk"
+              className="px-2.5 sm:px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk flex items-center gap-2"
               data-testid="flow-new-project-btn"
+              title="All projects"
+              aria-label="All projects"
             >
-              All projects
+              <FolderOpen size={12} /> <span className="hidden sm:inline">All projects</span>
             </Link>
           </div>
         </div>
