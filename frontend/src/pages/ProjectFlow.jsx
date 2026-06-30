@@ -258,7 +258,7 @@ export default function ProjectFlow() {
 
 function StepShell({ num, label, title, kicker, previously, nextHint, children }) {
   return (
-    <div>
+    <div className="page-enter">
       <div className="story-divider" data-testid={`step${num}-divider`}>
         <span className="counter">{`{ 0${num} / 05 }`}</span>
         <span className="t-tag">{label}</span>
@@ -561,7 +561,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             </button>
             <button
               onClick={run}
-              disabled={loading}
+              disabled={loading || !form.requirements.trim()}
               className="clay-signal px-5 py-3 t-tag press"
               data-testid="step2-submit-btn"
             >
@@ -621,7 +621,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
                 <ul className="space-y-1.5 text-sm">
                   <li><span className="t-tag text-muted">requirements · </span>{(form.requirements || project.context_input?.requirements || "—").slice(0, 220)}{(form.requirements || "").length > 220 ? "…" : ""}</li>
                   <li><span className="t-tag text-muted">constraints · </span>{form.constraints || project.context_input?.constraints || "—"}</li>
-                  <li><span className="t-tag text-muted">audience · </span>{form.audience || project.context_input?.audience || "—"}</li>
+                  <li><span className="t-tag text-muted">inspirations · </span>{form.inspirations || project.context_input?.inspirations || "—"}</li>
                 </ul>
               }
             >
@@ -894,7 +894,7 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
         </button>
         <button
           onClick={run}
-          disabled={loading}
+          disabled={loading || !project?.decision?.recommendation?.title}
           className="clay-signal px-5 py-3 t-tag press"
           data-testid="step4-generate-btn"
         >
@@ -1616,4 +1616,3 @@ function mergeSuggestion(current, suggestion) {
   if (c.endsWith(".") || c.endsWith(",")) return `${c} ${suggestion}`;
   return `${c}, ${suggestion}`;
 }
-
