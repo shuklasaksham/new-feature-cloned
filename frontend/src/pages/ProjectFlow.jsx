@@ -391,7 +391,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
             <button
               onClick={run}
               disabled={loading || !form.what.trim()}
-              className="clay-signal px-5 py-3 t-tag press"
+              className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step1-submit-btn"
             >
               {loading ? (
@@ -562,7 +562,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             <button
               onClick={run}
               disabled={loading || !form.requirements.trim()}
-              className="clay-signal px-5 py-3 t-tag press"
+              className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step2-submit-btn"
             >
               {loading ? (
@@ -742,7 +742,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
             <button
               onClick={run}
               disabled={loading || !form.optimizing_for.trim()}
-              className="clay-signal px-5 py-3 t-tag press"
+              className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step3-submit-btn"
             >
               {loading ? (
@@ -895,7 +895,7 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
         <button
           onClick={run}
           disabled={loading || !project?.decision?.recommendation?.title}
-          className="clay-signal px-5 py-3 t-tag press"
+          className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
           data-testid="step4-generate-btn"
         >
           {loading ? (
@@ -1550,7 +1550,12 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
     }
 
     let cancelled = false;
-    setLoading(true);
+    // Only show the "thinking…" indicator if the request is still running
+    // after 250ms — for fast responses it never appears, making the
+    // suggestion feel instant.
+    const loadingTimer = setTimeout(() => {
+      if (!cancelled) setLoading(true);
+    }, 250);
     const timer = setTimeout(async () => {
       try {
         const { data } = await api.post("/suggest", {
@@ -1572,12 +1577,14 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
       } catch {
         if (!cancelled) setItems([]);
       } finally {
+        clearTimeout(loadingTimer);
         if (!cancelled) setLoading(false);
       }
-    }, 220);
+    }, 80);
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      clearTimeout(loadingTimer);
     };
   }, [value, field, step, JSON.stringify(context || {})]);
 

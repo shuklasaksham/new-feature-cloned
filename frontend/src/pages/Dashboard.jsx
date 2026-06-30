@@ -102,7 +102,7 @@ export default function Dashboard() {
     <div className="min-h-screen" data-testid="dashboard-page">
       <AppHeader />
 
-      <main className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12">
+      <main className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12 page-enter">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <p className="mono-label">{"{ your projects }"}</p>
