@@ -13,7 +13,6 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
-import AppHeader from "../components/AppHeader";
 import { api, formatApiError } from "../lib/api";
 
 const STEPS = [
@@ -266,7 +265,6 @@ export default function ProjectOverview() {
   if (error || !project) {
     return (
       <div className="min-h-screen">
-        <AppHeader />
         <main className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-12">
           <div className="card-brut border-danger p-6" data-testid="overview-error">
             <p className="mono-tag text-danger">CAN&apos;T LOAD PROJECT</p>
@@ -284,9 +282,7 @@ export default function ProjectOverview() {
 
   return (
     <div className="min-h-screen" data-testid="overview-page">
-      <AppHeader />
-
-      <main className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12">
+      <main className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12 page-enter">
         {/* Top breadcrumb */}
         <Link to="/app" className="mono-tag text-muted hover:text-ink inline-flex items-center gap-2" data-testid="overview-back">
           ← BACK TO DASHBOARD

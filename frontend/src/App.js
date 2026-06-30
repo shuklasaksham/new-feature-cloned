@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 
 import MarketingLayout from "./components/MarketingLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AppShell from "./components/AppShell";
 import { AuthProvider } from "./lib/AuthContext";
 
 import Landing from "./pages/Landing";
@@ -51,14 +52,14 @@ export default function App() {
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/claim" element={<ProtectedRoute><ClaimProjects /></ProtectedRoute>} />
 
-          {/* Tool (auth required) */}
-          <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/app/new" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          {/* Tool (auth required) — wrapped in AppShell w/ collapsible sidebar */}
+          <Route path="/app" element={<ProtectedRoute><AppShell><Dashboard /></AppShell></ProtectedRoute>} />
+          <Route path="/app/new" element={<ProtectedRoute><AppShell><Dashboard /></AppShell></ProtectedRoute>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
-          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/project/:id" element={<ProtectedRoute><ProjectOverview /></ProtectedRoute>} />
-          <Route path="/project/:id/flow" element={<ProtectedRoute><ProjectFlow /></ProtectedRoute>} />
-          <Route path="/project/:id/document" element={<ProtectedRoute><ProjectDocument /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />
+          <Route path="/project/:id" element={<ProtectedRoute><AppShell><ProjectOverview /></AppShell></ProtectedRoute>} />
+          <Route path="/project/:id/flow" element={<ProtectedRoute><AppShell><ProjectFlow /></AppShell></ProtectedRoute>} />
+          <Route path="/project/:id/document" element={<ProtectedRoute><AppShell><ProjectDocument /></AppShell></ProtectedRoute>} />
 
           {/* Public client review */}
           <Route path="/r/:token" element={<ClientReview />} />

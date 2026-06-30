@@ -2,21 +2,20 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2, Plus, FileText, Lock, AlertCircle, Check, X as XIcon, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import AppHeader from "../components/AppHeader";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 
 const STATUS_PILL = {
-  draft:      { bg: "bg-white border border-ink/15 text-ink", label: "DRAFT" },
-  in_progress:{ bg: "bg-ink text-chalk border border-ink",    label: "IN PROGRESS" },
-  locked:     { bg: "bg-signal text-chalk border border-signal", label: "LOCKED" },
+  draft:       { className: "status-pill status-pill--draft",  label: "Draft" },
+  in_progress: { className: "status-pill status-pill--active", label: "In progress" },
+  locked:      { className: "status-pill status-pill--locked", label: "Locked" },
 };
 
 const SHARE_PILL = {
-  sent:           { bg: "bg-ink text-chalk",    label: "AWAITING REVIEW" },
-  accepted:       { bg: "bg-signal text-chalk", label: "ACCEPTED" },
-  rejected:       { bg: "bg-danger text-chalk", label: "CONCERNS RAISED" },
-  awaiting_reply: { bg: "bg-ink text-chalk",    label: "REPLY SENT" },
+  sent:           { className: "status-pill status-pill--wait",     label: "Awaiting review" },
+  accepted:       { className: "status-pill status-pill--success",  label: "Accepted" },
+  rejected:       { className: "status-pill status-pill--danger",   label: "Concerns raised" },
+  awaiting_reply: { className: "status-pill status-pill--wait",     label: "Reply sent" },
 };
 
 export default function Dashboard() {
@@ -100,16 +99,13 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen" data-testid="dashboard-page">
-      <AppHeader />
-
-      <main className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12 page-enter">
+      <main className="max-w-[1200px] mx-auto px-6 sm:px-8 md:px-10 py-8 md:py-12 page-enter">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="mono-label">{"{ your projects }"}</p>
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase mt-3">
-              Hi {(user?.name || "there").split(" ")[0]}.
-              <br />
-              <span className="text-signal">What are we deciding today?</span>
+            <p className="mono-label">Workspace</p>
+            <h1 className="t-hero mt-2">
+              Hi {(user?.name || "there").split(" ")[0]}.{" "}
+              <span className="text-muted">What are we deciding today?</span>
             </h1>
           </div>
         </div>
@@ -139,7 +135,7 @@ export default function Dashboard() {
         {/* Projects list */}
         <div className="mt-10">
           <div className="flex items-center justify-between">
-            <p className="mono-label">{`{ ${projects.length} project${projects.length === 1 ? "" : "s"} }`}</p>
+            <p className="mono-label">{projects.length} project{projects.length === 1 ? "" : "s"}</p>
           </div>
 
           {loading ? (
@@ -153,13 +149,11 @@ export default function Dashboard() {
             >
               <div className="grid md:grid-cols-2 gap-6 items-center">
                 <div>
-                  <p className="mono-label text-signal">{"{ first project }"}</p>
-                  <h3 className="font-display text-3xl sm:text-4xl mt-3 leading-[0.95]">
-                    Nothing decided
-                    <br />
-                    <span className="text-signal">yet.</span>
+                  <p className="mono-label">First project</p>
+                  <h3 className="t-display mt-2">
+                    Nothing decided yet.
                   </h3>
-                  <p className="text-muted mt-4 text-sm max-w-sm">
+                  <p className="text-muted mt-3 text-sm max-w-sm">
                     Type a name above. Or pick a starter below — Bracket will fill the first 3 fields for you so you can feel the loop in 60 seconds.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-2" data-testid="empty-starter-chips">
@@ -199,12 +193,12 @@ export default function Dashboard() {
               </div>
             </div>
           ) : (
-            <ul className="mt-6 card-brut overflow-hidden divide-y divide-ink/10 stagger-in" data-testid="dashboard-projects-list">
+            <ul className="mt-6 card-brut overflow-hidden divide-y divide-[var(--hairline)] stagger-in" data-testid="dashboard-projects-list">
               {projects.map((p) => {
                 const sp = STATUS_PILL[p.status] || STATUS_PILL.draft;
                 const ss = SHARE_PILL[p.share_status];
                 return (
-                  <li key={p.id} className="hover:bg-white/40 transition-colors" data-testid={`dashboard-row-${p.id}`}>
+                  <li key={p.id} className="project-row" data-testid={`dashboard-row-${p.id}`}>
                     <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                       {renameId === p.id ? (
                         <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
@@ -224,46 +218,47 @@ export default function Dashboard() {
                           <div className="flex gap-2">
                             <button
                               onClick={saveRename}
-                              className="px-3 py-2 rounded-lg mono-tag bg-signal text-chalk hover:brightness-110 transition-all inline-flex items-center gap-2"
+                              className="btn-brut"
                               data-testid={`dashboard-rename-save-${p.id}`}
                             >
-                              <Check size={12} /> SAVE
+                              <Check size={12} /> Save
                             </button>
                             <button
                               onClick={cancelRename}
-                              className="px-3 py-2 rounded-lg mono-tag bg-white border border-ink/15 hover:bg-ink hover:text-chalk transition-all"
+                              className="btn-ghost"
                               data-testid={`dashboard-rename-cancel-${p.id}`}
                             >
-                              CANCEL
+                              Cancel
                             </button>
                           </div>
                         </div>
                       ) : (
                         <Link to={`/project/${p.id}`} className="flex-1 min-w-0 group">
-                          <p className="font-display text-xl sm:text-2xl uppercase truncate group-hover:text-signal transition-colors">
+                          <p className="project-row-title">
                             {p.name}
                           </p>
-                          <p className="mono-tag text-muted mt-1">
-                            STEP {p.step}/5 · UPDATED {new Date(p.updated_at).toLocaleDateString()}
+                          <p className="project-row-meta">
+                            Step {p.step}/5 · updated {new Date(p.updated_at).toLocaleDateString()}
                           </p>
                         </Link>
                       )}
                       {renameId !== p.id && (
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        <span className={`mono-tag px-2.5 py-1.5 rounded-full ${sp.bg}`}>{sp.label}</span>
-                        {ss && <span className={`mono-tag px-2.5 py-1.5 rounded-full ${ss.bg}`}>{ss.label}</span>}
+                        <span className={sp.className}>{sp.label}</span>
+                        {ss && <span className={ss.className}>{ss.label}</span>}
                         {p.status === "locked" && (
                           <Link
                             to={`/project/${p.id}/document`}
-                            className="px-3 py-2 rounded-lg border border-ink/15 bg-white font-mono text-[11px] tracking-widest uppercase hover:bg-ink hover:text-chalk hover:border-ink transition-all inline-flex items-center gap-2"
+                            className="icon-tile inline-flex items-center gap-2 px-3 w-auto"
                             data-testid={`dashboard-doc-${p.id}`}
+                            title="Open document"
                           >
-                            <FileText size={12} /> DOC
+                            <FileText size={13} /> <span className="text-xs">Doc</span>
                           </Link>
                         )}
                         <button
                           onClick={() => startRename(p)}
-                          className="w-9 h-9 rounded-lg border border-ink/15 bg-white text-ink hover:bg-ink hover:text-chalk hover:border-ink transition-all inline-flex items-center justify-center"
+                          className="icon-tile"
                           data-testid={`dashboard-rename-${p.id}`}
                           aria-label="Rename project"
                           title="Rename"
@@ -272,7 +267,7 @@ export default function Dashboard() {
                         </button>
                         <button
                           onClick={() => remove(p.id)}
-                          className="w-9 h-9 rounded-lg border border-ink/15 bg-white text-ink hover:bg-danger hover:text-chalk hover:border-danger transition-all inline-flex items-center justify-center"
+                          className="icon-tile is-danger"
                           data-testid={`dashboard-delete-${p.id}`}
                           aria-label="Delete project"
                           title="Delete"

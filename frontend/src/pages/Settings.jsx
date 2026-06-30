@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Lock as LockIcon } from "lucide-react";
 import { toast } from "sonner";
-import AppHeader from "../components/AppHeader";
 import Avatar, { AVATARS } from "../components/Avatar";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
@@ -53,9 +52,8 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-paper" data-testid="settings-page">
-      <AppHeader />
-      <main className="max-w-[820px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12">
+    <div className="min-h-screen" data-testid="settings-page">
+      <main className="max-w-[820px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12 page-enter">
         <button
           type="button"
           onClick={() => navigate(-1)}
