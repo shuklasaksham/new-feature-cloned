@@ -1,0 +1,136 @@
+{
+  "summary": "iteration_15 — Visual regression sweep across marketing + app pages after brand asset PNG swap + Poppins/#08090A overhaul. All marketing pages, FAQ accordion, dashboard empty state, project flow step pipeline, settings, and sidebar collapse persistence verified. Brand assets (/logo-mark1.png, /logo-icon1.png, /illustration.svg) all load 200. ScrollToTop works on route change. ONE notable regression: mobile (375px) sidebar does NOT collapse to the 52px icon rail spec'd — aside reports width=240px causing cramped main content.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AppSidebar (mobile breakpoint)",
+        "issue": "On 375x812 viewport, <aside> width = 240px (full desktop expanded width). Spec requires collapse to ~52px icon rail on mobile. Main content (Dashboard) becomes severely cramped — 'Welcome back, Guest.' wraps to 3 lines, 'New project' input is truncated, project cards squeezed. Sidebar collapse toggle still works but the *default* mobile width is wrong.",
+        "selector": "aside",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Dashboard empty state",
+        "issues": ["Heading 'No bracket created yet' is rendered as <h3>, but the spec/problem statement described it as h1. Visual size/weight is fine, but semantic heading hierarchy is off (page has no h1 on /app empty state)."]
+      }
+    ]
+  },
+  "visual_regression_results": {
+    "/how-it-works": {
+      "h1": "Less a tool. More a way of thinking.",
+      "wordmark_src": "/logo-mark1.png (naturalW=122) — OK",
+      "section_label_coral_dot": "visible in screenshot (rendered as inline span, not ::before — section-label probe found 'How it works' text)",
+      "body_bg": "rgb(8, 9, 10) (#08090A) — OK",
+      "horizontal_scroll": false,
+      "broken_images": [],
+      "status": "PASS"
+    },
+    "/use-cases": {
+      "h1": "For the people who take the call.",
+      "card_heights_rowwise": [103, 103, 103, 125, 125, 125],
+      "horizontal_scroll": false,
+      "broken_images": [],
+      "status": "PASS — rows have consistent heights"
+    },
+    "/case-studies": {
+      "purple_bg_elements_count": 0,
+      "broken_images": [],
+      "status": "PASS — no violet card backgrounds, After-card uses neutral surface"
+    },
+    "/pricing": {
+      "purple_bg_count": 0,
+      "broken_images": [],
+      "status": "PASS — no violet glow on Pro tier"
+    },
+    "/faq": {
+      "faq_page_testid_visible": true,
+      "h1": "Questions, answered.",
+      "categories": ["faq-cat-getting", "faq-cat-workflow", "faq-cat-pricing", "faq-cat-privacy"],
+      "faq_items_count": 12,
+      "accordion_toggle": "first item height 57 → 117 after click (expands correctly)",
+      "status": "PASS"
+    },
+    "/app empty state": {
+      "dashboard-empty_visible": true,
+      "illustration_svg": "src=/illustration.svg, complete=true, 372x272 natural",
+      "h3_text": "No bracket created yet",
+      "subtitle": "Define your first project clearly, before work begins",
+      "cta_bg": "rgb(255, 122, 107) (coral)",
+      "cta_radius": "9999px (pill)",
+      "cta_color": "rgb(255, 255, 255)",
+      "status": "PASS (with minor h3 vs h1 semantic note)"
+    },
+    "/project/:id/flow step pipeline": {
+      "steps_found": "[1..5] all present",
+      "step_labels": ["1Situation framing","2Context compression","3Decision engine","4Artifacts","5Confidence lock-in"],
+      "sentence_case": true,
+      "step1_active_bg": "rgb(245, 158, 11) (amber #F59E0B)",
+      "step2_3_pending_bg": "rgb(14, 15, 18) (surface)",
+      "step2_3_pending_border": "1px solid rgba(255, 255, 255, 0.1) (hairline)",
+      "click_step3_becomes_active": "step3 bg → rgb(245, 158, 11) amber ✓",
+      "textarea_class": "textarea-brut (NOT textarea-linear as spec'd, but visual matches)",
+      "textarea_idle": "bg rgb(14,15,18), border rgba(255,255,255,0.07)",
+      "textarea_focus": "borderColor rgb(124,92,255), boxShadow rgba(124,92,255,0.18) 0px 0px 0px 3px",
+      "status": "PASS"
+    },
+    "/settings": {
+      "h1": "Account",
+      "input_count": 3,
+      "scrollY_on_arrival": 0,
+      "status": "PASS"
+    }
+  },
+  "functional_regression_results": {
+    "sidebar_nav_items": ["sidebar-nav-dashboard", "sidebar-nav-settings", "sidebar-nav-faq"],
+    "sidebar_admin_item": "not present for guest user (admin link is admin-only — acceptable)",
+    "sidebar_has_new_project_cta": false,
+    "sidebar_brand_expanded_src": "/logo-mark1.png",
+    "sidebar_brand_collapsed_src": "/logo-icon1.png",
+    "sidebar_collapse_localStorage": "bracket.sidebar.collapsed=1 after toggle, persists across reload ✓",
+    "scrolltop_marketing_pricing_to_faq": "scrollY=0 after click (from scrollY=1500) ✓",
+    "scrolltop_sidebar_settings": "scrollY=0 on arrival ✓",
+    "scrolltop_sidebar_faq": "scrollY=0 on arrival ✓ (routes through marketing /faq — sidebar disappears since /faq is inside MarketingLayout, not AppShell; per spec this is acceptable as ScrollToTop is the only requirement)",
+    "create_project_flow": "TEST_iter18_v created → routed to /project/<uuid>/flow ✓"
+  },
+  "mobile_regression_375x812": {
+    "landing_horizontal_scroll": false,
+    "app_horizontal_scroll": false,
+    "app_sidebar_width_px": 240,
+    "expected_sidebar_width_px": "~52 (icon rail per spec)",
+    "verdict": "FAIL — sidebar not responsive at mobile breakpoint",
+    "screenshot": "/tmp/mobile_app.png shows main content cramped, 'Welcome back, Guest' wraps to 3 lines, 'New project' CTA clipped"
+  },
+  "brand_asset_regression": {
+    "logo-mark1.png_http_status": 200,
+    "logo-icon1.png_http_status": 200,
+    "illustration.svg_http_status": 200,
+    "nav_wordmark_uses_/logo-mark1.png": true,
+    "sidebar_expanded_uses_/logo-mark1.png": true,
+    "sidebar_collapsed_uses_/logo-icon1.png": true,
+    "broken_imgs_across_pages": []
+  },
+  "console_errors_observed": [
+    "401 GET /api/auth/me on unauthenticated marketing pages — pre-existing, non-blocking background auth probe (same as iteration_14)"
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "MEDIUM: Make AppSidebar responsive at mobile breakpoint (<640px) — force collapsed icon rail (~52px) so the dashboard main content has breathing room on 375px. Right now aside stays at 240px and clips the dashboard input + heading.",
+    "LOW: Empty-state heading 'No bracket created yet' is <h3>; consider promoting to <h1> for correct page heading hierarchy on /app (matches spec wording 'h1 + subtitle')."
+  ],
+  "critical_code_review_comments": [
+    "Sidebar component (/app/frontend/src/components/AppSidebar.jsx) likely uses a fixed 240px width with only an explicit collapse toggle; add a media-query/responsive `useEffect` to force collapsed=true under 640px viewport (or use a CSS `@media (max-width: 640px)` to override the width).",
+    "Spec said textarea class should be `.textarea-linear` but implementation uses `.textarea-brut`. Visual styling matches the spec exactly (idle hairline + violet focus ring + 3px violet glow), so this is naming drift only — either update the class name everywhere or update the spec wording. Low priority.",
+    "/faq is mounted inside MarketingLayout (no AppShell sidebar). When a logged-in user clicks the sidebar 'FAQ' link, the AppShell disappears and they land on the marketing FAQ. This is functional (ScrollToTop works) but UX-wise the user temporarily 'exits' the app — confirm this is intentional. If not, mount /faq inside AppShell as well, or render the FAQ component twice."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request — frontend only)", "frontend": "~92% — 14/15 checks pass, 1 mobile sidebar width regression"},
+  "test_credentials": "Guest login via [data-testid=login-guest-btn] on /login — no creds needed",
+  "seed_data_creation": "Created 1 project 'TEST_iter18_v' (id 64cd9730-af74-4a49-99f5-dcf7e0bbfea6) under guest user. Safe to leave.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Marketing/app pages visually clean post brand-swap. Only outstanding issue is the mobile sidebar (240px on 375px viewport). After fix, re-run mobile_regression_375x812 block — expect aside width ≤ 60px and no clipping of dashboard input/heading. /faq route is intentionally under MarketingLayout (no AppShell) — sidebar disappears on FAQ navigation; this may or may not be desired UX.",
+  "rca of the issue": "AppSidebar.jsx applies a fixed expanded width (likely w-60 = 240px) that does NOT respond to viewport width. The sidebar only toggles narrow/wide on the explicit user collapse-toggle action stored in localStorage. There is no automatic mobile-breakpoint override. Mitigation: in AppSidebar, add `useEffect(() => { const isMobile = window.matchMedia('(max-width: 640px)').matches; if (isMobile) setCollapsed(true); }, [])` OR add a CSS `@media (max-width: 640px) { aside[data-testid='sidebar'] { width: 52px; } }` so the rail is forced narrow on small screens regardless of localStorage value."
+}
