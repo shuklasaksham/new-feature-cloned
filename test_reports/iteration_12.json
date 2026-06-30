@@ -1,0 +1,48 @@
+{
+  "summary": "iteration_15 frontend-only verification: Tailwind borderRadius override fix on /app/frontend/tailwind.config.js:35 is CONFIRMED WORKING. Full guest-login + project-creation + dashboard rename/delete cluster computed-style probe shows all target buttons now render at the intended 10px corners (NOT 0px). Tailwind utility ramp probe confirms sm=4/md=8/lg=10/xl=14/2xl=18/full=9999. Marketing, login pages still render without regressions. No console errors during dashboard render.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/.screenshots/cluster_zoom.png",
+    "/app/.screenshots/dashboard_full.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Dashboard route is /app, not /dashboard. The review_request copy referred to '/dashboard' but the SPA router uses '/app'. Direct nav to /dashboard redirects to '/' (landing). Cosmetic only — testids still match the iteration_11 spec (dashboard-rename-*, dashboard-delete-*).",
+    "Project-list response from POST /api/projects returns 200 (not the more idiomatic 201) — minor REST nit, not blocking.",
+    "Two harmless GET /api/auth/me 401s fire on initial landing-page mount before guest login (auth probe). Consider 200-with-null payload instead of 401 to keep the console clean for prospects."
+  ],
+  "computed_radii": {
+    "tailwind_utility_probe": {
+      "rounded-sm": "4px",
+      "rounded-md": "8px",
+      "rounded-lg": "10px",
+      "rounded-xl": "14px",
+      "rounded-2xl": "18px",
+      "rounded-full": "9999px"
+    },
+    "dashboard_project_row_cluster": {
+      "dashboard-rename-<id> (pencil)": "10px (36x36)",
+      "dashboard-delete-<id> (X)": "10px",
+      "DRAFT pill (rounded-full)": "9999px",
+      "dashboard-rename-save-<id>": "10px",
+      "dashboard-rename-cancel-<id>": "10px"
+    },
+    "custom_utility_unaffected": {
+      ".card-brut": "14px (own declaration intact)",
+      ".btn-brut": "10px (own declaration intact)"
+    }
+  },
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "test_credentials": "Guest path: click [data-testid=login-guest-btn] on /login → lands on /app. No email/password needed.",
+  "seed_data_creation": "Created 2 guest-scoped projects 'Radius A' and 'Radius B' via POST /api/projects (status 200 each) under the guest session for this iteration.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "tailwind.config.js line 35 borderRadius is now `{ none: '0', DEFAULT: '6px', sm: '4px', md: '8px', lg: '10px', xl: '14px', '2xl': '18px' }`. All rounded-* utilities in JSX now resolve to real pixel values. Dashboard route is /app (not /dashboard). Guest login: POST /api/auth/guest with {name, designation, avatar} OR click [data-testid=login-guest-btn] on /login. Project create payload: {project_name, engine:'free'}.",
+  "rca of the issue": "iteration_11 root-caused the brutalist 0px corners on Dashboard rename/delete buttons to tailwind.config.js line 35 hard-overriding the borderRadius scale to 0 for sm/md/lg/xl, neutralising every `rounded-lg` className in the JSX. iteration_15 fix replaces the override with `{ none:'0', DEFAULT:'6px', sm:'4px', md:'8px', lg:'10px', xl:'14px', '2xl':'18px' }`. After supervisor restart, runtime computed border-radius on dashboard-rename-*, dashboard-delete-*, dashboard-rename-save-*, dashboard-rename-cancel-* all report 10px and DRAFT pill stays 9999px. Custom .card-brut (14px) and .btn-brut (10px) declared radii in index.css are unaffected because they set their own explicit radius via CSS. Fix verified."
+}

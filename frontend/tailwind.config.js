@@ -32,7 +32,7 @@ module.exports = {
         body: ["'Manrope'", "'Inter'", "sans-serif"],
         mono: ["'JetBrains Mono'", "ui-monospace", "monospace"],
       },
-      borderRadius: { none: "0", DEFAULT: "0", sm: "0", md: "0", lg: "0", xl: "0" },
+      borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "8px", lg: "10px", xl: "14px", "2xl": "18px" },
       boxShadow: {
         brut: "4px 4px 0px #0A0A0A",
         brutLg: "8px 8px 0px #0A0A0A",
