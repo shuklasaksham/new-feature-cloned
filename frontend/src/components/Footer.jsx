@@ -3,89 +3,69 @@ import { Link } from "react-router-dom";
 import { Instagram, Linkedin } from "lucide-react";
 import BracketMark from "./BracketMark";
 
+const colLabel = "text-[11px] font-medium uppercase tracking-[0.10em] text-[var(--text-3)] mb-3";
+const colLink = "text-[13px] text-[var(--text-2)] hover:text-[var(--text)] transition-colors";
+
 export default function Footer() {
   return (
-    <footer className="border-t border-ink/10" data-testid="site-footer">
-      <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-10">
-        <div className="col-span-2">
-          <BracketMark size={28} />
-          <p className="mt-4 md:mt-5 max-w-sm text-muted text-sm">
-            Bracket helps designers, freelancers, and indie creatives decide what to do, not just how to do it. A professional operating system — not another tool.
+    <footer className="border-t border-[var(--hairline)] mt-0" data-testid="site-footer">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-14 md:py-20 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+        <div className="col-span-2 md:col-span-2">
+          <Link to="/" className="inline-flex items-center gap-2">
+            <BracketMark size={22} label={false} variant="chalk" />
+            <span className="font-semibold text-[14px] tracking-[-0.012em]">Bracket</span>
+          </Link>
+          <p className="mt-4 max-w-sm text-[13px] leading-[1.65] text-[var(--text-2)]">
+            A senior creative peer&apos;s judgement, installed between your input and your output. Decide what to do — not just how to do it.
           </p>
-          <p className="mt-5 md:mt-6 mono-label">v 1.0 · Built for people who take the call.</p>
+          <p className="mt-5 text-[11px] font-mono tracking-[0.08em] uppercase text-[var(--text-3)]">v 1.0 · Designed to decide</p>
 
-          <div className="mt-5 md:mt-6 flex items-center gap-3" data-testid="footer-socials">
+          <div className="mt-5 flex items-center gap-2" data-testid="footer-socials">
             <a
               href="https://www.instagram.com/use_bracket/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Bracket on Instagram"
-              className="w-9 h-9 inline-flex items-center justify-center rounded-full glass hover:bg-ink hover:text-chalk transition-all"
+              className="icon-tile"
               data-testid="footer-instagram-link"
             >
-              <Instagram size={16} />
+              <Instagram size={14} />
             </a>
             <a
               href="https://www.linkedin.com/company/bracket-app/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Bracket on LinkedIn"
-              className="w-9 h-9 inline-flex items-center justify-center rounded-full glass hover:bg-ink hover:text-chalk transition-all"
+              className="icon-tile"
               data-testid="footer-linkedin-link"
             >
-              <Linkedin size={16} />
+              <Linkedin size={14} />
             </a>
           </div>
         </div>
         <div>
-          <p className="mono-label mb-3 md:mb-4">Product</p>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/how-it-works" className="link-u">How it works</Link></li>
-            <li><Link to="/use-cases" className="link-u">Use cases</Link></li>
-            <li><Link to="/pricing" className="link-u">Pricing</Link></li>
-            <li><Link to="/case-studies" className="link-u">Case studies</Link></li>
+          <p className={colLabel}>Product</p>
+          <ul className="space-y-2.5">
+            <li><Link to="/how-it-works" className={colLink}>How it works</Link></li>
+            <li><Link to="/use-cases" className={colLink}>Use cases</Link></li>
+            <li><Link to="/pricing" className={colLink}>Pricing</Link></li>
+            <li><Link to="/case-studies" className={colLink}>Case studies</Link></li>
           </ul>
         </div>
         <div>
-          <p className="mono-label mb-3 md:mb-4">Connect</p>
-          <ul className="space-y-2 text-sm">
-            <li><Link to="/app" className="link-u">Start a project</Link></li>
-            <li>
-              <a
-                href="mailto:support@use-bracket.com"
-                className="link-u break-all"
-                data-testid="footer-email-link"
-              >
-                support@use-bracket.com
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://www.instagram.com/use_bracket/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="link-u"
-              >
-                @use_bracket
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://www.linkedin.com/company/bracket-app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="link-u"
-              >
-                LinkedIn
-              </a>
-            </li>
+          <p className={colLabel}>Connect</p>
+          <ul className="space-y-2.5">
+            <li><Link to="/app" className={colLink}>Start a project</Link></li>
+            <li><a href="mailto:support@use-bracket.com" className={`${colLink} break-all`} data-testid="footer-email-link">support@use-bracket.com</a></li>
+            <li><a href="https://www.instagram.com/use_bracket/" target="_blank" rel="noopener noreferrer" className={colLink}>@use_bracket</a></li>
+            <li><a href="https://www.linkedin.com/company/bracket-app/" target="_blank" rel="noopener noreferrer" className={colLink}>LinkedIn</a></li>
           </ul>
         </div>
       </div>
-      <div className="border-t border-ink/10">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-          <p className="mono-tag text-muted">© {new Date().getFullYear()} Bracket. All rights reserved.</p>
-          <p className="mono-tag text-muted">{"{ designed to decide }"}</p>
+      <div className="border-t border-[var(--hairline)]">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+          <p className="text-[12px] text-[var(--text-3)]">© {new Date().getFullYear()} Bracket. All rights reserved.</p>
+          <p className="text-[11px] font-mono tracking-[0.08em] uppercase text-[var(--text-3)]">{"{ designed to decide }"}</p>
         </div>
       </div>
     </footer>

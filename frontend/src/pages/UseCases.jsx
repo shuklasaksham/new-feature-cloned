@@ -5,54 +5,64 @@ import { USE_CASES } from "../lib/constants";
 
 export default function UseCases() {
   return (
-    <div data-testid="use-cases-page">
-      <section className="border-b border-ink bg-paper blueprint-bg">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-20">
-          <p className="mono-label">{"{ use cases }"}</p>
-          <h1 className="font-display text-5xl sm:text-6xl md:text-8xl uppercase mt-5 md:mt-6 max-w-5xl">
-            For the people who <span className="text-signal">take</span> the call.
+    <div data-testid="use-cases-page" className="page-enter">
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        <div className="hero-ambient" aria-hidden="true" />
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-16 md:pb-20 text-center">
+          <span className="section-label"><span className="dot" />Use cases</span>
+          <h1 className="t-display mt-7 max-w-[820px] mx-auto">
+            For the people who <span className="text-[var(--accent)]">take</span> the call.
           </h1>
-          <p className="mt-5 md:mt-6 text-muted max-w-2xl text-sm md:text-base">
-            Bracket doesn't care about job titles. Designer, freelancer, copywriter, illustrator, photographer, indie dev — it cares who has to make the decision at 11pm on a Sunday.
+          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto">
+            Bracket doesn&apos;t care about job titles. Designer, freelancer, copywriter, illustrator, photographer, indie dev — it cares who has to make the decision at 11pm on a Sunday.
           </p>
         </div>
       </section>
 
-      <section className="bg-chalk border-b border-ink">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-24 space-y-0 border border-ink border-r-0 border-l-0">
-          {USE_CASES.map((u, i) => (
-            <div
-              key={u.who}
-              className={`grid lg:grid-cols-12 gap-6 md:gap-8 p-6 sm:p-8 ${i % 2 === 0 ? "bg-paper" : "bg-chalk"} border-t border-ink`}
-              data-testid={`usecase-row-${u.who.toLowerCase()}`}
-            >
-              <div className="lg:col-span-4">
-                <p className="mono-label">0{i + 1}</p>
-                <h2 className="font-display text-3xl sm:text-4xl md:text-5xl uppercase mt-3">{u.who}</h2>
+      {/* CASES */}
+      <section className="border-t border-[var(--hairline)]">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-20 md:py-28">
+          <div className="space-y-3">
+            {USE_CASES.map((u, i) => (
+              <div
+                key={u.who}
+                className="card-linear card-linear-hover p-6 grid lg:grid-cols-12 gap-6"
+                data-testid={`usecase-row-${u.who.toLowerCase()}`}
+              >
+                <div className="lg:col-span-4">
+                  <p className="t-meta">{String(i + 1).padStart(2, "0")}</p>
+                  <h2 className="t-h1 mt-3">{u.who}</h2>
+                </div>
+                <div className="lg:col-span-4">
+                  <p className="t-meta">Pain</p>
+                  <p className="mt-1.5 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{u.pain}</p>
+                  <p className="t-meta mt-4">Win</p>
+                  <p className="mt-1.5 text-[13.5px] leading-[1.65] text-[var(--text)]">{u.win}</p>
+                </div>
+                <div className="lg:col-span-4 lg:border-l border-[var(--hairline)] lg:pl-6">
+                  <p className="t-meta">In practice</p>
+                  <p className="mt-1.5 text-[13.5px] leading-[1.65] italic text-[var(--text)]">{u.example}</p>
+                </div>
               </div>
-              <div className="lg:col-span-4">
-                <p className="mono-tag text-muted">PAIN</p>
-                <p className="mt-2 text-sm sm:text-base">{u.pain}</p>
-                <p className="mono-tag text-muted mt-5 md:mt-6">WIN</p>
-                <p className="mt-2 text-sm sm:text-base">{u.win}</p>
-              </div>
-              <div className="lg:col-span-4 border-l-0 lg:border-l border-ink lg:pl-6">
-                <p className="mono-tag text-muted">IN PRACTICE</p>
-                <p className="mt-2 italic text-sm sm:text-base">{u.example}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="bg-ink text-chalk">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-14 md:py-20">
-          <h2 className="font-display text-4xl sm:text-5xl md:text-7xl uppercase">
-            Which one are <span className="text-signal">you?</span>
+      {/* FINAL CTA */}
+      <section className="relative overflow-hidden border-t border-[var(--hairline)]">
+        <div className="hero-ambient" aria-hidden="true" />
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
+          <span className="section-label"><span className="dot" />Tell us</span>
+          <h2 className="t-display mt-7">
+            Which one are <span className="text-[var(--accent)]">you</span>?
           </h2>
-          <p className="mt-5 md:mt-6 text-faint max-w-xl text-sm md:text-base">We'll ask you in the onboarding. Your Bracket will think differently based on how you work.</p>
-          <div className="mt-6 md:mt-8">
-            <Link to="/app" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
+          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
+            We&apos;ll ask in the onboarding. Bracket thinks differently based on how you work.
+          </p>
+          <div className="mt-9">
+            <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>
           </div>
         </div>
       </section>

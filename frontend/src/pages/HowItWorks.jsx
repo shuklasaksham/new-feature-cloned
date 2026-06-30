@@ -5,36 +5,36 @@ import { LAYERS, WALKTHROUGH } from "../lib/constants";
 
 export default function HowItWorks() {
   return (
-    <div data-testid="how-it-works-page">
-      <section className="border-b border-ink bg-paper blueprint-bg">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-20">
-          <p className="mono-label">{"{ how it works }"}</p>
-          <h1 className="font-display text-5xl sm:text-6xl md:text-8xl uppercase mt-5 md:mt-6 max-w-5xl">
-            Less a tool.
-            <br />
-            More a way of <span className="text-signal">thinking.</span>
+    <div data-testid="how-it-works-page" className="page-enter">
+      {/* HERO */}
+      <section className="relative overflow-hidden">
+        <div className="hero-ambient" aria-hidden="true" />
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-16 md:pb-20 text-center">
+          <span className="section-label"><span className="dot" />How it works</span>
+          <h1 className="t-display mt-7 max-w-[820px] mx-auto">
+            Less a tool.<br />
+            More a way of <span className="text-[var(--accent)]">thinking</span>.
           </h1>
-          <p className="mt-5 md:mt-6 text-muted max-w-2xl text-sm md:text-base">
-            Every Bracket project moves through the same five steps. Same for a ₹15k landing page. Same for a Series-A
-            dashboard. The rigour doesn't change — the stakes do.
+          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[560px] mx-auto">
+            Every Bracket project moves through the same five steps. Same for a ₹15k landing page. Same for a Series-A dashboard. The rigour doesn&apos;t change — the stakes do.
           </p>
         </div>
       </section>
 
       {/* 3 LAYERS */}
-      <section className="border-b border-ink bg-chalk">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-24">
-          <p className="mono-label">{"{ the mental model }"}</p>
-          <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase mt-4">Three layers.</h2>
-          <div className="mt-10 md:mt-12 grid md:grid-cols-3 gap-0 border border-ink">
-            {LAYERS.map((l, i) => (
-              <div key={l.num} className={`p-6 sm:p-8 bg-paper ${i < 2 ? "md:border-r border-ink" : ""} ${i < LAYERS.length - 1 ? "border-b md:border-b-0 border-ink" : ""}`}>
-                <span className="mono-label">{l.num}</span>
-                <h3 className="font-display text-2xl sm:text-3xl uppercase mt-4">{l.title}</h3>
-                <p className="mt-4 text-ink text-sm sm:text-base">{l.copy}</p>
-                <div className="mt-5 md:mt-6 space-y-3">
-                  <div className="flex gap-2"><X size={14} className="mt-1 text-danger shrink-0" /><p className="text-sm text-muted">{l.bad}</p></div>
-                  <div className="flex gap-2"><Check size={14} className="mt-1 text-signal shrink-0" /><p className="text-sm">{l.good}</p></div>
+      <section className="border-t border-[var(--hairline)]">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-20 md:py-28">
+          <span className="section-label"><span className="dot" />The mental model</span>
+          <h2 className="t-hero mt-5">Three layers.</h2>
+          <div className="mt-12 grid md:grid-cols-3 gap-3">
+            {LAYERS.map((l) => (
+              <div key={l.num} className="card-linear card-linear-hover p-6">
+                <p className="t-meta">{l.num}</p>
+                <h3 className="t-h2 mt-3">{l.title}</h3>
+                <p className="mt-3 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{l.copy}</p>
+                <div className="mt-5 space-y-2.5 pt-4 border-t border-[var(--hairline)]">
+                  <div className="flex gap-2.5 items-start"><X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" /><p className="text-[12.5px] leading-[1.6] text-[var(--text-3)]">{l.bad}</p></div>
+                  <div className="flex gap-2.5 items-start"><Check size={13} className="mt-0.5 text-[var(--success)] shrink-0" /><p className="text-[12.5px] leading-[1.6] text-[var(--text)]">{l.good}</p></div>
                 </div>
               </div>
             ))}
@@ -43,26 +43,26 @@ export default function HowItWorks() {
       </section>
 
       {/* 5 STEPS */}
-      <section className="border-b border-ink bg-paper">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-12 md:py-24">
-          <p className="mono-label">{"{ the project flow }"}</p>
-          <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase mt-4">Five steps.</h2>
+      <section className="border-t border-[var(--hairline)]">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-20 md:py-28">
+          <span className="section-label"><span className="dot" />The project flow</span>
+          <h2 className="t-hero mt-5">Five steps.</h2>
 
-          <div className="mt-10 md:mt-12 space-y-0">
-            {WALKTHROUGH.map((w, i) => (
-              <div key={w.num} className="grid lg:grid-cols-12 gap-5 md:gap-6 border border-ink border-b-0 last:border-b p-6 sm:p-8 bg-chalk">
+          <div className="mt-12 space-y-3">
+            {WALKTHROUGH.map((w) => (
+              <div key={w.num} className="card-linear p-6 grid lg:grid-cols-12 gap-5 md:gap-6">
                 <div className="lg:col-span-2">
-                  <p className="mono-label">{w.num}</p>
-                  <p className="mono-tag text-signal mt-1">{w.label}</p>
+                  <p className="t-meta">{"{ "}{w.num}{" / 05 }"}</p>
+                  <p className="text-[11px] font-mono uppercase tracking-[0.08em] text-[var(--text-2)] mt-1.5">{w.label}</p>
                 </div>
                 <div className="lg:col-span-6">
-                  <h3 className="font-display text-2xl sm:text-3xl md:text-4xl uppercase">{w.title}</h3>
-                  <p className="mt-3 text-muted text-sm sm:text-base">{w.what}</p>
+                  <h3 className="t-h1">{w.title}</h3>
+                  <p className="mt-3 text-[14px] leading-[1.65] text-[var(--text-2)]">{w.what}</p>
                 </div>
-                <div className="lg:col-span-4 border-l-0 lg:border-l border-ink lg:pl-6">
-                  <p className="mono-tag text-muted">WHY IT MATTERS</p>
-                  <p className="mt-2 text-sm">{w.why}</p>
-                  <p className="mt-4 font-display text-lg sm:text-xl text-signal">{w.quote}</p>
+                <div className="lg:col-span-4 lg:border-l border-[var(--hairline)] lg:pl-6">
+                  <p className="t-meta">Why it matters</p>
+                  <p className="mt-2 text-[13.5px] leading-[1.65] text-[var(--text)]">{w.why}</p>
+                  <p className="mt-4 text-[13.5px] italic text-[var(--accent)]">{w.quote}</p>
                 </div>
               </div>
             ))}
@@ -70,15 +70,17 @@ export default function HowItWorks() {
         </div>
       </section>
 
-      <section className="bg-ink text-chalk">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-14 md:py-20">
-          <h2 className="font-display text-4xl sm:text-5xl md:text-7xl uppercase">
-            Stop guessing.
-            <br />
-            <span className="text-signal">Start deciding.</span>
+      {/* FINAL CTA */}
+      <section className="relative overflow-hidden border-t border-[var(--hairline)]">
+        <div className="hero-ambient" aria-hidden="true" />
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
+          <span className="section-label"><span className="dot" />Last word</span>
+          <h2 className="t-display mt-7">
+            Stop guessing.<br />
+            <span className="text-[var(--accent)]">Start deciding</span>.
           </h2>
-          <div className="mt-6 md:mt-8">
-            <Link to="/app" className="btn-brut">Start a project <ArrowRight size={16} /></Link>
+          <div className="mt-9">
+            <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>
           </div>
         </div>
       </section>

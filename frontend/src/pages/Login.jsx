@@ -108,30 +108,34 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-paper flex flex-col" data-testid="login-page">
-      <header className="glass sticky top-0 z-30">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center" aria-label="Bracket home">
-            <BracketMark size={26} />
+    <div className="min-h-screen flex flex-col" data-testid="login-page">
+      <header className="marketing-header">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2" aria-label="Bracket home">
+            <BracketMark size={22} label={false} variant="chalk" />
+            <span className="font-semibold text-[14px] tracking-[-0.012em]">Bracket</span>
           </Link>
-          <Link to="/" className="mono-tag text-muted hover:text-ink">{"← BACK TO SITE"}</Link>
+          <Link to="/" className="marketing-nav-link">← Back to site</Link>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 py-12 md:py-20">
-        <div className="w-full max-w-md">
-          <p className="mono-label flex items-center gap-3"><span className="dot-live" /> SIGN IN OR JOIN</p>
-          <h1 className="font-display text-4xl sm:text-5xl uppercase mt-4 leading-[0.95]">
-            One door.
-            <br />
-            <span className="text-signal">Email</span>, then in.
-          </h1>
+      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 py-12 md:py-20 relative">
+        <div className="hero-ambient" aria-hidden="true" />
+        <div className="w-full max-w-[420px] relative page-enter">
+          <div className="text-center">
+            <span className="section-label"><span className="dot" />Sign in or join</span>
+            <h1 className="t-hero mt-6">
+              One door.<br />
+              <span className="text-[var(--accent)]">Email</span>, then in.
+            </h1>
+            <p className="mt-3 text-[14px] text-[var(--text-2)]">Six-digit code · No passwords required</p>
+          </div>
 
-          <div className="card-brut p-5 sm:p-6 mt-8" data-testid="login-card">
+          <div className="card-linear p-6 mt-8" data-testid="login-card">
             {phase === "pick" && (
               <>
                 <label className="block">
-                  <span className="mono-tag text-muted">EMAIL</span>
+                  <span className="t-meta">Email</span>
                   <input
                     className="input-line mt-2"
                     value={email}
@@ -146,7 +150,7 @@ export default function Login() {
 
                 {usePassword ? (
                   <label className="block mt-4">
-                    <span className="mono-tag text-muted flex items-center gap-2"><LockIcon size={11}/> PASSWORD</span>
+                    <span className="t-meta flex items-center gap-1.5"><LockIcon size={11}/> Password</span>
                     <input
                       className="input-line mt-2"
                       type="password"
@@ -159,7 +163,7 @@ export default function Login() {
                   </label>
                 ) : (
                   <label className="block mt-4">
-                    <span className="mono-tag text-muted">YOUR NAME (NEW USERS)</span>
+                    <span className="t-meta">Your name (new users)</span>
                     <input
                       className="input-line mt-2"
                       value={name}
@@ -175,7 +179,7 @@ export default function Login() {
                 <button
                   onClick={usePassword ? submitPassword : requestOtp}
                   disabled={loading}
-                  className="btn-brut mt-5 w-full justify-center"
+                  className="btn-primary btn-lg mt-5 w-full"
                   data-testid={usePassword ? "login-password-submit" : "login-otp-request"}
                 >
                   {loading ? (
@@ -190,25 +194,25 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => { setUsePassword(!usePassword); setError(""); }}
-                  className="mono-tag text-muted hover:text-ink mt-4 w-full text-center"
+                  className="text-[12px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors mt-4 w-full text-center"
                   data-testid="login-toggle-password"
                 >
-                  {usePassword ? "← USE EMAIL CODE INSTEAD" : "I HAVE A PASSWORD →"}
+                  {usePassword ? "← Use email code instead" : "I have a password →"}
                 </button>
 
-                <div className="mt-5 pt-5 border-t border-ink/15">
+                <div className="mt-5 pt-5 border-t border-[var(--hairline)]">
                   <button
                     type="button"
                     onClick={signInAsGuest}
                     disabled={loading}
-                    className="btn-ghost w-full justify-center"
+                    className="btn-ghost btn-lg w-full"
                     data-testid="login-guest-btn"
                   >
                     {loading ? <Loader2 size={14} className="animate-spin" /> : null}
                     Try it without an account →
                   </button>
-                  <p className="mono-tag text-muted text-center mt-2">
-                    JUMP IN NOW · ADD EMAIL LATER
+                  <p className="text-[12px] text-[var(--text-3)] text-center mt-2.5">
+                    Jump in now · add email later
                   </p>
                 </div>
               </>
@@ -216,12 +220,12 @@ export default function Login() {
 
             {phase === "otp" && (
               <>
-                <p className="mono-label">{"{ check your email }"}</p>
-                <p className="mt-3 text-sm">
-                  We sent a 6-digit code to <strong>{email}</strong>. It expires in 10 minutes.
+                <span className="section-label"><span className="dot" />Check your email</span>
+                <p className="mt-4 text-[14px] text-[var(--text-2)]">
+                  We sent a 6-digit code to <strong className="text-[var(--text)]">{email}</strong>. It expires in 10 minutes.
                 </p>
                 <label className="block mt-5">
-                  <span className="mono-tag text-muted">CODE</span>
+                  <span className="t-meta">Code</span>
                   <input
                     className="input-line mt-2 tracking-[0.4em] font-mono text-xl text-center"
                     value={code}
@@ -238,7 +242,7 @@ export default function Login() {
                 <button
                   onClick={submitOtp}
                   disabled={loading}
-                  className="btn-brut mt-5 w-full justify-center"
+                  className="btn-primary btn-lg mt-5 w-full"
                   data-testid="login-otp-submit"
                 >
                   {loading ? <><Loader2 size={14} className="animate-spin" /> Verifying…</> : <>Verify code <ArrowRight size={14} /></>}
@@ -247,27 +251,27 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => { setPhase("pick"); setCode(""); setError(""); }}
-                    className="mono-tag text-muted hover:text-ink"
+                    className="text-[12px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
                     data-testid="login-otp-back"
                   >
-                    ← USE A DIFFERENT EMAIL
+                    ← Use a different email
                   </button>
                   <button
                     type="button"
                     onClick={requestOtp}
                     disabled={resendIn > 0 || loading}
-                    className="mono-tag text-signal disabled:text-muted"
+                    className="text-[12px] text-[var(--accent)] disabled:text-[var(--text-3)] transition-colors"
                     data-testid="login-otp-resend"
                   >
-                    {resendIn > 0 ? `RESEND IN ${resendIn}S` : "RESEND CODE"}
+                    {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
                   </button>
                 </div>
               </>
             )}
           </div>
 
-          <p className="mono-tag text-muted mt-5 text-center">
-            BY CONTINUING YOU AGREE WE'LL ONLY EMAIL YOU FOR PROJECT STUFF.
+          <p className="text-[11px] text-[var(--text-3)] mt-6 text-center">
+            By continuing you agree we&apos;ll only email you for project stuff.
           </p>
         </div>
       </main>
@@ -277,9 +281,9 @@ export default function Login() {
 
 function ErrorLine({ msg }) {
   return (
-    <div className="flex items-start gap-2 mt-4" role="alert" data-testid="login-error">
-      <span aria-hidden className="font-mono text-signal text-xs mt-[2px]">{"{!}"}</span>
-      <p className="text-sm">{msg}</p>
+    <div className="flex items-start gap-2 mt-4 px-3 py-2.5 rounded-md border border-[rgba(255,92,92,0.30)] bg-[rgba(255,92,92,0.06)]" role="alert" data-testid="login-error">
+      <span aria-hidden className="font-mono text-[var(--danger)] text-xs mt-[2px]">!</span>
+      <p className="text-[13px] text-[var(--text)] leading-[1.5]">{msg}</p>
     </div>
   );
 }

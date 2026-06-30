@@ -8,23 +8,24 @@ import { useAuth } from "../lib/AuthContext";
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  // Signed-in users should always land on their dashboard from the logo,
-  // not be sent back to the marketing landing page.
   const logoHref = user ? "/app" : "/";
 
   return (
-    <header className="sticky top-0 z-40 glass" data-testid="site-navbar">
-      <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-        <Link to={logoHref} className="flex items-center shrink-0" data-testid="nav-logo-link">
-          <BracketMark size={26} />
+    <header className="marketing-header" data-testid="site-navbar">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center justify-between gap-3">
+        {/* Brand */}
+        <Link to={logoHref} className="flex items-center gap-2 shrink-0 group" data-testid="nav-logo-link">
+          <BracketMark size={22} label={false} variant="chalk" />
+          <span className="font-semibold text-[14px] tracking-[-0.012em] text-[var(--text)] group-hover:opacity-90 transition-opacity">Bracket</span>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-10">
+        {/* Center nav */}
+        <nav className="hidden lg:flex items-center gap-1">
           {NAV_LINKS.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
-              className={({ isActive }) => `nav-link u-line text-ink ${isActive ? "active is-active" : ""}`}
+              className={({ isActive }) => `marketing-nav-link ${isActive ? "is-active" : ""}`}
               data-testid={`nav-link-${l.to.replace("/", "")}`}
             >
               {l.label}
@@ -32,48 +33,63 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-3">
-          <Link to="/app" className="btn-brut" data-testid="nav-start-btn">
-            Start a project →
-          </Link>
+        {/* Right CTAs */}
+        <div className="hidden lg:flex items-center gap-2">
+          {user ? (
+            <Link to="/app" className="btn-primary" data-testid="nav-app-btn">Open app</Link>
+          ) : (
+            <>
+              <Link to="/login" className="marketing-nav-link" data-testid="nav-login-link">Log in</Link>
+              <Link to="/app" className="btn-primary" data-testid="nav-start-btn">Start a project</Link>
+            </>
+          )}
         </div>
 
+        {/* Mobile */}
         <div className="flex items-center gap-2 lg:hidden">
-          <Link
-            to="/app"
-            className="hidden sm:inline-flex btn-brut !px-3 !py-2 !text-[11px]"
-            data-testid="nav-mobile-start-cta"
-          >
-            Start →
-          </Link>
+          {user ? (
+            <Link to="/app" className="btn-primary btn-sm" data-testid="nav-mobile-app">App</Link>
+          ) : (
+            <Link to="/app" className="btn-primary btn-sm" data-testid="nav-mobile-start-cta">Start</Link>
+          )}
           <button
-            className="p-2 border border-ink"
+            className="icon-tile"
             onClick={() => setOpen((o) => !o)}
             data-testid="nav-mobile-toggle"
             aria-label="Menu"
           >
-            {open ? <X size={18} /> : <Menu size={18} />}
+            {open ? <X size={14} /> : <Menu size={14} />}
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="lg:hidden border-t border-ink bg-paper" data-testid="nav-mobile-panel">
-          <div className="px-5 sm:px-6 py-6 flex flex-col gap-5">
+        <div className="lg:hidden border-t border-[var(--hairline)] bg-[var(--bg)]" data-testid="nav-mobile-panel">
+          <div className="px-5 sm:px-6 py-5 flex flex-col gap-1">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.to}
                 to={l.to}
                 onClick={() => setOpen(false)}
-                className="nav-link text-ink"
+                className="marketing-nav-link"
                 data-testid={`nav-mobile-link-${l.to.replace("/", "")}`}
               >
                 {l.label}
               </Link>
             ))}
-            <div className="h-px bg-ink" />
-            <Link to="/app" onClick={() => setOpen(false)} className="btn-brut justify-center" data-testid="nav-mobile-start-btn">
-              Start a project →
+            <div className="h-px bg-[var(--hairline)] my-2" />
+            {!user && (
+              <Link to="/login" onClick={() => setOpen(false)} className="marketing-nav-link" data-testid="nav-mobile-login">
+                Log in
+              </Link>
+            )}
+            <Link
+              to="/app"
+              onClick={() => setOpen(false)}
+              className="btn-primary justify-center mt-2"
+              data-testid="nav-mobile-start-btn"
+            >
+              {user ? "Open app" : "Start a project"}
             </Link>
           </div>
         </div>

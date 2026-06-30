@@ -4,10 +4,10 @@ import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, CASE_STUDIES, PRICING } from "../lib/constants";
 
 const Section = ({ id, label, children, className = "" }) => (
-  <section id={id} className={`relative border-t border-ink/10 ${className}`}>
+  <section id={id} className={`relative ${className}`}>
     {label && (
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 pt-10">
-        <p className="mono-label">{label}</p>
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28">
+        <span className="section-label"><span className="dot" />{label}</span>
       </div>
     )}
     {children}
@@ -20,152 +20,162 @@ export default function Landing() {
 
   const marquee = useMemo(
     () => [
-      "DECIDE BEFORE YOU SHIP",
-      "{",
-      "LESS INPUT. BETTER JUDGEMENT.",
-      "}",
-      "OUTPUT WITH INTENT",
-      "{",
-      "CONFIDENCE WITHOUT ARROGANCE",
-      "}",
-      "FOR DESIGNERS + FREELANCERS",
-      "{",
-      "AUTHORITY WITHOUT EGO",
-      "}",
+      "Decide before you ship",
+      "Less input. Better judgement.",
+      "Output with intent",
+      "Confidence without arrogance",
+      "For designers + freelancers",
+      "Authority without ego",
     ],
     []
   );
 
   return (
-    <div data-testid="landing-page">
+    <div data-testid="landing-page" className="page-enter">
       {/* ============ HERO ============ */}
-      <section className="relative overflow-hidden" data-testid="hero-section">
+      <section className="relative overflow-hidden pt-16 md:pt-24 pb-20 md:pb-28" data-testid="hero-section">
+        <div className="hero-ambient" aria-hidden="true" />
 
-        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 md:px-10 pt-16 md:pt-24 pb-16 md:pb-20">
-          <div className="flex items-center gap-3">
-            <span className="dot-live" />
-            <p className="mono-label">Bracket — Decision OS · v1.0</p>
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 text-center">
+          <span className="section-label slide-up" data-testid="hero-eyebrow">
+            <span className="dot" />Bracket — Decision OS · v1.0
+          </span>
+
+          <h1 className="t-display mt-7 max-w-[820px] mx-auto slide-up" style={{ animationDelay: "60ms" }}>
+            You don&apos;t need more tools.<br />
+            <span className="text-[var(--text-2)]">You need better decisions.</span>
+          </h1>
+
+          <p className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto slide-up" style={{ animationDelay: "120ms" }}>
+            A senior creative peer&apos;s judgement, installed between your input and your output. Bracket helps you decide <em className="not-italic text-[var(--text)]">what to do</em> — not just how to do it.
+          </p>
+
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3 slide-up" style={{ animationDelay: "180ms" }}>
+            <Link to="/app" className="btn-primary btn-lg" data-testid="hero-primary-cta">
+              Start a project <ArrowRight size={14} />
+            </Link>
+            <Link to="/how-it-works" className="btn-ghost btn-lg" data-testid="hero-secondary-cta">
+              See how it works
+            </Link>
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 mt-10 md:mt-12 items-start">
-            <div className="lg:col-span-7">
-              <h1 className="font-display text-[32px] sm:text-[40px] md:text-[48px] leading-[1.1] tracking-tight animate-fade-up max-w-[640px]">
-                You don&apos;t need more tools.
-                <br />
-                <span className="text-muted">You need better decisions.</span>
-              </h1>
-              <p className="mt-5 t-helper text-[15px] leading-relaxed max-w-[560px]">
-                Bracket helps you decide <em>what to do</em>, not just how to do it — a senior creative peer&apos;s judgement, installed between your input and your output.
-              </p>
-              <div className="mt-7 flex flex-wrap items-center gap-3">
-                <Link to="/app" className="btn-brut" data-testid="hero-primary-cta">
-                  Start a project <ArrowRight size={14} />
-                </Link>
-                <Link to="/how-it-works" className="btn-ghost" data-testid="hero-secondary-cta">
-                  See how it works
-                </Link>
-              </div>
-            </div>
-
-            <div className="lg:col-span-5">
-              <div className="card-brut p-6">
-                <p className="mono-label">{"{ the pitch }"}</p>
-                <p className="mt-3 t-body">
-                  Most tools help you <em>execute</em>. Bracket helps you <em>decide</em>: reframe the brief, compress the context, name the trade-offs, draft the artifacts, then lock it before anyone reopens the conversation.
-                </p>
-                <ul className="mt-5 space-y-2.5 t-helper">
-                  <li>· Five quiet steps. Fifteen minutes per project.</li>
-                  <li>· The reasoning is documented, so the call survives the room.</li>
-                  <li>· Free during early access.</li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <p className="mt-7 t-meta text-[var(--text-3)] slide-up" style={{ animationDelay: "240ms" }}>
+            Free during early access · No credit card · 60-second start
+          </p>
         </div>
 
-        {/* marquee */}
-        <div className="mx-5 sm:mx-6 md:mx-10 mt-2 mb-2 clay-dark overflow-hidden rounded-2xl">
-          <div className="marquee-track py-4">
-            {[...marquee, ...marquee].map((w, i) => (
-              <span
-                key={i}
-                className="px-8 mono-tag text-chalk"
-                style={{ fontSize: 13 }}
-              >
-                {w}
-              </span>
-            ))}
+        {/* Product preview placeholder — Linear-style dark surface */}
+        <div className="relative max-w-[1080px] mx-auto px-5 sm:px-6 md:px-8 mt-16 md:mt-20 slide-up" style={{ animationDelay: "300ms" }}>
+          <div className="liquid-glass overflow-hidden">
+            <div className="px-5 py-3 border-b border-[var(--hairline)] flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#FF5C5C]/70" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]/70" />
+              <span className="w-2.5 h-2.5 rounded-full bg-[#4ade80]/70" />
+              <span className="ml-3 t-meta">bracket — acme rebrand · landing</span>
+            </div>
+            <div className="grid md:grid-cols-12 gap-0 min-h-[320px]">
+              <div className="md:col-span-7 p-6 border-r border-[var(--hairline)]">
+                <p className="t-meta">{"{ 01 / 05 }"} · Situation framing</p>
+                <h3 className="t-h1 mt-3">Name what&apos;s really happening.</h3>
+                <p className="text-[13px] text-[var(--text-2)] mt-3 leading-[1.65]">
+                  Skip the brief. Describe the situation like you&apos;d tell it to a friend over coffee. Bracket will mirror it back clearly.
+                </p>
+                <div className="mt-5 space-y-3">
+                  <div className="textarea-linear text-[13px] !min-h-0 !py-2.5">
+                    Acme is rebranding their fintech landing — they want it &quot;more premium&quot; but the existing system is fine. Client keeps adding requests.
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="suggest-chip">+ Add: "premium" is vague</span>
+                    <span className="suggest-chip">+ Add: existing brand is solid</span>
+                    <span className="suggest-chip">+ Add: scope is creeping</span>
+                  </div>
+                </div>
+              </div>
+              <div className="md:col-span-5 p-6 bg-[var(--surface-2)]/40">
+                <p className="t-meta">{"{ output · live }"}</p>
+                <p className="text-[13px] text-[var(--text)] mt-3 leading-[1.7]">
+                  The client&apos;s real ask isn&apos;t a redesign — it&apos;s validation. They want their brand to feel more confident, not different. Anchor the conversation on hierarchy and tone before pixels.
+                </p>
+                <div className="mt-4 inline-flex items-center gap-2 t-meta text-[var(--accent)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
+                  AI thinking — confidence 92%
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ============ PROBLEM ============ */}
-      <Section id="problem" label="{ the problem }" className="bg-paper">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24 grid lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-5">
-            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase">
-              Too many tools.
-              <br />
-              Not enough <span className="text-signal">clarity.</span>
-            </h2>
-            <p className="mt-6 text-muted max-w-md">
-              Every designer, freelancer, or indie creative has 40 tabs open and 3 Notion pages of "requirements." None of it tells you what to do.
-            </p>
-          </div>
+      {/* Trust strip */}
+      <div className="border-y border-[var(--hairline)] py-5 overflow-hidden">
+        <div className="marquee-track">
+          {[...marquee, ...marquee].map((w, i) => (
+            <span key={i} className="t-meta text-[var(--text-3)]">{w}</span>
+          ))}
+        </div>
+      </div>
 
-          <div className="lg:col-span-7 grid sm:grid-cols-2 gap-4">
-            {[
-              ["Clients ask vague things", "\"Make it pop.\" \"More premium.\" \"Bolder but cleaner.\" Decoded into nothing."],
-              ["Scope creeps silently", "Each small \"just one more\" lands on your plate. The budget doesn't move. You do."],
-              ["Decisions feel subjective", "You know it's right. You can't say why. The stakeholder wins the argument, not the work."],
-              ["The brief is never the problem", "The real problem is underneath. No tool has helped you surface it."],
-            ].map(([t, c], i) => (
-              <div key={i} className="card-brut card-brut-hover p-7">
-                <p className="mono-label">0{i + 1}</p>
-                <h3 className="font-display text-2xl mt-2">{t}</h3>
-                <p className="text-sm text-muted mt-3 leading-relaxed">{c}</p>
-              </div>
-            ))}
+      {/* ============ PROBLEM ============ */}
+      <Section id="problem" label="The problem">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
+            <div className="lg:col-span-5">
+              <h2 className="t-hero">
+                Too many tools.<br />
+                Not enough <span className="text-[var(--accent)]">clarity</span>.
+              </h2>
+              <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-md">
+                Every designer, freelancer, or indie creative has 40 tabs open and 3 Notion pages of &quot;requirements.&quot; None of it tells you what to do.
+              </p>
+            </div>
+
+            <div className="lg:col-span-7 grid sm:grid-cols-2 gap-3">
+              {[
+                ["Clients ask vague things", "\"Make it pop.\" \"More premium.\" \"Bolder but cleaner.\" Decoded into nothing."],
+                ["Scope creeps silently", "Each small \"just one more\" lands on your plate. The budget doesn't move. You do."],
+                ["Decisions feel subjective", "You know it's right. You can't say why. The stakeholder wins the argument."],
+                ["The brief is never the problem", "The real problem is underneath. No tool has helped you surface it."],
+              ].map(([t, c], i) => (
+                <div key={i} className="card-linear card-linear-hover p-5">
+                  <p className="t-meta">{String(i + 1).padStart(2, "0")}</p>
+                  <h3 className="t-h2 mt-2.5">{t}</h3>
+                  <p className="text-[13.5px] leading-[1.65] text-[var(--text-2)] mt-2.5">{c}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </Section>
 
-      {/* ============ THE SHIFT ============ */}
-      <Section id="shift" label="{ the shift }" className="bg-chalk">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
-          <div className="grid lg:grid-cols-12 gap-10 items-end">
-            <div className="lg:col-span-7">
-              <h2 className="font-display text-5xl md:text-6xl uppercase">
-                Three layers
-                <br />
-                between <span className="text-signal">chaos</span> and clarity.
-              </h2>
-            </div>
-            <div className="lg:col-span-5">
-              <p className="text-muted">
-                Bracket isn't a feature checklist. It's a mental model. Every project moves through three layers before you
-                open Figma.
-              </p>
-            </div>
+      {/* ============ THE SHIFT (3 layers) ============ */}
+      <Section id="shift" label="The shift">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
+            <h2 className="t-hero lg:col-span-7">
+              Three layers between <span className="text-[var(--accent)]">chaos</span> and clarity.
+            </h2>
+            <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
+              Bracket isn&apos;t a feature checklist. It&apos;s a mental model. Every project moves through three layers before you open Figma.
+            </p>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-3 gap-4">
-            {LAYERS.map((l) => (
-              <div key={l.num} className="card-brut card-brut-hover p-8">
+          <div className="mt-12 grid md:grid-cols-3 gap-3">
+            {LAYERS.map((l, idx) => (
+              <div key={l.num} className="card-linear card-linear-hover p-6">
                 <div className="flex items-center justify-between">
-                  <span className="mono-label text-ink">{l.num}</span>
-                  <span className="font-mono text-signal text-sm">→</span>
+                  <span className="t-meta">{l.num}</span>
+                  <ArrowRight size={14} className="text-[var(--text-3)]" />
                 </div>
-                <h3 className="font-display text-3xl mt-5 uppercase leading-[0.95]">{l.title}</h3>
-                <p className="mt-4 text-ink">{l.copy}</p>
-                <div className="mt-6 space-y-3">
-                  <div className="flex gap-2 items-start">
-                    <X size={14} className="mt-1 text-danger shrink-0" />
-                    <p className="text-sm text-muted">{l.bad}</p>
+                <h3 className="t-h2 mt-4">{l.title}</h3>
+                <p className="mt-3 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{l.copy}</p>
+                <div className="mt-5 space-y-2.5 pt-4 border-t border-[var(--hairline)]">
+                  <div className="flex gap-2.5 items-start">
+                    <X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" />
+                    <p className="text-[12.5px] leading-[1.6] text-[var(--text-3)]">{l.bad}</p>
                   </div>
-                  <div className="flex gap-2 items-start">
-                    <Check size={14} className="mt-1 text-signal shrink-0" />
-                    <p className="text-sm">{l.good}</p>
+                  <div className="flex gap-2.5 items-start">
+                    <Check size={13} className="mt-0.5 text-[var(--success)] shrink-0" />
+                    <p className="text-[12.5px] leading-[1.6] text-[var(--text)]">{l.good}</p>
                   </div>
                 </div>
               </div>
@@ -175,36 +185,35 @@ export default function Landing() {
       </Section>
 
       {/* ============ PRODUCT WALKTHROUGH ============ */}
-      <Section id="walkthrough" label="{ product walkthrough }" className="bg-paper">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
+      <Section id="walkthrough" label="Product walkthrough">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <h2 className="font-display text-5xl md:text-6xl uppercase max-w-3xl">
-              Five steps. One <span className="text-signal">stance.</span>
+            <h2 className="t-hero max-w-3xl">
+              Five steps. One <span className="text-[var(--accent)]">stance</span>.
             </h2>
             <Link to="/how-it-works" className="btn-ghost" data-testid="walkthrough-deepdive-cta">
-              Full walkthrough <ArrowUpRight size={16} />
+              Full walkthrough <ArrowUpRight size={14} />
             </Link>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             {WALKTHROUGH.map((w) => (
-              <div key={w.num} className="card-brut card-brut-hover p-7" data-testid={`walkthrough-card-${w.num}`}>
+              <div key={w.num} className="card-linear card-linear-hover p-6" data-testid={`walkthrough-card-${w.num}`}>
                 <div className="flex items-center justify-between">
-                  <span className="mono-label text-ink">{w.num}</span>
-                  <span className="mono-tag text-signal">{w.label}</span>
+                  <span className="t-meta">{"{ "}{w.num}{" / 05 }"}</span>
                 </div>
-                <h3 className="font-display text-[28px] mt-5 uppercase leading-[0.95]">{w.title}</h3>
-                <div className="mt-5 space-y-4 text-sm">
+                <h3 className="t-h2 mt-4">{w.title}</h3>
+                <div className="mt-5 space-y-4 text-[13px] leading-[1.65]">
                   <div>
-                    <p className="mono-tag text-muted">WHAT IT DOES</p>
-                    <p className="mt-1">{w.what}</p>
+                    <p className="t-meta mb-1.5">What it does</p>
+                    <p className="text-[var(--text)]">{w.what}</p>
                   </div>
                   <div>
-                    <p className="mono-tag text-muted">WHY IT MATTERS</p>
-                    <p className="mt-1">{w.why}</p>
+                    <p className="t-meta mb-1.5">Why it matters</p>
+                    <p className="text-[var(--text-2)]">{w.why}</p>
                   </div>
                 </div>
-                <p className="mt-6 border-t border-ink pt-4 font-display text-lg text-signal">{w.quote}</p>
+                <p className="mt-5 pt-4 border-t border-[var(--hairline)] text-[13.5px] italic text-[var(--text)]">{w.quote}</p>
               </div>
             ))}
           </div>
@@ -212,40 +221,30 @@ export default function Landing() {
       </Section>
 
       {/* ============ ARTIFACTS ============ */}
-      <Section id="artifacts" label="{ real output }" className="clay-dark !rounded-none text-chalk">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
+      <Section id="artifacts" label="Real output">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="grid lg:grid-cols-12 gap-10 items-end">
-            <div className="lg:col-span-7">
-              <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase text-chalk">
-                This is <span className="text-signal">trust.</span>
-                <br />
-                On paper.
-              </h2>
-            </div>
-            <div className="lg:col-span-5">
-              <p className="text-faint">
-                Every project ends in artifacts you can send. No blank templates. No generic prose. Your stance, translated.
-              </p>
-            </div>
+            <h2 className="t-hero lg:col-span-7">
+              This is <span className="text-[var(--accent)]">trust</span>. On paper.
+            </h2>
+            <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
+              Every project ends in artifacts you can send. No blank templates. No generic prose. Your stance, translated.
+            </p>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-2 gap-6">
+          <div className="mt-12 grid md:grid-cols-2 gap-3">
             {ARTIFACTS_SAMPLES.map((a) => (
-              <div
-                key={a.kind}
-                className="liquid-glass text-ink p-7"
-                data-testid={`artifact-sample-${a.kind}`}
-              >
+              <div key={a.kind} className="card-linear card-linear-hover p-6" data-testid={`artifact-sample-${a.kind}`}>
                 <div className="flex items-center justify-between">
-                  <span className="mono-label text-ink">{a.kind.replace("_", " ")}</span>
-                  <span className="mono-tag text-signal">EXPORTABLE</span>
+                  <span className="t-meta">{a.kind.replace("_", " ")}</span>
+                  <span className="status-pill status-pill--active">Exportable</span>
                 </div>
-                <h3 className="font-display text-2xl mt-3 leading-tight">{a.title}</h3>
-                <ul className="mt-5 space-y-3 text-sm">
+                <h3 className="t-h2 mt-4">{a.title}</h3>
+                <ul className="mt-5 space-y-2.5">
                   {a.body.map((line, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="font-mono text-signal">{String(i + 1).padStart(2, "0")}</span>
-                      <span className="leading-relaxed">{line}</span>
+                    <li key={i} className="flex gap-3 text-[13px] leading-[1.65]">
+                      <span className="font-mono text-[11px] text-[var(--text-3)] mt-1 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="text-[var(--text)]">{line}</span>
                     </li>
                   ))}
                 </ul>
@@ -256,72 +255,70 @@ export default function Landing() {
       </Section>
 
       {/* ============ USE CASES ============ */}
-      <Section id="use-cases" label="{ who it's for }" className="bg-paper">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
-          <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase max-w-4xl">
-            Built for <span className="text-signal">creative pros</span> who ship decisions, not just deliverables.
+      <Section id="use-cases" label="Who it's for">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
+          <h2 className="t-hero max-w-3xl">
+            Built for <span className="text-[var(--accent)]">creative pros</span> who ship decisions, not just deliverables.
           </h2>
 
-          <div className="mt-12 grid md:grid-cols-2 gap-4">
+          <div className="mt-12 grid md:grid-cols-2 gap-3">
             {USE_CASES.map((u, i) => (
-              <div key={u.who} className="card-brut card-brut-hover p-8">
+              <div key={u.who} className="card-linear card-linear-hover p-6">
                 <div className="flex items-center justify-between">
-                  <span className="font-display text-3xl uppercase">{u.who}</span>
-                  <span className="mono-tag text-signal">USE CASE 0{i + 1}</span>
+                  <span className="t-h2">{u.who}</span>
+                  <span className="t-meta">{String(i + 1).padStart(2, "0")}</span>
                 </div>
-                <div className="mt-5 grid sm:grid-cols-2 gap-5 text-sm">
+                <div className="mt-4 grid sm:grid-cols-2 gap-4 text-[13px] leading-[1.65]">
                   <div>
-                    <p className="mono-tag text-muted">PAIN</p>
-                    <p className="mt-1">{u.pain}</p>
+                    <p className="t-meta mb-1.5">Pain</p>
+                    <p className="text-[var(--text-2)]">{u.pain}</p>
                   </div>
                   <div>
-                    <p className="mono-tag text-muted">WIN</p>
-                    <p className="mt-1">{u.win}</p>
+                    <p className="t-meta mb-1.5">Win</p>
+                    <p className="text-[var(--text)]">{u.win}</p>
                   </div>
                 </div>
-                <p className="mt-5 border-t border-ink pt-4 italic text-ink">{u.example}</p>
+                <p className="mt-4 pt-4 border-t border-[var(--hairline)] text-[13px] italic text-[var(--text)]">{u.example}</p>
               </div>
             ))}
           </div>
         </div>
       </Section>
 
-      {/* ============ CASE STUDY (first one) ============ */}
-      <Section id="case-study" label="{ case study }" className="bg-chalk">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
+      {/* ============ CASE STUDY teaser ============ */}
+      <Section id="case-study" label="Case study">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="grid lg:grid-cols-12 gap-10 items-end">
-            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase lg:col-span-8">
-              Before Bracket:
-              <br />
-              <span className="text-signal">chaos.</span>
+            <h2 className="t-hero lg:col-span-8">
+              Before Bracket: <span className="text-[var(--accent)]">chaos</span>.
             </h2>
             <Link to="/case-studies" className="btn-ghost lg:col-span-4 lg:justify-self-end" data-testid="case-study-all-cta">
-              All case studies <ArrowUpRight size={16} />
+              All case studies <ArrowUpRight size={14} />
             </Link>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-2 gap-4">
-            <div className="card-brut p-6 sm:p-8">
-              <p className="mono-label text-danger">BEFORE</p>
-              <h3 className="font-display text-3xl mt-2">{CASE_STUDIES[0].brand}</h3>
-              <p className="mono-tag text-muted mt-1">{CASE_STUDIES[0].category}</p>
-              <ul className="mt-6 space-y-3">
+          <div className="mt-12 grid md:grid-cols-2 gap-3">
+            <div className="card-linear p-6">
+              <span className="status-pill status-pill--danger">Before</span>
+              <h3 className="t-h1 mt-4">{CASE_STUDIES[0].brand}</h3>
+              <p className="t-meta mt-1">{CASE_STUDIES[0].category}</p>
+              <ul className="mt-5 space-y-2.5">
                 {CASE_STUDIES[0].before.map((b, i) => (
-                  <li key={i} className="flex gap-3 text-sm">
-                    <X size={14} className="mt-1 text-danger shrink-0" />
+                  <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text-2)]">
+                    <X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" />
                     <span>{b}</span>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="clay-dark p-8 rounded-2xl">
-              <p className="mono-label text-signal">AFTER</p>
-              <h3 className="font-display text-3xl mt-2 text-chalk">Structured decisions</h3>
-              <p className="mono-tag text-faint mt-1">Same client. Different posture.</p>
-              <ul className="mt-6 space-y-3">
+            <div className="card-linear p-6 border-[rgba(124,92,255,0.30)] bg-[rgba(124,92,255,0.05)]">
+              <span className="status-pill status-pill--active">After</span>
+              <h3 className="t-h1 mt-4">Structured decisions</h3>
+              <p className="t-meta mt-1">Same client. Different posture.</p>
+              <ul className="mt-5 space-y-2.5">
                 {CASE_STUDIES[0].after.map((b, i) => (
-                  <li key={i} className="flex gap-3 text-sm text-chalk">
-                    <Check size={14} className="mt-1 text-signal shrink-0" />
+                  <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text)]">
+                    <Check size={13} className="mt-0.5 text-[var(--accent)] shrink-0" />
                     <span>{b}</span>
                   </li>
                 ))}
@@ -329,29 +326,25 @@ export default function Landing() {
             </div>
           </div>
 
-          <blockquote className="mt-12 max-w-3xl font-display text-2xl sm:text-3xl md:text-4xl leading-[1.05]">
-            <span className="text-signal">"</span>
-            {CASE_STUDIES[0].quote}
-            <span className="text-signal">"</span>
+          <blockquote className="mt-14 max-w-3xl t-display text-[var(--text)]">
+            <span className="text-[var(--accent)]">&ldquo;</span>{CASE_STUDIES[0].quote}<span className="text-[var(--accent)]">&rdquo;</span>
           </blockquote>
         </div>
       </Section>
 
       {/* ============ PRICING ============ */}
-      <Section id="pricing" label="{ pricing }" className="bg-paper">
-        <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
+      <Section id="pricing" label="Pricing">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase max-w-3xl">
-              Simple pricing.
-              <br />
-              <span className="text-signal">No tier tetris.</span>
+            <h2 className="t-hero max-w-3xl">
+              Simple pricing. <span className="text-[var(--accent)]">No tier tetris</span>.
             </h2>
-            <div className="inline-flex items-center rounded-full glass p-1" data-testid="pricing-currency-toggle">
+            <div className="inline-flex items-center rounded-full p-1 border border-[var(--hairline)] bg-[var(--surface)]" data-testid="pricing-currency-toggle">
               {Object.keys(PRICING.currencies).map((c) => (
                 <button
                   key={c}
                   onClick={() => setCurrency(c)}
-                  className={`px-4 py-2 mono-tag rounded-full transition-all ${currency === c ? "clay-dark text-chalk" : "text-ink hover:bg-white/30"}`}
+                  className={`px-3.5 py-1 text-[12px] font-medium rounded-full transition-all ${currency === c ? "bg-[var(--surface-3)] text-[var(--text)]" : "text-[var(--text-3)] hover:text-[var(--text)]"}`}
                   data-testid={`currency-toggle-${c}`}
                 >
                   {c}
@@ -360,44 +353,44 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="mt-12 grid md:grid-cols-3 gap-4">
+          <div className="mt-12 grid md:grid-cols-3 gap-3">
             {PRICING.tiers.map((t) => {
-              const isStudio = t.id === "studio";
+              const isPro = t.id === "pro";
               const price = cur[t.id];
               return (
                 <div
                   key={t.id}
-                  className={`p-8 rounded-2xl ${isStudio ? "clay-dark text-chalk" : "card-brut card-brut-hover"}`}
+                  className={`p-7 rounded-[12px] relative ${isPro ? "border border-[rgba(124,92,255,0.45)] bg-[rgba(124,92,255,0.04)]" : "card-linear card-linear-hover"}`}
                   data-testid={`pricing-tier-${t.id}`}
+                  style={isPro ? { boxShadow: "0 24px 64px -24px rgba(124,92,255,0.30)" } : undefined}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={`mono-label ${isStudio ? "text-faint" : ""}`}>{t.name}</span>
-                    {t.badge && <span className="mono-tag text-signal">{t.badge}</span>}
+                    <span className="t-meta">{t.name}</span>
+                    {t.badge && <span className="status-pill status-pill--active">Popular</span>}
                   </div>
-                  <p className={`mt-3 text-sm ${isStudio ? "text-faint" : "text-muted"}`}>{t.tagline}</p>
-                  <div className="mt-8 flex items-baseline gap-2">
-                    <span className="font-display text-6xl">
-                      {cur.symbol}
-                      {price}
+                  <p className="mt-3 text-[13px] text-[var(--text-2)]">{t.tagline}</p>
+                  <div className="mt-7 flex items-baseline gap-1.5">
+                    <span className="font-semibold text-[44px] tracking-[-0.03em] leading-none">
+                      {cur.symbol}{price}
                     </span>
-                    <span className={`mono-tag ${isStudio ? "text-faint" : "text-muted"}`}>
-                      {t.id === "free" ? "/ FOREVER" : "/ MONTH"}
+                    <span className="t-meta">
+                      {t.id === "free" ? "/ forever" : "/ month"}
                     </span>
                   </div>
-                  <ul className="mt-8 space-y-3">
+                  <ul className="mt-7 space-y-2.5 min-h-[140px]">
                     {t.features.map((f, i) => (
-                      <li key={i} className="flex gap-3 text-sm">
-                        <Check size={14} className={`mt-1 shrink-0 ${isStudio ? "text-signal" : "text-signal"}`} />
-                        <span>{f}</span>
+                      <li key={i} className="flex gap-2.5 text-[13px] leading-[1.55]">
+                        <Check size={13} className="mt-1 shrink-0 text-[var(--accent)]" />
+                        <span className="text-[var(--text)]">{f}</span>
                       </li>
                     ))}
                   </ul>
                   <Link
                     to="/app"
-                    className={`mt-8 w-full justify-center ${isStudio ? "btn-brut" : "btn-ghost"}`}
+                    className={`mt-6 w-full justify-center ${isPro ? "btn-primary" : "btn-ghost"}`}
                     data-testid={`pricing-cta-${t.id}`}
                   >
-                    Start a project <ArrowRight size={14} />
+                    {t.cta} <ArrowRight size={14} />
                   </Link>
                 </div>
               );
@@ -407,37 +400,27 @@ export default function Landing() {
       </Section>
 
       {/* ============ FINAL CTA ============ */}
-      <Section id="final" className="clay-dark text-chalk">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 py-16 md:py-32 relative">
-          <span
-            className="bracket-mark absolute -top-6 sm:-top-10 -left-4 sm:-left-6 text-[180px] sm:text-[280px] md:text-[380px]"
-            style={{ color: "#fff", opacity: 0.08 }}
-          >
-            {"{"}
-          </span>
-          <span
-            className="bracket-mark absolute -bottom-10 sm:-bottom-16 -right-4 sm:-right-6 text-[180px] sm:text-[280px] md:text-[380px]"
-            style={{ color: "#fff", opacity: 0.08 }}
-          >
-            {"}"}
-          </span>
-
-          <p className="mono-label text-faint">{"{ last word }"}</p>
-          <h2 className="font-display text-5xl sm:text-6xl md:text-8xl lg:text-9xl uppercase mt-6 text-chalk">
-            Stop guessing.
-            <br />
-            <span className="text-signal">Start deciding.</span>
+      <section className="relative overflow-hidden" data-testid="final-cta-section">
+        <div className="hero-ambient" aria-hidden="true" />
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-24 md:pb-32 text-center">
+          <span className="section-label"><span className="dot" />Last word</span>
+          <h2 className="t-display mt-7">
+            Stop guessing.<br />
+            <span className="text-[var(--accent)]">Start deciding</span>.
           </h2>
-          <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-4">
-            <Link to="/app" className="btn-brut" data-testid="final-primary-cta">
-              Start a project <ArrowRight size={16} />
+          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
+            Five quiet steps. Fifteen minutes per project. The reasoning is documented, so the call survives the room.
+          </p>
+          <div className="mt-9 flex flex-col sm:flex-row gap-3 items-center justify-center">
+            <Link to="/app" className="btn-primary btn-lg" data-testid="final-primary-cta">
+              Start a project <ArrowRight size={14} />
             </Link>
-            <Link to="/how-it-works" className="btn-ghost text-chalk border-chalk hover:bg-chalk hover:text-ink" data-testid="final-secondary-cta">
+            <Link to="/how-it-works" className="btn-ghost btn-lg" data-testid="final-secondary-cta">
               See the system first
             </Link>
           </div>
         </div>
-      </Section>
+      </section>
     </div>
   );
 }

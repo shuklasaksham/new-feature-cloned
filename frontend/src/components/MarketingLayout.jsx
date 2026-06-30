@@ -5,7 +5,7 @@ import Footer from "./Footer";
 
 export default function MarketingLayout() {
   return (
-    <div className="min-h-screen bg-paper text-ink flex flex-col">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col">
       <Navbar />
       <main className="flex-1">
         <Outlet />

@@ -54,25 +54,29 @@ export default function Onboarding() {
 
   return (
     <div className="min-h-screen flex flex-col" data-testid="onboarding-page">
-      <header className="glass sticky top-0 z-30">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center">
-          <Link to="/" className="flex items-center" aria-label="Bracket home">
-            <BracketMark size={26} />
+      <header className="marketing-header">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center">
+          <Link to="/" className="flex items-center gap-2" aria-label="Bracket home">
+            <BracketMark size={22} label={false} variant="chalk" />
+            <span className="font-semibold text-[14px] tracking-[-0.012em]">Bracket</span>
           </Link>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 py-10">
-        <div className="w-full max-w-xl">
-          <p className="mono-label">{"{ set yourself up }"}</p>
-          <h1 className="font-display text-4xl sm:text-5xl uppercase mt-3 leading-[0.95]">
-            Tell us <span className="text-signal">who&apos;s deciding.</span>
-          </h1>
-          <p className="mt-3 text-muted text-sm">Two minutes. Your docs will go out under your name.</p>
+      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 py-12 relative">
+        <div className="hero-ambient" aria-hidden="true" />
+        <div className="w-full max-w-[520px] relative page-enter">
+          <div className="text-center">
+            <span className="section-label"><span className="dot" />Set yourself up</span>
+            <h1 className="t-hero mt-6">
+              Tell us <span className="text-[var(--accent)]">who&apos;s deciding</span>.
+            </h1>
+            <p className="mt-3 text-[14px] text-[var(--text-2)]">Two minutes. Your docs will go out under your name.</p>
+          </div>
 
-          <div className="card-brut p-5 sm:p-6 mt-6 space-y-5">
+          <div className="card-linear p-6 mt-8 space-y-5">
             <label className="block">
-              <span className="mono-tag text-muted">YOUR NAME</span>
+              <span className="t-meta">Your name</span>
               <input
                 className="input-line mt-2"
                 value={name}
@@ -83,19 +87,19 @@ export default function Onboarding() {
               />
             </label>
             <label className="block">
-              <span className="mono-tag text-muted">WHAT YOU DO</span>
+              <span className="t-meta">What you do</span>
               <input
                 className="input-line mt-2"
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
-                placeholder="e.g. Freelance designer · Copywriter · Founder · Indie dev"
+                placeholder="e.g. Freelance designer · Founder · Indie dev"
                 data-testid="onboarding-designation"
               />
             </label>
 
             <div>
-              <p className="mono-tag text-muted">PICK YOUR MARK</p>
-              <div className="mt-3 grid grid-cols-6 sm:grid-cols-6 gap-3" data-testid="onboarding-avatars">
+              <p className="t-meta">Pick your mark</p>
+              <div className="mt-3 grid grid-cols-6 gap-2.5" data-testid="onboarding-avatars">
                 {AVATARS.map((a) => {
                   const active = avatar === a.id;
                   return (
@@ -104,23 +108,23 @@ export default function Onboarding() {
                       key={a.id}
                       onClick={() => setAvatar(a.id)}
                       aria-pressed={active}
-                      className={`p-1 transition ${active ? "ring-2 ring-signal ring-offset-2 ring-offset-paper" : "hover:opacity-80"}`}
+                      className={`p-1 rounded-md transition-all ${active ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--surface)]" : "opacity-70 hover:opacity-100"}`}
                       data-testid={`onboarding-avatar-${a.id}`}
                     >
-                      <Avatar id={a.id} size={44} initial={name || user?.email || "B"} />
+                      <Avatar id={a.id} size={40} initial={name || user?.email || "B"} />
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div className="border-t border-ink pt-4">
-              <label className="flex items-center gap-3 text-sm cursor-pointer" data-testid="onboarding-set-pwd-toggle">
+            <div className="border-t border-[var(--hairline)] pt-4">
+              <label className="flex items-center gap-2.5 text-[13px] text-[var(--text-2)] cursor-pointer" data-testid="onboarding-set-pwd-toggle">
                 <input
                   type="checkbox"
                   checked={setPwdToggle}
                   onChange={(e) => setSetPwdToggle(e.target.checked)}
-                  className="accent-signal w-4 h-4"
+                  className="accent-[var(--accent)] w-3.5 h-3.5"
                 />
                 <span>Set a password so I don&apos;t need to use OTP next time.</span>
               </label>
@@ -137,9 +141,9 @@ export default function Onboarding() {
             </div>
 
             {err && (
-              <div className="flex items-start gap-2" role="alert" data-testid="onboarding-error">
-                <span className="font-mono text-signal text-xs mt-[2px]">{"{!}"}</span>
-                <p className="text-sm">{err}</p>
+              <div className="flex items-start gap-2 px-3 py-2.5 rounded-md border border-[rgba(255,92,92,0.30)] bg-[rgba(255,92,92,0.06)]" role="alert" data-testid="onboarding-error">
+                <span className="font-mono text-[var(--danger)] text-xs mt-[2px]">!</span>
+                <p className="text-[13px] text-[var(--text)] leading-[1.5]">{err}</p>
               </div>
             )}
 
@@ -147,7 +151,7 @@ export default function Onboarding() {
               type="button"
               onClick={submit}
               disabled={loading}
-              className="btn-brut w-full justify-center"
+              className="btn-primary btn-lg w-full"
               data-testid="onboarding-submit"
             >
               {loading ? (

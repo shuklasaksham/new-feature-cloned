@@ -53,35 +53,35 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen" data-testid="settings-page">
-      <main className="max-w-[820px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12 page-enter">
+      <main className="max-w-[760px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14 page-enter">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="mono-tag text-muted hover:text-ink flex items-center gap-2"
+          className="text-[12px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors inline-flex items-center gap-1.5"
         >
-          <ArrowLeft size={12} /> BACK
+          <ArrowLeft size={12} /> Back
         </button>
-        <h1 className="font-display text-4xl sm:text-5xl uppercase mt-4">Account</h1>
-        <p className="mono-tag text-muted mt-2">{user?.email}</p>
+        <h1 className="t-hero mt-4">Account</h1>
+        <p className="text-[13px] text-[var(--text-3)] mt-1.5">{user?.email}</p>
 
-        <section className="card-brut p-5 sm:p-6 mt-8 space-y-5" data-testid="settings-profile-card">
-          <p className="mono-label">{"{ profile }"}</p>
+        <section className="card-linear p-6 mt-8 space-y-5" data-testid="settings-profile-card">
+          <span className="section-label"><span className="dot" />Profile</span>
           <label className="block">
-            <span className="mono-tag text-muted">NAME</span>
+            <span className="t-meta">Name</span>
             <input className="input-line mt-2" value={name} onChange={(e) => setName(e.target.value)} data-testid="settings-name"/>
           </label>
           <label className="block">
-            <span className="mono-tag text-muted">DESIGNATION</span>
+            <span className="t-meta">Designation</span>
             <input className="input-line mt-2" value={designation} onChange={(e) => setDesignation(e.target.value)} data-testid="settings-designation"/>
           </label>
           <div>
-            <p className="mono-tag text-muted">AVATAR</p>
-            <div className="mt-3 grid grid-cols-6 gap-3" data-testid="settings-avatars">
+            <p className="t-meta">Avatar</p>
+            <div className="mt-3 grid grid-cols-6 gap-2.5" data-testid="settings-avatars">
               {AVATARS.map((a) => {
                 const active = avatar === a.id;
                 return (
                   <button type="button" key={a.id} onClick={() => setAvatar(a.id)} aria-pressed={active}
-                    className={`p-1 ${active ? "ring-2 ring-signal ring-offset-2 ring-offset-paper" : "hover:opacity-80"}`}
+                    className={`p-1 rounded-md transition-all ${active ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--surface)]" : "opacity-70 hover:opacity-100"}`}
                     data-testid={`settings-avatar-${a.id}`}>
                     <Avatar id={a.id} size={40} initial={name || user?.email || "B"} />
                   </button>
@@ -89,14 +89,14 @@ export default function Settings() {
               })}
             </div>
           </div>
-          <button onClick={saveProfile} disabled={savingProfile} className="btn-brut" data-testid="settings-save-profile">
+          <button onClick={saveProfile} disabled={savingProfile} className="btn-primary" data-testid="settings-save-profile">
             {savingProfile ? <><Loader2 size={14} className="animate-spin"/> Saving…</> : "Save profile"}
           </button>
         </section>
 
-        <section className="card-brut p-5 sm:p-6 mt-6 space-y-4" data-testid="settings-password-card">
-          <p className="mono-label flex items-center gap-2"><LockIcon size={12}/> {"{ password }"}</p>
-          <p className="text-sm text-muted">
+        <section className="card-linear p-6 mt-4 space-y-4" data-testid="settings-password-card">
+          <span className="section-label"><span className="dot" /><LockIcon size={10} className="ml-0.5"/> Password</span>
+          <p className="text-[13px] text-[var(--text-2)] leading-[1.65]">
             {user?.has_password ? "Set a new password." : "Set a password so you don't need OTP each time."}
           </p>
           <input
@@ -107,7 +107,7 @@ export default function Settings() {
             onChange={(e) => setPwd(e.target.value)}
             data-testid="settings-password-input"
           />
-          <button onClick={savePwd} disabled={savingPwd || pwd.length < 8} className="btn-brut" data-testid="settings-save-password">
+          <button onClick={savePwd} disabled={savingPwd || pwd.length < 8} className="btn-primary" data-testid="settings-save-password">
             {savingPwd ? "Saving…" : user?.has_password ? "Update password" : "Set password"}
           </button>
         </section>

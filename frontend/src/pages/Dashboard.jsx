@@ -99,14 +99,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen" data-testid="dashboard-page">
-      <main className="max-w-[1200px] mx-auto px-6 sm:px-8 md:px-10 py-8 md:py-12 page-enter">
+      <main className="max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14 page-enter">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="mono-label">Workspace</p>
-            <h1 className="t-hero mt-2">
-              Hi {(user?.name || "there").split(" ")[0]}.{" "}
-              <span className="text-muted">What are we deciding today?</span>
+            <span className="section-label"><span className="dot" />Workspace</span>
+            <h1 className="t-hero mt-4">
+              Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
             </h1>
+            <p className="mt-2 text-[14px] text-[var(--text-2)]">What are we deciding today?</p>
           </div>
         </div>
 
