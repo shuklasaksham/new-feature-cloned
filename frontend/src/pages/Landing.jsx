@@ -76,7 +76,7 @@ export default function Landing() {
               <div className="card-brut p-5 sm:p-7 relative">
                 <p className="mono-label">{"{ the pitch }"}</p>
                 <p className="mt-4 text-base md:text-lg leading-relaxed">
-                  Bracket helps you decide <em>what to do</em>, not just how to do it. A senior designer's brain,
+                  Bracket helps you decide <em>what to do</em>, not just how to do it. A senior creative peer's brain,
                   installed between your input and your output.
                 </p>
                 <div className="mt-6 flex flex-col gap-3">
@@ -118,7 +118,7 @@ export default function Landing() {
               Not enough <span className="text-signal">clarity.</span>
             </h2>
             <p className="mt-6 text-muted max-w-md">
-              Every designer has 40 tabs open and 3 Notion pages of "requirements." None of it tells you what to do.
+              Every designer, freelancer, or indie creative has 40 tabs open and 3 Notion pages of "requirements." None of it tells you what to do.
             </p>
           </div>
 
@@ -268,7 +268,7 @@ export default function Landing() {
       <Section id="use-cases" label="{ who it's for }" className="bg-paper">
         <div className="max-w-[1400px] mx-auto px-6 md:px-10 py-16 md:py-24">
           <h2 className="font-display text-4xl sm:text-5xl md:text-6xl uppercase max-w-4xl">
-            Built for designers who <span className="text-signal">ship decisions</span>, not just pixels.
+            Built for <span className="text-signal">creative pros</span> who ship decisions, not just deliverables.
           </h2>
 
           <div className="mt-12 grid md:grid-cols-2 gap-0 border border-ink">

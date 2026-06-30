@@ -20,14 +20,20 @@ MODEL_MAP = {
 
 
 SYSTEM_VOICE = (
-    "You are Bracket — a senior design advisor. You speak like a confident, "
-    "opinionated senior designer mentoring a peer. Sharp, warm, never corporate. "
-    "You help designers decide, not just do. Avoid generic advice. Be specific, "
+    "You are Bracket — a senior advisor for designers, freelancers, and "
+    "independent creative pros (illustrators, copywriters, photographers, "
+    "video editors, indie devs, content creators, brand consultants). "
+    "You speak like a confident, opinionated senior peer mentoring someone "
+    "working solo or in a small shop. Sharp, warm, never corporate. "
+    "You help people decide, not just do. Avoid generic advice. Be specific, "
     "direct, and human. "
-    "CURRENCY: All monetary amounts in your output MUST be expressed in Indian Rupees "
-    "using the '₹' symbol (e.g. ₹50,000 or ₹2L). Never use $, USD, £, € or any other "
-    "currency, even if the user mentions one — convert or restate it in INR. Use Indian "
-    "number conventions (lakh / crore) where appropriate. "
+    "AUDIENCE: do NOT assume only visual design. Your suggestions and "
+    "examples must work for any independent creative discipline. Translate "
+    "design jargon into plain language when relevant. "
+    "CURRENCY: All monetary amounts MUST be in Indian Rupees using the '₹' "
+    "symbol (e.g. ₹50,000 or ₹2L). Never use $, USD, £, € or any other "
+    "currency, even if the user mentions one — convert or restate in INR. "
+    "Use Indian number conventions (lakh / crore) where appropriate. "
     "You always respond in strict JSON matching the requested schema, "
     "with NO markdown fences, NO preamble, NO commentary — just the JSON object."
 )
@@ -59,6 +65,64 @@ async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = 
     ).with_model(provider, model)
     response = await chat.send_message(UserMessage(text=prompt))
     return _extract_json(response)
+
+
+async def run_field_suggestions(
+    step: int,
+    field: str,
+    partial: str,
+    context: dict,
+    engine: str = "claude",
+) -> list[str]:
+    """Return 3-5 short, pickable autofill suggestions for a form field.
+
+    The frontend calls this as the user types (debounced 600ms). The model
+    has to respond fast and cheap, so the prompt is short and the JSON
+    schema is tight.
+    """
+    ctx_compact = {k: (v or "")[:200] for k, v in (context or {}).items() if v}
+    partial = (partial or "").strip()[:300]
+    prompt = f"""A designer or freelancer is filling out a form to think through a project decision.
+
+CURRENT FIELD: {field} (step {step} of 5)
+WHAT THEY'VE TYPED SO FAR: "{partial}"
+OTHER FIELDS THEY'VE ALREADY FILLED: {json.dumps(ctx_compact, ensure_ascii=False)}
+
+Suggest exactly 4 short autofill phrases (each between 2-7 words) that would
+naturally complete or extend what they're typing. Be specific to their input —
+NOT generic. If "WHAT THEY'VE TYPED SO FAR" is empty, give 4 broadly relevant
+starting points based on the other filled fields and the field's purpose.
+
+The user is a designer, illustrator, copywriter, photographer, video editor,
+indie dev, content creator, brand consultant, or similar independent creative
+pro — phrase suggestions to work for any of them.
+
+Return strict JSON only: {{"suggestions": ["...", "...", "...", "..."]}}
+"""
+    try:
+        data = await _run(prompt, engine)
+        sugs = data.get("suggestions") or []
+        # Defensive normalization — strip, dedupe, cap length.
+        seen = set()
+        out: list[str] = []
+        for s in sugs:
+            if not isinstance(s, str):
+                continue
+            s = s.strip().strip(",.;")
+            if not s or len(s) > 80:
+                continue
+            key = s.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(s)
+            if len(out) >= 4:
+                break
+        return out
+    except Exception:
+        # Don't break the typing UX if AI hiccups — return empty list, the
+        # client gracefully shows nothing.
+        return []
 
 
 async def run_situation_framing(inputs: dict, engine: str = "claude") -> dict:

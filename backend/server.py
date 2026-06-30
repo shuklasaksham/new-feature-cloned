@@ -32,6 +32,7 @@ from ai_engine import (
     run_decision_engine,
     run_artifacts,
     run_client_pushback_suggestions,
+    run_field_suggestions,
 )
 from emailer import send_thanks_email, send_review_outcome_email
 from auth import (
@@ -236,6 +237,89 @@ async def auth_logout(request: Request, response: Response):
         await delete_session(db, token)
     clear_session_cookie(response)
     return {"ok": True}
+
+
+# ---- GUEST SIGN-IN (no email, no password) ---------------------------------
+# Used by the "Try it without an account" button. Creates an `is_guest: true`
+# user with a synthetic email so the rest of the app (which keys on user_id)
+# keeps working without conditional code paths. The user can later upgrade
+# via POST /auth/me/email to convert the guest into a real account.
+@api.post("/auth/guest")
+async def auth_guest(response: Response):
+    from auth import gen_user_id as _gen_uid
+    user_id = _gen_uid()
+    synthetic_email = f"guest+{user_id}@bracket.guest"
+    doc = {
+        "user_id": user_id,
+        "email": synthetic_email,
+        "name": "Guest",
+        "designation": "",
+        "avatar": "mono-1",
+        "picture": "",
+        "password_hash": "",
+        "is_guest": True,
+        "created_at": auth_iso(auth_now()),
+        "updated_at": auth_iso(auth_now()),
+    }
+    await db.users.insert_one(doc)
+    token = await create_session(db, user_id)
+    set_session_cookie(response, token)
+    return {"user": public_user(doc), "session_token": token, "is_new": True}
+
+
+# ---- GUEST UPGRADE (set email + name, lift the is_guest flag) --------------
+class GuestUpgradeIn(_BM):
+    email: _Em
+    name: str = _Fd(default="", max_length=120)
+
+
+@api.post("/auth/me/email")
+async def auth_guest_upgrade(body: GuestUpgradeIn, request: Request):
+    """A signed-in guest gives us their email + name on their way out.
+    Refuses if the email is already taken by a real account."""
+    user = await current_user(request, db)
+    new_email = body.email.lower().strip()
+    if new_email.endswith("@bracket.guest"):
+        raise HTTPException(status_code=400, detail="That's not a real email.")
+    # Block if a real account already exists.
+    clash = await db.users.find_one(
+        {"email": new_email, "user_id": {"$ne": user["user_id"]}},
+        {"_id": 0, "user_id": 1},
+    )
+    if clash:
+        raise HTTPException(
+            status_code=409,
+            detail="That email is already in use — sign in instead.",
+        )
+    updates: Dict[str, Any] = {
+        "email": new_email,
+        "is_guest": False,
+        "updated_at": auth_iso(auth_now()),
+    }
+    if body.name.strip():
+        updates["name"] = body.name.strip()
+    await db.users.update_one({"user_id": user["user_id"]}, {"$set": updates})
+    fresh = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    return public_user(fresh)
+
+
+# ---- AI AUTOFILL SUGGESTIONS (debounced from the form fields) --------------
+class SuggestIn(_BM):
+    step: int = _Fd(ge=1, le=5)
+    field: str = _Fd(min_length=1, max_length=40)
+    partial: str = _Fd(default="", max_length=500)
+    context: Dict[str, Any] = _Fd(default_factory=dict)
+
+
+@api.post("/suggest")
+async def ai_suggest(body: SuggestIn):
+    """Returns 0-4 short autofill suggestions for a form field. Safe to call
+    on every keystroke (frontend debounces 600ms); errors return empty list,
+    not 500, so a hiccup never blocks the user's typing."""
+    suggestions = await run_field_suggestions(
+        body.step, body.field, body.partial, body.context
+    )
+    return {"suggestions": suggestions}
 
 
 import re as _re

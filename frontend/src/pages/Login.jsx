@@ -45,6 +45,24 @@ export default function Login() {
     }
   };
 
+  // Guest sign-in — no email, no password. Jumps straight to /app/new so
+  // the user can start a project immediately. We'll re-prompt for their
+  // email at the end of the flow (Step 5).
+  const signInAsGuest = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const { data } = await api.post("/auth/guest");
+      setUser(data.user);
+      await refresh();
+      navigate("/app", { replace: true });
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const submitOtp = async () => {
     if (code.trim().length < 4) return setError("Type the 6-digit code from your email.");
     setLoading(true);
@@ -177,6 +195,22 @@ export default function Login() {
                 >
                   {usePassword ? "← USE EMAIL CODE INSTEAD" : "I HAVE A PASSWORD →"}
                 </button>
+
+                <div className="mt-5 pt-5 border-t border-ink/15">
+                  <button
+                    type="button"
+                    onClick={signInAsGuest}
+                    disabled={loading}
+                    className="btn-ghost w-full justify-center"
+                    data-testid="login-guest-btn"
+                  >
+                    {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                    Try it without an account →
+                  </button>
+                  <p className="mono-tag text-muted text-center mt-2">
+                    JUMP IN NOW · ADD EMAIL LATER
+                  </p>
+                </div>
               </>
             )}
 

@@ -10,7 +10,7 @@ export default function Footer() {
         <div className="col-span-2">
           <BracketMark size={28} />
           <p className="mt-4 md:mt-5 max-w-sm text-muted text-sm">
-            Bracket helps designers decide what to do, not just how to do it. A professional operating system — not another tool.
+            Bracket helps designers, freelancers, and indie creatives decide what to do, not just how to do it. A professional operating system — not another tool.
           </p>
           <p className="mt-5 md:mt-6 mono-label">v 1.0 · Built for people who take the call.</p>
 

@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
+import { useAuth } from "../lib/AuthContext";
+import { toast } from "sonner";
 
 const STEPS = [
   { n: 1, key: "situation", label: "SITUATION FRAMING", glyph: "{ 01 }" },
@@ -304,10 +306,12 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               value={form.what}
               onChange={(e) => setForm({ ...form, what: e.target.value })}
             />
-            <Suggestions
+            <AISuggestions
               testid="step1-what-suggest"
-              items={["Landing page redesign", "Mobile app onboarding", "SaaS dashboard", "Brand identity refresh", "Marketing site"]}
+              step={1}
+              field="what"
               value={form.what}
+              context={{ who: form.who, unclear: form.unclear }}
               onPick={pick("what")}
             />
           </Field>
@@ -319,10 +323,12 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               value={form.who}
               onChange={(e) => setForm({ ...form, who: e.target.value })}
             />
-            <Suggestions
+            <AISuggestions
               testid="step1-who-suggest"
-              items={["Early-stage startup founder", "Enterprise marketing lead", "D2C brand owner", "Internal product team", "Series-A SaaS CEO"]}
+              step={1}
+              field="who"
               value={form.who}
+              context={{ what: form.what, unclear: form.unclear }}
               onPick={pick("who")}
             />
           </Field>
@@ -334,10 +340,12 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               value={form.unclear}
               onChange={(e) => setForm({ ...form, unclear: e.target.value })}
             />
-            <Suggestions
+            <AISuggestions
               testid="step1-unclear-suggest"
-              items={["Budget undefined", "Timeline too tight", "No clear success metric", "Stakeholder alignment missing", "Scope keeps shifting"]}
+              step={1}
+              field="unclear"
               value={form.unclear}
+              context={{ what: form.what, who: form.who }}
               onPick={pick("unclear")}
             />
           </Field>
@@ -443,10 +451,12 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, requirements: e.target.value })}
               placeholder="Paste the brief. Paste the Slack dump. It's fine."
             />
-            <Suggestions
+            <AISuggestions
               testid="step2-req-suggest"
-              items={["Conversion focus", "Modern aesthetic", "Mobile-first", "Match competitor X", "Built-in analytics"]}
+              step={2}
+              field="requirements"
               value={form.requirements}
+              context={{ constraints: form.constraints, inspirations: form.inspirations, framing: project.framing?.reframed_problem }}
               onPick={pick("requirements")}
             />
           </Field>
@@ -458,10 +468,12 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, constraints: e.target.value })}
               placeholder="Budget, timeline, brand rules, tech limits."
             />
-            <Suggestions
+            <AISuggestions
               testid="step2-con-suggest"
-              items={["Budget ₹50,000", "2-week timeline", "Brand colours locked", "Webflow only", "No third-party fonts"]}
+              step={2}
+              field="constraints"
               value={form.constraints}
+              context={{ requirements: form.requirements, inspirations: form.inspirations, framing: project.framing?.reframed_problem }}
               onPick={pick("constraints")}
             />
           </Field>
@@ -473,10 +485,12 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, inspirations: e.target.value })}
               placeholder="Only what you genuinely want to pull from."
             />
-            <Suggestions
+            <AISuggestions
               testid="step2-insp-suggest"
-              items={["Linear", "Stripe", "Vercel", "Apple", "Notion"]}
+              step={2}
+              field="inspirations"
               value={form.inspirations}
+              context={{ requirements: form.requirements, constraints: form.constraints, framing: project.framing?.reframed_problem }}
               onPick={pick("inspirations")}
             />
           </Field>
@@ -591,10 +605,12 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, optimizing_for: e.target.value })}
               placeholder="e.g. Conversion over aesthetic polish. Or speed to launch over perfection."
             />
-            <Suggestions
+            <AISuggestions
               testid="step3-opt-suggest"
-              items={["Conversion", "Speed to launch", "Long-term scalability", "Brand consistency", "Low maintenance"]}
+              step={3}
+              field="optimizing_for"
               value={form.optimizing_for}
+              context={{ tradeoffs: form.tradeoffs, risks: form.risks, framing: project.framing?.reframed_problem }}
               onPick={pick("optimizing_for")}
             />
           </Field>
@@ -606,10 +622,12 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, tradeoffs: e.target.value })}
               placeholder="What are you giving up?"
             />
-            <Suggestions
+            <AISuggestions
               testid="step3-tr-suggest"
-              items={["Polish for speed", "Custom for templated", "Scope for budget", "Originality for trust", "Animation for performance"]}
+              step={3}
+              field="tradeoffs"
               value={form.tradeoffs}
+              context={{ optimizing_for: form.optimizing_for, risks: form.risks, framing: project.framing?.reframed_problem }}
               onPick={pick("tradeoffs")}
             />
           </Field>
@@ -621,10 +639,12 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
               onChange={(e) => setForm({ ...form, risks: e.target.value })}
               placeholder="Stakeholders, scope, skill gaps, timeline…"
             />
-            <Suggestions
+            <AISuggestions
               testid="step3-rs-suggest"
-              items={["Scope creep", "Stakeholder misalignment", "Tight timeline", "Budget overrun", "Tech debt"]}
+              step={3}
+              field="risks"
               value={form.risks}
+              context={{ optimizing_for: form.optimizing_for, tradeoffs: form.tradeoffs, framing: project.framing?.reframed_problem }}
               onPick={pick("risks")}
             />
           </Field>
@@ -866,6 +886,102 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
   );
 }
 
+function GuestUpgradeBanner() {
+  const { user, refresh } = useAuth();
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [done, setDone] = useState(false);
+
+  if (!user?.is_guest || dismissed || done) return null;
+
+  const submit = async (e) => {
+    e?.preventDefault?.();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error("That email doesn't look right.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.post("/auth/me/email", { email: email.trim().toLowerCase(), name: name.trim() });
+      await refresh();
+      setDone(true);
+      toast.success("Saved. You'll find this project next time you sign in.");
+    } catch (err) {
+      toast.error(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="card-brut p-5 sm:p-6 !bg-signal text-chalk mt-6"
+      data-testid="guest-upgrade-banner"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="mono-label">{"{ save it for later }"}</p>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          className="text-chalk/70 hover:text-chalk mono-tag"
+          data-testid="guest-upgrade-dismiss"
+          aria-label="Dismiss"
+        >
+          ×
+        </button>
+      </div>
+      <h3 className="font-display text-2xl sm:text-3xl mt-3 leading-tight">
+        Want to come back to this?
+      </h3>
+      <p className="text-sm mt-2 opacity-90">
+        You signed in as a guest. Drop your email + name so this project lives in your
+        dashboard the next time you sign in.
+      </p>
+      <form onSubmit={submit} className="mt-5 grid sm:grid-cols-2 gap-3">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@studio.com"
+          className="bg-transparent border-b-2 border-chalk/40 focus:border-chalk outline-none py-2 font-mono text-sm placeholder-chalk/40"
+          data-testid="guest-upgrade-email"
+        />
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Your name (optional)"
+          className="bg-transparent border-b-2 border-chalk/40 focus:border-chalk outline-none py-2 font-mono text-sm placeholder-chalk/40"
+          data-testid="guest-upgrade-name"
+        />
+        <div className="sm:col-span-2 flex gap-2 items-center mt-2">
+          <button
+            type="submit"
+            disabled={saving || !email}
+            className="px-3 py-2 bg-chalk text-signal font-mono text-xs tracking-widest uppercase disabled:opacity-40 inline-flex items-center gap-2"
+            data-testid="guest-upgrade-submit"
+          >
+            {saving ? <Loader2 size={12} className="animate-spin" /> : null}
+            {saving ? "SAVING…" : "SAVE FOR LATER"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setDismissed(true)}
+            disabled={saving}
+            className="mono-tag text-chalk/70 hover:text-chalk"
+            data-testid="guest-upgrade-skip"
+          >
+            SKIP — I'M GOOD
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function Step5({ project, setProject, onBack, onExport, projectId }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -891,6 +1007,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
       title={isLocked ? "Locked. Open the document." : "This is the direction."}
       kicker="Lock the decision, then open the polished document inside Bracket — download the PDF or send your client a review link straight from there."
     >
+      <GuestUpgradeBanner />
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <OutputCard
@@ -1199,11 +1316,56 @@ function OutputPending({ title, blurb, loading }) {
 
 // Tiny pickable keyword chips shown below required fields. Clicking a chip
 // appends (or replaces, if empty) the suggestion into the input.
-function Suggestions({ items = [], value = "", onPick, testid }) {
-  if (!items?.length) return null;
+//
+// AISuggestions calls /api/suggest as the user types (600ms debounce after
+// the last keystroke). When the field is empty or shorter than 3 chars,
+// nothing is rendered — we don't spam the AI for empty fields.
+function AISuggestions({ step, field, value, context, onPick, testid }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const text = (value || "").trim();
+    // No AI call for very short input — would just give generic noise.
+    if (text.length < 3) {
+      setItems([]);
+      setLoading(false);
+      return undefined;
+    }
+    let cancelled = false;
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await api.post("/suggest", {
+          step,
+          field,
+          partial: text,
+          context: context || {},
+        });
+        if (!cancelled) {
+          setItems(Array.isArray(data.suggestions) ? data.suggestions : []);
+        }
+      } catch {
+        if (!cancelled) setItems([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 600);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [value, field, step, JSON.stringify(context || {})]);
+
+  if (!loading && items.length === 0) return null;
   return (
     <div className="mt-2 flex flex-wrap gap-1.5" data-testid={testid}>
-      <span className="mono-tag text-muted self-center pr-1">TRY ↘</span>
+      <span className="mono-tag text-muted self-center pr-1">
+        {loading ? "BRACKET ↘" : "TRY ↘"}
+      </span>
+      {loading && (
+        <span className="mono-tag text-signal self-center animate-pulse">thinking…</span>
+      )}
       {items.map((s, i) => (
         <button
           key={i}

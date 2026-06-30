@@ -182,10 +182,11 @@ async def current_admin(request: Request, db) -> Dict[str, Any]:
 
 # ---------- users ----------
 def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
-    """Strip sensitive fields and add has_password flag for the UI."""
+    """Strip sensitive fields and add has_password / is_admin / is_guest flags."""
     out = {k: v for k, v in user.items() if k not in ("password_hash", "_id")}
     out["has_password"] = bool(user.get("password_hash"))
     out["is_admin"] = is_admin(user)
+    out["is_guest"] = bool(user.get("is_guest"))
     return out
 
 
