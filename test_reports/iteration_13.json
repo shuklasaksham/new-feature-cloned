@@ -1,0 +1,54 @@
+{
+  "summary": "iteration_16 Linear-aesthetic dark theme visual regression. Body / nav / card-brut / btn-ghost / textarea-brut / pipeline / marketing-page-bg all PASS spec exactly. CRITICAL: every spec line that depends on the violet accent (.btn-brut primary CTA bg, .btn-brut border, .textarea-brut:focus border-color, likely .suggest-chip hover, .conf-ribbon text) is broken because the CSS custom property `--accent` is declared twice in :root of /app/frontend/src/index.css. Line 19 sets `--accent: #7C5CFF` (the Bracket token), then line 46 redefines `--accent: 253 100% 68%` (shadcn HSL fragment). The second declaration wins so any rule of the form `background: var(--accent)` resolves to the literal string `253 100% 68%` which is INVALID CSS, and the property falls back to its initial value (transparent for background, currentColor for border). Visible end-user impact: landing 'Start a project' CTA and dashboard 'New project' CTA render as text-only — no violet pill. Spec calls for rgb(124,92,255).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": ".btn-brut (primary CTA)", "issue": "Computed background = rgba(0,0,0,0) instead of rgb(124,92,255). Visible on landing 'Start a project →' and dashboard 'New project' button — they render as plain text, no violet pill, no border. Root cause: `--accent` CSS variable redefined as HSL fragment '253 100% 68%' in the shadcn :root block (line 46) shadowing the hex value '#7C5CFF' from the Bracket token block (line 19). Disabled state still works because it uses `--surface-3` / `--text-3` which are not shadowed.", "selector": ".btn-brut", "priority": "CRITICAL"},
+      {"component": ".textarea-brut:focus", "issue": "On focus the border-color resolves to rgb(243,244,246) (white text token) instead of the spec rgb(124,92,255) violet. Same root cause — rule is `border-color: var(--accent)` which is now invalid. The 3px outer box-shadow IS rgba(124,92,255,0.18) because that rule uses a literal rgba(), so the violet glow is visible but the inner 1px ring is white.", "selector": ".textarea-brut:focus", "priority": "HIGH"},
+      {"component": ".suggest-chip", "issue": "Suggest chip below Step 1 'WHAT' textarea renders with bg=transparent, border=0px, radius=0px — none of the .suggest-chip styling is applying. Need to confirm whether the chip JSX still carries the class name or if the class definition itself fails due to the --accent variable bug.", "selector": "[data-testid^='step1-what-suggest']", "priority": "MEDIUM"},
+      {"component": "step1-framing-output (.liquid-glass)", "issue": "Output card on Step 1 does NOT have a `.liquid-glass` class in the DOM (querySelector('.liquid-glass') returned null). The card still renders dark-surfaced and visually OK (looks like it's rendered with default surface/border tokens) but the spec-named class is absent. May indicate the rewrite removed .liquid-glass from JSX or replaced the class — confirm the JSX class wiring on the output card.", "selector": ".liquid-glass", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Step 1 textarea autosave / suggest fetch", "issue": "One non-blocking console error fires after typing in Step 1 WHAT textarea: 'Failed to load resource: the server responded with a status of 400'. Did not investigate which endpoint — likely the suggest or autosave endpoint when payload is incomplete.", "affected_selectors": ["[data-testid='step1-what']"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/.screenshots/landing_v16.png",
+    "/app/.screenshots/dashboard_v16.png",
+    "/app/.screenshots/dashboard_row_v16.png",
+    "/app/.screenshots/step1_full_v16.png",
+    "/app/.screenshots/step5_v16.png"
+  ],
+  "computed_styles_verified": {
+    "body": {"bg": "rgb(9, 9, 11) ✓", "color": "rgb(243, 244, 246) ✓", "font": "Inter var ✓"},
+    "nav_glass": {"bg": "rgba(9, 9, 11, 0.72) ✓", "backdrop": "blur(12px) ✓", "border-bottom": "1px solid rgb(38, 42, 54) ✓"},
+    "card_brut": {"bg": "rgb(17, 17, 19) ✓", "border": "1px solid rgb(38, 42, 54) ✓", "radius": "8px ✓", "shadow": "none ✓"},
+    "btn_brut_disabled": {"bg": "rgb(27, 29, 35) ✓ surface-3", "color": "rgb(107, 114, 128) ✓ text-3", "cursor": "not-allowed ✓"},
+    "btn_brut_ENABLED": {"bg": "rgba(0,0,0,0) ✗ expected rgb(124,92,255)", "color": "rgb(243,244,246) ✓", "height": "36px ✓", "radius": "6px ✓"},
+    "btn_ghost": {"bg": "rgb(17, 17, 19) ✓", "border": "1px solid rgb(38, 42, 54) ✓", "radius": "6px ✓"},
+    "textarea_brut": {"bg": "rgb(22, 24, 29) ✓", "border": "1px solid rgb(38, 42, 54) ✓", "radius": "6px ✓"},
+    "textarea_brut_focus": {"border-color": "rgb(243,244,246) ✗ expected rgb(124,92,255)", "shadow": "rgba(124, 92, 255, 0.18) 0 0 0 3px ✓"},
+    "step_pipeline_active": {"bg": "rgba(124, 92, 255, 0.1) ✓", "border": "1px solid rgba(124, 92, 255, 0.35) ✓", "radius": "6px ✓"},
+    "marketing_pages_bg": "all four (/pricing /use-cases /how-it-works /case-studies) = rgb(9, 9, 11) ✓",
+    "css_vars_root": {"--accent": "253 100% 68% ✗ (should be #7C5CFF)", "--accent-2": "#6B4AE6 ✓", "--bg": "#09090B ✓", "--text": "#F3F4F6 ✓"}
+  },
+  "action_items": [
+    "FIX --accent variable collision in /app/frontend/src/index.css. Two options: (a) Keep the Bracket hex '#7C5CFF' value and rename the shadcn HSL fragment to a separate name like `--shadcn-accent: 253 100% 68%;` plus update any `hsl(var(--accent))` shadcn references in tailwind.config or component CSS to `hsl(var(--shadcn-accent))`. (b) Alternatively keep --accent in HSL fragment form and rewrite all Bracket rules from `background: var(--accent)` to `background: hsl(var(--accent))` — but option (a) is safer and lower-blast-radius. After fix verify: .btn-brut computed bg = rgb(124, 92, 255), .textarea-brut:focus border-color = rgb(124, 92, 255).",
+    "Confirm .liquid-glass class is still on the Step 1 OutputCard JSX (testid step1-framing-output). querySelector('.liquid-glass') returned null on /project/:id/flow — either the class was dropped or the card is wrapped in a different class.",
+    "Investigate the 400 error fired on Step 1 textarea input — likely an autosave/suggest endpoint failing for partial payloads. Non-blocking but noisy in console."
+  ],
+  "critical_code_review_comments": [
+    "Two :root blocks defining the same custom property (`--accent`) with different value formats is a maintenance footgun — any future contributor will hit this trap. Recommend isolating shadcn HSL fragments behind a `--sc-` namespace (e.g. `--sc-primary`, `--sc-accent`) to fully decouple from the Bracket design tokens.",
+    "Mixed value formats (hex `#7C5CFF` for Bracket tokens, HSL fragments for shadcn) means `var(--x)` is not interchangeable — every usage must be audited. Consider linting custom property naming for sanity.",
+    "index.css is 475 lines and growing — fine for now but the legacy alias bloat (`.btn-brut`, `.card-brut`, `.liquid-glass`, `.clay`, `.clay-signal`, `.story-rail`, etc.) suggests the next refactor should delete legacy class names from JSX in favor of the new Linear-named utilities, not just remap them in CSS."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "70% — 7 of 10 visual-regression checks pass; 3 fail (all caused by one root cause: --accent variable shadowing)"},
+  "test_credentials": "Guest path: click [data-testid=login-guest-btn] on /login → lands on /app.",
+  "seed_data_creation": "Created 1 guest-scoped project 'TEST_Linear Smoke' via Dashboard new-project input under the guest session for this iteration.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "After main agent applies the --accent variable fix, retest only these probes: (1) `.btn-brut` enabled computed background should be rgb(124, 92, 255); easiest probe is the dashboard 'New project' button once an input is non-empty, or the landing 'Start a project' anchor. (2) `.textarea-brut` focus should give border-color rgb(124, 92, 255). (3) `.suggest-chip` should show non-transparent bg + radius. Everything else in iteration_16 already passes — Body bg/color/font, nav .glass, .card-brut, .btn-ghost, .textarea-brut idle, .step-pipeline active styles, marketing pages, disabled CTAs, Step nav 1..5 — all confirmed Linear-spec compliant.",
+  "rca of the issue": "ROOT CAUSE: /app/frontend/src/index.css lines 9-31 declare the Bracket design tokens including `--accent: #7C5CFF`. Lines 33-50 declare the shadcn semantic vars in HSL-fragment format (intended to be used as `hsl(var(--accent))` ), redeclaring `--accent: 253 100% 68%`. Both blocks are inside :root, so the second declaration wins per CSS cascade. As a result, every rule of form `background: var(--accent)` or `border-color: var(--accent)` resolves to the invalid value `253 100% 68%` and falls back to the property's initial value (transparent / currentColor). REPRODUCTION: `getComputedStyle(document.documentElement).getPropertyValue('--accent')` returns '253 100% 68%' instead of '#7C5CFF'. FIX: rename one of the two `--accent` declarations. Lowest-blast-radius patch is to namespace the shadcn HSL fragments (e.g. prefix with `--sc-`) and update any tailwind.config or shadcn component CSS that consumes them via `hsl(var(--accent))`. After fix, .btn-brut, .btn-brut:hover (var(--accent-2) is unaffected, already hex), .textarea-brut:focus, .suggest-chip:hover, .conf-ribbon text-color and any other accent-driven rules will render violet as specified."
+}

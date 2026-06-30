@@ -5,39 +5,49 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#0A0A0A",
-        paper: "#F4F4F0",
-        chalk: "#FFFFFF",
-        muted: "#525252",
-        faint: "#D4D4D0",
-        signal: "#0033FF",
-        signalHover: "#0029CC",
-        danger: "#FF331F",
-        safe: "#0A9B5C",
-        background: "#F4F4F0",
-        foreground: "#0A0A0A",
-        border: "#0A0A0A",
-        input: "#0A0A0A",
-        ring: "#0033FF",
-        primary: { DEFAULT: "#0A0A0A", foreground: "#FFFFFF" },
-        secondary: { DEFAULT: "#F4F4F0", foreground: "#0A0A0A" },
-        destructive: { DEFAULT: "#FF331F", foreground: "#FFFFFF" },
-        accent: { DEFAULT: "#0033FF", foreground: "#FFFFFF" },
-        popover: { DEFAULT: "#FFFFFF", foreground: "#0A0A0A" },
-        card: { DEFAULT: "#FFFFFF", foreground: "#0A0A0A" },
-        muted_: { DEFAULT: "#F4F4F0", foreground: "#525252" },
+        // Bracket × Linear dark tokens (semantic, not literal)
+        // The legacy class names (bg-paper, text-ink, border-ink, etc.) are
+        // remapped to dark surfaces so every existing className adopts the
+        // new theme without JSX changes.
+        ink:    "#F3F4F6",  // legacy "text-ink" / "bg-ink" → now primary text / elevated surface
+        paper:  "#09090B",  // legacy page background → near-black
+        chalk:  "#16181D",  // legacy "white" surface → secondary surface
+        muted:  "#9CA3AF",  // secondary text
+        faint:  "#6B7280",  // muted text
+        signal: "#7C5CFF",  // accent (violet, replaces blue)
+        signalHover: "#6B4AE6",
+        danger: "#EF4444",
+        safe:   "#22C55E",
+        background: "#09090B",
+        foreground: "#F3F4F6",
+        border:     "#262A36",
+        input:      "#16181D",
+        ring:       "#7C5CFF",
+        primary:     { DEFAULT: "#F3F4F6", foreground: "#09090B" },
+        secondary:   { DEFAULT: "#16181D", foreground: "#F3F4F6" },
+        destructive: { DEFAULT: "#EF4444", foreground: "#F3F4F6" },
+        accent:      { DEFAULT: "#7C5CFF", foreground: "#F3F4F6" },
+        popover:     { DEFAULT: "#1B1D23", foreground: "#F3F4F6" },
+        card:        { DEFAULT: "#111113", foreground: "#F3F4F6" },
+        muted_:      { DEFAULT: "#1B1D23", foreground: "#9CA3AF" },
+        // Linear-style surface scale (use in any new code instead of legacy names)
+        surface:   "#111113",
+        surface2:  "#16181D",
+        surface3:  "#1B1D23",
+        hairline:  "#262A36",
       },
       fontFamily: {
-        display: ["'Cabinet Grotesk'", "'Archivo'", "'Inter'", "sans-serif"],
-        body: ["'Manrope'", "'Inter'", "sans-serif"],
-        mono: ["'JetBrains Mono'", "ui-monospace", "monospace"],
+        display: ["'Inter Variable'", "'Inter'", "sans-serif"],
+        body:    ["'Inter Variable'", "'Inter'", "sans-serif"],
+        mono:    ["'JetBrains Mono'", "ui-monospace", "monospace"],
       },
       borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "8px", lg: "10px", xl: "14px", "2xl": "18px" },
       boxShadow: {
-        brut: "4px 4px 0px #0A0A0A",
-        brutLg: "8px 8px 0px #0A0A0A",
-        brutBlue: "4px 4px 0px #0033FF",
-        brutDanger: "4px 4px 0px #FF331F",
+        // Replace all hard brutalist shadows with the new soft Linear stack
+        brut:       "0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6)",
+        brutLg:     "0 2px 4px rgba(0,0,0,0.45), 0 18px 40px -16px rgba(0,0,0,0.7)",
+        brutBlue:   "0 1px 2px rgba(0,0,0,0.4), 0 10px 28px -12px rgba(124,92,255,0.35)",
+        brutDanger: "0 1px 2px rgba(0,0,0,0.4), 0 10px 28px -12px rgba(239,68,68,0.35)",
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },
@@ -49,7 +59,7 @@ module.exports = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-up": "fade-up 0.6s cubic-bezier(0.2,0.8,0.2,1) both",
+        "fade-up": "fade-up 0.45s cubic-bezier(0.16,1,0.3,1) both",
         marquee: "marquee 38s linear infinite",
         blink: "blink 1s steps(2, start) infinite",
       },
