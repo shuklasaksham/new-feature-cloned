@@ -254,3 +254,9 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 1. Add Playwright coverage for ProjectDocument owner-reply UI and Claim page (orphan-project setup).
 2. Enforce OTP cooldown server-side.
 3. Consider breaking `ProjectFlow.jsx` (>1600 lines) into per-step child components.
+
+- 2026-07-01 — **Iteration 20 — Admin analytics dashboard** (verified iteration_19):
+  - New endpoint `GET /api/admin/analytics` returns a single aggregated payload: KPIs (total users, new-users-7d, total projects, locked, share-accept rate, avg steps), daily new-user + project series (30 days), status distribution, step-drop-off funnel, cycle-time-per-user scatter data, top-10 leaderboard, share/review funnel, and a 7×24 activity heatmap of project creations over the last 90 days. Guarded by `auth_current_admin` — non-admins receive 404.
+  - New page `AdminAnalytics.jsx` renders on the default tab of `/admin` using recharts: area/line charts for daily series, donut for status, bar chart for step funnel + share funnel, jittered scatter for cycle time by user (mirrors reference image), horizontal bar leaderboard, and a custom SVG heatmap. Dark theme (`#0F1014` cards, `#2E5BFF` blue accent, dashed `#1E2230` grid, monospace axes).
+  - `AdminDashboard.jsx` now has a tab switcher (`ANALYTICS` default, `USERS` lazy-loaded). All existing user-management features preserved.
+  - Verified by `testing_agent_v3_fork` iteration_19 — backend 6/6, frontend all 8 charts + 6 KPIs render with valid SVG (child counts 50–748), tabs work, regression clean, 404 on non-admin access confirmed.
