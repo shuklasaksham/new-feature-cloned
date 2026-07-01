@@ -1,0 +1,47 @@
+{
+  "summary": "Iteration 21 — Admin visual refresh verified. /admin now renders inside AppShell (collapsible Bracket sidebar with Dashboard/Settings/FAQ/Admin[active]). Section-label 'Admin console' + t-hero 'Bracket, at a glance.' + muted subtitle render exactly as spec. Tabs (admin-tab-analytics, admin-tab-users) switch content and use --accent border-bottom on active. Analytics: 6 KPI cards + 7 recharts SVGs rendered, 14 card-brut containers, Refresh button uses .btn-ghost. Users: card-brut list, search works, admin pill uses --accent tint, Reset PW + VIEW buttons render on rows. Project detail modal opens, uses card-brut, closes correctly via ESC + backdrop + X. Reset password modal uses card-brut with section-label 'Reset password' + btn-brut/btn-ghost. Regression clean: /admin/login has NO sidebar (standalone), /app dashboard still has AppShell sidebar and renders. Backend endpoints (login, /admin/analytics, /admin/users) all 200.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "/admin (Analytics tab)",
+        "issues": [
+          "KPI labels render visually as ALL-CAPS ('TOTAL USERS', 'NEW · 7D', 'TOTAL PROJECTS', 'LOCKED', 'ACCEPT RATE', 'AVG STEPS') because AdminAnalytics.jsx applies `text-[11px] uppercase tracking-wider` to Kpi label <p> elements (source text is 'Total users' but text-transform:uppercase inverts it). Review request explicitly stated 'KPI labels use sentence case (\"Total users\" not \"TOTAL USERS\")'. Either drop the `uppercase` class from lines 77, 119, 321, 327 of AdminAnalytics.jsx to genuinely match sentence-case intent, or acknowledge the metadata-uppercase pattern is intentional. Same applies to section subtitle 'LIVE SNAPSHOT · UPDATED ...' and 'SIGNUPS PER DAY · LAST 30 DAYS' — visually uppercase.",
+          "Recharts emits a non-fatal warning: 'The width(-1) and height(-1) of chart should be greater than 0' (~14 times) during initial mount of ResponsiveContainer'd charts. Charts render fine after layout settles but the warning is noisy. Consider giving ResponsiveContainer a fixed aspect or explicit height."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_20.py"
+  ],
+  "action_items": [
+    "Decide: sentence-case KPI labels per PRD (remove `uppercase` class in AdminAnalytics.jsx lines 77, 119, 321, 327), OR update the request wording to reflect that visual uppercase is the site's small-label pattern. Current build renders 'TOTAL USERS' visually, which contradicts the stated intent.",
+    "(Optional) Silence Recharts 'width(-1)/height(-1)' warnings by setting explicit minWidth/minHeight or fixed height on ResponsiveContainer instances."
+  ],
+  "critical_code_review_comments": [
+    "AdminDashboard.jsx line 18-22 has legacy STATUS_COLOR map referencing text-chalk/text-signal classes that are no longer used anywhere (STATUS_TAG replaced it). Dead code — safe to delete.",
+    "AdminDashboard.jsx line 115-122 has an unused `logout` function followed by `void logout;` to silence the linter. Should be removed since sign-out is handled by AppShell now.",
+    "AdminDashboard.jsx useEffect (line 57-61) depends only on `tab` but references `users.length` and `error` — dependency array is incomplete (React would warn). Since the intent is fire-once-on-tab-activation it works, but consider a `hasLoadedRef` for clarity.",
+    "AdminAnalytics.jsx retains `uppercase tracking-wider` on KPI labels — directly contradicts the sentence-case commitment in the review request."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (3/3 endpoints, unchanged from iter20)", "frontend": "95% — all functional flows pass; 1 design-intent mismatch (uppercase labels)"},
+  "test_credentials": "Admin: support@use-bracket.com / Bracket@123 (via POST /api/auth/login setting httpOnly cookie).",
+  "seed_data_creation": "None; used pre-existing yashwork1303@gmail.com user + Clothing project.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Auth path: POST /api/auth/login via page.context.request sets the cookie, then navigate to /admin directly (AdminLogin default OTP mode makes UI login flakey). AppShell wraps /admin; /admin/login is intentionally NOT wrapped. Visual sentence-case is contradicted by CSS `uppercase` — if next iteration removes that class, verify screenshot to confirm 'Total users' now renders in proper case.",
+  "measurements": {
+    "kpi_cards": 6,
+    "charts_svgs": 7,
+    "card_brut_containers_on_analytics": 14,
+    "backend_login_status": 200,
+    "backend_admin_analytics_status": 200,
+    "backend_admin_users_status": 200,
+    "modal_close_methods_verified": ["ESC", "backdrop click", "X button"]
+  },
+  "rca_of_the_issue": "N/A — visual refresh landed correctly; only outstanding item is a sentence-case CSS override that contradicts the stated design intent."
+}

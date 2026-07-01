@@ -22,17 +22,19 @@ import {
 import { api, formatApiError } from "../lib/api";
 
 // ---- palette (dark aesthetic, matches reference image) --------------------
+// Palette aligned with site tokens (see index.css)
 const COLORS = {
-  accent: "#2E5BFF",       // primary blue
-  accent2: "#7C5CFF",      // violet (scatter cluster 2)
-  accent3: "#F97316",      // orange (scatter cluster 3)
+  accent: "#2E5BFF",       // --accent
+  accent2: "#7C5CFF",      // scatter cluster 2
+  accent3: "#F97316",      // scatter cluster 3
   positive: "#22C55E",
   danger: "#EF4444",
-  grid: "#1E2230",
-  axis: "#4B5563",
-  axisLabel: "#9CA3AF",
-  cardBg: "#0F1014",
-  cardBorder: "#1F232E",
+  grid: "rgba(255, 255, 255, 0.06)",   // matches --hairline
+  gridStrong: "rgba(255, 255, 255, 0.10)",
+  axis: "rgba(255, 255, 255, 0.20)",
+  axisLabel: "#A0A0AB",   // --text-2
+  cardBg: "#0E0F12",      // --surface
+  cardBorder: "rgba(255, 255, 255, 0.07)", // --hairline
 };
 const PIE_COLORS = ["#2E5BFF", "#7C5CFF", "#22C55E", "#F97316", "#EF4444", "#06B6D4"];
 
@@ -51,12 +53,12 @@ const CustomTooltip = ({ active, payload, label, unit = "" }) => {
       style={{
         background: "#0A0B0F",
         borderColor: COLORS.cardBorder,
-        color: "#E5E7EB",
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 11,
+        color: "#F7F7F8",
+        fontFamily: "'Poppins', sans-serif",
+        fontSize: 12,
       }}
     >
-      {label && <div style={{ opacity: 0.6, marginBottom: 4 }}>{label}</div>}
+      {label && <div style={{ opacity: 0.55, marginBottom: 4 }}>{label}</div>}
       {payload.map((p) => (
         <div key={p.dataKey} style={{ color: p.color }}>
           {p.name || p.dataKey}: {typeof p.value === "number" ? p.value.toLocaleString() : p.value}
@@ -67,27 +69,36 @@ const CustomTooltip = ({ active, payload, label, unit = "" }) => {
   );
 };
 
-// ---- KPI card -------------------------------------------------------------
+// ---- KPI card (uses site card-brut class for consistency) -----------------
 function Kpi({ label, value, unit = "", accent = false, testid }) {
   return (
-    <div
-      className="rounded-lg border px-4 py-4"
-      style={{ background: COLORS.cardBg, borderColor: COLORS.cardBorder }}
-      data-testid={testid}
-    >
-      <div className="mono-tag" style={{ color: COLORS.axisLabel }}>{label}</div>
+    <div className="card-brut px-4 py-4" data-testid={testid}>
+      <div
+        className="text-[11px] uppercase tracking-wider"
+        style={{ color: "var(--text-3)" }}
+      >
+        {label}
+      </div>
       <div
         className="mt-2 font-display"
         style={{
           fontSize: 30,
           lineHeight: 1,
-          color: accent ? COLORS.accent : "#F3F4F6",
+          color: accent ? "var(--accent)" : "var(--text)",
           letterSpacing: "-0.02em",
         }}
       >
         {typeof value === "number" ? value.toLocaleString() : value}
         {unit && (
-          <span style={{ fontSize: 14, color: COLORS.axisLabel, marginLeft: 6 }}>{unit}</span>
+          <span
+            style={{
+              fontSize: 14,
+              color: "var(--text-3)",
+              marginLeft: 6,
+            }}
+          >
+            {unit}
+          </span>
         )}
       </div>
     </div>
@@ -98,15 +109,14 @@ function Kpi({ label, value, unit = "", accent = false, testid }) {
 function Card({ title, subtitle, children, height = 260, className = "", testid }) {
   return (
     <div
-      className={`rounded-lg border p-4 sm:p-5 ${className}`}
-      style={{ background: COLORS.cardBg, borderColor: COLORS.cardBorder }}
+      className={`card-brut p-4 sm:p-5 ${className}`}
       data-testid={testid}
     >
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <h3 className="text-[13px] font-medium" style={{ color: "#E5E7EB" }}>{title}</h3>
+          <h3 className="text-[13px] font-medium" style={{ color: "var(--text)" }}>{title}</h3>
           {subtitle && (
-            <p className="mono-tag mt-0.5" style={{ color: COLORS.axisLabel }}>{subtitle}</p>
+            <p className="text-[11px] uppercase tracking-wider mt-0.5" style={{ color: "var(--text-3)" }}>{subtitle}</p>
           )}
         </div>
       </div>
@@ -131,7 +141,7 @@ function Heatmap({ data }) {
   const height = (cell + gap) * data.length + 24;
 
   const color = (v) => {
-    if (!v) return "#141724";
+    if (!v) return "rgba(255,255,255,0.04)";
     const t = Math.min(1, v / maxVal);
     // signal blue with alpha ramp
     const alpha = 0.18 + t * 0.82;
@@ -149,7 +159,7 @@ function Heatmap({ data }) {
             y={12}
             fill={COLORS.axisLabel}
             fontSize={9}
-            fontFamily="'JetBrains Mono', monospace"
+            fontFamily="'Poppins', sans-serif"
             textAnchor="middle"
             opacity={h % 3 === 0 ? 1 : 0}
           >
@@ -164,7 +174,7 @@ function Heatmap({ data }) {
               y={cell - 3}
               fill={COLORS.axisLabel}
               fontSize={10}
-              fontFamily="'JetBrains Mono', monospace"
+              fontFamily="'Poppins', sans-serif"
             >
               {row.day}
             </text>
@@ -233,12 +243,12 @@ function ScatterTooltip({ active, payload }) {
       style={{
         background: "#0A0B0F",
         borderColor: COLORS.cardBorder,
-        color: "#E5E7EB",
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: 11,
+        color: "var(--text)",
+        fontFamily: "'Poppins', sans-serif",
+        fontSize: 12,
       }}
     >
-      <div style={{ opacity: 0.7 }}>{p.user}</div>
+      <div style={{ opacity: 0.6 }}>{p.user}</div>
       {p.name && <div>{p.name}</div>}
       <div style={{ color: COLORS.accent }}>{p.y.toFixed(2)} days</div>
     </div>
@@ -276,8 +286,8 @@ export default function AdminAnalytics() {
   if (loading) {
     return (
       <div
-        className="flex items-center gap-2 mt-8"
-        style={{ color: COLORS.axisLabel, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}
+        className="flex items-center gap-2 mt-8 text-[13px]"
+        style={{ color: "var(--text-3)" }}
         data-testid="analytics-loading"
       >
         <Loader2 size={14} className="animate-spin" /> Loading analytics…
@@ -286,7 +296,7 @@ export default function AdminAnalytics() {
   }
   if (error) {
     return (
-      <p className="mono-tag mt-8" style={{ color: COLORS.danger }} data-testid="analytics-error">
+      <p className="text-[13px] mt-8" style={{ color: "var(--danger, #EF4444)" }} data-testid="analytics-error">
         {error}
       </p>
     );
@@ -298,7 +308,7 @@ export default function AdminAnalytics() {
   const gridProps = { strokeDasharray: "3 3", stroke: COLORS.grid, vertical: false };
   const axisProps = {
     stroke: COLORS.axis,
-    tick: { fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'JetBrains Mono', monospace" },
+    tick: { fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'Poppins', sans-serif" },
     tickLine: false,
     axisLine: false,
   };
@@ -308,17 +318,13 @@ export default function AdminAnalytics() {
       {/* Header row */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl sm:text-3xl leading-none" style={{ color: "#F3F4F6" }}>
-            Analytics
-          </h2>
-          <p className="mono-tag mt-1" style={{ color: COLORS.axisLabel }}>
+          <p className="text-[11px] uppercase tracking-wider" style={{ color: "var(--text-3)" }}>
             Live snapshot · updated {new Date(data.generated_at).toLocaleTimeString()}
           </p>
         </div>
         <button
           onClick={load}
-          className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-[11px] font-mono uppercase tracking-wider"
-          style={{ borderColor: COLORS.cardBorder, color: "#E5E7EB", background: COLORS.cardBg }}
+          className="btn-ghost text-[11px] uppercase tracking-wider inline-flex items-center gap-2"
           data-testid="analytics-refresh"
         >
           <RefreshCcw size={12} /> Refresh
@@ -327,12 +333,12 @@ export default function AdminAnalytics() {
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" data-testid="analytics-kpis">
-        <Kpi label="TOTAL USERS" value={kpis.total_users} testid="kpi-total-users" />
-        <Kpi label="NEW · 7D" value={kpis.new_users_7d} accent testid="kpi-new-users" />
-        <Kpi label="TOTAL PROJECTS" value={kpis.total_projects} testid="kpi-total-projects" />
-        <Kpi label="LOCKED" value={kpis.locked_projects} testid="kpi-locked" />
-        <Kpi label="ACCEPT RATE" value={kpis.share_accept_rate} unit="%" testid="kpi-accept-rate" />
-        <Kpi label="AVG STEPS" value={kpis.avg_steps} unit="/5" testid="kpi-avg-steps" />
+        <Kpi label="Total users" value={kpis.total_users} testid="kpi-total-users" />
+        <Kpi label="New · 7d" value={kpis.new_users_7d} accent testid="kpi-new-users" />
+        <Kpi label="Total projects" value={kpis.total_projects} testid="kpi-total-projects" />
+        <Kpi label="Locked" value={kpis.locked_projects} testid="kpi-locked" />
+        <Kpi label="Accept rate" value={kpis.share_accept_rate} unit="%" testid="kpi-accept-rate" />
+        <Kpi label="Avg steps" value={kpis.avg_steps} unit="/5" testid="kpi-avg-steps" />
       </div>
 
       {/* Row 1: two line/area charts */}
@@ -417,12 +423,12 @@ export default function AdminAnalytics() {
           </ResponsiveContainer>
           <div className="mt-2 flex flex-wrap gap-3">
             {status_distribution.map((s, i) => (
-              <div key={s.name} className="flex items-center gap-1.5 mono-tag" style={{ color: "#E5E7EB" }}>
+              <div key={s.name} className="flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-2)" }}>
                 <span
                   className="inline-block rounded-full"
                   style={{ width: 8, height: 8, background: PIE_COLORS[i % PIE_COLORS.length] }}
                 />
-                {s.name.toUpperCase()} · {s.value}
+                {s.name} · {s.value}
               </div>
             ))}
           </div>
@@ -444,7 +450,7 @@ export default function AdminAnalytics() {
       {/* Row 3: cycle time scatter (full width) */}
       <Card title="Cycle time by user" subtitle="Days from project creation → locked (for locked projects only)" height={340} testid="chart-cycle-time">
         {scatterPrepped.series.length === 0 ? (
-          <div className="flex items-center justify-center h-full mono-tag" style={{ color: COLORS.axisLabel }}>
+          <div className="flex items-center justify-center h-full text-[12px]" style={{ color: "var(--text-3)" }}>
             No locked projects yet.
           </div>
         ) : (
@@ -463,7 +469,7 @@ export default function AdminAnalytics() {
                   return label.length > 14 ? label.slice(0, 12) + "…" : label;
                 }}
                 stroke={COLORS.axis}
-                tick={{ fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'JetBrains Mono', monospace" }}
+                tick={{ fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'Poppins', sans-serif" }}
                 tickLine={false}
                 axisLine={false}
               />
@@ -488,7 +494,7 @@ export default function AdminAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card title="Top users" subtitle="By project count" height={300} testid="chart-top-users">
           {top_users.length === 0 ? (
-            <div className="flex items-center justify-center h-full mono-tag" style={{ color: COLORS.axisLabel }}>
+            <div className="flex items-center justify-center h-full text-[12px]" style={{ color: "var(--text-3)" }}>
               No users yet.
             </div>
           ) : (

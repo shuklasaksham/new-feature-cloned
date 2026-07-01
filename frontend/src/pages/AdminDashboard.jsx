@@ -1,13 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Loader2,
   Search,
-  ShieldAlert,
   ChevronRight,
   ChevronDown,
   KeyRound,
-  LogOut,
   X as XIcon,
   Check,
   BarChart3,
@@ -15,7 +12,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
-import { useAuth } from "../lib/AuthContext";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminProjectDetailModal from "./AdminProjectDetailModal";
 
@@ -24,10 +20,15 @@ const STATUS_COLOR = {
   in_progress: "text-chalk",
   locked: "text-signal",
 };
+// Semantic pill tags matching site palette (accent + surface tokens)
+const STATUS_TAG = {
+  draft:       "bg-[var(--surface-3)] text-[var(--text-3)]",
+  in_progress: "bg-[var(--accent)]/12 text-[var(--accent)]",
+  locked:      "bg-[color:rgb(34_197_94/0.12)] text-[color:rgb(74_222_128)]",
+  completed:   "bg-[color:rgb(34_197_94/0.12)] text-[color:rgb(74_222_128)]",
+};
 
 export default function AdminDashboard() {
-  const { user, refresh } = useAuth();
-  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -115,208 +116,168 @@ export default function AdminDashboard() {
     try {
       await api.post("/auth/logout");
     } catch {
-      // Best-effort logout — proceed to clear local state and bounce to
-      // the admin login page even if the server is unreachable.
-    }
-    await refresh();
-    navigate("/admin/login", { replace: true });
-  };
-
-  // Self-serve set/change own password
-  const [showSetPw, setShowSetPw] = useState(false);
-  const [myPw, setMyPw] = useState("");
-  const [settingPw, setSettingPw] = useState(false);
-  const setMyPassword = async (e) => {
-    e?.preventDefault?.();
-    if (myPw.length < 8) {
-      toast.error("Min 8 characters.");
-      return;
-    }
-    setSettingPw(true);
-    try {
-      await api.post("/auth/password/set", { password: myPw });
-      await refresh();
-      toast.success("Password updated. Use it next time.");
-      setShowSetPw(false);
-      setMyPw("");
-    } catch (err) {
-      toast.error(formatApiError(err));
-    } finally {
-      setSettingPw(false);
+      // no-op
     }
   };
+  void logout;
 
   return (
-    <div className="min-h-screen bg-ink text-chalk" data-testid="admin-dashboard-page">
-      <header className="border-b border-chalk/15">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-8 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-signal">
-            <ShieldAlert size={14} />
-            <span className="mono-tag">BRACKET · ADMIN CONSOLE</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="mono-tag text-chalk/60 hidden sm:inline" data-testid="admin-current">
-              {user?.email}
-            </span>
-            <button
-              onClick={() => setShowSetPw(true)}
-              className="px-3 py-2 border border-chalk/30 mono-tag hover:bg-chalk hover:text-ink inline-flex items-center gap-2"
-              data-testid="admin-set-my-pw"
-              title={user?.has_password ? "Change your password" : "Set a password"}
-            >
-              <KeyRound size={12} /> {user?.has_password ? "CHANGE PW" : "SET PW"}
-            </button>
-            <button
-              onClick={logout}
-              className="px-3 py-2 border border-chalk/30 mono-tag hover:bg-chalk hover:text-ink inline-flex items-center gap-2"
-              data-testid="admin-logout"
-            >
-              <LogOut size={12} /> SIGN OUT
-            </button>
+    <div data-testid="admin-dashboard-page">
+      <main className="max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14 page-enter">
+        {/* Page intro — matches /app dashboard */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <span className="section-label"><span className="dot" />Admin console</span>
+            <h1 className="t-hero mt-4">
+              Bracket, at a glance.
+            </h1>
+            <p className="mt-2 text-[14px] text-[var(--text-2)]">
+              Everyone using Bracket · every project · every decision.
+            </p>
           </div>
         </div>
-      </header>
 
-      <main className="max-w-[1200px] mx-auto px-5 sm:px-8 py-8">
         {/* Tabs */}
-        <div className="flex items-center gap-1 border-b border-chalk/15 mb-6" data-testid="admin-tabs">
+        <div className="mt-8 flex items-center gap-1 border-b border-[var(--hairline)]" data-testid="admin-tabs">
           <button
             type="button"
             onClick={() => setTab("analytics")}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 mono-tag transition-colors ${
+            className={`inline-flex items-center gap-2 px-4 py-2.5 text-[13px] transition-colors ${
               tab === "analytics"
-                ? "text-signal border-b-2 border-signal -mb-px"
-                : "text-chalk/50 hover:text-chalk"
+                ? "text-[var(--text)] border-b-2 border-[var(--accent)] -mb-px"
+                : "text-[var(--text-3)] hover:text-[var(--text)]"
             }`}
             data-testid="admin-tab-analytics"
           >
-            <BarChart3 size={13} /> ANALYTICS
+            <BarChart3 size={14} /> Analytics
           </button>
           <button
             type="button"
             onClick={() => setTab("users")}
-            className={`inline-flex items-center gap-2 px-4 py-2.5 mono-tag transition-colors ${
+            className={`inline-flex items-center gap-2 px-4 py-2.5 text-[13px] transition-colors ${
               tab === "users"
-                ? "text-signal border-b-2 border-signal -mb-px"
-                : "text-chalk/50 hover:text-chalk"
+                ? "text-[var(--text)] border-b-2 border-[var(--accent)] -mb-px"
+                : "text-[var(--text-3)] hover:text-[var(--text)]"
             }`}
             data-testid="admin-tab-users"
           >
-            <Users size={13} /> USERS
+            <Users size={14} /> Users
           </button>
         </div>
 
-        {tab === "analytics" && <AdminAnalytics />}
+        {tab === "analytics" && <div className="mt-6"><AdminAnalytics /></div>}
 
         {tab === "users" && (
         <>
-        <h1 className="font-display text-4xl sm:text-5xl uppercase leading-[0.95]">
-          All users <span className="text-signal">— {users.length}</span>
-        </h1>
-        <p className="mono-tag text-chalk/60 mt-2">
-          Total projects: {users.reduce((acc, u) => acc + (u.project_count || 0), 0)}
-        </p>
+        <div className="mt-6 flex items-baseline gap-3">
+          <h2 className="font-display text-2xl sm:text-3xl leading-none">
+            All users <span className="text-[var(--accent)]">— {users.length}</span>
+          </h2>
+          <span className="text-[12px] text-[var(--text-3)]">
+            · {users.reduce((acc, u) => acc + (u.project_count || 0), 0)} projects total
+          </span>
+        </div>
 
         {/* Search */}
-        <div className="mt-6 flex items-center gap-2 border-b border-chalk/30 focus-within:border-signal max-w-md">
-          <Search size={14} className="text-chalk/40" />
+        <div className="mt-6 flex items-center gap-2 border-b border-[var(--hairline)] focus-within:border-[var(--accent)] max-w-md transition-colors">
+          <Search size={14} className="text-[var(--text-3)]" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search email / name / designation"
-            className="flex-1 bg-transparent outline-none py-2 font-mono text-sm placeholder-chalk/30"
+            placeholder="Search email · name · designation"
+            className="flex-1 bg-transparent outline-none py-2 text-[13px] placeholder-[var(--text-3)]"
             data-testid="admin-search-input"
           />
           {q && (
-            <button onClick={() => setQ("")} className="text-chalk/40 hover:text-chalk" data-testid="admin-search-clear">
+            <button onClick={() => setQ("")} className="text-[var(--text-3)] hover:text-[var(--text)]" data-testid="admin-search-clear">
               <XIcon size={14} />
             </button>
           )}
         </div>
 
         {loading && (
-          <div className="mt-10 flex items-center gap-2 text-chalk/60">
+          <div className="mt-8 flex items-center gap-2 text-[13px] text-[var(--text-3)]">
             <Loader2 size={14} className="animate-spin" /> Loading users…
           </div>
         )}
 
         {error && !loading && (
-          <p className="mt-8 mono-tag text-danger" data-testid="admin-error">{error}</p>
+          <p className="mt-8 text-[13px] text-[var(--danger)]" data-testid="admin-error">{error}</p>
         )}
 
         {!loading && !error && (
-          <ul className="mt-6 border border-chalk/20 divide-y divide-chalk/15" data-testid="admin-user-list">
+          <ul className="card-brut mt-6 overflow-hidden divide-y divide-[var(--hairline)]" data-testid="admin-user-list">
             {filtered.map((u) => {
               const isOpen = openId === u.user_id;
               const projects = openProjects[u.user_id];
               return (
                 <li key={u.user_id} data-testid={`admin-user-row-${u.user_id}`}>
                   <div
-                    className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-chalk/5 cursor-pointer"
+                    className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-[var(--surface-2)] cursor-pointer transition-colors"
                     onClick={() => toggle(u)}
                   >
                     <button
-                      className="shrink-0 text-chalk/50"
+                      className="shrink-0 text-[var(--text-3)]"
                       aria-label={isOpen ? "Collapse" : "Expand"}
                       data-testid={`admin-user-toggle-${u.user_id}`}
                     >
                       {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="font-mono text-sm truncate">
+                      <p className="text-[13px] truncate">
                         {u.email}
                         {u.is_admin && (
-                          <span className="ml-2 mono-tag text-signal">ADMIN</span>
+                          <span className="ml-2 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--accent)]/15 text-[var(--accent)]">Admin</span>
                         )}
                       </p>
-                      <p className="mono-tag text-chalk/50 mt-1 truncate">
+                      <p className="text-[12px] text-[var(--text-3)] mt-0.5 truncate">
                         {u.name || "—"}
                         {u.designation ? ` · ${u.designation}` : ""}
                         {u.created_at ? ` · joined ${u.created_at.slice(0, 10)}` : ""}
                       </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="mono-tag text-chalk/60">
+                      <span className="text-[12px] text-[var(--text-3)]">
                         {u.project_count} project{u.project_count === 1 ? "" : "s"}
                       </span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setResetTarget(u); }}
-                        className="px-3 py-1.5 border border-chalk/30 mono-tag hover:bg-signal hover:border-signal hover:text-chalk inline-flex items-center gap-2"
+                        className="px-3 py-1.5 border border-[var(--hairline)] rounded text-[11px] text-[var(--text-2)] hover:border-[var(--accent)] hover:text-[var(--accent)] inline-flex items-center gap-1.5 transition-colors"
                         data-testid={`admin-reset-pw-${u.user_id}`}
                       >
-                        <KeyRound size={11} /> RESET PW
+                        <KeyRound size={11} /> Reset PW
                       </button>
                     </div>
                   </div>
 
                   {isOpen && (
-                    <div className="px-5 sm:px-12 pb-4 bg-chalk/[0.03]" data-testid={`admin-user-projects-${u.user_id}`}>
+                    <div className="px-5 sm:px-12 pb-4 pt-1 bg-[var(--surface-2)]/60" data-testid={`admin-user-projects-${u.user_id}`}>
                       {loadingProjects[u.user_id] ? (
-                        <p className="mono-tag text-chalk/40 py-3">Loading projects…</p>
+                        <p className="text-[12px] text-[var(--text-3)] py-3">Loading projects…</p>
                       ) : !projects || projects.length === 0 ? (
-                        <p className="mono-tag text-chalk/40 py-3">No projects.</p>
+                        <p className="text-[12px] text-[var(--text-3)] py-3">No projects.</p>
                       ) : (
-                        <ul className="divide-y divide-chalk/10">
+                        <ul className="divide-y divide-[var(--hairline)]">
                           {projects.map((p) => (
-                            <li key={p.id} className="py-2 flex items-center justify-between gap-3">
+                            <li key={p.id} className="py-2.5 flex items-center justify-between gap-3">
                               <div className="flex-1 min-w-0">
-                                <p className="font-mono text-sm truncate">{p.name}</p>
-                                <p className="mono-tag text-chalk/40 mt-0.5">
-                                  STEP {p.step}/5 · UPDATED {(p.updated_at || "").slice(0, 10)}
-                                  {p.share_status && p.share_status !== "none" ? ` · CLIENT ${p.share_status.toUpperCase()}` : ""}
+                                <p className="text-[13px] truncate">{p.name}</p>
+                                <p className="text-[11px] text-[var(--text-3)] mt-0.5">
+                                  Step {p.step}/5 · updated {(p.updated_at || "").slice(0, 10)}
+                                  {p.share_status && p.share_status !== "none" ? ` · client ${p.share_status}` : ""}
                                 </p>
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className={`mono-tag ${STATUS_COLOR[p.status] || "text-chalk/60"}`}>
-                                  {(p.status || "").toUpperCase()}
+                                <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded ${STATUS_TAG[p.status] || "bg-[var(--surface-3)] text-[var(--text-3)]"}`}>
+                                  {p.status || "—"}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => setDetailProjectId(p.id)}
-                                  className="px-2.5 py-1 border border-chalk/25 mono-tag hover:bg-chalk/10"
+                                  className="px-2.5 py-1 border border-[var(--hairline)] rounded text-[11px] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors"
                                   data-testid={`admin-project-view-${p.id}`}
                                 >
-                                  VIEW
+                                  View
                                 </button>
                               </div>
                             </li>
@@ -329,7 +290,7 @@ export default function AdminDashboard() {
               );
             })}
             {filtered.length === 0 && (
-              <li className="px-5 py-8 mono-tag text-chalk/40">No users match &quot;{q}&quot;.</li>
+              <li className="px-5 py-8 text-[12px] text-[var(--text-3)]">No users match &quot;{q}&quot;.</li>
             )}
           </ul>
         )}
@@ -340,28 +301,28 @@ export default function AdminDashboard() {
       {/* Reset password modal */}
       {resetTarget && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-5 z-50"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-5 z-[60]"
           onClick={() => !resetting && setResetTarget(null)}
           data-testid="admin-reset-modal"
         >
           <form
             onClick={(e) => e.stopPropagation()}
             onSubmit={doReset}
-            className="w-full max-w-md bg-ink text-chalk border border-chalk/30 p-6 sm:p-8"
+            className="card-brut w-full max-w-md p-6 sm:p-8"
           >
             <div className="flex items-center justify-between">
-              <span className="mono-tag text-signal">{"{ reset password }"}</span>
-              <button type="button" onClick={() => setResetTarget(null)} className="text-chalk/50 hover:text-chalk" data-testid="admin-reset-close">
+              <span className="section-label"><span className="dot" />Reset password</span>
+              <button type="button" onClick={() => setResetTarget(null)} className="text-[var(--text-3)] hover:text-[var(--text)]" data-testid="admin-reset-close">
                 <XIcon size={16} />
               </button>
             </div>
-            <p className="font-mono text-sm mt-4 break-all">{resetTarget.email}</p>
-            <p className="mono-tag text-chalk/50 mt-1">
+            <p className="text-[14px] mt-4 break-all">{resetTarget.email}</p>
+            <p className="text-[12px] text-[var(--text-3)] mt-1">
               Setting a new password will sign the user out of all sessions.
             </p>
 
             <label className="block mt-5">
-              <span className="mono-tag text-chalk/70">NEW PASSWORD (min 8)</span>
+              <span className="text-[11px] uppercase tracking-wider text-[var(--text-3)]">New password (min 8)</span>
               <input
                 type="text"
                 autoFocus
@@ -369,7 +330,7 @@ export default function AdminDashboard() {
                 onChange={(e) => setResetPw(e.target.value)}
                 minLength={8}
                 maxLength={128}
-                className="mt-2 w-full bg-transparent border-b-2 border-chalk/40 focus:border-signal outline-none py-2 font-mono text-sm"
+                className="mt-2 w-full bg-transparent border-b-2 border-[var(--hairline)] focus:border-[var(--accent)] outline-none py-2 text-[14px] transition-colors"
                 data-testid="admin-reset-pw-input"
               />
             </label>
@@ -379,81 +340,19 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={() => setResetTarget(null)}
                 disabled={resetting}
-                className="px-3 py-2 border border-chalk/30 mono-tag hover:bg-chalk hover:text-ink"
+                className="btn-ghost"
                 data-testid="admin-reset-cancel"
               >
-                CANCEL
+                Cancel
               </button>
               <button
                 type="submit"
                 disabled={resetting || resetPw.length < 8}
-                className="px-3 py-2 bg-signal border border-signal mono-tag disabled:opacity-40 inline-flex items-center gap-2"
+                className="btn-brut disabled:opacity-40 inline-flex items-center gap-2"
                 data-testid="admin-reset-confirm"
               >
                 {resetting ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                {resetting ? "RESETTING…" : "RESET PASSWORD"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-      {/* Set/change MY password modal */}
-      {showSetPw && (
-        <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-5 z-50"
-          onClick={() => !settingPw && setShowSetPw(false)}
-          data-testid="admin-self-pw-modal"
-        >
-          <form
-            onClick={(e) => e.stopPropagation()}
-            onSubmit={setMyPassword}
-            className="w-full max-w-md bg-ink text-chalk border border-chalk/30 p-6 sm:p-8"
-          >
-            <div className="flex items-center justify-between">
-              <span className="mono-tag text-signal">
-                {user?.has_password ? "{ change your password }" : "{ set a password }"}
-              </span>
-              <button type="button" onClick={() => setShowSetPw(false)} className="text-chalk/50 hover:text-chalk" data-testid="admin-self-pw-close">
-                <XIcon size={16} />
-              </button>
-            </div>
-            <p className="font-mono text-sm mt-4 break-all">{user?.email}</p>
-            <p className="mono-tag text-chalk/50 mt-1">
-              {user?.has_password
-                ? "Replaces your current password. You stay signed in."
-                : "Enables password sign-in at /admin/login (otherwise you can only enter via OTP)."}
-            </p>
-            <label className="block mt-5">
-              <span className="mono-tag text-chalk/70">NEW PASSWORD (min 8)</span>
-              <input
-                type="text"
-                autoFocus
-                value={myPw}
-                onChange={(e) => setMyPw(e.target.value)}
-                minLength={8}
-                maxLength={128}
-                className="mt-2 w-full bg-transparent border-b-2 border-chalk/40 focus:border-signal outline-none py-2 font-mono text-sm"
-                data-testid="admin-self-pw-input"
-              />
-            </label>
-            <div className="mt-6 flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={() => setShowSetPw(false)}
-                disabled={settingPw}
-                className="px-3 py-2 border border-chalk/30 mono-tag hover:bg-chalk hover:text-ink"
-                data-testid="admin-self-pw-cancel"
-              >
-                CANCEL
-              </button>
-              <button
-                type="submit"
-                disabled={settingPw || myPw.length < 8}
-                className="px-3 py-2 bg-signal border border-signal mono-tag disabled:opacity-40 inline-flex items-center gap-2"
-                data-testid="admin-self-pw-confirm"
-              >
-                {settingPw ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                {settingPw ? "SAVING…" : "SAVE PASSWORD"}
+                {resetting ? "Resetting…" : "Reset password"}
               </button>
             </div>
           </form>

@@ -63,15 +63,15 @@ function renderRow(r, i) {
   if (r.kind === "label") {
     return React.createElement(
       "div",
-      { key: i, className: "mono-tag text-chalk/50 pt-2 first:pt-0", style: pad },
+      { key: i, className: "text-[11px] uppercase tracking-wider pt-2 first:pt-0", style: { ...pad, color: "var(--text-3)" } },
       r.text,
     );
   }
   if (r.kind === "bullet") {
     return React.createElement(
       "div",
-      { key: i, className: "flex gap-2", style: pad },
-      React.createElement("span", { className: "text-chalk/40 shrink-0" }, "·"),
+      { key: i, className: "flex gap-2 text-[13px]", style: pad },
+      React.createElement("span", { className: "shrink-0", style: { color: "var(--text-4, #52525B)" } }, "·"),
       React.createElement(
         "span",
         { className: "whitespace-pre-wrap break-words" },
@@ -82,13 +82,13 @@ function renderRow(r, i) {
   if (r.kind === "sep") {
     return React.createElement(
       "div",
-      { key: i, className: "mono-tag text-chalk/40 italic", style: pad },
+      { key: i, className: "text-[11px] italic", style: { ...pad, color: "var(--text-3)" } },
       r.text,
     );
   }
   return React.createElement(
     "div",
-    { key: i, className: "whitespace-pre-wrap break-words", style: pad },
+    { key: i, className: "whitespace-pre-wrap break-words text-[13px]", style: pad },
     r.text,
   );
 }
@@ -100,7 +100,7 @@ export function FlatValue(props) {
   if (rows.length === 0) return null;
   return React.createElement(
     "div",
-    { className: "space-y-1 text-sm text-chalk/85 leading-relaxed" },
+    { className: "space-y-1 leading-relaxed", style: { color: "var(--text)" } },
     rows.map(renderRow),
   );
 }
@@ -112,7 +112,7 @@ export function LabeledBlock(props) {
     null,
     React.createElement(
       "div",
-      { className: "mono-tag text-signal mb-1" },
+      { className: "text-[10px] uppercase tracking-wider mb-1", style: { color: "var(--accent)" } },
       props.label,
     ),
     React.createElement(FlatValue, { value: props.value }),
@@ -123,7 +123,8 @@ export function Section(props) {
   return React.createElement(
     "section",
     {
-      className: "border border-chalk/15 rounded-md p-4 sm:p-5",
+      className: "rounded-md p-4 sm:p-5",
+      style: { border: "1px solid var(--hairline)", background: "var(--surface-2)" },
       "data-testid": props.testid,
     },
     React.createElement(
@@ -131,13 +132,13 @@ export function Section(props) {
       { className: "mb-3" },
       React.createElement(
         "h3",
-        { className: "font-display text-base text-chalk/95" },
+        { className: "font-display text-[15px]", style: { color: "var(--text)", letterSpacing: "-0.01em" } },
         props.title,
       ),
       props.subtitle &&
         React.createElement(
           "p",
-          { className: "mono-tag text-chalk/40 mt-0.5" },
+          { className: "text-[11px] uppercase tracking-wider mt-0.5", style: { color: "var(--text-3)" } },
           props.subtitle,
         ),
     ),

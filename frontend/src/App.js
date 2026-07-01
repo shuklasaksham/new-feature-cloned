@@ -70,7 +70,7 @@ export default function App() {
 
           {/* Hidden admin console — not linked from anywhere public */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
+          <Route path="/admin" element={<ProtectedAdminRoute><AppShell><AdminDashboard /></AppShell></ProtectedAdminRoute>} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

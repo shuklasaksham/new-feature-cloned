@@ -3,12 +3,6 @@ import { Loader2, X as XIcon, ExternalLink } from "lucide-react";
 import { api, formatApiError } from "../lib/api";
 import { Section, LabeledBlock, isEmpty } from "./adminDetailBits";
 
-const STATUS_COLOR = {
-  draft: "text-chalk/60",
-  in_progress: "text-chalk",
-  locked: "text-signal",
-};
-
 export default function AdminProjectDetailModal({ projectId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -51,18 +45,19 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
       data-testid="admin-project-detail-modal"
     >
       <div
-        className="w-full max-w-4xl bg-ink text-chalk border border-chalk/25 rounded-lg my-auto"
+        className="card-brut w-full max-w-4xl my-auto"
         onClick={(e) => e.stopPropagation()}
+        style={{ color: "var(--text)" }}
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-chalk/15 bg-ink/95 backdrop-blur">
+        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-[var(--hairline)] rounded-t-[12px]" style={{ background: "rgba(14, 15, 18, 0.95)", backdropFilter: "blur(8px)" }}>
           <div className="min-w-0 flex-1">
-            <div className="mono-tag text-signal">PROJECT DETAIL</div>
-            <h2 className="font-display text-xl sm:text-2xl truncate mt-1">
+            <span className="section-label"><span className="dot" />Project detail</span>
+            <h2 className="font-display text-xl sm:text-2xl truncate mt-2" style={{ letterSpacing: "-0.02em" }}>
               {p?.name || (loading ? "…" : "Untitled")}
             </h2>
             {p && (
-              <p className="mono-tag text-chalk/50 mt-1 truncate">
-                <span className={STATUS_COLOR[p.status] || ""}>
+              <p className="text-[12px] mt-1 truncate" style={{ color: "var(--text-3)" }}>
+                <span style={{ color: p.status === "locked" ? "var(--accent)" : "var(--text-2)" }}>
                   {(p.status || "").toUpperCase()}
                 </span>
                 {" · STEP "}{p.step ?? 0}{"/5"}
@@ -77,16 +72,17 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
                 href={`/project/${p.id}`}
                 target="_blank"
                 rel="noreferrer"
-                className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 border border-chalk/25 rounded mono-tag hover:bg-chalk/10"
+                className="btn-ghost hidden sm:inline-flex items-center gap-1 text-[11px]"
                 data-testid="admin-project-open-link"
               >
-                <ExternalLink size={11} /> OPEN
+                <ExternalLink size={11} /> Open
               </a>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="p-2 text-chalk/60 hover:text-chalk"
+              className="p-2 rounded hover:bg-[var(--surface-2)]"
+              style={{ color: "var(--text-3)" }}
               aria-label="Close"
               data-testid="admin-project-detail-close"
             >
