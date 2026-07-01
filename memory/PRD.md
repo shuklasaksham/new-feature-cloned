@@ -250,6 +250,12 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - Email-the-PDF on lock-in.
 - Dashboard loading skeleton (prevent empty-state flash on first load).
 
+- 2026-07-01 — **Iteration 21 — Admin project drill-down** (verified iteration_20):
+  - New endpoint `GET /api/admin/projects/{project_id}` returns the full project document (all 5-step inputs + AI outputs, share status, feedback, replies) plus a lightweight `owner` object. `_id` and `share_token` are stripped. Guarded by `auth_current_admin` — 404 for anon/non-admin.
+  - New modal `AdminProjectDetailModal.jsx` renders the entire project in nested Meta / Step 1–4 / Client review / Feedback sections. Uses an iterative flattener (`adminDetailBits.js`, `React.createElement`) to avoid a self-recursion bug in the in-tree `@emergentbase/visual-edits` babel plugin's prop-tracer (`tracePropToSource → getArrayIterationContext`).
+  - `AdminDashboard.jsx` — added a **VIEW** button on each project row inside the expanded user list. Opens the modal. ESC / backdrop / X close.
+  - Verified via `testing_agent_v3_fork` iteration_20 — 6/6 backend, modal renders 12k+ chars of section content, all 3 close paths work, analytics + users regression clean.
+
 ## Next tasks
 1. Add Playwright coverage for ProjectDocument owner-reply UI and Claim page (orphan-project setup).
 2. Enforce OTP cooldown server-side.
