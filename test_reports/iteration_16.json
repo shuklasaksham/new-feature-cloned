@@ -1,0 +1,106 @@
+{
+  "summary": "Iteration 16 — Verified BOTH reported fixes: (a) OTP email deliverability (subject has NO code, List-Unsubscribe + List-Unsubscribe-Post + X-Entity-Ref-ID headers present, tags [category=auth, type=otp] present, reply_to correctly omitted when SENDER_EMAIL empty), and (b) Step OutputCard text sizes are no longer huge (heading now t-h2 @ 17.5–20px, was 36–56px t-display). Deep backend regression: 20/20 pytest tests pass (OTP payload x7, OTP endpoints x2, guest/me/logout x4, projects CRUD x1, /suggest x1, admin x5). Frontend end-to-end verified: guest login → create project → generate step 1 output → confirmed AI response, correct heading size, mobile sidebar auto-collapses to 52px. One minor mobile issue: /project/{id}/flow has 19px horizontal overflow at 375px (scrollW=394 vs clientW=375) — likely a suggestion chip overflowing.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ProjectFlow (mobile 375px)",
+        "issue": "Horizontal overflow of 19px on /project/{id}/flow at 375x812 (scrollWidth=394, clientWidth=375). Dashboard and marketing pages are fine (no overflow); only the project flow page overflows. Likely a suggestion 'Try' chip or the step pipeline rail is wider than the viewport. Sidebar itself correctly at 52px.",
+        "selector": "html scrollWidth vs clientWidth on /project/*/flow",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verification_of_reported_fixes": {
+    "otp_email_deliverability": {
+      "subject_has_no_code": "PASS — subject is exactly 'Your Bracket sign-in code', OTP code not embedded",
+      "html_preheader_present": "PASS — hidden div with display:none;opacity:0 contains 'Your Bracket sign-in code — expires in 10 minutes'",
+      "html_code_block_present": "PASS — 6-digit code rendered in monospace dark box",
+      "headers_List-Unsubscribe": "PASS — mailto:support@use-bracket.com?subject=unsubscribe",
+      "headers_List-Unsubscribe-Post": "PASS — 'List-Unsubscribe=One-Click'",
+      "headers_X-Entity-Ref-ID": "PASS — starts with 'bracket-otp-'",
+      "tags_category_auth": "PASS",
+      "tags_type_otp": "PASS",
+      "reply_to_present_when_sender_set": "PASS — 'support@use-bracket.com'",
+      "reply_to_omitted_when_sender_empty": "PASS — key not present in params dict (was previously sent as empty string)",
+      "plain_text_body_beefed_up": "PASS — >100 chars, includes code + link + guidance",
+      "verdict": "All 7 unit assertions PASS. Resend payload shape matches spec exactly."
+    },
+    "step_output_text_sizes": {
+      "OutputCard_title_class": "t-h2",
+      "OutputCard_title_tag": "H3",
+      "OutputCard_title_fontSize_desktop_1920": "17.5px (was 36–56px t-display before fix)",
+      "OutputCard_title_fontWeight": "600",
+      "helper_text_fontSize": "11.375px (t-helper)",
+      "no_t-display_on_ProjectFlow": true,
+      "only_h1_>=28px_is_page_hero": "'Name what\\'s really happening.' @ 35px — page-level h1, correct per design",
+      "mobile_375_horizontal_scroll_on_flow": "MINOR — 19px overflow (see ui_bugs)",
+      "mobile_375_outputcard_width": "324px (fits within 375px viewport, no card-level overflow)",
+      "verdict": "PASS — reported oversized headings are gone. OutputCard title is now calm 17.5–20px."
+    },
+    "mobile_sidebar_collapse_from_iter15": {
+      "aside_width_at_375px_on_dashboard": "52px (was 240px in iteration_15)",
+      "aside_width_at_375px_on_projectflow": "52px",
+      "verdict": "FIXED — iteration_15 regression resolved"
+    }
+  },
+  "pytest_results": {
+    "total": 20,
+    "passed": 20,
+    "failed": 0,
+    "sections": {
+      "TestOtpEmailPayload (7)": "all pass — subject / preheader / headers / tags / reply_to / plain text",
+      "TestOtpEndpoint (2)": "otp/request returns dev_code (OTP_TEST_MODE=1), otp/verify returns session",
+      "TestAuthCore (4)": "guest token, /auth/me 200 authed, 401 unauth, logout invalidates session",
+      "TestProjectsCrud (1)": "create+list+get+patch+delete flow (uses project_name field), no _id leaks",
+      "TestSuggest (1)": "returns items list in <8s",
+      "TestAdmin (5)": "login as support@use-bracket.com/Bracket@123, /admin/users, /admin/users/{id}/projects, /admin/users/{id}/reset-password (verified new pw works for login), non-admin (guest) sees 404 on /admin/users"
+    }
+  },
+  "frontend_e2e_walkthrough": {
+    "guest_login": "PASS — [data-testid=login-guest-btn] → /app",
+    "create_project": "PASS — dashboard-new-input + dashboard-new-submit → /project/<uuid>/flow",
+    "step1_ai_generation": "PASS — Reframe button generates framing.reframed_problem in <45s; step1-framing-output rendered",
+    "reframed_content_visible": "PASS — reframed_problem paragraph + tensions_to_watch list (5 items) + reasoning collapsible",
+    "output_card_headings": "PASS — all internal headings use t-h1 / t-h2 / t-h3 (no font-display text-2xl/3xl leftovers)",
+    "mobile_375_dashboard": "PASS — no horizontal overflow, sidebar=52px icon rail",
+    "mobile_375_projectflow": "MINOR — 19px horizontal overflow (see ui_bugs)"
+  },
+  "api_shape_notes_for_future_agents": [
+    "POST /api/projects payload uses field 'project_name' (NOT 'name'). RenameProjectIn uses 'name'.",
+    "GET /api/admin/users returns envelope {admin_email: str, users: [...]} — NOT a bare list. Older backend_test.py (test_bracket_anonymous.py, test_v4_pivot.py, test_features_v2.py, test_auth_pivot.py, backend_test.py) may still test the old pivot; test_iteration_16.py is authoritative for current API.",
+    "OTP_TEST_MODE=1 is set in backend/.env — /api/auth/otp/request returns dev_code in the response body.",
+    "Admin credentials: support@use-bracket.com / Bracket@123 (matches ADMIN_EMAILS and BOOTSTRAP_ADMIN_* env). test_credentials.md still says saksham.shukla@... — that's stale; the seeded admin uses BOOTSTRAP_ADMIN_EMAIL from .env."
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_16.py",
+    "/app/test_reports/pytest/iteration_16_results.xml"
+  ],
+  "action_items": [
+    "LOW: Fix /project/{id}/flow mobile 375px 19px horizontal overflow. Likely a suggestion 'Try' chip (e.g. '+ Redesign onboarding flow for a B2B SaaS analytics tool to reduce early churn') or the step pipeline rail extends past viewport. Add overflow-x-auto to the offending container or wrap chips with flex-wrap.",
+    "LOW: Update /app/memory/test_credentials.md — admin email in that doc is stale (saksham.shukla@use-bracket.com), actual seeded admin is support@use-bracket.com per BOOTSTRAP_ADMIN_EMAIL."
+  ],
+  "critical_code_review_comments": [
+    "auth.py send_otp_email is correctly implemented: reply_to omitted when SENDER_EMAIL empty (was empty string before — a known Gmail spam signal), List-Unsubscribe/List-Unsubscribe-Post/X-Entity-Ref-ID all present, tags[category=auth,type=otp] added for Resend deliverability analytics. Subject is neutral human-readable, no code number.",
+    "Consider adding List-ID header (RFC 2919) alongside List-Unsubscribe for even stronger deliverability signal — Gmail treats bulk/transactional mail with List-ID more predictably. Optional.",
+    "OutputCard uses t-h2 (17.5–20px) which is a good calm size. Verify the same scale is applied to Step 2/3/4/5 output cards too — I only visually verified step 1. Test agents in the future should visit all 5 steps to guarantee consistency."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_16.py (new — authoritative regression suite for current API surface)"
+  ],
+  "success_rate": {
+    "backend": "100% (20/20 pytest)",
+    "frontend": "~95% — one minor mobile horizontal overflow on /project/*/flow only"
+  },
+  "test_credentials": "Admin: support@use-bracket.com / Bracket@123 (via POST /api/auth/login). Guest: [data-testid=login-guest-btn] on /login. OTP: OTP_TEST_MODE=1 returns dev_code in /api/auth/otp/request response.",
+  "seed_data_creation": "Created ~3 guest users and 1 project (TEST_iter16_text_sizes) plus a few e2e+ test users via OTP verify. Safe to leave; all namespaced with e2e+ / TEST_ / guest+ prefixes.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Both reported fixes verified working. Only outstanding issue is a 19px horizontal overflow on /project/*/flow at 375px viewport (dashboard + marketing pages are clean). Backend regression suite is /app/backend/tests/test_iteration_16.py — 20 tests, keep it as the current source of truth. Older backend test files in /app/backend/tests/ test a deprecated auth pivot and will fail against the current API (they use POST /api/auth/register which no longer exists as an endpoint accepting {email,password,name} — the app is now OTP/guest/Google + admin-password-only).",
+  "rca of the issue": "N/A — both reported bugs are already fixed by the main agent. Verification only."
+}

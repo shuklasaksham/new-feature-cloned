@@ -283,28 +283,50 @@ async def verify_otp(db, email: str, code: str) -> bool:
 def _otp_html(name: str, code: str) -> str:
     display = (name or "there").strip() or "there"
     return f"""<!doctype html>
-<html><body style="margin:0;padding:0;background:#F4F4F0;font-family:-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#0A0A0A;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4F0;padding:40px 16px;">
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Your Bracket sign-in code</title>
+</head>
+<body style="margin:0;padding:0;background:#f6f6f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#111827;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your Bracket sign-in code — expires in 10 minutes. Do not share this code with anyone.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f6f6;padding:32px 16px;">
 <tr><td align="center">
-<table width="480" style="max-width:480px;background:#fff;border:1px solid #0A0A0A;">
-<tr><td style="padding:28px 28px 0;">
-<p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#525252;">
-{{ bracket &middot; sign-in code }}</p></td></tr>
-<tr><td style="padding:16px 28px 0;">
-<h1 style="margin:0;font-size:28px;line-height:1.1;font-weight:900;color:#0A0A0A;">Hi {display},<br/>
-<span style="color:#0033FF;">your code</span> is below.</h1></td></tr>
-<tr><td style="padding:20px 28px 0;">
-<p style="margin:0;font-size:15px;line-height:1.55;">Type this into Bracket. Expires in 10 minutes.</p></td></tr>
-<tr><td style="padding:16px 28px 0;">
-<div style="display:inline-block;background:#0A0A0A;color:#fff;padding:18px 28px;font-family:'JetBrains Mono',monospace;font-size:32px;letter-spacing:0.6em;font-weight:700;">{code}</div>
+<table role="presentation" width="480" style="max-width:480px;background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;">
+<tr><td style="padding:32px 32px 8px;">
+<p style="margin:0 0 4px 0;font-size:14px;color:#6b7280;">Hi {display},</p>
+<h1 style="margin:0;font-size:22px;line-height:1.35;font-weight:600;color:#111827;">Here is your sign-in code.</h1>
 </td></tr>
-<tr><td style="padding:18px 28px 28px;">
-<p style="margin:0;font-size:13px;color:#525252;">Didn't ask for this? Ignore the email — your account is safe.</p>
+<tr><td style="padding:16px 32px 0;">
+<p style="margin:0;font-size:15px;line-height:1.6;color:#374151;">Enter the code below in Bracket to finish signing in. It expires in 10 minutes.</p>
+</td></tr>
+<tr><td style="padding:20px 32px 0;">
+<div style="display:inline-block;background:#111827;color:#ffffff;padding:16px 26px;font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:26px;letter-spacing:8px;font-weight:600;border-radius:8px;">{code}</div>
+</td></tr>
+<tr><td style="padding:20px 32px 28px;">
+<p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#6b7280;">If you didn't try to sign in, you can safely ignore this email — no one will be able to access your account without the code.</p>
+<p style="margin:14px 0 0 0;font-size:13px;color:#6b7280;">— The Bracket team<br/><a href="https://use-bracket.com" style="color:#6b7280;text-decoration:underline;">use-bracket.com</a></p>
 </td></tr>
 </table>
+<p style="margin:16px 0 0 0;font-size:12px;color:#9ca3af;">Sent by Bracket · support@use-bracket.com</p>
 </td></tr>
 </table>
 </body></html>"""
+
+
+def _otp_text(name: str, code: str) -> str:
+    display = (name or "there").strip() or "there"
+    return (
+        f"Hi {display},\n\n"
+        f"Here is your Bracket sign-in code:\n\n"
+        f"    {code}\n\n"
+        "Enter this in Bracket to finish signing in. The code expires in 10 minutes.\n\n"
+        "If you didn't try to sign in, you can safely ignore this email — no one will be able "
+        "to access your account without the code.\n\n"
+        "— The Bracket team\n"
+        "https://use-bracket.com\n"
+    )
 
 
 async def send_otp_email(to_email: str, name: str, code: str) -> bool:
@@ -313,17 +335,32 @@ async def send_otp_email(to_email: str, name: str, code: str) -> bool:
         logger.warning(f"[OTP DEV] {to_email} -> {code}")  # dev fallback
         return False
     resend.api_key = api_key
-    sender_email = os.environ.get("SENDER_EMAIL", "")
-    sender_name = os.environ.get("SENDER_NAME", "Bracket")
+    sender_email = os.environ.get("SENDER_EMAIL", "").strip()
+    sender_name = os.environ.get("SENDER_NAME", "Bracket").strip() or "Bracket"
     sender = f"{sender_name} <{sender_email}>" if sender_email else "Bracket <onboarding@resend.dev>"
     params = {
         "from": sender,
         "to": [to_email],
-        "subject": f"Your Bracket code: {code}",
+        # No code in the subject — code-in-subject is a well-known spam signal
+        # and phishing pattern. Keep it human and neutral.
+        "subject": "Your Bracket sign-in code",
         "html": _otp_html(name, code),
-        "text": f"Your Bracket sign-in code is {code}. Expires in 10 minutes.",
-        "reply_to": sender_email or "",
+        "text": _otp_text(name, code),
+        "headers": {
+            # Transactional / one-off — helps deliverability filters classify.
+            "X-Entity-Ref-ID": f"bracket-otp-{code}",
+            # Give recipient a compliant unsubscribe option (even though this
+            # is transactional). Reduces the odds Gmail/Outlook flag it.
+            "List-Unsubscribe": f"<mailto:{sender_email or 'support@use-bracket.com'}?subject=unsubscribe>",
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+        "tags": [
+            {"name": "category", "value": "auth"},
+            {"name": "type", "value": "otp"},
+        ],
     }
+    if sender_email:
+        params["reply_to"] = sender_email  # omit key entirely when empty
     try:
         await asyncio.to_thread(resend.Emails.send, params)
         return True

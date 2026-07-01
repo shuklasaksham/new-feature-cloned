@@ -807,7 +807,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                         key={i}
                         className="border-t border-ink pt-4 first:border-t-0 first:pt-0"
                       >
-                        <p className="font-display text-xl">{a.title}</p>
+                        <p className="t-h3">{a.title}</p>
                         <p className="text-sm text-muted mt-1">
                           <span className="mono-tag">WHEN →</span> {a.when_to_choose}
                         </p>
@@ -1030,7 +1030,7 @@ function GuestUpgradeBanner() {
           ×
         </button>
       </div>
-      <h3 className="font-display text-2xl sm:text-3xl mt-3 leading-tight">
+      <h3 className="t-h2 mt-3">
         Want to come back to this?
       </h3>
       <p className="text-sm mt-2 opacity-90">
@@ -1144,7 +1144,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
               <div className="flex items-center gap-2">
                 <Lock size={16} /> <p className="mono-tag">LOCKED</p>
               </div>
-              <h3 className="font-display text-3xl mt-3">Confidence, captured.</h3>
+              <h3 className="t-h1 mt-3">Confidence, captured.</h3>
               <p className="mt-3 text-sm">
                 Open the document in Bracket — download the PDF or share a review link from there.
                 Your project is also saved to your email; come back anytime with the same address.
@@ -1250,7 +1250,7 @@ function ArtifactCard({ title, kind, children }) {
         <p className="mono-label">{kind.replace("_", " ")}</p>
         <span className="mono-tag text-signal">DRAFT</span>
       </div>
-      <h3 className="font-display text-2xl sm:text-3xl mt-3 leading-tight">{title}</h3>
+      <h3 className="t-h2 mt-3">{title}</h3>
       <div className="mt-5 space-y-4">{children}</div>
     </div>
   );
@@ -1345,10 +1345,10 @@ function OutputCard({
         </div>
       </div>
       {title && (
-        <h3 className="t-display mt-4 relative z-10">{title}</h3>
+        <h3 className="t-h2 mt-3 relative z-10">{title}</h3>
       )}
       {blockquote && (
-        <p className="mt-5 border-l-2 border-signal pl-4 italic text-sm sm:text-base relative z-10">
+        <p className="mt-4 border-l-2 border-[var(--accent)] pl-4 italic text-[14px] leading-[1.65] relative z-10 text-[var(--text)]">
           {blockquote}
         </p>
       )}
