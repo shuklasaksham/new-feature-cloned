@@ -209,6 +209,14 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Follow-up: added `overflow-x: hidden` safety net on `.app-shell` / `.app-shell-main` to prevent the reported 19px mobile overflow from resurfacing.
   - Updated stale admin email in `/app/memory/test_credentials.md` (was `saksham.shukla@...`; actual seeded admin uses `BOOTSTRAP_ADMIN_EMAIL=support@use-bracket.com`).
 
+- 2026-07-01 — **Iteration 17 — Haiku 4.5 speed + blue accent + copy trim**:
+  - **AI speed** — Switched both `DEFAULT_MODEL` and `SUGGEST_MODEL` in `/app/backend/ai_engine.py` to `claude-haiku-4-5-20251001` (Haiku 4.5, ~5-10x faster than Sonnet). Added `_run_fast()` helper with minimal system message. Trimmed the suggest prompt (~1000 → ~300 chars, 80-char field cap). Verified: warm suggest p95 = 1029ms (target ≤1500), situation framing = 4136ms (was ~8-15s).
+  - **Frontend UX** — Dropped debounce 80→40ms, char threshold 3→2 chars, loading indicator delay 250→180ms. Result: chip appearance after typing "re" measured at 236ms end-to-end.
+  - **Accent color** — Swapped `--accent` from purple `#7C5CFF` to blue `#2E5BFF`. Batch replaced every `#7C5CFF` and `rgba(124,92,255,*)` reference across `index.css`, `Landing.jsx`, `FAQ.jsx`. Grep verified: 0 purple hits remain in `/app/frontend/src/`.
+  - **Homepage copy** — Trimmed Landing hero, Problem, Shift, Walkthrough, Artifacts, Use Cases, Final CTA. Hero is now `Decide first. / Ship second.` Subhead 1 line. Problem cards use 2-3 word titles. Every paragraph <120 chars.
+  - **Label alignment** — ProjectFlow header shows `Claude Haiku 4.5` (was still showing Sonnet).
+  - Testing agent iteration_17.json: **24/24 backend pytest**, all 5 reported issues verified fixed, mobile 375px overflow = 0px, zero purple in runtime computed styles.
+
 ## Verified status (post iteration_18)
 - ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
 - ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.
