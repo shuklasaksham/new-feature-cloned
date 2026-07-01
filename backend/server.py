@@ -458,6 +458,179 @@ async def admin_reset_password(user_id: str, body: AdminResetPasswordIn, request
     return {"ok": True, "email": target["email"]}
 
 
+# ---- ADMIN ANALYTICS -------------------------------------------------------
+def _iso_to_dt(s: str):
+    """Best-effort ISO -> aware UTC datetime. Returns None on failure."""
+    if not s:
+        return None
+    try:
+        from datetime import datetime as _dt, timezone as _tz
+        d = _dt.fromisoformat(s.replace("Z", "+00:00"))
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=_tz.utc)
+        return d.astimezone(_tz.utc)
+    except Exception:
+        return None
+
+
+@api.get("/admin/analytics")
+async def admin_analytics(request: Request):
+    """Aggregate KPIs + chart series for the admin analytics dashboard.
+    All series are pre-computed here so the frontend can render synchronously."""
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+    admin = await auth_current_admin(request, db)  # noqa: F841 -- guard only
+    now = auth_now()
+    d7 = now - _td(days=7)
+    d30 = now - _td(days=30)
+    d90 = now - _td(days=90)
+
+    # --- KPIs -------------------------------------------------------------
+    total_users = await db.users.count_documents({})
+    new_users_7d = await db.users.count_documents({"created_at": {"$gte": auth_iso(d7)}})
+    total_projects = await db.projects.count_documents({})
+    locked_projects = await db.projects.count_documents({"status": "locked"})
+
+    avg_steps_val = 0.0
+    async for a in db.projects.aggregate([
+        {"$match": {"step": {"$type": "number"}}},
+        {"$group": {"_id": None, "avg": {"$avg": "$step"}}},
+    ]):
+        avg_steps_val = round(a.get("avg") or 0, 2)
+
+    # --- Status distribution ---------------------------------------------
+    status_distribution = []
+    async for row in db.projects.aggregate([
+        {"$group": {"_id": {"$ifNull": ["$status", "draft"]}, "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+    ]):
+        status_distribution.append({"name": row["_id"] or "draft", "value": row["n"]})
+
+    # --- Step funnel: how many projects reached at least step N ----------
+    step_funnel = []
+    for step in range(1, 6):
+        n = await db.projects.count_documents({"step": {"$gte": step}})
+        step_funnel.append({"step": f"Step {step}", "count": n})
+
+    # --- Daily series (30d), day-bucketed via string prefix --------------
+    users_daily_raw: Dict[str, int] = {}
+    async for row in db.users.aggregate([
+        {"$match": {"created_at": {"$gte": auth_iso(d30)}}},
+        {"$project": {"day": {"$substr": ["$created_at", 0, 10]}}},
+        {"$group": {"_id": "$day", "n": {"$sum": 1}}},
+    ]):
+        users_daily_raw[row["_id"]] = row["n"]
+
+    projects_daily_raw: Dict[str, int] = {}
+    async for row in db.projects.aggregate([
+        {"$match": {"created_at": {"$gte": auth_iso(d30)}}},
+        {"$project": {"day": {"$substr": ["$created_at", 0, 10]}}},
+        {"$group": {"_id": "$day", "n": {"$sum": 1}}},
+    ]):
+        projects_daily_raw[row["_id"]] = row["n"]
+
+    new_users_daily = []
+    projects_daily = []
+    for i in range(29, -1, -1):
+        day = (now - _td(days=i)).strftime("%Y-%m-%d")
+        new_users_daily.append({"date": day, "count": users_daily_raw.get(day, 0)})
+        projects_daily.append({"date": day, "count": projects_daily_raw.get(day, 0)})
+
+    # --- Cycle time (locked projects only): create -> lock in days -------
+    cycle_time_points = []
+    cur = db.projects.find(
+        {"status": "locked", "locked_at": {"$exists": True, "$nin": [None, ""]}},
+        {"_id": 0, "creator_email": 1, "owner_user_id": 1, "created_at": 1,
+         "locked_at": 1, "name": 1},
+    ).limit(500)
+    async for p in cur:
+        ca = _iso_to_dt(p.get("created_at"))
+        la = _iso_to_dt(p.get("locked_at"))
+        if not ca or not la:
+            continue
+        days = max(0.0, (la - ca).total_seconds() / 86400.0)
+        cycle_time_points.append({
+            "user": p.get("creator_email") or p.get("owner_user_id") or "unknown",
+            "days": round(days, 2),
+            "name": p.get("name") or "",
+        })
+
+    # --- Top 10 users by project count -----------------------------------
+    top_users = []
+    async for row in db.projects.aggregate([
+        {"$match": {"owner_user_id": {"$type": "string", "$ne": ""}}},
+        {"$group": {"_id": "$owner_user_id", "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+        {"$limit": 10},
+    ]):
+        u = await db.users.find_one(
+            {"user_id": row["_id"]},
+            {"_id": 0, "email": 1, "name": 1},
+        ) or {}
+        top_users.append({
+            "email": u.get("email") or "unknown",
+            "name": u.get("name") or "—",
+            "projects": row["n"],
+        })
+
+    # --- Share/review funnel ---------------------------------------------
+    total_shared = await db.projects.count_documents(
+        {"share_status": {"$exists": True, "$nin": [None, ""]}}
+    )
+    accepted = await db.projects.count_documents({"share_status": "accepted"})
+    rejected = await db.projects.count_documents({"share_status": "rejected"})
+    reviewed = accepted + rejected
+    share_funnel = [
+        {"stage": "Shared", "count": total_shared},
+        {"stage": "Reviewed", "count": reviewed},
+        {"stage": "Accepted", "count": accepted},
+        {"stage": "Rejected", "count": rejected},
+    ]
+    share_accept_rate = round((accepted / reviewed) * 100, 1) if reviewed else 0.0
+
+    # --- Activity heatmap: creations by (weekday, hour) over last 90d -----
+    days_of_week = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    heat: Dict[tuple, int] = {}
+    cur2 = db.projects.find(
+        {"created_at": {"$gte": auth_iso(d90)}},
+        {"_id": 0, "created_at": 1},
+    ).limit(5000)
+    async for p in cur2:
+        dt = _iso_to_dt(p.get("created_at"))
+        if not dt:
+            continue
+        dt = dt.astimezone(_tz.utc)
+        key = (dt.weekday(), dt.hour)  # 0=Mon..6=Sun
+        heat[key] = heat.get(key, 0) + 1
+    # Reorder to Sun..Sat for consistent axis, using python weekday map
+    py_to_sun = {0: 1, 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 0}  # Mon->1..Sun->0
+    activity_heatmap = []
+    for sun_idx in range(7):
+        py_idx = [k for k, v in py_to_sun.items() if v == sun_idx][0]
+        hours = [{"hour": h, "value": heat.get((py_idx, h), 0)} for h in range(24)]
+        activity_heatmap.append({"day": days_of_week[sun_idx], "hours": hours})
+
+    return {
+        "generated_at": auth_iso(now),
+        "kpis": {
+            "total_users": total_users,
+            "new_users_7d": new_users_7d,
+            "total_projects": total_projects,
+            "locked_projects": locked_projects,
+            "share_accept_rate": share_accept_rate,
+            "avg_steps": avg_steps_val,
+        },
+        "new_users_daily": new_users_daily,
+        "projects_daily": projects_daily,
+        "status_distribution": status_distribution,
+        "step_funnel": step_funnel,
+        "cycle_time_points": cycle_time_points,
+        "top_users": top_users,
+        "share_funnel": share_funnel,
+        "share_accept_rate": share_accept_rate,
+        "activity_heatmap": activity_heatmap,
+    }
+
+
 # ===========================================================================
 # PROJECTS — now auth-required
 # ===========================================================================

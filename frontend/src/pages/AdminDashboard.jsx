@@ -10,10 +10,13 @@ import {
   LogOut,
   X as XIcon,
   Check,
+  BarChart3,
+  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
+import AdminAnalytics from "./AdminAnalytics";
 
 const STATUS_COLOR = {
   draft: "text-chalk/60",
@@ -34,6 +37,7 @@ export default function AdminDashboard() {
   const [resetTarget, setResetTarget] = useState(null); // user obj
   const [resetPw, setResetPw] = useState("");
   const [resetting, setResetting] = useState(false);
+  const [tab, setTab] = useState("analytics"); // "analytics" | "users"
 
   const load = async () => {
     setLoading(true);
@@ -46,10 +50,12 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-  // Fire-once on mount. See Dashboard.jsx for rationale.
+  // Fire-once on mount when users tab is active. See Dashboard.jsx for rationale.
   useEffect(() => {
-    load();
-  }, []);
+    if (tab === "users" && users.length === 0 && !error) {
+      load();
+    }
+  }, [tab]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -170,6 +176,38 @@ export default function AdminDashboard() {
       </header>
 
       <main className="max-w-[1200px] mx-auto px-5 sm:px-8 py-8">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 border-b border-chalk/15 mb-6" data-testid="admin-tabs">
+          <button
+            type="button"
+            onClick={() => setTab("analytics")}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 mono-tag transition-colors ${
+              tab === "analytics"
+                ? "text-signal border-b-2 border-signal -mb-px"
+                : "text-chalk/50 hover:text-chalk"
+            }`}
+            data-testid="admin-tab-analytics"
+          >
+            <BarChart3 size={13} /> ANALYTICS
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("users")}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 mono-tag transition-colors ${
+              tab === "users"
+                ? "text-signal border-b-2 border-signal -mb-px"
+                : "text-chalk/50 hover:text-chalk"
+            }`}
+            data-testid="admin-tab-users"
+          >
+            <Users size={13} /> USERS
+          </button>
+        </div>
+
+        {tab === "analytics" && <AdminAnalytics />}
+
+        {tab === "users" && (
+        <>
         <h1 className="font-display text-4xl sm:text-5xl uppercase leading-[0.95]">
           All users <span className="text-signal">— {users.length}</span>
         </h1>
@@ -282,6 +320,8 @@ export default function AdminDashboard() {
               <li className="px-5 py-8 mono-tag text-chalk/40">No users match &quot;{q}&quot;.</li>
             )}
           </ul>
+        )}
+        </>
         )}
       </main>
 

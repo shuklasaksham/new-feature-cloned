@@ -1,0 +1,57 @@
+{
+  "summary": "Iteration 19 — Admin analytics endpoint + dashboard tabs fully validated. Backend 6/6 pytest pass, frontend all 6 KPI cards + 8 charts render with SVG content, tabs (analytics/users) switch correctly, user list + search + reset-password modal + logout all regression-clean. Confirmed yashwork1303@gmail.com has exactly 1 project via /api/admin/users. Payload contract verified: kpis (6 fields), new_users_daily (30), projects_daily (30), status_distribution, step_funnel (5, labels Step 1..5), cycle_time_points, top_users, share_funnel (4, stages Shared/Reviewed/Accepted/Rejected), share_accept_rate, activity_heatmap (7 days Sun..Sat × 24 hours), generated_at. Access control confirmed: 404 for anonymous, 404 for authenticated non-admin. Existing routes /api/projects list + create + GET-by-id all still work.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Admin analytics (initial paint)",
+        "issues": [
+          "Recharts logs benign 'width(-1) and height(-1)' warnings for ResponsiveContainer during initial layout tick — charts still render correctly with full SVG content (svg_child_count 50–748 per chart). Non-blocking, but noisy in console. Consider setting an explicit min-height on the ResponsiveContainer parent or wrapping in a mounted-guard to silence."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_19.py",
+    "/app/test_reports/pytest/iter19.xml"
+  ],
+  "action_items": [
+    "Optional: silence recharts ResponsiveContainer width/height warnings by giving parent Card body an explicit min-height (currently uses inline 'height' prop which is fine — the warning is a false positive from recharts during initial paint measuring), no functional impact.",
+    "iter_17 stale assertion note still holds from previous iteration (DEFAULT_MODEL == haiku will fail if that file is executed) — no change here."
+  ],
+  "critical_code_review_comments": [
+    "server.py admin_analytics endpoint (line 476) is ~155 lines — reasonable, but could be extracted into an admin_analytics_service module for readability once more analytics land.",
+    "activity_heatmap py_to_sun inverse lookup uses a list comprehension per iteration; trivial cost but a static reversed dict would be clearer: sun_to_py = {0:6, 1:0, 2:1, ...}.",
+    "cycle_time_points and activity_heatmap have hardcoded find limits (500 and 5000) — for a growing project table these will silently truncate. Consider aggregation pipelines or explicit UI-side sampling once thresholds are approached.",
+    "top_users query filters owner_user_id existence but ignores legacy creator_email-only projects; that is a small under-count for pre-pivot data. Not a bug given the auth pivot cleanup path, but worth noting.",
+    "share_accept_rate divides accepted / (accepted+rejected). If 'reviewed' is a distinct share_status value in the future, that base will need to change.",
+    "AdminAnalytics.jsx (532 lines) is under the 700-line ceiling but approaching it — extracting Kpi/Card/Heatmap into a components file would keep it maintainable.",
+    "All new interactive/informational elements carry data-testid — good.",
+    "COLORS constant and unit props keep the palette centralized — good."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_19.py (new — admin analytics + regression)"
+  ],
+  "success_rate": {"backend": "100% (6/6, 1 skipped non-critical)", "frontend": "100% — all KPIs + charts render, tabs work, regression clean"},
+  "test_credentials": "Admin: support@use-bracket.com / Bracket@123. Non-admin: fresh OTP user via /api/auth/otp/request (dev_code returned in preview).",
+  "seed_data_creation": "Test-scoped project created and immediately deleted via authenticated flow. No persistent test data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Admin login uses POST /api/auth/login (NOT /api/admin/login — the latter is only a frontend route). /api/admin/analytics returns 404 for anon & non-admins by design. Recharts ResponsiveContainer emits a benign width/height=-1 warning on first paint that is safe to ignore — DO NOT treat it as a chart-render failure; check for actual svg presence + child count instead.",
+  "measurements": {
+    "analytics_endpoint_latency": "sub-2s warm",
+    "kpis_rendered": 6,
+    "charts_rendered": 8,
+    "chart_svg_child_counts": {
+      "chart-new-users": 178, "chart-projects-created": 218, "chart-status": 50,
+      "chart-step-funnel": 170, "chart-cycle-time": 238, "chart-top-users": 230,
+      "chart-share-funnel": 158, "chart-heatmap": 748
+    },
+    "yashwork1303_project_count": 1,
+    "total_users_at_test": 307,
+    "total_projects_at_test": 203
+  },
+  "rca_of_the_issue": "N/A — this iteration was a definitive verification pass on newly built analytics; no defects surfaced."
+}
