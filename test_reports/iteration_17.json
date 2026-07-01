@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 17 — Haiku 4.5 speed + #2E5BFF accent + trimmed copy ALL verified. Backend: 24/24 tests pass (20 iter_16 regression + 4 new latency). /api/suggest warm p95 = 1029ms (target <=1500ms); /api/projects/{id}/situation = ~4136ms (target <=5000ms). Frontend: all copy strings match, suggestion chips appear at ~236ms after typing 2 chars ('re'), textarea focus ring is BLUE (rgba(46,91,255,*)), zero purple/violet computed styles anywhere on Landing or Project Flow. Mobile 375px overflow bug from iter_16 is now RESOLVED (scroll=client=375). One minor UI label inconsistency spotted.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ProjectFlow header engine label", "issue": "Header still displays 'Claude Sonnet 45' beside project title even though ai_engine now uses claude-haiku-4-5-20251001 for both DEFAULT_MODEL and SUGGEST_MODEL. Label is misleading to end users.", "selector": "project header subtitle", "priority": "LOW"},
+      {"component": "Dashboard empty state CTA", "issue": "'Start a new project' button in the empty state renders in a peach/salmon color that doesn't match the new #2E5BFF accent or the white primary pill CTA used elsewhere. Worth confirming this is intentional.", "selector": "empty-state Start a new project", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_17.py",
+    "/app/backend/tests/test_iteration_16.py",
+    "/app/test_reports/pytest/iter17.xml",
+    "/app/test_reports/pytest/iter17_prev.xml"
+  ],
+  "action_items": [
+    "(LOW) Update 'Claude Sonnet 45' subtitle in ProjectFlow to reflect Haiku 4.5, or remove the model label entirely.",
+    "(LOW) Confirm the empty-state 'Start a new project' peach button color is intentional; if not, align with #2E5BFF or the standard white pill."
+  ],
+  "critical_code_review_comments": [
+    "ai_engine.py MODEL_MAP maps 'gpt' -> 'gpt-5.2' but no OpenAI key is wired; if 'engine':'gpt' is ever sent from frontend it will fail at auth time. Consider guarding or removing.",
+    "_run and _run_fast both create a fresh LlmChat per call — fine for correctness, but re-using a session per conversation could shave a small amount of latency on multi-step flows."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_17.py (new — Haiku latency + model-config checks)"
+  ],
+  "success_rate": {"backend": "100% (24/24)", "frontend": "100% on required flows (2 low-priority label observations)"},
+  "test_credentials": "guest login via [data-testid=login-guest-btn]; admin support@use-bracket.com / Bracket@123 (not exercised this iteration — no admin changes).",
+  "seed_data_creation": "None persisted beyond test scope; project 0711de2b-... created via guest during frontend run; iteration_17 backend fixture cleans up its project.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Latency budgets tuned for warm calls after a 1x warmup: /api/suggest p95 <=3000ms (typ. 800-1300ms), /api/projects/{id}/situation <=8000ms (typ. ~4s). If a future model swap regresses these, the test will fail loudly. All landing hero/problem/shift/artifacts/use-cases/final-cta copy strings are verified — bump the assertions if copy changes again. Purple/violet scan (both grep + runtime computed-style) is clean.",
+  "measurements": {
+    "suggest_latencies_ms_warm": [825, 1027, 1029],
+    "suggest_latencies_ms_prev_run": [1224, 945, 1097],
+    "step1_situation_latency_ms": 4136,
+    "frontend_chip_appearance_after_re_ms": 236,
+    "focus_ring_box_shadow": "rgba(46, 91, 255, 0.2) 0px 0px 0px 3px",
+    "focus_ring_border": "rgb(46, 91, 255)",
+    "css_accent_var": "#2E5BFF",
+    "css_accent_glow_var": "rgba(46, 91, 255, 0.20)",
+    "mobile_375_overflow": "0px (scroll=client=375)",
+    "grep_purple_hits_frontend_src": 0,
+    "runtime_purple_computed_style_hits_landing": 0,
+    "runtime_purple_computed_style_hits_flow": 0
+  },
+  "rca_of_the_issue": "N/A — no regressions found. Speed target achieved by switching both DEFAULT_MODEL and SUGGEST_MODEL to claude-haiku-4-5-20251001 and using _run_fast() with a minimal system message for suggestions. Frontend debounce 40ms + 2-char threshold triggers a network call almost immediately — the ~236ms observed end-to-end is dominated by the Haiku RTT."
+}

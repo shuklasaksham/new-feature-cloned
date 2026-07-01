@@ -1530,7 +1530,7 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
 
   useEffect(() => {
     const text = (value || "").trim();
-    if (text.length < 3) {
+    if (text.length < 2) {
       setItems([]);
       setLoading(false);
       return undefined;
@@ -1546,11 +1546,11 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
 
     let cancelled = false;
     // Only show the "thinking…" indicator if the request is still running
-    // after 250ms — for fast responses it never appears, making the
-    // suggestion feel instant.
+    // after 180ms — for Haiku (typically ~250-400ms) it appears briefly
+    // then flips to results, keeping the UI feeling live.
     const loadingTimer = setTimeout(() => {
       if (!cancelled) setLoading(true);
-    }, 250);
+    }, 180);
     const timer = setTimeout(async () => {
       try {
         const { data } = await api.post("/suggest", {
@@ -1575,7 +1575,7 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
         clearTimeout(loadingTimer);
         if (!cancelled) setLoading(false);
       }
-    }, 80);
+    }, 40);
     return () => {
       cancelled = true;
       clearTimeout(timer);

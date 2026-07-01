@@ -27,10 +27,10 @@
   --text-4:  #52525B;
 
   /* Accent — used ONLY on icons, dots, charts, decorative elements. Never on text. */
-  --accent:       #7C5CFF;
-  --accent-2:     #6B4AE6;
-  --accent-soft:  rgba(124, 92, 255, 0.10);
-  --accent-glow:  rgba(124, 92, 255, 0.18);
+  --accent:       #2E5BFF;
+  --accent-2:     #1E4AEB;
+  --accent-soft:  rgba(46, 91, 255, 0.10);
+  --accent-glow:  rgba(46, 91, 255, 0.20);
 
   /* Semantic (icons + dots only) */
   --success:        #22C55E;
@@ -571,7 +571,7 @@ body::before {
 .status-dot.is-risk::before  { background: var(--danger);  box-shadow: 0 0 0 3px rgba(255, 92, 92, 0.18); }
 .status-dot.is-track::before { background: var(--success); box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18); }
 .status-dot.is-wait::before  { background: var(--warning); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18); }
-.status-dot.is-live::before  { background: var(--accent);  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.18); }
+.status-dot.is-live::before  { background: var(--accent);  box-shadow: 0 0 0 3px rgba(46, 91, 255, 0.18); }
 
 /* ============================================================
    Step pipeline — clean numbered stepper
@@ -744,7 +744,7 @@ body::before {
 /* Pastel tints — Linear-dark accent surfaces */
 .tint-sky    { background: rgba(56, 189, 248, 0.06); color: var(--text); border: 1px solid rgba(56, 189, 248, 0.18); border-radius: 10px; }
 .tint-lime   { background: rgba(132, 204, 22, 0.06); color: var(--text); border: 1px solid rgba(132, 204, 22, 0.18); border-radius: 10px; }
-.tint-lilac  { background: rgba(124, 92, 255, 0.08); color: var(--text); border: 1px solid rgba(124, 92, 255, 0.22); border-radius: 10px; }
+.tint-lilac  { background: rgba(46, 91, 255, 0.08); color: var(--text); border: 1px solid rgba(46, 91, 255, 0.22); border-radius: 10px; }
 .tint-peach  { background: rgba(251, 146, 60, 0.06); color: var(--text); border: 1px solid rgba(251, 146, 60, 0.18); border-radius: 10px; }
 
 /* ============================================================
@@ -783,7 +783,7 @@ body::before {
 /* Skeleton */
 .skeleton-line { height: 10px; background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 4px; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.ai-shimmer { background: linear-gradient(90deg, rgba(124, 92, 255, 0.0) 0%, rgba(124, 92, 255, 0.18) 50%, rgba(124, 92, 255, 0.0) 100%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
+.ai-shimmer { background: linear-gradient(90deg, rgba(46, 91, 255, 0.0) 0%, rgba(46, 91, 255, 0.18) 50%, rgba(46, 91, 255, 0.0) 100%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 
 /* OutputCard wrap */
 .output-card-wrap { position: relative; }

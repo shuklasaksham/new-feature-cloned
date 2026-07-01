@@ -11,10 +11,12 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 
 DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-sonnet-4-5-20250929"
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"  # fast default for step outputs
+SUGGEST_PROVIDER = "anthropic"
+SUGGEST_MODEL = "claude-haiku-4-5-20251001"  # same fast model for typing suggestions
 
 MODEL_MAP = {
-    "claude": ("anthropic", "claude-sonnet-4-5-20250929"),
+    "claude": ("anthropic", "claude-haiku-4-5-20251001"),
     "gpt": ("openai", "gpt-5.2"),
 }
 
@@ -67,42 +69,49 @@ async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = 
     return _extract_json(response)
 
 
+async def _run_fast(prompt: str, session_id: Optional[str] = None) -> dict:
+    """Ultra-low-latency path for typing suggestions (Haiku 4.5)."""
+    api_key = os.environ["EMERGENT_LLM_KEY"]
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=session_id or str(uuid.uuid4()),
+        system_message="Return strict JSON only. No prose, no markdown fences.",
+    ).with_model(SUGGEST_PROVIDER, SUGGEST_MODEL)
+    response = await chat.send_message(UserMessage(text=prompt))
+    return _extract_json(response)
+
+
 async def run_field_suggestions(
     step: int,
     field: str,
     partial: str,
     context: dict,
-    engine: str = "claude",
+    engine: str = "claude",  # noqa: ARG001 -- kept for API compatibility
 ) -> list[str]:
     """Return 3-5 short, pickable autofill suggestions for a form field.
 
-    The frontend calls this as the user types (debounced 600ms). The model
-    has to respond fast and cheap, so the prompt is short and the JSON
-    schema is tight.
+    Uses Claude Haiku 4.5 for sub-500ms latency. Prompt is minimal.
     """
-    ctx_compact = {k: (v or "")[:200] for k, v in (context or {}).items() if v}
-    partial = (partial or "").strip()[:300]
-    prompt = f"""A designer or freelancer is filling out a form to think through a project decision.
+    # Ultra-compact context — 80 chars per non-empty field max.
+    ctx_bits = []
+    for k, v in (context or {}).items():
+        if v:
+            s = str(v).strip()
+            if s:
+                ctx_bits.append(f"{k}={s[:80]}")
+    ctx = "; ".join(ctx_bits) or "(none)"
+    partial = (partial or "").strip()[:120]
 
-CURRENT FIELD: {field} (step {step} of 5)
-WHAT THEY'VE TYPED SO FAR: "{partial}"
-OTHER FIELDS THEY'VE ALREADY FILLED: {json.dumps(ctx_compact, ensure_ascii=False)}
-
-Suggest exactly 4 short autofill phrases (each between 2-7 words) that would
-naturally complete or extend what they're typing. Be specific to their input —
-NOT generic. If "WHAT THEY'VE TYPED SO FAR" is empty, give 4 broadly relevant
-starting points based on the other filled fields and the field's purpose.
-
-The user is a designer, illustrator, copywriter, photographer, video editor,
-indie dev, content creator, brand consultant, or similar independent creative
-pro — phrase suggestions to work for any of them.
-
-Return strict JSON only: {{"suggestions": ["...", "...", "...", "..."]}}
-"""
+    prompt = (
+        f'FIELD: {field} | PARTIAL: "{partial}" | CTX: {ctx}\n'
+        "User is a designer/freelancer/indie creative filling a decision form. "
+        "Return 4 short autofill phrases (2-7 words each) that naturally continue "
+        f'"{partial}" — specific, not generic. If partial is empty, give 4 starters. '
+        'JSON: {"suggestions":["...","...","...","..."]}'
+    )
     try:
-        data = await _run(prompt, engine)
+        data = await _run_fast(prompt)
         sugs = data.get("suggestions") or []
-        # Defensive normalization — strip, dedupe, cap length.
         seen = set()
         out: list[str] = []
         for s in sugs:
@@ -120,8 +129,6 @@ Return strict JSON only: {{"suggestions": ["...", "...", "...", "..."]}}
                 break
         return out
     except Exception:
-        # Don't break the typing UX if AI hiccups — return empty list, the
-        # client gracefully shows nothing.
         return []
 
 

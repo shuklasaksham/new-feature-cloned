@@ -38,16 +38,16 @@ export default function Landing() {
 
         <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 text-center">
           <span className="section-label slide-up" data-testid="hero-eyebrow">
-            <span className="dot" />Bracket — Decision OS · v1.0
+            <span className="dot" />Decision OS · v1.0
           </span>
 
           <h1 className="t-display mt-7 max-w-[820px] mx-auto slide-up" style={{ animationDelay: "60ms" }}>
-            You don&apos;t need more tools.<br />
-            <span className="text-[var(--text-2)]">You need better decisions.</span>
+            Decide first.<br />
+            <span className="text-[var(--text-2)]">Ship second.</span>
           </h1>
 
-          <p className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto slide-up" style={{ animationDelay: "120ms" }}>
-            A senior creative peer&apos;s judgement, installed between your input and your output. Bracket helps you decide <em className="not-italic text-[var(--text)]">what to do</em> — not just how to do it.
+          <p className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto slide-up" style={{ animationDelay: "120ms" }}>
+            An AI decision coach for designers &amp; freelancers. Five steps. One stance. Zero fluff.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3 slide-up" style={{ animationDelay: "180ms" }}>
@@ -55,12 +55,12 @@ export default function Landing() {
               Start a project <ArrowRight size={14} />
             </Link>
             <Link to="/how-it-works" className="btn-ghost btn-lg" data-testid="hero-secondary-cta">
-              See how it works
+              How it works
             </Link>
           </div>
 
           <p className="mt-7 t-meta text-[var(--text-3)] slide-up" style={{ animationDelay: "240ms" }}>
-            Free during early access · No credit card · 60-second start
+            Free · No card · 60-second start
           </p>
         </div>
 
@@ -125,16 +125,16 @@ export default function Landing() {
                 Not enough <span className="text-[var(--text-2)]">clarity</span>.
               </h2>
               <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-md">
-                Every designer, freelancer, or indie creative has 40 tabs open and 3 Notion pages of &quot;requirements.&quot; None of it tells you what to do.
+                40 tabs. 3 Notion pages of &quot;requirements.&quot; None tell you what to do.
               </p>
             </div>
 
             <div className="lg:col-span-7 grid sm:grid-cols-2 gap-3">
               {[
-                ["Clients ask vague things", "\"Make it pop.\" \"More premium.\" \"Bolder but cleaner.\" Decoded into nothing.", "#FF7A6B"],
-                ["Scope creeps silently", "Each small \"just one more\" lands on your plate. The budget doesn't move. You do.", "#F59E0B"],
-                ["Decisions feel subjective", "You know it's right. You can't say why. The stakeholder wins the argument.", "#22C55E"],
-                ["The brief is never the problem", "The real problem is underneath. No tool has helped you surface it.", "#7C5CFF"],
+                ["Vague briefs", "\"Make it pop.\" \"More premium.\" Signal masquerading as direction.", "#FF7A6B"],
+                ["Scope creep", "Each \"just one more\" lands on your plate. The budget doesn't move.", "#F59E0B"],
+                ["Subjective calls", "You know it's right. You can't say why. The stakeholder wins.", "#22C55E"],
+                ["Wrong problem", "The real one is underneath. No tool has helped you find it.", "#2E5BFF"],
               ].map(([t, c, color], i) => (
                 <div key={i} className="card-linear card-linear-hover p-5">
                   <p className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color }}>{String(i + 1).padStart(2, "0")}</p>
@@ -152,10 +152,10 @@ export default function Landing() {
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
             <h2 className="t-hero lg:col-span-7">
-              Three layers between <span className="text-[var(--text-2)]">chaos</span> and clarity.
+              Three layers to <span className="text-[var(--text-2)]">clarity</span>.
             </h2>
             <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
-              Bracket isn&apos;t a feature checklist. It&apos;s a mental model. Every project moves through three layers before you open Figma.
+              Not a checklist. A mental model. Every project moves through three layers before Figma opens.
             </p>
           </div>
 
@@ -201,7 +201,7 @@ export default function Landing() {
 
           <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             {WALKTHROUGH.map((w, idx) => {
-              const colors = ["#22C55E", "#F59E0B", "#FF7A6B", "#7C5CFF", "#38BDF8"];
+              const colors = ["#22C55E", "#F59E0B", "#FF7A6B", "#2E5BFF", "#38BDF8"];
               return (
                 <div key={w.num} className="card-linear card-linear-hover p-6" data-testid={`walkthrough-card-${w.num}`}>
                   <div className="flex items-center justify-between">
@@ -234,7 +234,7 @@ export default function Landing() {
               This is <span className="text-[var(--text-2)]">trust</span>. On paper.
             </h2>
             <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
-              Every project ends in artifacts you can send. No blank templates. No generic prose. Your stance, translated.
+              Real artifacts you can send. No templates. Your stance, translated.
             </p>
           </div>
 
@@ -264,7 +264,7 @@ export default function Landing() {
       <Section id="use-cases" label="Who it's for">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
           <h2 className="t-hero max-w-3xl">
-            Built for <span className="text-[var(--text-2)]">creative pros</span> who ship decisions, not just deliverables.
+            For pros who ship <span className="text-[var(--text-2)]">decisions</span>, not just deliverables.
           </h2>
 
           <div className="mt-12 grid md:grid-cols-2 gap-3">
@@ -414,8 +414,8 @@ export default function Landing() {
             Stop guessing.<br />
             <span className="text-[var(--text-2)]">Start deciding</span>.
           </h2>
-          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
-            Five quiet steps. Fifteen minutes per project. The reasoning is documented, so the call survives the room.
+          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[480px] mx-auto">
+            Five quiet steps. Fifteen minutes. Documented so the call survives the room.
           </p>
           <div className="mt-9 flex flex-col sm:flex-row gap-3 items-center justify-center">
             <Link to="/app" className="btn-primary btn-lg" data-testid="final-primary-cta">

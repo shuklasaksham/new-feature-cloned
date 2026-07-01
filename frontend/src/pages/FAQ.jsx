@@ -87,7 +87,7 @@ export default function FAQ() {
               <div className="flex items-baseline gap-3 mb-5">
                 <span
                   className="font-semibold text-[15px] tabular-nums"
-                  style={{ color: ["#22C55E", "#F59E0B", "#FF7A6B", "#7C5CFF"][i % 4] }}
+                  style={{ color: ["#22C55E", "#F59E0B", "#FF7A6B", "#2E5BFF"][i % 4] }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
