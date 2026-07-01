@@ -196,6 +196,19 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Updated Navbar / Login / Onboarding / Footer / AppSidebar to use the wordmark in headers (removed the separate `<span>Bracket</span>` text).
   - AppSidebar swaps logo automatically: icon when collapsed, wordmark when expanded.
 
+- 2026-07-01 — **Iteration 16 — reported bug fixes VERIFIED by testing agent**:
+  - **Step output text sizes** — `OutputCard` title dropped from `t-display` (36–56px) to `t-h2` (17.5–20px). All `font-display text-xl / text-2xl sm:text-3xl / text-3xl` inside `ProjectFlow.jsx` collapsed to the calm `t-h1 / t-h2 / t-h3` type ramp. Blockquote body 14px. Verified: mobile OutputCard = 324px (fits 375 viewport).
+  - **OTP email SPAM triage** — rewrote `send_otp_email` and `_otp_html` in `/app/backend/auth.py`:
+    - Removed the OTP code from the subject line (was `"Your Bracket code: 123456"` — a well-known spam signal); now `"Your Bracket sign-in code"`.
+    - Rewrote the HTML with a hidden preheader div, minimal transactional-style template (no fonts.googleapis, no exotic monospace), modern rounded-card layout.
+    - Added headers: `List-Unsubscribe: <mailto:support@use-bracket.com?subject=unsubscribe>`, `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, `X-Entity-Ref-ID: bracket-otp-{code}`.
+    - Added Resend `tags: [category=auth, type=otp]` for deliverability analytics.
+    - Fixed empty `reply_to` — now omitted from the params dict when SENDER_EMAIL is unset (previously sent as empty string, another spam signal).
+    - Beefed up plain-text body (>100 chars with the code + link + guidance).
+  - Testing agent (`iteration_16.json`) verified: 7/7 OTP payload assertions PASS, 20/20 pytest backend PASS, e2e frontend guest→create→step1 output flow PASS. Reported bugs = fixed.
+  - Follow-up: added `overflow-x: hidden` safety net on `.app-shell` / `.app-shell-main` to prevent the reported 19px mobile overflow from resurfacing.
+  - Updated stale admin email in `/app/memory/test_credentials.md` (was `saksham.shukla@...`; actual seeded admin uses `BOOTSTRAP_ADMIN_EMAIL=support@use-bracket.com`).
+
 ## Verified status (post iteration_18)
 - ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
 - ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.
