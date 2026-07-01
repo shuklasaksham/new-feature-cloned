@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
-import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, CASE_STUDIES, PRICING } from "../lib/constants";
+import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, PRICING } from "../lib/constants";
 
 const Section = ({ id, label, children, className = "" }) => (
   <section id={id} className={`relative ${className}`}>
@@ -204,21 +204,9 @@ export default function Landing() {
               const colors = ["#22C55E", "#F59E0B", "#FF7A6B", "#2E5BFF", "#38BDF8"];
               return (
                 <div key={w.num} className="card-linear card-linear-hover p-6" data-testid={`walkthrough-card-${w.num}`}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color: colors[idx] }}>{"{ "}{w.num}{" / 05 }"}</span>
-                  </div>
+                  <span className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color: colors[idx] }}>{"{ "}{w.num}{" / 05 }"}</span>
                   <h3 className="t-h2 mt-4">{w.title}</h3>
-                  <div className="mt-5 space-y-4 text-[13px] leading-[1.65]">
-                    <div>
-                      <p className="t-meta mb-1.5">What it does</p>
-                      <p className="text-[var(--text)]">{w.what}</p>
-                    </div>
-                    <div>
-                      <p className="t-meta mb-1.5">Why it matters</p>
-                      <p className="text-[var(--text-2)]">{w.why}</p>
-                    </div>
-                  </div>
-                  <p className="mt-5 pt-4 border-t border-[var(--hairline)] text-[13.5px] italic text-[var(--text)]">{w.quote}</p>
+                  <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--text-2)]">{w.what}</p>
                 </div>
               );
             })}
@@ -274,69 +262,16 @@ export default function Landing() {
                   <span className="t-h2">{u.who}</span>
                   <span className="t-meta">{String(i + 1).padStart(2, "0")}</span>
                 </div>
-                <div className="mt-4 grid sm:grid-cols-2 gap-4 text-[13px] leading-[1.65]">
-                  <div>
-                    <p className="t-meta mb-1.5">Pain</p>
-                    <p className="text-[var(--text-2)]">{u.pain}</p>
-                  </div>
-                  <div>
-                    <p className="t-meta mb-1.5">Win</p>
-                    <p className="text-[var(--text)]">{u.win}</p>
-                  </div>
+                <div className="mt-4 text-[13px] leading-[1.6] text-[var(--text-2)]">
+                  {u.win}
                 </div>
-                <p className="mt-4 pt-4 border-t border-[var(--hairline)] text-[13px] italic text-[var(--text)]">{u.example}</p>
               </div>
             ))}
           </div>
         </div>
       </Section>
 
-      {/* ============ CASE STUDY teaser ============ */}
-      <Section id="case-study" label="Case study">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <div className="grid lg:grid-cols-12 gap-10 items-end">
-            <h2 className="t-hero lg:col-span-8">
-              Before Bracket: <span className="text-[var(--text-2)]">chaos</span>.
-            </h2>
-            <Link to="/case-studies" className="btn-ghost lg:col-span-4 lg:justify-self-end" data-testid="case-study-all-cta">
-              All case studies <ArrowUpRight size={14} />
-            </Link>
-          </div>
-
-          <div className="mt-12 grid md:grid-cols-2 gap-3">
-            <div className="card-linear p-6">
-              <span className="status-pill status-pill--danger">Before</span>
-              <h3 className="t-h1 mt-4">{CASE_STUDIES[0].brand}</h3>
-              <p className="t-meta mt-1">{CASE_STUDIES[0].category}</p>
-              <ul className="mt-5 space-y-2.5">
-                {CASE_STUDIES[0].before.map((b, i) => (
-                  <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text-2)]">
-                    <X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" />
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="card-linear p-6 border-[var(--hairline-strong)] bg-[var(--surface-2)]">
-              <span className="status-pill status-pill--active">After</span>
-              <h3 className="t-h1 mt-4">Structured decisions</h3>
-              <p className="t-meta mt-1">Same client. Different posture.</p>
-              <ul className="mt-5 space-y-2.5">
-                {CASE_STUDIES[0].after.map((b, i) => (
-                  <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text)]">
-                    <Check size={13} className="mt-0.5 text-[var(--text-2)] shrink-0" />
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          <blockquote className="mt-14 max-w-3xl t-display text-[var(--text)]">
-            <span className="text-[var(--text-2)]">&ldquo;</span>{CASE_STUDIES[0].quote}<span className="text-[var(--text-2)]">&rdquo;</span>
-          </blockquote>
-        </div>
-      </Section>
+      {/* Case study teaser removed — dedicated /case-studies page carries it. */}
 
       {/* ============ PRICING ============ */}
       <Section id="pricing" label="Pricing">

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, Lock as LockIcon } from "lucide-react";
 import { toast } from "sonner";
-import Avatar, { AVATARS } from "../components/Avatar";
+import Avatar from "../components/Avatar";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 
@@ -75,18 +75,10 @@ export default function Settings() {
             <input className="input-line mt-2" value={designation} onChange={(e) => setDesignation(e.target.value)} data-testid="settings-designation"/>
           </label>
           <div>
-            <p className="t-meta">Avatar</p>
-            <div className="mt-3 grid grid-cols-6 gap-2.5" data-testid="settings-avatars">
-              {AVATARS.map((a) => {
-                const active = avatar === a.id;
-                return (
-                  <button type="button" key={a.id} onClick={() => setAvatar(a.id)} aria-pressed={active}
-                    className={`p-1 rounded-md transition-all ${active ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--surface)]" : "opacity-70 hover:opacity-100"}`}
-                    data-testid={`settings-avatar-${a.id}`}>
-                    <Avatar id={a.id} size={40} initial={name || user?.email || "B"} />
-                  </button>
-                );
-              })}
+            <p className="t-meta">Your mark</p>
+            <div className="mt-3 flex items-center gap-3">
+              <Avatar size={44} initial={name || user?.email || "B"} />
+              <span className="text-[13px] text-[var(--text-3)]">Auto-generated from your name.</span>
             </div>
           </div>
           <button onClick={saveProfile} disabled={savingProfile} className="btn-primary" data-testid="settings-save-profile">

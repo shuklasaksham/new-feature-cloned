@@ -164,7 +164,7 @@ export default function Dashboard() {
                   document.querySelector('[data-testid="dashboard-new-input"]')?.focus();
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                className="btn-coral mt-8"
+                className="btn-primary btn-lg mt-8"
                 data-testid="dashboard-empty-start-cta"
               >
                 Start a new project

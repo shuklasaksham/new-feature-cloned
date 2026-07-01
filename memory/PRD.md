@@ -217,6 +217,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Label alignment** — ProjectFlow header shows `Claude Haiku 4.5` (was still showing Sonnet).
   - Testing agent iteration_17.json: **24/24 backend pytest**, all 5 reported issues verified fixed, mobile 375px overflow = 0px, zero purple in runtime computed styles.
 
+- 2026-07-01 — **Iteration 18 — UX polish**:
+  - Dashboard empty-state CTA switched from `btn-coral` to `btn-primary` (white pill) — matches marketing hero style.
+  - **Avatar system unified** — every user now gets the same light-bg circle with dark first-letter (`#F5F5F7` bg + `#0A0A0C` text). Removed the 12-preset picker from Onboarding and Settings. `AVATARS` export kept for import compatibility but reduced to a single default entry.
+  - **Landing copy trimmed further**:
+    - Walkthrough cards → title + single sentence (dropped "What/Why/Quote" tri-column layout).
+    - Use Cases cards → title + single "win" line (dropped Pain/Win/Example grid).
+    - Case Study teaser section on Landing **removed entirely** — the dedicated `/case-studies` page carries this content.
+    - Hero, Problem, Shift, Artifacts, Final CTA subheads all one line ≤ 80 chars.
+  - Lint clean across Avatar, Landing, Dashboard, Onboarding, Settings.
+
 ## Verified status (post iteration_18)
 - ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
 - ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.
