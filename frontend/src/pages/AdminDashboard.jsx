@@ -15,12 +15,6 @@ import { api, formatApiError } from "../lib/api";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminProjectDetailModal from "./AdminProjectDetailModal";
 
-const STATUS_COLOR = {
-  draft: "text-chalk/60",
-  in_progress: "text-chalk",
-  locked: "text-signal",
-};
-// Semantic pill tags matching site palette (accent + surface tokens)
 const STATUS_TAG = {
   draft:       "bg-[var(--surface-3)] text-[var(--text-3)]",
   in_progress: "bg-[var(--accent)]/12 text-[var(--accent)]",
@@ -111,15 +105,6 @@ export default function AdminDashboard() {
       setResetting(false);
     }
   };
-
-  const logout = async () => {
-    try {
-      await api.post("/auth/logout");
-    } catch {
-      // no-op
-    }
-  };
-  void logout;
 
   return (
     <div data-testid="admin-dashboard-page">

@@ -256,6 +256,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - `AdminDashboard.jsx` — added a **VIEW** button on each project row inside the expanded user list. Opens the modal. ESC / backdrop / X close.
   - Verified via `testing_agent_v3_fork` iteration_20 — 6/6 backend, modal renders 12k+ chars of section content, all 3 close paths work, analytics + users regression clean.
 
+- 2026-07-01 — **Iteration 22 — Admin visual refresh** (verified iteration_21):
+  - `/admin` now renders inside the site `AppShell` (Bracket sidebar with Dashboard / Settings / FAQ / Admin) — no more standalone header.
+  - Page intro matches the `/app` pattern: `section-label` pill "Admin console" + `t-hero` display heading "Bracket, at a glance." + muted subtitle.
+  - Tabs (Analytics / Users) restyled with site tokens — active tab uses `--accent` border-bottom.
+  - Analytics KPI cards + chart cards all use `card-brut`; palette pinned to `--surface`, `--hairline`, `--accent`; Poppins throughout; Refresh uses `.btn-ghost`.
+  - Users tab list wrapped in `card-brut`; admin badge is an `--accent`-tinted pill; project rows show semantic status pills; Reset PW modal uses `.btn-brut`/`.btn-ghost`.
+  - Project detail modal uses `card-brut`, `section-label` header, `--accent` INPUT/AI-OUTPUT labels.
+  - Removed the self-serve `SET PW` modal — password change lives on `/settings` (accessible via the sidebar). Removed dead `STATUS_COLOR`/`logout` code.
+  - Verified via `testing_agent_v3_fork` iteration_21 — all functional flows pass, backend regression clean, modal close paths (ESC/backdrop/X) all work.
+
 ## Next tasks
 1. Add Playwright coverage for ProjectDocument owner-reply UI and Claim page (orphan-project setup).
 2. Enforce OTP cooldown server-side.
