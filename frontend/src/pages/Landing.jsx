@@ -42,8 +42,8 @@ export default function Landing() {
           </span>
 
           <h1 className="t-display mt-7 max-w-[820px] mx-auto slide-up" style={{ animationDelay: "60ms" }}>
-            Decide first.<br />
-            <span className="text-[var(--text-2)]">Ship second.</span>
+            You don&apos;t need more tools.<br />
+            <span className="text-[var(--text-2)]">You need better decisions.</span>
           </h1>
 
           <p className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto slide-up" style={{ animationDelay: "120ms" }}>
