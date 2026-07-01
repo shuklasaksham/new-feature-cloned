@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 20 — Admin project detail endpoint + modal fully validated. Backend 6/6 pytest pass: GET /api/admin/projects/{id} returns full project (all required fields, no _id/share_token) + owner for admin; returns 404 for anonymous, non-admin sessions, and unknown ids. Frontend: admin login (via cookie), USERS tab click, search 'yashwork', expand user_abc266bf6316, click VIEW on project 9001ec1b-...ce94 — modal opens (body 12674 chars) with all 5 sections rendered (Meta, Step 1 Situation, Step 2 Context, Step 3 Decision, Step 4 Artifacts). Modal closes correctly on ESC, backdrop click, and X button. Regression clean: analytics tab renders (data-testid=admin-analytics), user list + search + toggle still work.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_20.py",
+    "/app/test_reports/pytest/iter20.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "adminDetailBits.js flatten() uses stack.unshift.apply(stack, kids) — works but a spread `stack.unshift(...kids)` would be more idiomatic; not a bug.",
+    "AdminProjectDetailModal has ESC + backdrop close but does NOT stop propagation on inner scroll — verified fine in current tests (modal content uses onClick stopPropagation).",
+    "Body renders unconditionally when p exists — good; empty sections are guarded by isEmpty() so no orphan headers appear.",
+    "server.py admin_project_detail (line 443) correctly strips _id and share_token via projection {'_id':0,'share_token':0}. Good security hygiene."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_20.py (new)"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% — modal open/close, sections, regression all pass"},
+  "test_credentials": "Admin: support@use-bracket.com / Bracket@123. Non-admin OTP user auto-created via /api/auth/otp/request (dev_code returned when OTP_TEST_MODE=1).",
+  "seed_data_creation": "OTP user e2e+iter20@example.com created for non-admin 404 verification; no cleanup required (existing test-scoped pattern).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Admin login page defaults to OTP mode on this preview build — use POST /api/auth/login via page.context.request to set the httpOnly cookie, then navigate directly to /admin (do NOT try to click through the OTP UI). Sample project id: 9001ec1b-5f38-4ade-a302-c0e85ff6ce94 (yashwork1303@gmail.com, user_abc266bf6316). Modal testids: admin-project-detail-modal, admin-project-detail-body, admin-project-detail-close, admin-project-view-{project_id}, admin-user-toggle-{user_id}, admin-tab-users, admin-tab-analytics. Modal correctly closes on ESC / backdrop / X.",
+  "measurements": {
+    "modal_body_char_count": 12674,
+    "sections_rendered": ["Meta", "Step 1", "Step 2", "Step 3", "Step 4"],
+    "close_methods_verified": ["ESC key", "backdrop click", "X button"],
+    "total_users_at_test": 308,
+    "total_projects_at_test": 184
+  },
+  "rca_of_the_issue": "N/A — feature verification pass; no defects surfaced."
+}

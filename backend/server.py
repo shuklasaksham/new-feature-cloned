@@ -440,6 +440,24 @@ async def admin_user_projects(user_id: str, request: Request):
     return {"projects": [d async for d in cur]}
 
 
+@api.get("/admin/projects/{project_id}")
+async def admin_project_detail(project_id: str, request: Request):
+    """Full project document for the admin drill-down. Includes every step's
+    input + AI output, share status, feedback, replies. Owner-agnostic (admins
+    can view any project). Sensitive fields (share_token) are stripped."""
+    await auth_current_admin(request, db)
+    p = await db.projects.find_one({"id": project_id}, {"_id": 0, "share_token": 0})
+    if not p:
+        raise HTTPException(status_code=404, detail="Project not found")
+    owner = None
+    if p.get("owner_user_id"):
+        owner = await db.users.find_one(
+            {"user_id": p["owner_user_id"]},
+            {"_id": 0, "user_id": 1, "email": 1, "name": 1, "designation": 1},
+        )
+    return {"project": p, "owner": owner}
+
+
 @api.post("/admin/users/{user_id}/reset-password")
 async def admin_reset_password(user_id: str, body: AdminResetPasswordIn, request: Request):
     admin = await auth_current_admin(request, db)

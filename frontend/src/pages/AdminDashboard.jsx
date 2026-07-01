@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import AdminAnalytics from "./AdminAnalytics";
+import AdminProjectDetailModal from "./AdminProjectDetailModal";
 
 const STATUS_COLOR = {
   draft: "text-chalk/60",
@@ -38,6 +39,7 @@ export default function AdminDashboard() {
   const [resetPw, setResetPw] = useState("");
   const [resetting, setResetting] = useState(false);
   const [tab, setTab] = useState("analytics"); // "analytics" | "users"
+  const [detailProjectId, setDetailProjectId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -304,9 +306,19 @@ export default function AdminDashboard() {
                                   {p.share_status && p.share_status !== "none" ? ` · CLIENT ${p.share_status.toUpperCase()}` : ""}
                                 </p>
                               </div>
-                              <span className={`mono-tag ${STATUS_COLOR[p.status] || "text-chalk/60"}`}>
-                                {(p.status || "").toUpperCase()}
-                              </span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`mono-tag ${STATUS_COLOR[p.status] || "text-chalk/60"}`}>
+                                  {(p.status || "").toUpperCase()}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailProjectId(p.id)}
+                                  className="px-2.5 py-1 border border-chalk/25 mono-tag hover:bg-chalk/10"
+                                  data-testid={`admin-project-view-${p.id}`}
+                                >
+                                  VIEW
+                                </button>
+                              </div>
                             </li>
                           ))}
                         </ul>
@@ -446,6 +458,13 @@ export default function AdminDashboard() {
             </div>
           </form>
         </div>
+      )}
+
+      {detailProjectId && (
+        <AdminProjectDetailModal
+          projectId={detailProjectId}
+          onClose={() => setDetailProjectId(null)}
+        />
       )}
     </div>
   );
