@@ -227,10 +227,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     - Hero, Problem, Shift, Artifacts, Final CTA subheads all one line ≤ 80 chars.
   - Lint clean across Avatar, Landing, Dashboard, Onboarding, Settings.
 
-## Verified status (post iteration_18)
-- ✅ 17/17 backend pytest pass — auth, projects CRUD with owner isolation, AI flow steps 1-2 with real LLM, share+reject+owner-reply loop, claim flow, logout.
-- ✅ Frontend Playwright pass — /login → OTP → onboarding → /app dashboard → project create → /project/{id} → inline rename (save + cancel) → logout → redirect.
-- ✅ `/auth/me` `has_password` flag fixed and curl-verified.
+- 2026-07-01 — **Iteration 19 — 3 user-reported bug fixes** (verified by testing agent):
+  - **Bug 1 (P0): Existing users couldn't see their projects.** Root cause: pre-auth-pivot projects were created with only `creator_email` and no `owner_user_id`, but `GET /api/projects` filtered strictly on `owner_user_id`. Fixed by (a) auto-claiming orphan projects on list (`update_many` where `creator_email` matches and owner is missing/empty/null → set `owner_user_id`), (b) `_get_owned_project_or_404` now matches `$or(owner_user_id, creator_email)` with case-insensitive email regex and lazily backfills `owner_user_id` on first access. Files: `/app/backend/server.py` lines 505–560.
+  - **Bug 2 (P1): Sidebar was scrolling with the page.** Root cause: `.app-shell` had `overflow-x: hidden` which broke sticky positioning while the whole page scrolled. Fixed with the standard 3-part CSS pattern — `.app-shell { height: 100vh; overflow: hidden }`, `.app-shell-main { overflow-y: auto }`, `.app-sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto }`. Main content now scrolls in its own container; sidebar stays pinned. File: `/app/frontend/src/index.css` lines 843–889.
+  - **Bug 3 (P1): AI suggestion output quality had degraded.** Root cause: previous session swapped step-output generation from Sonnet 4.5 to Haiku 4.5 for speed, which thinned the prose. Fixed by upgrading `DEFAULT_MODEL` back to `claude-sonnet-4-5-20250929` for step outputs while keeping `SUGGEST_MODEL` on `claude-haiku-4-5-20251001` for typing suggestion latency. File: `/app/backend/ai_engine.py`.
+  - Verified via `testing_agent_v3_fork` iteration_18 — 6/6 backend pass, sidebar CSS verified, `/api/suggest` warm ~1–3s, step1 framing ~4–6s, admin login OK, guest regression OK.
+
+## Verified status (post iteration_19)
+- ✅ Existing users see their legacy `creator_email`-only projects after OTP login.
+- ✅ Sidebar pinned when main content scrolls (dashboard, project view, settings).
+- ✅ Step-output quality restored via Sonnet 4.5; typing suggestions still fast via Haiku 4.5.
 
 ## Backlog (P1)
 - Optionally enforce `OTP_RESEND_COOLDOWN_SECONDS` server-side (currently a constant but not enforced).
@@ -242,8 +248,9 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - Split `server.py` (~1120 lines) into `routes_projects.py`, `routes_share.py`, `routes_export.py`.
 - Public case study CMS.
 - Email-the-PDF on lock-in.
+- Dashboard loading skeleton (prevent empty-state flash on first load).
 
 ## Next tasks
-1. Verify the `/auth/me` has_password fix end-to-end with the testing agent (retest_needed=true from iteration_4).
-2. Add Playwright coverage for ProjectDocument owner-reply UI and Claim page (orphan-project setup).
-3. Enforce OTP cooldown server-side.
+1. Add Playwright coverage for ProjectDocument owner-reply UI and Claim page (orphan-project setup).
+2. Enforce OTP cooldown server-side.
+3. Consider breaking `ProjectFlow.jsx` (>1600 lines) into per-step child components.

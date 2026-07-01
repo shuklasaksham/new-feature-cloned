@@ -19,7 +19,9 @@ API = f"{BASE_URL}/api"
 class TestModelConfig:
     def test_default_and_suggest_model_are_haiku(self):
         from backend import ai_engine  # noqa: WPS433
-        assert ai_engine.DEFAULT_MODEL == "claude-haiku-4-5-20251001"
+        # NOTE: iter 18 upgraded DEFAULT_MODEL to Sonnet 4.5 for step quality;
+        # SUGGEST_MODEL stays on Haiku 4.5 for keystroke latency.
+        assert ai_engine.DEFAULT_MODEL == "claude-sonnet-4-5-20250929"
         assert ai_engine.SUGGEST_MODEL == "claude-haiku-4-5-20251001"
 
 
