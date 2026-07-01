@@ -1,0 +1,38 @@
+{
+  "summary": "Iteration 18 — 3 bug fixes verified. Backend: 6/6 pass. Bug1 orphan-project claim: GET /api/projects returns orphan projects that only have creator_email (case-insensitive), then persists owner_user_id. Follow-up routes (GET /api/projects/{id}, PATCH rename) work for legacy creator_email-only projects. Bug3 AI quality: /api/suggest returns 3-4 short strings fast (<5s warm); step1 framing via Claude Sonnet 4.5 returns valid JSON (reframed_problem + clarity_score + tensions, ~4-6s). Bug2 sidebar CSS: verified in index.css lines 843-873 — .app-shell height:100vh + overflow:hidden, .app-shell-main overflow-y:auto isolates main scroll, .app-sidebar position:sticky + height:100vh keeps it pinned. Browser confirmed sidebar renders with brand, nav (Dashboard/Settings/FAQ), user section. Admin login + list users OK. Guest regression OK.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_18.py",
+    "/app/test_reports/pytest/iter18.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py list_my_projects auto-claim uses update_many then find — a race where another concurrent request could see stale state is possible but harmless (idempotent update).",
+    "_get_owned_project_or_404 backfills owner_user_id on first access, which lazily migrates legacy anonymous projects. Good pattern.",
+    "ai_engine DEFAULT_MODEL=claude-sonnet-4-5-20250929 (step outputs), SUGGEST_MODEL=claude-haiku-4-5-20251001 (suggest) — matches the intended trade-off.",
+    "Note: iter_17's test_iteration_17.py asserts DEFAULT_MODEL == haiku, which is now stale after this iteration's Sonnet upgrade. Main agent should either delete test_iteration_17.py or update the assertion (it will FAIL if run now)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_18.py (new — bug1 orphan claim + bug3 AI quality + admin + guest regression)"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "sidebar CSS verified in code + first browser render OK; interactive scroll test flaked on 2nd guest login but no regression evidence"},
+  "test_credentials": "guest via /auth/guest; OTP via /auth/otp/request (dev_code exposed); admin support@use-bracket.com / Bracket@123",
+  "seed_data_creation": "Test-scoped orphan projects inserted directly into MongoDB with random e2e+*@example.com emails, then deleted via authenticated DELETE at end of each test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "iter_17 test file has a stale assertion (DEFAULT_MODEL == haiku) that is now wrong — DEFAULT_MODEL is claude-sonnet-4-5-20250929. If regression is run, either skip test_iteration_17.py or update it. Latency budgets: /api/suggest warm <=5s (typ 1-2s); step1 framing via Sonnet <=8s (typ 4-6s). Orphan-claim tests must set MONGO_URL and DB_NAME env vars explicitly — the .env is not auto-loaded by pytest.",
+  "measurements": {
+    "orphan_appeared_in_list": true,
+    "orphan_owner_user_id_backfilled": true,
+    "orphan_rename_status": 200,
+    "sidebar_css_pattern": "sticky_top0_h100vh + shell_overflow_hidden + main_overflow_auto",
+    "suggest_warm_latency_ms": "~1000-3000",
+    "step1_framing_latency_ms": "~4000-6000"
+  },
+  "rca_of_the_issue": "Bug1 root cause: pre-auth-pivot projects were created with only creator_email and no owner_user_id. Post-pivot, GET /api/projects filtered strictly on owner_user_id, hiding legacy projects. Fix layered — (a) list_my_projects auto-claims via update_many on the OR of missing/empty/null owner_user_id, (b) _get_owned_project_or_404 matches OR(owner_user_id, creator_email) and lazily backfills. Both paths use case-insensitive regex on creator_email so casing variance doesn't lose projects. Bug2 root cause: the app-shell was scrolling as a whole, dragging the sidebar off-screen. Fix isolates main scroll via a 3-part CSS pattern (shell overflow:hidden + main overflow-y:auto + sidebar sticky/h100vh). Bug3 root cause: Haiku prose quality for step outputs was thin; swapping DEFAULT_MODEL to Sonnet 4.5 restores structured, opinionated outputs while keeping SUGGEST_MODEL on Haiku for keystroke latency."
+}

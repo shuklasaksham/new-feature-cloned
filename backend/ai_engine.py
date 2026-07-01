@@ -11,12 +11,12 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 
 DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"  # fast default for step outputs
+DEFAULT_MODEL = "claude-sonnet-4-5-20250929"  # higher quality for step outputs
 SUGGEST_PROVIDER = "anthropic"
-SUGGEST_MODEL = "claude-haiku-4-5-20251001"  # same fast model for typing suggestions
+SUGGEST_MODEL = "claude-haiku-4-5-20251001"  # ultra-fast for typing suggestions
 
 MODEL_MAP = {
-    "claude": ("anthropic", "claude-haiku-4-5-20251001"),
+    "claude": ("anthropic", "claude-sonnet-4-5-20250929"),
     "gpt": ("openai", "gpt-5.2"),
 }
 

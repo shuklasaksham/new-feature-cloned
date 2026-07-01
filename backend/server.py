@@ -505,9 +505,32 @@ async def create_project(body: CreateProjectIn, request: Request):
 @api.get("/projects")
 async def list_my_projects(request: Request):
     user = await current_user(request, db)
+    # Auto-claim any orphan projects that were created with this user's email
+    # (e.g. before the account was linked, or by a prior guest session). This
+    # keeps the dashboard from silently hiding a user's own work.
+    try:
+        await db.projects.update_many(
+            {
+                "creator_email": _email_match(user["email"]),
+                "$or": [
+                    {"owner_user_id": {"$exists": False}},
+                    {"owner_user_id": ""},
+                    {"owner_user_id": None},
+                ],
+            },
+            {"$set": {"owner_user_id": user["user_id"], "updated_at": _now_iso()}},
+        )
+    except Exception:
+        # Never let a claim failure hide the dashboard.
+        pass
     cur = (
         db.projects.find(
-            {"owner_user_id": user["user_id"]},
+            {
+                "$or": [
+                    {"owner_user_id": user["user_id"]},
+                    {"creator_email": _email_match(user["email"])},
+                ],
+            },
             {
                 "_id": 0, "id": 1, "name": 1, "status": 1, "step": 1,
                 "locked_at": 1, "share_status": 1, "created_at": 1, "updated_at": 1,
@@ -522,9 +545,29 @@ async def list_my_projects(request: Request):
 async def _get_owned_project_or_404(project_id: str, request: Request) -> dict:
     """Fetch a project the current user owns (or 404). Used by all mutating routes."""
     user = await current_user(request, db)
-    p = await db.projects.find_one({"id": project_id, "owner_user_id": user["user_id"]}, {"_id": 0})
+    p = await db.projects.find_one(
+        {
+            "id": project_id,
+            "$or": [
+                {"owner_user_id": user["user_id"]},
+                {"creator_email": _email_match(user["email"])},
+            ],
+        },
+        {"_id": 0},
+    )
     if not p:
         raise HTTPException(status_code=404, detail="Project not found")
+    # Backfill owner_user_id on legacy anonymous projects the user actually owns
+    # so subsequent queries hit the fast path.
+    if not p.get("owner_user_id"):
+        try:
+            await db.projects.update_one(
+                {"id": p["id"]},
+                {"$set": {"owner_user_id": user["user_id"], "updated_at": _now_iso()}},
+            )
+            p["owner_user_id"] = user["user_id"]
+        except Exception:
+            pass
     return p
 
 
