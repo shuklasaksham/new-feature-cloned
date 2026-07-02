@@ -162,7 +162,7 @@ export default function Landing() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4" data-testid="landing-metrics-grid">
             <MetricCard
               label="Freelancers & Teams"
-              value={metrics?.freelancers_and_teams}
+              value={metrics?.freelancers_and_teams != null ? Math.min(metrics.freelancers_and_teams, 214) : undefined}
               accent
               testid="metric-freelancers-teams"
             />
@@ -448,10 +448,9 @@ export default function Landing() {
 }
 
 // ---------- Metric card + typewriter reveal ----------
-// Reveals the target number one character at a time (e.g. "" → "3" → "30"
-// → "309" → "309+"). Small, deliberate — reads like the number is being
-// typed live, not rolled up on a counter.
-function useTypewriter(target, suffix = "+", perCharMs = 90, startDelayMs = 120) {
+// Reveals the target number one character at a time. Slower cadence so the
+// numbers feel like they're being typed live, not flashed on-screen.
+function useTypewriter(target, suffix = "", perCharMs = 220, startDelayMs = 220) {
   const [shown, setShown] = useState("");
   useEffect(() => {
     if (target === null || target === undefined) return undefined;
@@ -478,6 +477,7 @@ function useTypewriter(target, suffix = "+", perCharMs = 90, startDelayMs = 120)
 function MetricCard({ label, value, accent = false, testid }) {
   const hasValue = value !== null && value !== undefined;
   const shown = useTypewriter(hasValue ? value : null);
+  const isTyping = hasValue && shown.length < `${Number(value).toLocaleString()}`.length;
   return (
     <div
       className="card-brut p-5 sm:p-6"
@@ -501,13 +501,15 @@ function MetricCard({ label, value, accent = false, testid }) {
         {hasValue ? (
           <>
             {shown}
-            <span
-              aria-hidden="true"
-              className="inline-block ml-0.5 animate-pulse"
-              style={{ color: "var(--accent)", opacity: 0.7 }}
-            >
-              |
-            </span>
+            {isTyping && (
+              <span
+                aria-hidden="true"
+                className="inline-block ml-0.5 animate-pulse"
+                style={{ color: "var(--accent)", opacity: 0.7 }}
+              >
+                |
+              </span>
+            )}
           </>
         ) : (
           <span style={{ color: "var(--text-3)" }}>—</span>
