@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, PRICING } from "../lib/constants";
 import { api } from "../lib/api";
 
@@ -356,46 +356,13 @@ export default function Landing() {
 
       {/* ============ TESTIMONIALS ============ */}
       <Section id="voices" label="Voices">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 md:mb-10">
-            <h2 className="t-hero">
-              What freelancers <span className="text-[var(--text-2)]">say out loud</span>.
-            </h2>
-            <Link
-              to="/case-studies"
-              className="inline-flex items-center gap-1 text-[13px] text-[var(--text-2)] hover:text-[var(--text)] transition-colors group"
-              data-testid="voices-cta-case-studies"
-            >
-              Read the case studies <ArrowUpRight size={14} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </Link>
+        <div className="pt-16 md:pt-24 pb-16 md:pb-24">
+          <TestimonialsBlock testimonials={TESTIMONIALS} />
+          <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8">
+            <p className="mt-6 text-[13px] text-[var(--text-3)]">
+              Bracket helps <span className="text-[var(--text-2)] font-medium">214 freelancers &amp; teams</span> turn briefs into decisions — from solo ICs to small studios.
+            </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5" data-testid="testimonials-grid">
-            {/* Left / wide card — lavender wash */}
-            <TestimonialCard
-              className="md:col-span-2 min-h-[520px] md:min-h-[560px]"
-              tone="lavender"
-              quote={"You'll probably ship a better project just because of the clarity Bracket puts in your head before you type the first Slack message."}
-              name="Maya Krishnan"
-              role="Independent brand designer · Bangalore"
-              initial="M"
-              testid="testimonial-maya"
-            />
-            {/* Right / narrow card — vivid highlight */}
-            <TestimonialCard
-              className="md:col-span-1 min-h-[520px] md:min-h-[560px]"
-              tone="lime"
-              quote={"Our timelines are aggressive and Bracket makes us actually decide, not just talk."}
-              name="Jordan Vale"
-              role="Head of Design, Ply Studio"
-              initial="J"
-              testid="testimonial-jordan"
-            />
-          </div>
-
-          <p className="mt-6 text-[13px] text-[var(--text-3)]">
-            Bracket helps <span className="text-[var(--text-2)] font-medium">214 freelancers &amp; teams</span> turn briefs into decisions — from solo ICs to small studios.
-          </p>
         </div>
       </Section>
 
@@ -501,19 +468,52 @@ export default function Landing() {
 const TESTIMONIAL_TONES = {
   lavender: {
     bg: "linear-gradient(160deg, #C7CBFB 0%, #E7DFF9 55%, #F1D9EE 100%)",
-    text: "#0A0A0C",
-    subText: "#3B3B44",
+    text: "#0A0A0C", subText: "#3B3B44",
     borderTop: "1px solid rgba(10,10,12,0.10)",
-    initialBg: "#0A0A0C",
-    initialFg: "#F5F5F7",
+    initialBg: "#0A0A0C", initialFg: "#F5F5F7",
   },
   lime: {
     bg: "#D6FF48",
-    text: "#0A0A0C",
-    subText: "#2A2A2E",
+    text: "#0A0A0C", subText: "#2A2A2E",
     borderTop: "1px solid rgba(10,10,12,0.14)",
-    initialBg: "#0A0A0C",
-    initialFg: "#D6FF48",
+    initialBg: "#0A0A0C", initialFg: "#D6FF48",
+  },
+  peach: {
+    bg: "linear-gradient(160deg, #FFD5B8 0%, #FFC1B0 55%, #FFB6A8 100%)",
+    text: "#1A0F0A", subText: "#3B2820",
+    borderTop: "1px solid rgba(10,10,12,0.10)",
+    initialBg: "#1A0F0A", initialFg: "#FFD5B8",
+  },
+  sky: {
+    bg: "linear-gradient(160deg, #BEE3FF 0%, #D5EEFF 55%, #E5F3FF 100%)",
+    text: "#0A1520", subText: "#2B3A48",
+    borderTop: "1px solid rgba(10,10,12,0.10)",
+    initialBg: "#0A1520", initialFg: "#BEE3FF",
+  },
+  mint: {
+    bg: "linear-gradient(160deg, #BFF5D9 0%, #D6F8E4 55%, #EBFBF1 100%)",
+    text: "#0A1810", subText: "#2A3B31",
+    borderTop: "1px solid rgba(10,10,12,0.10)",
+    initialBg: "#0A1810", initialFg: "#BFF5D9",
+  },
+  rose: {
+    bg: "linear-gradient(160deg, #FFC7DA 0%, #FFD5E2 55%, #FFE0EB 100%)",
+    text: "#1B0A12", subText: "#3B2530",
+    borderTop: "1px solid rgba(10,10,12,0.10)",
+    initialBg: "#1B0A12", initialFg: "#FFC7DA",
+  },
+  sand: {
+    bg: "linear-gradient(160deg, #EFE5D3 0%, #F4EBDC 55%, #F8F1E4 100%)",
+    text: "#1A1408", subText: "#3B3225",
+    borderTop: "1px solid rgba(10,10,12,0.10)",
+    initialBg: "#1A1408", initialFg: "#EFE5D3",
+  },
+  ink: {
+    // dark inverse card for visual rhythm against the lights
+    bg: "linear-gradient(160deg, #1A1B21 0%, #121317 100%)",
+    text: "#F5F5F7", subText: "#9CA0AB",
+    borderTop: "1px solid rgba(255,255,255,0.09)",
+    initialBg: "#F5F5F7", initialFg: "#0A0A0C",
   },
 };
 
@@ -562,6 +562,154 @@ function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•"
         </div>
       </figcaption>
     </figure>
+  );
+}
+
+// ---------- Testimonials data + carousel ----------
+const TESTIMONIALS = [
+  {
+    tone: "lavender",
+    quote: "You'll probably ship a better project just because of the clarity Bracket puts in your head before you type the first Slack message.",
+    name: "Maya Krishnan",
+    role: "Independent brand designer · Bangalore",
+    initial: "M",
+  },
+  {
+    tone: "lime",
+    quote: "Our timelines are aggressive and Bracket makes us actually decide, not just talk.",
+    name: "Jordan Vale",
+    role: "Head of Design, Ply Studio",
+    initial: "J",
+  },
+  {
+    tone: "peach",
+    quote: "I used to spend two hours writing a scope doc. Now I copy Bracket's and edit two lines. Client signed it same day.",
+    name: "Anaya Kapoor",
+    role: "Freelance product designer",
+    initial: "A",
+  },
+  {
+    tone: "sky",
+    quote: "The risk flags alone saved us from a scope-creep nightmare on our biggest retainer this year.",
+    name: "Ravi Menon",
+    role: "Design lead, Ninth Studio",
+    initial: "R",
+  },
+  {
+    tone: "mint",
+    quote: "It's the first tool that treats a design decision like an object with a reason attached, not just a Figma frame.",
+    name: "Elif Demir",
+    role: "Independent UX consultant · Berlin",
+    initial: "E",
+  },
+  {
+    tone: "rose",
+    quote: "Two rounds of client feedback dropped to zero. They see the thinking; they stop second-guessing the pixels.",
+    name: "Priya Shah",
+    role: "Freelance brand & web designer",
+    initial: "P",
+  },
+  {
+    tone: "ink",
+    quote: "Bracket is the only ‘AI tool' that has actually made me slower in the right places and faster in the wrong ones.",
+    name: "Kenji Ito",
+    role: "Founder, Halftone Collective",
+    initial: "K",
+  },
+];
+
+function TestimonialsBlock({ testimonials }) {
+  const scrollerRef = useRef(null);
+  const [atStart, setAtStart] = useState(true);
+  const [atEnd, setAtEnd] = useState(false);
+
+  const updateEdges = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setAtStart(el.scrollLeft <= 4);
+    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return undefined;
+    updateEdges();
+    el.addEventListener("scroll", updateEdges, { passive: true });
+    window.addEventListener("resize", updateEdges);
+    return () => {
+      el.removeEventListener("scroll", updateEdges);
+      window.removeEventListener("resize", updateEdges);
+    };
+  }, []);
+
+  const scrollBy = (dir) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    // Advance by roughly one card width (first child).
+    const card = el.querySelector("[data-carousel-card]");
+    const step = card ? card.clientWidth + 20 : Math.round(el.clientWidth * 0.85);
+    el.scrollBy({ left: dir * step, behavior: "smooth" });
+  };
+
+  return (
+    <div data-testid="testimonials-carousel">
+      {/* Heading + nav row */}
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 md:mb-10">
+          <h2 className="t-hero">
+            What freelancers <span className="text-[var(--text-2)]">say out loud</span>.
+          </h2>
+          <div className="flex items-center gap-2" data-testid="testimonials-nav">
+            <button
+              type="button"
+              onClick={() => scrollBy(-1)}
+              disabled={atStart}
+              aria-label="Previous testimonial"
+              className="w-10 h-10 rounded-full border border-[var(--hairline)] flex items-center justify-center text-[var(--text)] hover:border-[var(--text-2)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] transition-colors"
+              data-testid="testimonials-prev"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollBy(1)}
+              disabled={atEnd}
+              aria-label="Next testimonial"
+              className="w-10 h-10 rounded-full border border-[var(--hairline)] flex items-center justify-center text-[var(--text)] hover:border-[var(--text-2)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] transition-colors"
+              data-testid="testimonials-next"
+            >
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Horizontal snap-scroll rail. Padding lets first/last cards align
+          with the container gutter on wide screens. */}
+      <div
+        ref={scrollerRef}
+        className="flex gap-4 md:gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 -mb-4 px-5 sm:px-6 md:px-8 lg:pl-[max(2rem,calc((100vw-1200px)/2+2rem))] lg:pr-[max(2rem,calc((100vw-1200px)/2+2rem))] [&::-webkit-scrollbar]:hidden"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {testimonials.map((t, i) => (
+          <div
+            key={i}
+            data-carousel-card
+            className="snap-start shrink-0 w-[85vw] sm:w-[520px] md:w-[560px] lg:w-[600px]"
+          >
+            <TestimonialCard
+              tone={t.tone}
+              quote={t.quote}
+              name={t.name}
+              role={t.role}
+              initial={t.initial}
+              className="h-[520px] md:h-[560px]"
+              testid={`testimonial-${i}`}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
