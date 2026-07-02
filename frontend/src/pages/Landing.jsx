@@ -447,31 +447,37 @@ export default function Landing() {
   );
 }
 
-// ---------- Metric card + count-up helpers ----------
-function useCountUp(target, durationMs = 900) {
-  const [value, setValue] = useState(0);
+// ---------- Metric card + typewriter reveal ----------
+// Reveals the target number one character at a time (e.g. "" → "3" → "30"
+// → "309" → "309+"). Small, deliberate — reads like the number is being
+// typed live, not rolled up on a counter.
+function useTypewriter(target, suffix = "+", perCharMs = 90, startDelayMs = 120) {
+  const [shown, setShown] = useState("");
   useEffect(() => {
     if (target === null || target === undefined) return undefined;
-    const from = 0;
-    const to = Number(target) || 0;
-    const start = performance.now();
-    let raf = 0;
-    const tick = (now) => {
-      const t = Math.min(1, (now - start) / durationMs);
-      // easeOutCubic
-      const eased = 1 - Math.pow(1 - t, 3);
-      setValue(Math.round(from + (to - from) * eased));
-      if (t < 1) raf = requestAnimationFrame(tick);
+    const full = `${Number(target).toLocaleString()}${suffix}`;
+    setShown("");
+    let i = 0;
+    let timer = 0;
+    const tick = () => {
+      i += 1;
+      setShown(full.slice(0, i));
+      if (i < full.length) {
+        timer = window.setTimeout(tick, perCharMs);
+      }
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [target, durationMs]);
-  return value;
+    const start = window.setTimeout(tick, startDelayMs);
+    return () => {
+      clearTimeout(start);
+      clearTimeout(timer);
+    };
+  }, [target, suffix, perCharMs, startDelayMs]);
+  return shown;
 }
 
 function MetricCard({ label, value, accent = false, testid }) {
   const hasValue = value !== null && value !== undefined;
-  const shown = useCountUp(hasValue ? value : 0);
+  const shown = useTypewriter(hasValue ? value : null);
   return (
     <div
       className="card-brut p-5 sm:p-6"
@@ -489,9 +495,21 @@ function MetricCard({ label, value, accent = false, testid }) {
           fontSize: "clamp(2rem, 3.4vw, 2.8rem)",
           letterSpacing: "-0.03em",
           color: accent ? "var(--accent)" : "var(--text)",
+          minHeight: "1em", // avoid layout jump while typing
         }}
       >
-        {hasValue ? shown.toLocaleString() : (
+        {hasValue ? (
+          <>
+            {shown}
+            <span
+              aria-hidden="true"
+              className="inline-block ml-0.5 animate-pulse"
+              style={{ color: "var(--accent)", opacity: 0.7 }}
+            >
+              |
+            </span>
+          </>
+        ) : (
           <span style={{ color: "var(--text-3)" }}>—</span>
         )}
       </div>
