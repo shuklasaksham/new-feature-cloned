@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, PRICING } from "../lib/constants";
 import { api } from "../lib/api";
 
@@ -619,95 +619,53 @@ const TESTIMONIALS = [
 ];
 
 function TestimonialsBlock({ testimonials }) {
-  const scrollerRef = useRef(null);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
-
-  const updateEdges = () => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    setAtStart(el.scrollLeft <= 4);
-    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4);
-  };
-
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return undefined;
-    updateEdges();
-    el.addEventListener("scroll", updateEdges, { passive: true });
-    window.addEventListener("resize", updateEdges);
-    return () => {
-      el.removeEventListener("scroll", updateEdges);
-      window.removeEventListener("resize", updateEdges);
-    };
-  }, []);
-
-  const scrollBy = (dir) => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    // Advance by roughly one card width (first child).
-    const card = el.querySelector("[data-carousel-card]");
-    const step = card ? card.clientWidth + 20 : Math.round(el.clientWidth * 0.85);
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
-  };
-
+  // Duplicate the list once so translating the track by -50% lands on the
+  // identical second copy — the loop then reads as continuous.
+  const loopItems = [...testimonials, ...testimonials];
   return (
     <div data-testid="testimonials-carousel">
-      {/* Heading + nav row */}
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 md:mb-10">
+        <div className="mb-8 md:mb-10">
           <h2 className="t-hero">
             What freelancers <span className="text-[var(--text-2)]">say out loud</span>.
           </h2>
-          <div className="flex items-center gap-2" data-testid="testimonials-nav">
-            <button
-              type="button"
-              onClick={() => scrollBy(-1)}
-              disabled={atStart}
-              aria-label="Previous testimonial"
-              className="w-10 h-10 rounded-full border border-[var(--hairline)] flex items-center justify-center text-[var(--text)] hover:border-[var(--text-2)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] transition-colors"
-              data-testid="testimonials-prev"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollBy(1)}
-              disabled={atEnd}
-              aria-label="Next testimonial"
-              className="w-10 h-10 rounded-full border border-[var(--hairline)] flex items-center justify-center text-[var(--text)] hover:border-[var(--text-2)] disabled:opacity-30 disabled:hover:border-[var(--hairline)] transition-colors"
-              data-testid="testimonials-next"
-            >
-              <ArrowRight size={16} />
-            </button>
-          </div>
         </div>
       </div>
 
-      {/* Horizontal snap-scroll rail. Padding lets first/last cards align
-          with the container gutter on wide screens. */}
+      {/* Full-bleed marquee. Overflow hidden clips the duplicated tail so
+          the track appears to loop indefinitely. Hover pauses via CSS. */}
       <div
-        ref={scrollerRef}
-        className="flex gap-4 md:gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 -mb-4 px-5 sm:px-6 md:px-8 lg:pl-[max(2rem,calc((100vw-1200px)/2+2rem))] lg:pr-[max(2rem,calc((100vw-1200px)/2+2rem))] [&::-webkit-scrollbar]:hidden"
-        style={{ scrollbarWidth: "none" }}
+        className="relative overflow-hidden"
+        style={{
+          // Soft edge fade so cards feather in/out at the viewport edges.
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
+          maskImage:
+            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
+        }}
+        data-testid="testimonials-marquee"
       >
-        {testimonials.map((t, i) => (
-          <div
-            key={i}
-            data-carousel-card
-            className="snap-start shrink-0 w-[85vw] sm:w-[520px] md:w-[560px] lg:w-[600px]"
-          >
-            <TestimonialCard
-              tone={t.tone}
-              quote={t.quote}
-              name={t.name}
-              role={t.role}
-              initial={t.initial}
-              className="h-[520px] md:h-[560px]"
-              testid={`testimonial-${i}`}
-            />
-          </div>
-        ))}
+        <div className="testimonial-track py-2">
+          {loopItems.map((t, i) => (
+            <div
+              key={i}
+              aria-hidden={i >= testimonials.length ? "true" : undefined}
+              className="shrink-0 w-[85vw] sm:w-[520px] md:w-[560px] lg:w-[600px]"
+            >
+              <TestimonialCard
+                tone={t.tone}
+                quote={t.quote}
+                name={t.name}
+                role={t.role}
+                initial={t.initial}
+                className="h-[520px] md:h-[560px]"
+                testid={
+                  i < testimonials.length ? `testimonial-${i}` : undefined
+                }
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

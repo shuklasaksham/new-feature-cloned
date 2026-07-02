@@ -792,6 +792,25 @@ body::before {
 /* Pricing-page utility marquee + blueprint bg */
 .marquee-track { display: inline-flex; gap: 56px; white-space: nowrap; animation: marquee 38s linear infinite; }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* Testimonial carousel — infinite scroll rail. Content is duplicated in JSX
+   so translating by -50% lands on the identical second copy and loops
+   seamlessly. Pauses on hover so users can read a specific card. */
+.testimonial-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+  animation: testimonial-loop 60s linear infinite;
+  will-change: transform;
+}
+.testimonial-track:hover { animation-play-state: paused; }
+@keyframes testimonial-loop {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-track { animation: none; }
+}
 .blueprint-bg {
   background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
                     linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
