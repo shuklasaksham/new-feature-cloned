@@ -354,6 +354,51 @@ export default function Landing() {
 
       {/* Case study teaser removed — dedicated /case-studies page carries it. */}
 
+      {/* ============ TESTIMONIALS ============ */}
+      <Section id="voices" label="Voices">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 md:mb-10">
+            <h2 className="t-hero">
+              What freelancers <span className="text-[var(--text-2)]">say out loud</span>.
+            </h2>
+            <Link
+              to="/case-studies"
+              className="inline-flex items-center gap-1 text-[13px] text-[var(--text-2)] hover:text-[var(--text)] transition-colors group"
+              data-testid="voices-cta-case-studies"
+            >
+              Read the case studies <ArrowUpRight size={14} className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5" data-testid="testimonials-grid">
+            {/* Left / wide card — lavender wash */}
+            <TestimonialCard
+              className="md:col-span-2 min-h-[520px] md:min-h-[560px]"
+              tone="lavender"
+              quote={"You'll probably ship a better project just because of the clarity Bracket puts in your head before you type the first Slack message."}
+              name="Maya Krishnan"
+              role="Independent brand designer · Bangalore"
+              initial="M"
+              testid="testimonial-maya"
+            />
+            {/* Right / narrow card — vivid highlight */}
+            <TestimonialCard
+              className="md:col-span-1 min-h-[520px] md:min-h-[560px]"
+              tone="lime"
+              quote={"Our timelines are aggressive and Bracket makes us actually decide, not just talk."}
+              name="Jordan Vale"
+              role="Head of Design, Ply Studio"
+              initial="J"
+              testid="testimonial-jordan"
+            />
+          </div>
+
+          <p className="mt-6 text-[13px] text-[var(--text-3)]">
+            Bracket helps <span className="text-[var(--text-2)] font-medium">214 freelancers &amp; teams</span> turn briefs into decisions — from solo ICs to small studios.
+          </p>
+        </div>
+      </Section>
+
       {/* ============ PRICING ============ */}
       <Section id="pricing" label="Pricing">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
@@ -444,6 +489,79 @@ export default function Landing() {
         </div>
       </section>
     </div>
+  );
+}
+
+// ---------- Testimonial card ----------
+// Big, poster-style quote with a tinted background. Two supported tones:
+//   • lavender — soft lavender→blue wash, dark ink text
+//   • lime     — vivid yellow-green, dark ink text
+// Both intentionally use dark text so quotes read like signage against
+// the near-black page.
+const TESTIMONIAL_TONES = {
+  lavender: {
+    bg: "linear-gradient(160deg, #C7CBFB 0%, #E7DFF9 55%, #F1D9EE 100%)",
+    text: "#0A0A0C",
+    subText: "#3B3B44",
+    borderTop: "1px solid rgba(10,10,12,0.10)",
+    initialBg: "#0A0A0C",
+    initialFg: "#F5F5F7",
+  },
+  lime: {
+    bg: "#D6FF48",
+    text: "#0A0A0C",
+    subText: "#2A2A2E",
+    borderTop: "1px solid rgba(10,10,12,0.14)",
+    initialBg: "#0A0A0C",
+    initialFg: "#D6FF48",
+  },
+};
+
+function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•", className = "", testid }) {
+  const t = TESTIMONIAL_TONES[tone] || TESTIMONIAL_TONES.lavender;
+  return (
+    <figure
+      className={`relative rounded-2xl overflow-hidden flex flex-col p-7 sm:p-8 md:p-10 ${className}`}
+      style={{ background: t.bg, color: t.text }}
+      data-testid={testid}
+    >
+      <blockquote
+        className="font-display leading-[1.15] tracking-[-0.02em]"
+        style={{
+          fontSize: "clamp(1.5rem, 2.4vw, 2.1rem)",
+          fontWeight: 500,
+          color: t.text,
+        }}
+      >
+        <span aria-hidden="true">&ldquo;</span>
+        {quote}
+        <span aria-hidden="true">&rdquo;</span>
+      </blockquote>
+
+      <figcaption
+        className="mt-auto pt-8 flex items-center gap-3"
+        style={{ borderTop: t.borderTop, marginTop: "auto" }}
+      >
+        <span
+          className="shrink-0 rounded-full flex items-center justify-center font-display"
+          style={{
+            width: 36,
+            height: 36,
+            background: t.initialBg,
+            color: t.initialFg,
+            fontSize: 14,
+            fontWeight: 500,
+          }}
+          aria-hidden="true"
+        >
+          {initial}
+        </span>
+        <div className="min-w-0">
+          <div className="text-[13px] font-medium" style={{ color: t.text }}>{name}</div>
+          <div className="text-[12px] mt-0.5" style={{ color: t.subText }}>{role}</div>
+        </div>
+      </figcaption>
+    </figure>
   );
 }
 
