@@ -170,33 +170,37 @@ export default function Landing() {
             <MetricCard
               label="Freelancers & Teams"
               value={metrics?.freelancers_and_teams != null ? Math.min(metrics.freelancers_and_teams, 214) : undefined}
-              accent
+              tone="lavender"
               testid="metric-freelancers-teams"
             />
             <MetricCard
               label="Projects Scoped"
               value={metrics?.projects_scoped}
+              tone="peach"
               testid="metric-projects-scoped"
             />
             <MetricCard
               label="Requirements Extracted"
               value={metrics?.requirements_extracted}
+              tone="mint"
               testid="metric-requirements-extracted"
             />
             <MetricCard
               label="Risks Identified"
               value={metrics?.risks_identified}
+              tone="rose"
               testid="metric-risks-identified"
             />
             <MetricCard
               label="Client Questions Generated"
               value={metrics?.client_questions_generated}
+              tone="sky"
               testid="metric-client-questions"
             />
             <MetricCard
               label="Projects Started with AI"
               value={metrics?.projects_started_with_ai}
-              accent
+              tone="lime"
               testid="metric-projects-started"
             />
           </div>
@@ -705,18 +709,21 @@ function useTypewriter(target, suffix = "", perCharMs = 220, startDelayMs = 220)
   return shown;
 }
 
-function MetricCard({ label, value, accent = false, testid }) {
+function MetricCard({ label, value, tone = "lavender", testid }) {
+  const t = TESTIMONIAL_TONES[tone] || TESTIMONIAL_TONES.lavender;
   const hasValue = value !== null && value !== undefined;
   const shown = useTypewriter(hasValue ? value : null);
-  const isTyping = hasValue && shown.length < `${Number(value).toLocaleString()}`.length;
+  const isTyping =
+    hasValue && shown.length < `${Number(value).toLocaleString()}`.length;
   return (
     <div
-      className="card-brut p-5 sm:p-6"
+      className="rounded-2xl p-5 sm:p-6 overflow-hidden"
+      style={{ background: t.bg, color: t.text }}
       data-testid={testid}
     >
       <div
-        className="t-meta"
-        style={{ color: "var(--text-3)" }}
+        className="text-[11px] uppercase tracking-wider"
+        style={{ color: t.subText }}
       >
         {label}
       </div>
@@ -725,8 +732,9 @@ function MetricCard({ label, value, accent = false, testid }) {
         style={{
           fontSize: "clamp(2rem, 3.4vw, 2.8rem)",
           letterSpacing: "-0.03em",
-          color: accent ? "var(--accent)" : "var(--text)",
-          minHeight: "1em", // avoid layout jump while typing
+          color: t.text,
+          minHeight: "1em",
+          fontWeight: 500,
         }}
       >
         {hasValue ? (
@@ -736,14 +744,14 @@ function MetricCard({ label, value, accent = false, testid }) {
               <span
                 aria-hidden="true"
                 className="inline-block ml-0.5 animate-pulse"
-                style={{ color: "var(--accent)", opacity: 0.7 }}
+                style={{ color: t.text, opacity: 0.55 }}
               >
                 |
               </span>
             )}
           </>
         ) : (
-          <span style={{ color: "var(--text-3)" }}>—</span>
+          <span style={{ color: t.subText }}>—</span>
         )}
       </div>
     </div>
