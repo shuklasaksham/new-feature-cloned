@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, PRICING } from "../lib/constants";
+import { api } from "../lib/api";
 
 const Section = ({ id, label, children, className = "" }) => (
   <section id={id} className={`relative ${className}`}>
@@ -17,6 +18,27 @@ const Section = ({ id, label, children, className = "" }) => (
 export default function Landing() {
   const [currency, setCurrency] = useState("INR");
   const cur = PRICING.currencies[currency];
+
+  // Public metrics — refresh on mount, then every 60s so the numbers feel
+  // live without hammering the API.
+  const [metrics, setMetrics] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const { data } = await api.get("/public/metrics");
+        if (!cancelled) setMetrics(data);
+      } catch {
+        // Silent — the section falls back to placeholder dashes.
+      }
+    };
+    load();
+    const t = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, []);
 
   const marquee = useMemo(
     () => [
@@ -85,7 +107,7 @@ export default function Landing() {
                     Acme is rebranding their fintech landing — they want it &quot;more premium&quot; but the existing system is fine. Client keeps adding requests.
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className="suggest-chip">+ Add: "premium" is vague</span>
+                    <span className="suggest-chip">+ Add: &quot;premium&quot; is vague</span>
                     <span className="suggest-chip">+ Add: existing brand is solid</span>
                     <span className="suggest-chip">+ Add: scope is creeping</span>
                   </div>
@@ -114,6 +136,65 @@ export default function Landing() {
           ))}
         </div>
       </div>
+
+      {/* ============ METRICS ============ */}
+      <section id="metrics" className="relative" data-testid="landing-metrics">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <span className="section-label"><span className="dot" />Live from Bracket</span>
+              <h2 className="t-hero mt-4">
+                Decisions,{" "}
+                <span className="text-[var(--text-2)]">out loud</span>.
+              </h2>
+              <p className="mt-3 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-lg">
+                Every number below is real, right now. What Bracket has helped
+                freelancers and small teams unpack — no dashboards, no theatre.
+              </p>
+            </div>
+            <span className="t-meta text-[var(--text-3)]">
+              Updated live · refreshes every minute
+            </span>
+          </div>
+        </div>
+
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4" data-testid="landing-metrics-grid">
+            <MetricCard
+              label="Freelancers & Teams"
+              value={metrics?.freelancers_and_teams}
+              accent
+              testid="metric-freelancers-teams"
+            />
+            <MetricCard
+              label="Projects Scoped"
+              value={metrics?.projects_scoped}
+              testid="metric-projects-scoped"
+            />
+            <MetricCard
+              label="Requirements Extracted"
+              value={metrics?.requirements_extracted}
+              testid="metric-requirements-extracted"
+            />
+            <MetricCard
+              label="Risks Identified"
+              value={metrics?.risks_identified}
+              testid="metric-risks-identified"
+            />
+            <MetricCard
+              label="Client Questions Generated"
+              value={metrics?.client_questions_generated}
+              testid="metric-client-questions"
+            />
+            <MetricCard
+              label="Projects Started with AI"
+              value={metrics?.projects_started_with_ai}
+              accent
+              testid="metric-projects-started"
+            />
+          </div>
+        </div>
+      </section>
 
       {/* ============ PROBLEM ============ */}
       <Section id="problem" label="The problem">
@@ -362,6 +443,58 @@ export default function Landing() {
           </div>
         </div>
       </section>
+    </div>
+  );
+}
+
+// ---------- Metric card + count-up helpers ----------
+function useCountUp(target, durationMs = 900) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (target === null || target === undefined) return undefined;
+    const from = 0;
+    const to = Number(target) || 0;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(Math.round(from + (to - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+  return value;
+}
+
+function MetricCard({ label, value, accent = false, testid }) {
+  const hasValue = value !== null && value !== undefined;
+  const shown = useCountUp(hasValue ? value : 0);
+  return (
+    <div
+      className="card-brut p-5 sm:p-6"
+      data-testid={testid}
+    >
+      <div
+        className="t-meta"
+        style={{ color: "var(--text-3)" }}
+      >
+        {label}
+      </div>
+      <div
+        className="mt-3 font-display leading-none"
+        style={{
+          fontSize: "clamp(2rem, 3.4vw, 2.8rem)",
+          letterSpacing: "-0.03em",
+          color: accent ? "var(--accent)" : "var(--text)",
+        }}
+      >
+        {hasValue ? shown.toLocaleString() : (
+          <span style={{ color: "var(--text-3)" }}>—</span>
+        )}
+      </div>
     </div>
   );
 }

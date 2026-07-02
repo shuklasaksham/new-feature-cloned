@@ -379,6 +379,72 @@ async def auth_claim(body: ClaimDecisionIn, request: Request):
 
 
 # ===========================================================================
+# PUBLIC METRICS — safe aggregate counters for the landing page.
+# No authentication required. Only aggregated counts are returned; no
+# individual project or user data leaks.
+# ===========================================================================
+@api.get("/public/metrics")
+async def public_metrics():
+    """Aggregate KPIs shown on the landing page's metrics strip. All counts
+    are numeric only — no identifiers, no content."""
+    # 1. Freelancers & Teams — total signed-up users.
+    total_users = await db.users.count_documents({})
+
+    # 2. Projects Scoped — projects that reached the artifacts step
+    # (i.e. a scope doc, client message, assumptions and risk flags were
+    # generated). We accept either a locked project or one that has any
+    # artifacts field populated.
+    projects_scoped = await db.projects.count_documents({
+        "$or": [
+            {"status": "locked"},
+            {"artifacts": {"$exists": True, "$nin": [None, {}]}},
+        ],
+    })
+
+    # 3. Projects Started with AI — any project where the framing step has
+    # produced output (i.e. the user actually used Bracket's brain).
+    projects_started = await db.projects.count_documents({
+        "framing": {"$exists": True, "$nin": [None, {}]},
+    })
+
+    # 4/5/6 — array-length sums via aggregation. We coerce missing/non-array
+    # fields to empty arrays so $size never explodes.
+    def _sum_size(field: str) -> list[dict]:
+        return [
+            {"$project": {"n": {"$size": {"$ifNull": [field, []]}}}},
+            {"$group": {"_id": None, "total": {"$sum": "$n"}}},
+        ]
+
+    async def _agg_sum(pipeline: list[dict]) -> int:
+        async for row in db.projects.aggregate(pipeline):
+            return int(row.get("total") or 0)
+        return 0
+
+    # Requirements Extracted — AI-surfaced "key signals" that actually drive
+    # the decision (context step output).
+    requirements_extracted = await _agg_sum(_sum_size("$context.key_signals"))
+
+    # Risks Identified — every risk called out across all decisions and
+    # artifact risk-flag lists.
+    risks_from_decision = await _agg_sum(_sum_size("$decision.risks"))
+    risks_from_artifacts = await _agg_sum(_sum_size("$artifacts.risk_flags"))
+    risks_identified = risks_from_decision + risks_from_artifacts
+
+    # Client Questions Generated — assumptions surfaced during artifacts
+    # (things the freelancer should verify with the client before shipping).
+    client_questions = await _agg_sum(_sum_size("$artifacts.assumptions"))
+
+    return {
+        "freelancers_and_teams": total_users,
+        "projects_scoped": projects_scoped,
+        "requirements_extracted": requirements_extracted,
+        "risks_identified": risks_identified,
+        "client_questions_generated": client_questions,
+        "projects_started_with_ai": projects_started,
+    }
+
+
+# ===========================================================================
 # ADMIN — hidden, gated by ADMIN_EMAILS env var. Not linked from anywhere
 # public. Non-admin sessions get 404 (deliberately misleading) so the
 # existence of /api/admin is never revealed to end users.
