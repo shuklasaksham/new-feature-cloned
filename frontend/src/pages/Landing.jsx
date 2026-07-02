@@ -526,13 +526,6 @@ const TESTIMONIAL_TONES = {
 
 function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•", className = "", testid }) {
   const t = TESTIMONIAL_TONES[tone] || TESTIMONIAL_TONES.lavender;
-  // Auto-shrink long quotes so the card never overflows its fixed height.
-  const len = (quote || "").length;
-  const fontSize =
-    len > 260 ? "clamp(0.95rem, 1.35vw, 1.15rem)" :
-    len > 160 ? "clamp(1.1rem, 1.7vw, 1.4rem)" :
-                "clamp(1.5rem, 2.4vw, 2.1rem)";
-  const leading = len > 160 ? 1.35 : 1.15;
   return (
     <figure
       className={`relative rounded-2xl overflow-hidden flex flex-col p-7 sm:p-8 md:p-10 ${className}`}
@@ -540,10 +533,9 @@ function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•"
       data-testid={testid}
     >
       <blockquote
-        className="font-display tracking-[-0.02em]"
+        className="font-display leading-[1.15] tracking-[-0.02em]"
         style={{
-          fontSize,
-          lineHeight: leading,
+          fontSize: "clamp(1.5rem, 2.4vw, 2.1rem)",
           fontWeight: 500,
           color: t.text,
         }}
@@ -584,14 +576,14 @@ function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•"
 const TESTIMONIALS = [
   {
     tone: "lavender",
-    quote: "You'll probably ship a better project just because of the clarity Bracket puts in your head before you type the first Slack message.",
+    quote: "You'll ship a better project just from the clarity Bracket puts in your head before the first Slack message.",
     name: "Maya Krishnan",
     role: "Independent brand designer · Bangalore",
     initial: "M",
   },
   {
     tone: "peach",
-    quote: "I used Bracket while handling a commercial clothing order worth nearly ₹1 lakh with a tight 14-day deadline, alongside several ongoing orders from my regular clients. Bracket helped me create a clear agreement that I could share with the client, which made expectations and timelines transparent from the start. It gave me the confidence to prioritize my work, stay organized, and deliver everything on time. It's a tool I'd happily recommend to any freelancer managing professional client projects.",
+    quote: "I scoped a ₹1 lakh clothing order with a 14-day deadline. Clear agreement, transparent timelines, delivered on time.",
     name: "Yash Kamdar",
     role: "Manager",
     initial: "Y",
@@ -605,14 +597,14 @@ const TESTIMONIALS = [
   },
   {
     tone: "sky",
-    quote: "I personally use Bracket every time I start a new design project. It helps me better understand my manager's brief, making it easier to plan my production workflow. I'm also able to create a realistic timeline for completing my projects with greater confidence.",
+    quote: "I use Bracket for every new project. It clarifies the brief and helps me set a realistic timeline with confidence.",
     name: "Abhinav Sharma",
     role: "Motion Designer",
     initial: "A",
   },
   {
     tone: "rose",
-    quote: "What impressed me most about Bracket is how it transforms unstructured client discussions into a clear project scope. It reduces ambiguity, improves communication, and helps designers start projects with much more confidence.",
+    quote: "Bracket turns unstructured client discussions into a clear project scope. Less ambiguity, better communication, more confidence.",
     name: "Kshitij Sahu",
     role: "Experience Designer",
     initial: "K",
@@ -626,7 +618,7 @@ const TESTIMONIALS = [
   },
   {
     tone: "ink",
-    quote: "I like how Bracket organizes project requirements in one place. It helps teams avoid mistakes caused by unclear communication.",
+    quote: "Bracket organizes project requirements in one place — teams avoid the mistakes unclear communication creates.",
     name: "Karthick D",
     role: "QA Expert",
     initial: "K",
