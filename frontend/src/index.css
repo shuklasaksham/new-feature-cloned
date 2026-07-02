@@ -790,8 +790,20 @@ body::before {
 .output-actions { display: inline-flex; gap: 6px; }
 
 /* Pricing-page utility marquee + blueprint bg */
-.marquee-track { display: inline-flex; gap: 56px; white-space: nowrap; animation: marquee 38s linear infinite; }
-@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee-track {
+  display: inline-flex;
+  gap: 56px;
+  white-space: nowrap;
+  animation: marquee 45s linear infinite;
+  will-change: transform;
+  /* Force GPU compositing — kills sub-pixel jitter that some browsers
+     render as vertical striations during long, slow translations. */
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+.marquee-track:hover { animation-play-state: paused; }
+@keyframes marquee { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }
+@media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
 /* Testimonial carousel — infinite scroll rail. Content is duplicated in JSX
    so translating by -50% lands on the identical second copy and loops

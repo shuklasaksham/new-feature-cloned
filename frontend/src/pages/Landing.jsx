@@ -48,6 +48,10 @@ export default function Landing() {
       "Confidence without arrogance",
       "For designers + freelancers",
       "Authority without ego",
+      "Reasoning, not receipts",
+      "Fewer meetings. More clarity.",
+      "Clients thank the thinking",
+      "Every step, defensible",
     ],
     []
   );
@@ -132,7 +136,10 @@ export default function Landing() {
       <div className="border-y border-[var(--hairline)] py-5 overflow-hidden">
         <div className="marquee-track">
           {[...marquee, ...marquee].map((w, i) => (
-            <span key={i} className="t-meta text-[var(--text-3)]">{w}</span>
+            <span key={i} className="t-meta text-[var(--text-3)] inline-flex items-center gap-14">
+              {w}
+              <span aria-hidden="true" className="text-[var(--text-4,#3B3B44)]">·</span>
+            </span>
           ))}
         </div>
       </div>
