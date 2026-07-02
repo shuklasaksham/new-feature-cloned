@@ -170,25 +170,25 @@ export default function Landing() {
             <MetricCard
               label="Freelancers & Teams"
               value={metrics?.freelancers_and_teams != null ? Math.min(metrics.freelancers_and_teams, 214) : undefined}
-              tone="lavender"
+              tone="lime"
               testid="metric-freelancers-teams"
             />
             <MetricCard
               label="Projects Scoped"
               value={metrics?.projects_scoped}
-              tone="peach"
+              tone="violet"
               testid="metric-projects-scoped"
             />
             <MetricCard
               label="Requirements Extracted"
               value={metrics?.requirements_extracted}
-              tone="mint"
+              tone="coral"
               testid="metric-requirements-extracted"
             />
             <MetricCard
               label="Risks Identified"
               value={metrics?.risks_identified}
-              tone="rose"
+              tone="ink"
               testid="metric-risks-identified"
             />
             <MetricCard
@@ -200,7 +200,7 @@ export default function Landing() {
             <MetricCard
               label="Projects Started with AI"
               value={metrics?.projects_started_with_ai}
-              tone="lime"
+              tone="pink"
               testid="metric-projects-started"
             />
           </div>
@@ -709,8 +709,21 @@ function useTypewriter(target, suffix = "", perCharMs = 220, startDelayMs = 220)
   return shown;
 }
 
-function MetricCard({ label, value, tone = "lavender", testid }) {
-  const t = TESTIMONIAL_TONES[tone] || TESTIMONIAL_TONES.lavender;
+// Metric-card tones — more saturated + higher contrast than testimonial
+// tones (metric cards are smaller so they can carry bolder blocks of colour
+// without overwhelming the page).
+const METRIC_TONES = {
+  lime:    { bg: "#D6FF48",  text: "#0A0A0C", subText: "#2A2A2E" },
+  coral:   { bg: "#FF7A6B",  text: "#0A0A0C", subText: "#2A0F0A" },
+  violet:  { bg: "#5B3EF7",  text: "#F5F5F7", subText: "rgba(245,245,247,0.68)" },
+  pink:    { bg: "#FFB0D5",  text: "#0A0A0C", subText: "#2A0F1E" },
+  sky:     { bg: "#4FB1FF",  text: "#04121F", subText: "#0F2740" },
+  emerald: { bg: "#5BE3A2",  text: "#04140B", subText: "#0F2820" },
+  ink:     { bg: "#0F1116",  text: "#F5F5F7", subText: "rgba(245,245,247,0.55)" },
+};
+
+function MetricCard({ label, value, tone = "lime", testid }) {
+  const t = METRIC_TONES[tone] || METRIC_TONES.lime;
   const hasValue = value !== null && value !== undefined;
   const shown = useTypewriter(hasValue ? value : null);
   const isTyping =
