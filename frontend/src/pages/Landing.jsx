@@ -526,6 +526,13 @@ const TESTIMONIAL_TONES = {
 
 function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•", className = "", testid }) {
   const t = TESTIMONIAL_TONES[tone] || TESTIMONIAL_TONES.lavender;
+  // Auto-shrink long quotes so the card never overflows its fixed height.
+  const len = (quote || "").length;
+  const fontSize =
+    len > 260 ? "clamp(0.95rem, 1.35vw, 1.15rem)" :
+    len > 160 ? "clamp(1.1rem, 1.7vw, 1.4rem)" :
+                "clamp(1.5rem, 2.4vw, 2.1rem)";
+  const leading = len > 160 ? 1.35 : 1.15;
   return (
     <figure
       className={`relative rounded-2xl overflow-hidden flex flex-col p-7 sm:p-8 md:p-10 ${className}`}
@@ -533,9 +540,10 @@ function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•"
       data-testid={testid}
     >
       <blockquote
-        className="font-display leading-[1.15] tracking-[-0.02em]"
+        className="font-display tracking-[-0.02em]"
         style={{
-          fontSize: "clamp(1.5rem, 2.4vw, 2.1rem)",
+          fontSize,
+          lineHeight: leading,
           fontWeight: 500,
           color: t.text,
         }}
@@ -582,6 +590,13 @@ const TESTIMONIALS = [
     initial: "M",
   },
   {
+    tone: "peach",
+    quote: "I used Bracket while handling a commercial clothing order worth nearly ₹1 lakh with a tight 14-day deadline, alongside several ongoing orders from my regular clients. Bracket helped me create a clear agreement that I could share with the client, which made expectations and timelines transparent from the start. It gave me the confidence to prioritize my work, stay organized, and deliver everything on time. It's a tool I'd happily recommend to any freelancer managing professional client projects.",
+    name: "Yash Kamdar",
+    role: "Manager",
+    initial: "Y",
+  },
+  {
     tone: "lime",
     quote: "Our timelines are aggressive and Bracket makes us actually decide, not just talk.",
     name: "Jordan Vale",
@@ -589,18 +604,18 @@ const TESTIMONIALS = [
     initial: "J",
   },
   {
-    tone: "peach",
-    quote: "I used to spend two hours writing a scope doc. Now I copy Bracket's and edit two lines. Client signed it same day.",
-    name: "Anaya Kapoor",
-    role: "Freelance product designer",
+    tone: "sky",
+    quote: "I personally use Bracket every time I start a new design project. It helps me better understand my manager's brief, making it easier to plan my production workflow. I'm also able to create a realistic timeline for completing my projects with greater confidence.",
+    name: "Abhinav Sharma",
+    role: "Motion Designer",
     initial: "A",
   },
   {
-    tone: "sky",
-    quote: "The risk flags alone saved us from a scope-creep nightmare on our biggest retainer this year.",
-    name: "Ravi Menon",
-    role: "Design lead, Ninth Studio",
-    initial: "R",
+    tone: "rose",
+    quote: "What impressed me most about Bracket is how it transforms unstructured client discussions into a clear project scope. It reduces ambiguity, improves communication, and helps designers start projects with much more confidence.",
+    name: "Kshitij Sahu",
+    role: "Experience Designer",
+    initial: "K",
   },
   {
     tone: "mint",
@@ -610,17 +625,10 @@ const TESTIMONIALS = [
     initial: "E",
   },
   {
-    tone: "rose",
-    quote: "Two rounds of client feedback dropped to zero. They see the thinking; they stop second-guessing the pixels.",
-    name: "Priya Shah",
-    role: "Freelance brand & web designer",
-    initial: "P",
-  },
-  {
     tone: "ink",
-    quote: "Bracket is the only ‘AI tool' that has actually made me slower in the right places and faster in the wrong ones.",
-    name: "Kenji Ito",
-    role: "Founder, Halftone Collective",
+    quote: "I like how Bracket organizes project requirements in one place. It helps teams avoid mistakes caused by unclear communication.",
+    name: "Karthick D",
+    role: "QA Expert",
     initial: "K",
   },
 ];
