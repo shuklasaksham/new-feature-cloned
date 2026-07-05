@@ -271,7 +271,23 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 2. Enforce OTP cooldown server-side.
 3. Consider breaking `ProjectFlow.jsx` (>1900 lines) into per-step child components.
 
-- 2026-07-05 — **Iteration 27 — Sitewide contrast + purple purge + hover-flip fixes**:
+- 2026-07-05 — **Iteration 28 — All-status-pill contrast + AI-name unification + StepProgress + progressive Steps 3/4**:
+  - **`.mono-tag` color override bug** (root cause of most pill invisibility) — `.mono-tag` hardcodes `color: var(--text-3)` (muted grey) which silently overrides any Tailwind text-color utility applied to a pill. Every pill that used `bg-danger text-chalk` / `bg-signal text-chalk` / `bg-ink text-chalk` had *muted grey* text on saturated backgrounds — invisible on red / low-contrast on blue / grey-on-white on light.
+  - **Sitewide pill audit + inline-style rewrites**:
+    - `StepStatus` (ProjectOverview) — DONE / IN PROGRESS / TODO pills → inline styles with `#FFFFFF` text on `#2E5BFF` blue for DONE; dark surface for IN PROGRESS; transparent with hairline border for TODO. Also replaced `STATUS_PILL` + `SHARE_PILL` constants with `STATUS_STYLE` / `STATUS_LABEL` (and share equivalents) using proper inline-style palette.
+    - `SEVERITY_STYLE` for risk-flag pills in both `ProjectDocument.jsx` and `ClientReview.jsx` — HIGH → red + white text; MEDIUM → orange + white text; LOW → transparent + hairline. Fixes the HIGH/MEDIUM invisibility in Step 4 artifacts + client review.
+  - **AI model name unified** — The top-of-flow header used to say "Claude Haiku 4.5" everywhere, which was misleading since Haiku is only used for the typing-suggestion fast path; every step output (framing, context, decision, artifacts) runs on Sonnet 4.5. Updated the display string to "Claude Sonnet 4.5" (matches ProjectOverview and PDF footer).
+  - **Guest-upgrade banner "×" close button** — Replaced the tiny mono-font `×` character with a proper 32×32 button rendering a lucide `<X size={16} />` icon, with a subtle hover background. Correct target size + visual weight for a modal-dismiss action.
+  - **New generic `StepProgress` component** — Extracted `Step1Progress` into a data-driven component that accepts `rows[]` + `estimate[]`. Now used across:
+    - Step 1 (framing): detecting → scanning → framing, `~8 / ~6 / ~3`
+    - Step 2 (compression): reading → cutting → naming, `~5 / ~4 / 1`
+    - Step 3 (decision): weighing → picking → stress, `1 / ~3 / ~4`
+    - Step 4 (artifacts): scope → message → risks, `1 / 1 / ~5`
+  - Each Step's `run()` now sets an initial phase, schedules two more phase transitions via `setTimeout` (calibrated to that step's typical Sonnet latency), and clears on success/error. Loader takes over the `<OutputPending>` slot while `loading === true`.
+  - **Progressive disclosure on Step 3 + Step 4** — Step 3: recommendation card now uses the `progressive` prop with a "Read the rationale" summary reveal; alternatives / trade-offs / risks cards are hidden behind a `disc-btn` "↓ Show alternatives, trade-offs & risks" reveal (state: `showAlternatives`). Step 4: scope + client message always visible first (highest-utility outputs); assumptions + risk flags hidden behind "↓ Show assumptions & risk flags" reveal (state: `revealMore`).
+  - Verified in preview: ProjectOverview shows DONE with proper contrast + IN PROGRESS pill readable + Claude Sonnet 4.5 in header. Lint clean.
+
+
   - **Step-card hover invisibility (ProjectOverview)** — Each step card had `hover:bg-white/40` which laid a semi-transparent white sheet over the whole item on hover, making the dark-theme text (WHAT / WHO / blockquote / EDIT pill) unreadable. Replaced with `hover:bg-[var(--surface-2)]` + 150 ms color transition — the card lifts to a slightly lighter *dark* surface, all text stays high-contrast.
   - **Full purple → blue accent migration** — Tailwind `signal` was still `#7C5CFF` (violet) while CSS `--accent` was `#2E5BFF` (blue). Every `bg-signal` / `border-signal` / `text-signal` / `ring` utility rendered violet, competing with the blue CSS-variable accents. Retargeted `tailwind.config.js`: `signal = #2E5BFF`, `signalHover = #1E4AEB`, `ring = #2E5BFF`, `accent.DEFAULT = #2E5BFF`. Also removed hardcoded `#7C5CFF` from `AdminAnalytics.jsx` chart palette (`accent2` + `PIE_COLORS[1]` → `#4E7FFF` blue tint).
   - **Guest-upgrade banner + Step 5 spacing** — Banner had blue accent border/glow AND the Locked success card next to it had the *same* accent styling → two blue cards competing for the eye on Step 5. Kept `.guest-upgrade` (the CTA) with the accent glow; downgraded `.step5-locked-card` to a plain `card-brut` (no glow, hairline border). Added `mt-8` between the banner and the content grid so they breathe.

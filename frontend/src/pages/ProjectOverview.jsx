@@ -58,31 +58,58 @@ const STEPS = [
   },
 ];
 
-const STATUS_PILL = {
-  draft:       { bg: "bg-paper border border-ink",  label: "DRAFT" },
-  in_progress: { bg: "bg-ink text-chalk",           label: "IN PROGRESS" },
-  locked:      { bg: "bg-signal text-chalk",        label: "LOCKED" },
+// Inline-style pill palette — Tailwind color classes get overridden by the
+// hardcoded `color: var(--text-3)` inside `.mono-tag`, so we use inline
+// styles (highest specificity) with proper white text on saturated backgrounds.
+const STATUS_STYLE = {
+  draft:       { backgroundColor: "transparent", color: "var(--text-2)", border: "1px solid var(--hairline)" },
+  in_progress: { backgroundColor: "var(--surface-2)", color: "var(--text)",  border: "1px solid var(--hairline)" },
+  locked:      { backgroundColor: "#2E5BFF", color: "#FFFFFF", border: "1px solid #2E5BFF" },
 };
+const STATUS_LABEL = { draft: "DRAFT", in_progress: "IN PROGRESS", locked: "LOCKED" };
 
-const SHARE_PILL = {
-  sent:           { bg: "bg-ink text-chalk",    label: "AWAITING CLIENT REVIEW" },
-  accepted:       { bg: "bg-signal text-chalk", label: "ACCEPTED BY CLIENT" },
-  rejected:       { bg: "bg-danger text-chalk", label: "CLIENT RAISED CONCERNS" },
-  awaiting_reply: { bg: "bg-ink text-chalk",    label: "REPLY SENT — AWAITING CLIENT" },
+const SHARE_STYLE = {
+  sent:           { backgroundColor: "var(--surface-2)", color: "var(--text)",  border: "1px solid var(--hairline)" },
+  accepted:       { backgroundColor: "#22C55E", color: "#0A0A0C", border: "1px solid #22C55E" },
+  rejected:       { backgroundColor: "#EF4444", color: "#FFFFFF", border: "1px solid #EF4444" },
+  awaiting_reply: { backgroundColor: "var(--surface-2)", color: "var(--text)",  border: "1px solid var(--hairline)" },
+};
+const SHARE_LABEL = {
+  sent: "AWAITING CLIENT REVIEW",
+  accepted: "ACCEPTED BY CLIENT",
+  rejected: "CLIENT RAISED CONCERNS",
+  awaiting_reply: "REPLY SENT — AWAITING CLIENT",
 };
 
 function StepStatus({ done, current }) {
   if (done) {
     return (
-      <span className="mono-tag px-2 py-1 bg-signal text-chalk inline-flex items-center gap-2">
-        <Check size={11} /> DONE
+      <span
+        className="mono-tag px-2 py-1 inline-flex items-center gap-1.5 rounded"
+        style={{ backgroundColor: "#2E5BFF", color: "#FFFFFF", border: "1px solid #2E5BFF" }}
+      >
+        <Check size={11} /> <span style={{ color: "inherit" }}>DONE</span>
       </span>
     );
   }
   if (current) {
-    return <span className="mono-tag px-2 py-1 bg-ink text-chalk">IN PROGRESS</span>;
+    return (
+      <span
+        className="mono-tag px-2 py-1 rounded"
+        style={{ backgroundColor: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+      >
+        IN PROGRESS
+      </span>
+    );
   }
-  return <span className="mono-tag px-2 py-1 border border-ink/30 text-muted">TODO</span>;
+  return (
+    <span
+      className="mono-tag px-2 py-1 rounded"
+      style={{ backgroundColor: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" }}
+    >
+      TODO
+    </span>
+  );
 }
 
 function StepSummary({ step, project }) {
@@ -276,8 +303,10 @@ export default function ProjectOverview() {
     );
   }
 
-  const sp = STATUS_PILL[project.status] || STATUS_PILL.draft;
-  const ss = project.share_status && SHARE_PILL[project.share_status];
+  const spStyle = STATUS_STYLE[project.status] || STATUS_STYLE.draft;
+  const spLabel = STATUS_LABEL[project.status] || STATUS_LABEL.draft;
+  const ssStyle = project.share_status && SHARE_STYLE[project.share_status];
+  const ssLabel = project.share_status && SHARE_LABEL[project.share_status];
   const currentStep = project.step || 1;
 
   return (
@@ -343,9 +372,9 @@ export default function ProjectOverview() {
           )}
 
           <div className="flex flex-wrap gap-2">
-            <span className={`mono-tag px-2 py-1 ${sp.bg}`} data-testid="overview-status-pill">{sp.label}</span>
-            {ss && <span className={`mono-tag px-2 py-1 ${ss.bg}`} data-testid="overview-share-pill">{ss.label}</span>}
-            <span className="mono-tag px-2 py-1 border border-ink/30 text-muted">
+            <span className="mono-tag px-2 py-1 rounded" style={spStyle} data-testid="overview-status-pill">{spLabel}</span>
+            {ssStyle && <span className="mono-tag px-2 py-1 rounded" style={ssStyle} data-testid="overview-share-pill">{ssLabel}</span>}
+            <span className="mono-tag px-2 py-1 rounded" style={{ backgroundColor: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" }}>
               {project.engine === "gpt" ? "GPT-5.2" : "CLAUDE SONNET 4.5"}
             </span>
           </div>

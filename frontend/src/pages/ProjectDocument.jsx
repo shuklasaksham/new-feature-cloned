@@ -15,10 +15,12 @@ import { toast } from "sonner";
 import BracketMark from "../components/BracketMark";
 import { api, API_BASE, formatApiError } from "../lib/api";
 
-const SEVERITY_BG = {
-  HIGH: "bg-danger text-chalk",
-  MEDIUM: "bg-ink text-chalk",
-  LOW: "bg-paper text-ink border border-ink",
+// Inline-style severity palette (Tailwind text classes get overridden by
+// `.mono-tag`'s hardcoded color, so use inline styles for guaranteed contrast).
+const SEVERITY_STYLE = {
+  HIGH:   { backgroundColor: "#EF4444", color: "#FFFFFF", border: "1px solid #EF4444" },
+  MEDIUM: { backgroundColor: "#F97316", color: "#FFFFFF", border: "1px solid #F97316" },
+  LOW:    { backgroundColor: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" },
 };
 
 export default function ProjectDocument() {
@@ -200,7 +202,10 @@ export default function ProjectDocument() {
                 <ul className="space-y-4">
                   {project.artifacts.risk_flags.map((r, i) => (
                     <li key={i} className="flex gap-4 items-start">
-                      <span className={`mono-tag px-2 py-1 shrink-0 ${SEVERITY_BG[r.severity] || SEVERITY_BG.LOW}`}>
+                      <span
+                        className="mono-tag px-2 py-1 shrink-0 rounded"
+                        style={SEVERITY_STYLE[r.severity] || SEVERITY_STYLE.LOW}
+                      >
                         {r.severity}
                       </span>
                       <div>

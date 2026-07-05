@@ -17,6 +17,7 @@ import {
   Info,
   Clock,
   Wand2,
+  X,
 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
@@ -135,7 +136,7 @@ export default function ProjectFlow() {
                 {project?.name}
               </p>
               <p className="text-[11px] text-[var(--text-3)] hidden sm:block truncate mt-1.5">
-                {project?.engine === "gpt" ? "GPT-5.2" : "Claude Haiku 4.5"}
+                {project?.engine === "gpt" ? "GPT-5.2" : "Claude Sonnet 4.5"}
               </p>
             </div>
           </div>
@@ -734,37 +735,61 @@ function Step1ProgressRow({ target, phase, doneLabel, activeLabel }) {
 
 function Step1Progress({ phase }) {
   return (
-    <div className="card-brut p-5 sm:p-6 min-h-[280px]" data-testid="step1-progress">
-      <div className="flex items-center justify-between">
-        <p className="mono-label">{"{ output · generating }"}</p>
+    <StepProgress
+      phase={phase}
+      testid="step1-progress"
+      rows={[
+        { target: "detecting", doneLabel: "Requirements detected",         activeLabel: "Detecting requirements…" },
+        { target: "scanning",  doneLabel: "Clarification questions surfaced", activeLabel: "Scanning for missing questions…" },
+        { target: "framing",   doneLabel: "Risks & tensions identified",   activeLabel: "Framing your problem…" },
+      ]}
+      estimate={[
+        { n: "~8", label: "requirements" },
+        { n: "~6", label: "clarifications" },
+        { n: "~3", label: "risks" },
+      ]}
+    />
+  );
+}
+
+/** Generic step-progress card used across Steps 1-4. Renders a sequence of
+ *  animated checkmark rows and an estimate strip (3 tiles). Keeps user
+ *  expectation calibrated during the 10-20s AI call. */
+function StepProgress({ phase, rows, estimate, testid = "step-progress" }) {
+  return (
+    <div className="card-brut p-5 sm:p-6 min-h-[280px]" data-testid={testid}>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="mono-label text-muted">{"{ output · generating }"}</p>
         <span className="mono-tag text-signal inline-flex items-center gap-1.5">
           <Loader2 size={12} className="animate-spin" /> BRACKET IS THINKING
         </span>
       </div>
 
       <ul className="mt-6 space-y-3">
-        <Step1ProgressRow target="detecting" phase={phase} doneLabel="Requirements detected" activeLabel="Detecting requirements…" />
-        <Step1ProgressRow target="scanning" phase={phase} doneLabel="Clarification questions surfaced" activeLabel="Scanning for missing questions…" />
-        <Step1ProgressRow target="framing" phase={phase} doneLabel="Risks & tensions identified" activeLabel="Framing your problem…" />
+        {rows.map((r) => (
+          <Step1ProgressRow
+            key={r.target}
+            target={r.target}
+            phase={phase}
+            doneLabel={r.doneLabel}
+            activeLabel={r.activeLabel}
+          />
+        ))}
       </ul>
 
-      <div className="mt-6 pt-5 border-t border-hairline">
-        <p className="mono-tag text-muted mb-3">ESTIMATE</p>
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center">
-            <p className="text-xl font-semibold">~8</p>
-            <p className="text-xs text-muted mt-1">requirements</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-semibold">~6</p>
-            <p className="text-xs text-muted mt-1">clarifications</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-semibold">~3</p>
-            <p className="text-xs text-muted mt-1">risks</p>
+      {estimate && estimate.length > 0 && (
+        <div className="mt-6 pt-5 border-t border-[var(--hairline)]">
+          <p className="mono-tag text-muted mb-3">ESTIMATE</p>
+          <div className="grid grid-cols-3 gap-3">
+            {estimate.map((e, i) => (
+              <div key={i} className="text-center">
+                <p className="text-xl font-semibold">{e.n}</p>
+                <p className="text-xs text-muted mt-1">{e.label}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -775,6 +800,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   const [form, setForm] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phase, setPhase] = useState(null);
   const compressed = project.context;
 
   useEffect(() => {
@@ -786,12 +812,19 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   const run = async () => {
     setLoading(true);
     setError("");
+    setPhase("reading");
+    const t1 = setTimeout(() => setPhase("cutting"), 1200);
+    const t2 = setTimeout(() => setPhase("naming"), 3200);
     try {
       const { data } = await api.post(`/projects/${project.id}/context`, form);
       setProject(data);
+      setPhase("done");
     } catch (e) {
       setError(formatApiError(e));
+      setPhase(null);
     } finally {
+      clearTimeout(t1);
+      clearTimeout(t2);
       setLoading(false);
     }
   };
@@ -895,11 +928,26 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
         </div>
 
         <div>
-          {!compressed || loading ? (
+          {loading ? (
+            <StepProgress
+              phase={phase}
+              testid="step2-progress"
+              rows={[
+                { target: "reading", doneLabel: "Requirements read",     activeLabel: "Reading everything you pasted…" },
+                { target: "cutting", doneLabel: "Noise cut",              activeLabel: "Cutting what doesn't move the call…" },
+                { target: "naming",  doneLabel: "The one thing named",   activeLabel: "Naming what actually matters…" },
+              ]}
+              estimate={[
+                { n: "~5", label: "signals kept" },
+                { n: "~4", label: "hidden assumptions" },
+                { n: "1", label: "core insight" },
+              ]}
+            />
+          ) : !compressed ? (
             <OutputPending
-              title={loading ? "{ output · generating }" : "{ output · pending }"}
+              title={"{ output · pending }"}
               blurb="Paste as much as you want. Bracket will keep what moves the needle."
-              loading={loading}
+              loading={false}
             />
           ) : (
             <OutputCard
@@ -955,6 +1003,8 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
   const [form, setForm] = useState(initial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phase, setPhase] = useState(null);
+  const [showAlternatives, setShowAlternatives] = useState(false);
   const decision = project.decision;
 
   useEffect(() => {
@@ -966,12 +1016,19 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
   const run = async () => {
     setLoading(true);
     setError("");
+    setPhase("weighing");
+    const t1 = setTimeout(() => setPhase("picking"), 1500);
+    const t2 = setTimeout(() => setPhase("stress"), 3500);
     try {
       const { data } = await api.post(`/projects/${project.id}/decision`, form);
       setProject(data);
+      setPhase("done");
     } catch (e) {
       setError(formatApiError(e));
+      setPhase(null);
     } finally {
+      clearTimeout(t1);
+      clearTimeout(t2);
       setLoading(false);
     }
   };
@@ -1075,11 +1132,26 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
         </div>
 
         <div>
-          {!decision || loading ? (
+          {loading ? (
+            <StepProgress
+              phase={phase}
+              testid="step3-progress"
+              rows={[
+                { target: "weighing", doneLabel: "Options weighed",       activeLabel: "Weighing your trade-offs…" },
+                { target: "picking",  doneLabel: "The call picked",        activeLabel: "Picking a side, not a menu…" },
+                { target: "stress",   doneLabel: "Risks stress-tested",   activeLabel: "Stress-testing for what breaks…" },
+              ]}
+              estimate={[
+                { n: "1", label: "recommendation" },
+                { n: "~3", label: "alternatives" },
+                { n: "~4", label: "risks" },
+              ]}
+            />
+          ) : !decision ? (
             <OutputPending
-              title={loading ? "{ the call · generating }" : "{ the call · pending }"}
+              title={"{ the call · pending }"}
               blurb="A stance, not a menu. Bracket will name the move and the cost of it."
-              loading={loading}
+              loading={false}
             />
           ) : (
             <div className="space-y-6" data-testid="step3-decision-output">
@@ -1091,6 +1163,8 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                 blockquote={decision.recommendation?.rationale}
                 copyText={`THE CALL\n${decision.recommendation?.title || ""}\n\n${decision.recommendation?.rationale || ""}\n\nConfidence: ${decision.recommendation?.confidence ?? 0}%`}
                 onRegenerate={run}
+                progressive
+                progressiveLabels={{ summary: "Read the rationale" }}
                 reasoning={
                   <>
                     <p>
@@ -1110,13 +1184,24 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                 }
               />
 
-              {decision.alternatives?.length > 0 && (
+              {!showAlternatives && (decision.alternatives?.length > 0 || decision.tradeoffs?.length > 0 || decision.risks?.length > 0) && (
+                <button
+                  type="button"
+                  onClick={() => setShowAlternatives(true)}
+                  className="disc-btn"
+                  data-testid="step3-reveal-more"
+                >
+                  <span className="chev">↓</span> Show alternatives, trade-offs & risks
+                </button>
+              )}
+
+              {showAlternatives && decision.alternatives?.length > 0 && (
                 <OutputCard label={"{ 03 · alternatives }"}>
                   <div className="space-y-4">
                     {decision.alternatives.map((a, i) => (
                       <div
                         key={i}
-                        className="border-t border-ink pt-4 first:border-t-0 first:pt-0"
+                        className="border-t border-[var(--hairline)] pt-4 first:border-t-0 first:pt-0"
                       >
                         <p className="t-h3">{a.title}</p>
                         <p className="text-sm text-muted mt-1">
@@ -1131,13 +1216,13 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                 </OutputCard>
               )}
 
-              {decision.tradeoffs?.length > 0 && (
+              {showAlternatives && decision.tradeoffs?.length > 0 && (
                 <OutputCard label={"{ 03 · trade-offs }"}>
                   <OutputList items={decision.tradeoffs} variant="arrow" />
                 </OutputCard>
               )}
 
-              {decision.risks?.length > 0 && (
+              {showAlternatives && decision.risks?.length > 0 && (
                 <OutputCard label={"{ 03 · risks }"}>
                   <OutputList items={decision.risks} variant="severity" />
                 </OutputCard>
@@ -1153,17 +1238,26 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
 function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phase, setPhase] = useState(null);
+  const [revealMore, setRevealMore] = useState(false);
   const artifacts = project.artifacts;
 
   const run = async () => {
     setLoading(true);
     setError("");
+    setPhase("scope");
+    const t1 = setTimeout(() => setPhase("message"), 1800);
+    const t2 = setTimeout(() => setPhase("risks"), 4500);
     try {
       const { data } = await api.post(`/projects/${project.id}/artifacts`);
       setProject(data);
+      setPhase("done");
     } catch (e) {
       setError(formatApiError(e));
+      setPhase(null);
     } finally {
+      clearTimeout(t1);
+      clearTimeout(t2);
       setLoading(false);
     }
   };
@@ -1226,69 +1320,105 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
       </div>
       <ErrorBox msg={error} />
 
-      {!artifacts || loading ? (
+      {loading ? (
+        <div className="mt-10">
+          <StepProgress
+            phase={phase}
+            testid="step4-progress"
+            rows={[
+              { target: "scope",   doneLabel: "Scope drafted",             activeLabel: "Drafting scope + deliverables…" },
+              { target: "message", doneLabel: "Client message written",    activeLabel: "Writing the message to the client…" },
+              { target: "risks",   doneLabel: "Risks + assumptions flagged", activeLabel: "Flagging assumptions & risks…" },
+            ]}
+            estimate={[
+              { n: "1", label: "scope doc" },
+              { n: "1", label: "client message" },
+              { n: "~5", label: "risks & assumptions" },
+            ]}
+          />
+        </div>
+      ) : !artifacts ? (
         <div className="mt-10">
           <OutputPending
-            title={loading ? "{ artifacts · generating }" : "{ artifacts · pending }"}
+            title={"{ artifacts · pending }"}
             blurb="Bracket is drafting scope, message, assumptions and risk flags from your stance."
-            loading={loading}
+            loading={false}
           />
         </div>
       ) : (
-        <div className="mt-10 grid md:grid-cols-2 gap-6" data-testid="step4-artifacts-output">
-          <OutputCard
-            testid="artifact-SCOPE_DOC"
-            label={"{ 04 · scope }"}
-            badge={<span className="mono-tag text-signal">DRAFT</span>}
-            title={artifacts.scope_doc?.title || "Scope"}
-          >
-            <BlockList label="IN SCOPE" items={artifacts.scope_doc?.in_scope} />
-            <BlockList label="OUT OF SCOPE" items={artifacts.scope_doc?.out_of_scope} muted />
-            <BlockList label="DELIVERABLES" items={artifacts.scope_doc?.deliverables} />
-            {artifacts.scope_doc?.timeline_note && (
-              <div className="mt-4 border-t border-ink pt-4">
-                <p className="mono-tag text-muted">TIMELINE</p>
-                <p className="mt-1 text-sm">{artifacts.scope_doc.timeline_note}</p>
+        <div className="mt-10 space-y-6" data-testid="step4-artifacts-output">
+          {/* Always show scope + client message first — most useful outputs. */}
+          <div className="grid md:grid-cols-2 gap-6">
+            <OutputCard
+              testid="artifact-SCOPE_DOC"
+              label={"{ 04 · scope }"}
+              badge={<span className="mono-tag text-signal">DRAFT</span>}
+              title={artifacts.scope_doc?.title || "Scope"}
+            >
+              <BlockList label="IN SCOPE" items={artifacts.scope_doc?.in_scope} />
+              <BlockList label="OUT OF SCOPE" items={artifacts.scope_doc?.out_of_scope} muted />
+              <BlockList label="DELIVERABLES" items={artifacts.scope_doc?.deliverables} />
+              {artifacts.scope_doc?.timeline_note && (
+                <div className="mt-4 border-t border-[var(--hairline)] pt-4">
+                  <p className="mono-tag text-muted">TIMELINE</p>
+                  <p className="mt-1 text-sm">{artifacts.scope_doc.timeline_note}</p>
+                </div>
+              )}
+            </OutputCard>
+
+            <OutputCard
+              testid="artifact-CLIENT_MESSAGE"
+              label={"{ 04 · client message }"}
+              badge={<span className="mono-tag text-signal">DRAFT</span>}
+              title="Client message"
+            >
+              <div className="whitespace-pre-wrap leading-relaxed text-sm">
+                {artifacts.client_message}
               </div>
-            )}
-          </OutputCard>
+              <CopyButton text={artifacts.client_message} />
+            </OutputCard>
+          </div>
 
-          <OutputCard
-            testid="artifact-CLIENT_MESSAGE"
-            label={"{ 04 · client message }"}
-            badge={<span className="mono-tag text-signal">DRAFT</span>}
-            title="Client message"
-          >
-            <div className="whitespace-pre-wrap leading-relaxed text-sm">
-              {artifacts.client_message}
+          {/* Progressive reveal: assumptions + risk flags are secondary. */}
+          {!revealMore && (
+            <button
+              type="button"
+              onClick={() => setRevealMore(true)}
+              className="disc-btn"
+              data-testid="step4-reveal-more"
+            >
+              <span className="chev">↓</span> Show assumptions & risk flags
+            </button>
+          )}
+
+          {revealMore && (
+            <div className="grid md:grid-cols-2 gap-6 animate-fade-up">
+              <OutputCard
+                testid="artifact-ASSUMPTIONS"
+                label={"{ 04 · assumptions }"}
+                badge={<span className="mono-tag text-signal">DRAFT</span>}
+                title="Assumptions"
+              >
+                <OutputList items={artifacts.assumptions || []} variant="numbered" />
+              </OutputCard>
+
+              <OutputCard
+                testid="artifact-RISK_FLAGS"
+                label={"{ 04 · risk flags }"}
+                badge={<span className="mono-tag text-signal">DRAFT</span>}
+                title="Risk flags"
+              >
+                <OutputList
+                  items={(artifacts.risk_flags || []).map((r) => ({
+                    severity: r.severity,
+                    flag: r.flag,
+                    why: r.why,
+                  }))}
+                  variant="severity"
+                />
+              </OutputCard>
             </div>
-            <CopyButton text={artifacts.client_message} />
-          </OutputCard>
-
-          <OutputCard
-            testid="artifact-ASSUMPTIONS"
-            label={"{ 04 · assumptions }"}
-            badge={<span className="mono-tag text-signal">DRAFT</span>}
-            title="Assumptions"
-          >
-            <OutputList items={artifacts.assumptions || []} variant="numbered" />
-          </OutputCard>
-
-          <OutputCard
-            testid="artifact-RISK_FLAGS"
-            label={"{ 04 · risk flags }"}
-            badge={<span className="mono-tag text-signal">DRAFT</span>}
-            title="Risk flags"
-          >
-            <OutputList
-              items={(artifacts.risk_flags || []).map((r) => ({
-                severity: r.severity,
-                flag: r.flag,
-                why: r.why,
-              }))}
-              variant="severity"
-            />
-          </OutputCard>
+          )}
         </div>
       )}
     </StepShell>
@@ -1334,11 +1464,11 @@ function GuestUpgradeBanner() {
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-[var(--text-3)] hover:text-[var(--text)] mono-tag press"
+          className="text-[var(--text-3)] hover:text-[var(--text)] press shrink-0 -mt-1 -mr-1 h-8 w-8 inline-flex items-center justify-center rounded-full hover:bg-[var(--surface-2)]"
           data-testid="guest-upgrade-dismiss"
           aria-label="Dismiss"
         >
-          ×
+          <X size={16} />
         </button>
       </div>
       <h3 className="t-h2 mt-3">
