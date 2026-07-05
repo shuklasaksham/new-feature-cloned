@@ -269,7 +269,18 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 ## Next tasks
 1. Add Playwright coverage for ProjectDocument owner-reply UI and Claim page (orphan-project setup).
 2. Enforce OTP cooldown server-side.
-3. Consider breaking `ProjectFlow.jsx` (>1600 lines) into per-step child components.
+3. Consider breaking `ProjectFlow.jsx` (>1900 lines) into per-step child components.
+
+- 2026-07-05 — **Iteration 23 — Step 1 UX overhaul ("impossible to fail")** (verified iteration_22):
+  - **Guided labels + helper text + realistic placeholders** — Step 1's three textareas rewritten with explicit questions ("What are you building?", "Who is the client (and who are you actually talking to)?", "What feels unclear or off?"), helper caption below each (`Field` extended with `helper` prop), and concrete example placeholders (fintech landing, YC founder, Stripe references).
+  - **Value-prop kicker + "under a minute" pill** — StepShell kicker now leads with "Turn a messy client brief into a clear decision in under a minute…"; a `Clock` pill (`step1-timepill`) sits above the form.
+  - **Auto-focus first input** — `whatRef` attached to the first textarea; focus scheduled 220ms after mount (respects `page-enter` animation).
+  - **Gibberish detection** — `looksLikeGibberish()` heuristic (length < 12, all digits, single-char runs, keyboard-mash tokens). When it fires on `what`, submit stays disabled AND an inline `step1-what-warning` bar appears with a "load a sample project" link (`step1-inline-sample-btn`).
+  - **"Try a sample project" — full magical demo** — new `step1-try-sample-btn` CTA below the form. Picks a random brief from `SAMPLE_BRIEFS` (fintech-landing / checkout-redesign / coffee-brand), pre-fills all three textareas AND auto-submits the situation API.
+  - **Intermediate progress loader** — during the ~4-6s AI call, a new `Step1Progress` card replaces the `OutputPending` skeleton and animates through 3 sequential checkmarks (`step1-progress-detecting` → `step1-progress-scanning` → `step1-progress-framing`) synced to actual latency via 900ms/2200ms `setTimeout`s + the awaited API resolution. Below the checkmarks, an ESTIMATE tile shows ~8 requirements / ~6 clarifications / ~3 risks.
+  - **Sample banners** — while a sample is loaded, a `step1-sample-banner` appears above the form ("This is a sample project…"). After the AI returns for a sample, a second `step1-sample-done-banner` appears next to the OutputCard prompting "Ready to analyze your own project?" with a `step1-analyze-own-btn` that routes to `/app`.
+  - **Auto-save draft to localStorage** — form state debounced 500ms to `bracket:step1-draft:{projectId}`; on first mount, if no server-side `situation_input` exists, the draft hydrates the form. Draft is cleared once framing is returned. A small `step1-draft-saved` check-pill blinks for 1.4s after each save.
+  - Verified via `testing_agent_v3_fork` iteration_22 — 100% frontend pass, all 8 acceptance criteria (labels + helpers, auto-focus, gibberish disable + inline sample, try-sample CTA, pre-fill + auto-submit, sequential progress loader, sample banners, autosave to localStorage) confirmed on the preview URL.
 
 - 2026-07-01 — **Iteration 20 — Admin analytics dashboard** (verified iteration_19):
   - New endpoint `GET /api/admin/analytics` returns a single aggregated payload: KPIs (total users, new-users-7d, total projects, locked, share-accept rate, avg steps), daily new-user + project series (30 days), status distribution, step-drop-off funnel, cycle-time-per-user scatter data, top-10 leaderboard, share/review funnel, and a 7×24 activity heatmap of project creations over the last 90 days. Guarded by `auth_current_admin` — non-admins receive 404.
