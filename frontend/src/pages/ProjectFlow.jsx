@@ -705,24 +705,28 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
 }
 
 // Intermediate loader with sequential checkmarks + estimate preview.
-// Shown while the situation API call is in flight (~4-6s).
-function Step1ProgressRow({ target, phase, doneLabel, activeLabel }) {
-  const order = { detecting: 1, scanning: 2, framing: 3, done: 4 };
-  const onOrPast = (order[phase] || 0) >= order[target];
+// Shown while the AI step call is in flight (~10-20s).
+// `phaseOrder` is the ordered list of phase keys for this step, used to
+// compute which rows are done (past current phase) vs active vs pending.
+function Step1ProgressRow({ target, phase, phaseOrder, doneLabel, activeLabel }) {
+  const currentIdx = phaseOrder.indexOf(phase);
+  const targetIdx = phaseOrder.indexOf(target);
+  // "done" phase acts as a sentinel meaning ALL rows are done.
+  const isDoneSentinel = phase === "done";
   const active = phase === target;
-  const done = onOrPast && !active;
+  const done = isDoneSentinel || (currentIdx > -1 && targetIdx > -1 && currentIdx > targetIdx);
   return (
     <li className="flex items-center gap-3" data-testid={`step1-progress-${target}`}>
       <span
         className={
-          "inline-flex h-5 w-5 items-center justify-center rounded-full border " +
+          "inline-flex h-5 w-5 items-center justify-center rounded-full border shrink-0 " +
           (done
-            ? "border-signal text-chalk"
+            ? "border-signal"
             : active
             ? "border-signal text-signal"
-            : "border-faint text-muted")
+            : "border-[var(--hairline)] text-muted")
         }
-        style={done ? { backgroundColor: "var(--accent)", color: "#FFFFFF" } : undefined}
+        style={done ? { backgroundColor: "var(--accent)", color: "#FFFFFF", borderColor: "var(--accent)" } : undefined}
       >
         {done ? <Check size={12} /> : active ? <Loader2 size={11} className="animate-spin" /> : null}
       </span>
@@ -756,6 +760,7 @@ function Step1Progress({ phase }) {
  *  animated checkmark rows and an estimate strip (3 tiles). Keeps user
  *  expectation calibrated during the 10-20s AI call. */
 function StepProgress({ phase, rows, estimate, testid = "step-progress" }) {
+  const phaseOrder = rows.map((r) => r.target);
   return (
     <div className="card-brut p-5 sm:p-6 min-h-[280px]" data-testid={testid}>
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -771,6 +776,7 @@ function StepProgress({ phase, rows, estimate, testid = "step-progress" }) {
             key={r.target}
             target={r.target}
             phase={phase}
+            phaseOrder={phaseOrder}
             doneLabel={r.doneLabel}
             activeLabel={r.activeLabel}
           />
