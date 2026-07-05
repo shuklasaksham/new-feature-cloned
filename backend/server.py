@@ -680,6 +680,109 @@ async def admin_user_projects(user_id: str, request: Request):
     return {"projects": [d async for d in cur]}
 
 
+# --- ONE-OFF ADMIN CLEANUP -------------------------------------------------
+# Purges users matching one or more email regex patterns + cascades their
+# projects, user_sessions, email_otps, and session_id refs. Dry-run by default.
+# Used to nuke automation-test accounts (e2e-*, hp-test-*, overview-*, etc.)
+# from any environment — call once, gate behind explicit confirm=true.
+
+# Baked-in safelist of automation patterns. Callers can override via `patterns`.
+_DEFAULT_AUTOMATION_PATTERNS = [
+    r"^e2e-",
+    r"^e2e\+",
+    r"^hp-test-",
+    r"^overview-",
+    r"^nonadmin-",
+    r"^reset-target-",
+    r"^flow-fixes-",
+    r"^s4-auto-",
+    r"^output-unify-",
+    r"^upgraded-",
+    r"^bracket-test-",
+]
+
+
+class PurgeUsersIn(_BM):
+    # Comma-separated regexes. If empty/omitted, uses the default automation set.
+    patterns: str = _Fd(default="", max_length=2000)
+    # Safety: must be True for anything to actually get deleted.
+    confirm: bool = _Fd(default=False)
+
+
+@api.post("/admin/purge-users")
+async def admin_purge_users(body: PurgeUsersIn, request: Request):
+    """One-off cleanup — deletes users whose email matches any of the given
+    regex patterns, plus cascades their projects / user_sessions / OTP codes /
+    session_id refs. Never touches admins. Returns counts (never raises unless
+    the caller isn't an admin). Dry-run by default; set `confirm=true` to
+    actually delete."""
+    admin = await auth_current_admin(request, db)
+    patterns = [p.strip() for p in body.patterns.split(",") if p.strip()] or list(_DEFAULT_AUTOMATION_PATTERNS)
+    admin_emails = {admin["email"].lower(), *_admin_emails_set()}
+
+    regex_filter = {"$or": [{"email": {"$regex": p}} for p in patterns]}
+    # Never delete admins even if the pattern would match.
+    if admin_emails:
+        regex_filter = {"$and": [regex_filter, {"email": {"$nin": list(admin_emails)}}]}
+
+    victims = await db.users.find(regex_filter, {"user_id": 1, "email": 1, "_id": 0}).to_list(length=10000)
+    victim_ids = [v["user_id"] for v in victims]
+    victim_emails = [v["email"] for v in victims]
+
+    proj_count = await db.projects.count_documents({
+        "$or": [
+            {"owner_user_id": {"$in": victim_ids}},
+            {"creator_email": {"$in": victim_emails}},
+        ]
+    })
+    session_count = await db.user_sessions.count_documents({"user_id": {"$in": victim_ids}})
+    otp_count = await db.email_otps.count_documents({"email": {"$in": victim_emails}})
+
+    result = {
+        "dry_run": not body.confirm,
+        "patterns": patterns,
+        "matched_users": len(victims),
+        "cascade": {
+            "projects": proj_count,
+            "user_sessions": session_count,
+            "email_otps": otp_count,
+        },
+        "sample_emails": victim_emails[:10],
+    }
+
+    if not body.confirm:
+        return result
+
+    # Actually delete — cascade order matters (children before parents).
+    proj_del = await db.projects.delete_many({
+        "$or": [
+            {"owner_user_id": {"$in": victim_ids}},
+            {"creator_email": {"$in": victim_emails}},
+        ]
+    })
+    sess_del = await db.user_sessions.delete_many({"user_id": {"$in": victim_ids}})
+    otp_del = await db.email_otps.delete_many({"email": {"$in": victim_emails}})
+    # Remove victim user_ids from any session-tracking documents.
+    await db.sessions.update_many(
+        {"user_ids": {"$in": victim_ids}},
+        {"$pull": {"user_ids": {"$in": victim_ids}}},
+    )
+    users_del = await db.users.delete_many(regex_filter)
+
+    logger.info(
+        "[admin/purge-users] admin=%s deleted users=%s projects=%s sessions=%s otps=%s",
+        admin["email"], users_del.deleted_count, proj_del.deleted_count,
+        sess_del.deleted_count, otp_del.deleted_count,
+    )
+    result["deleted"] = {
+        "users": users_del.deleted_count,
+        "projects": proj_del.deleted_count,
+        "user_sessions": sess_del.deleted_count,
+        "email_otps": otp_del.deleted_count,
+    }
+    return result
+
+
 @api.get("/admin/projects/{project_id}")
 async def admin_project_detail(project_id: str, request: Request):
     """Full project document for the admin drill-down. Includes every step's
