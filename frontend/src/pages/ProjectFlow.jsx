@@ -1520,23 +1520,36 @@ function SkeletonLine({ short }) {
 }
 
 function ClarityPill({ score = 0, label = "" }) {
-  const color =
-    score >= 75 ? "bg-signal text-chalk" : score >= 40 ? "bg-ink text-chalk" : "bg-danger text-chalk";
+  const cfg =
+    score >= 75
+      ? { bg: "#22C55E", fg: "#0A0A0C", border: "#22C55E" } // safe green + dark text
+      : score >= 40
+      ? { bg: "#F3F4F6", fg: "#0A0A0C", border: "#F3F4F6" } // ink light + dark text
+      : { bg: "#EF4444", fg: "#FFFFFF", border: "#EF4444" }; // danger red + white text
   return (
-    <span className={`mono-tag px-2 py-1 ${color}`}>
+    <span
+      className="mono-tag px-2 py-1 rounded"
+      style={{ backgroundColor: cfg.bg, color: cfg.fg, border: `1px solid ${cfg.border}` }}
+      data-testid="clarity-pill"
+    >
       {label || "CLARITY"} · {score}
     </span>
   );
 }
 
 function SeverityPill({ level = "LOW" }) {
-  const map = {
-    HIGH: "bg-danger text-chalk",
-    MEDIUM: "bg-ink text-chalk",
-    LOW: "bg-paper text-ink border border-ink",
-  };
+  const cfg = {
+    HIGH:   { bg: "#EF4444", fg: "#FFFFFF", border: "#EF4444" },
+    MEDIUM: { bg: "#F3F4F6", fg: "#0A0A0C", border: "#F3F4F6" },
+    LOW:    { bg: "transparent", fg: "#9CA3AF", border: "#262A36" },
+  }[level] || { bg: "transparent", fg: "#9CA3AF", border: "#262A36" };
   return (
-    <span className={`mono-tag px-2 py-1 h-fit shrink-0 ${map[level] || map.LOW}`}>{level}</span>
+    <span
+      className="mono-tag px-2 py-1 h-fit shrink-0 rounded"
+      style={{ backgroundColor: cfg.bg, color: cfg.fg, border: `1px solid ${cfg.border}` }}
+    >
+      {level}
+    </span>
   );
 }
 
