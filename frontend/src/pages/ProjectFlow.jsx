@@ -449,7 +449,6 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     if (loading) return;
     sampleAutoRun.current = true;
     trySample(sampleKeyParam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sampleKeyParam, framing]);
 
   const clearSample = () => {
@@ -1904,12 +1903,16 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
     }
 
     let cancelled = false;
+    const ac = new AbortController();
     // Only show the "thinking…" indicator if the request is still running
-    // after 180ms — for Haiku (typically ~250-400ms) it appears briefly
+    // after 220ms — for Haiku (typically ~250-500ms) it appears briefly
     // then flips to results, keeping the UI feeling live.
     const loadingTimer = setTimeout(() => {
       if (!cancelled) setLoading(true);
-    }, 180);
+    }, 220);
+    // 400ms debounce: waits for the user to actually pause typing.
+    // Prevents the previous 40ms bombardment (5-10 parallel Haiku calls
+    // per fast typist) which was choking the backend AI pool.
     const timer = setTimeout(async () => {
       try {
         const { data } = await api.post("/suggest", {
@@ -1917,7 +1920,7 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
           field,
           partial: text,
           context: context || {},
-        });
+        }, { signal: ac.signal, timeout: 12000 });
         const next = Array.isArray(data.suggestions) ? data.suggestions : [];
         if (!cancelled) {
           setItems(next);
@@ -1934,9 +1937,10 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
         clearTimeout(loadingTimer);
         if (!cancelled) setLoading(false);
       }
-    }, 40);
+    }, 400);
     return () => {
       cancelled = true;
+      ac.abort();
       clearTimeout(timer);
       clearTimeout(loadingTimer);
     };

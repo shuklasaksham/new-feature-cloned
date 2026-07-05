@@ -6,14 +6,24 @@ import os
 import json
 import re
 import uuid
+import asyncio
+import logging
 from typing import Optional
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+logger = logging.getLogger(__name__)
 
 
 DEFAULT_PROVIDER = "anthropic"
 DEFAULT_MODEL = "claude-sonnet-4-5-20250929"  # higher quality for step outputs
 SUGGEST_PROVIDER = "anthropic"
 SUGGEST_MODEL = "claude-haiku-4-5-20251001"  # ultra-fast for typing suggestions
+
+# Hard timeouts so a hung Anthropic call never lets Cloudflare's 100s timeout
+# fire (which surfaces as a scary 520 "malformed response" page). We return a
+# clean 502 well before that.
+STEP_TIMEOUT_S = 70   # Sonnet step calls (framing, context, decision, artifacts)
+SUGGEST_TIMEOUT_S = 8  # Haiku typing suggestions
 
 MODEL_MAP = {
     "claude": ("anthropic", "claude-sonnet-4-5-20250929"),
@@ -65,7 +75,14 @@ async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = 
         session_id=session_id or str(uuid.uuid4()),
         system_message=SYSTEM_VOICE,
     ).with_model(provider, model)
-    response = await chat.send_message(UserMessage(text=prompt))
+    try:
+        response = await asyncio.wait_for(
+            chat.send_message(UserMessage(text=prompt)),
+            timeout=STEP_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError as e:
+        logger.warning("AI step call timed out after %ss (engine=%s)", STEP_TIMEOUT_S, engine)
+        raise TimeoutError(f"AI took longer than {STEP_TIMEOUT_S}s — please retry.") from e
     return _extract_json(response)
 
 
@@ -77,7 +94,14 @@ async def _run_fast(prompt: str, session_id: Optional[str] = None) -> dict:
         session_id=session_id or str(uuid.uuid4()),
         system_message="Return strict JSON only. No prose, no markdown fences.",
     ).with_model(SUGGEST_PROVIDER, SUGGEST_MODEL)
-    response = await chat.send_message(UserMessage(text=prompt))
+    try:
+        response = await asyncio.wait_for(
+            chat.send_message(UserMessage(text=prompt)),
+            timeout=SUGGEST_TIMEOUT_S,
+        )
+    except asyncio.TimeoutError as e:
+        logger.info("Suggest call timed out after %ss — returning empty list", SUGGEST_TIMEOUT_S)
+        raise TimeoutError("Suggestions timed out.") from e
     return _extract_json(response)
 
 

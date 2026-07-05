@@ -491,7 +491,11 @@ def _referrer_bucket(ref: str, utm_source: str) -> str:
 
 @api.post("/public/track/session")
 async def track_session(body: SessionTrackIn, request: Request):
-    """Upsert an acquisition-tracking row. Idempotent per session_id."""
+    """Upsert an acquisition-tracking row. Idempotent per session_id.
+    Analytics is fire-and-forget: any DB write failure MUST NOT crash the
+    request (an earlier variant of this endpoint raised pymongo WriteError
+    'session_id conflict', which Cloudflare then surfaced as a 520 to the
+    user). Swallow all write errors — we can always re-track next paint."""
     now = auth_iso(auth_now())
     source = _referrer_bucket(body.referrer, body.utm_source)
     # Fingerprint user (best-effort) so we can link if they sign in later.
@@ -514,15 +518,19 @@ async def track_session(body: SessionTrackIn, request: Request):
         "last_seen_at": now,
     }
     add_user = {"user_ids": user_id} if user_id else {"user_ids": "__anon__"}
-    await db.sessions.update_one(
-        {"session_id": body.session_id},
-        {
-            "$set": doc,
-            "$setOnInsert": {"first_seen_at": now},
-            "$addToSet": add_user,
-        },
-        upsert=True,
-    )
+    try:
+        await db.sessions.update_one(
+            {"session_id": body.session_id},
+            {
+                "$set": doc,
+                "$setOnInsert": {"first_seen_at": now},
+                "$addToSet": add_user,
+            },
+            upsert=True,
+        )
+    except Exception as e:
+        # Non-fatal: log + move on. Analytics loss is preferable to a 5xx.
+        logger.warning("track_session write failed (non-fatal): %s", e)
     return {"ok": True}
 
 
