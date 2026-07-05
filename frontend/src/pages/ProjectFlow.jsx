@@ -1419,7 +1419,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
       nextHint={isLocked ? "open the document · send the review link" : "after this: download · sign · ship"}
     >
       <GuestUpgradeBanner />
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-6 mt-8">
         <div className="lg:col-span-2 space-y-6">
           <OutputCard
             label={"{ 05 · the stance }"}

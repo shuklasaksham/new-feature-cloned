@@ -333,7 +333,7 @@ export default function ProjectOverview() {
               </h1>
               <button
                 onClick={() => setRenaming(true)}
-                className="shrink-0 px-3 py-2 border border-ink mono-tag bg-paper hover:bg-ink hover:text-chalk inline-flex items-center gap-2"
+                className="btn-ghost shrink-0 mono-tag"
                 data-testid="overview-rename"
                 aria-label="Rename project"
               >
@@ -364,7 +364,7 @@ export default function ProjectOverview() {
             {project.artifacts && (
               <Link
                 to={`/project/${id}/document`}
-                className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk inline-flex items-center gap-2"
+                className="btn-ghost mono-tag"
                 data-testid="overview-document-link"
               >
                 <FileText size={12} /> OPEN DOCUMENT
@@ -374,7 +374,7 @@ export default function ProjectOverview() {
               <button
                 onClick={() => unlockAndGo(currentStep)}
                 disabled={unlocking}
-                className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk inline-flex items-center gap-2"
+                className="btn-ghost mono-tag"
                 data-testid="overview-unlock"
               >
                 {unlocking ? <Loader2 size={12} className="animate-spin"/> : <Unlock size={12}/>} UNLOCK TO EDIT
@@ -495,7 +495,7 @@ export default function ProjectOverview() {
               return (
                 <li
                   key={step.n}
-                  className="p-5 sm:p-6 hover:bg-white/40 flex flex-col sm:flex-row sm:items-start gap-4"
+                  className="p-5 sm:p-6 hover:bg-[var(--surface-2)] transition-colors duration-150 flex flex-col sm:flex-row sm:items-start gap-4"
                   data-testid={`overview-step-${step.n}`}
                 >
                   <div className="shrink-0 w-16 text-signal font-display text-3xl">

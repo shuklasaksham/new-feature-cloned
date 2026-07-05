@@ -110,23 +110,29 @@ export default function ClaimProjects() {
                       <div className="flex gap-2 shrink-0">
                         <button
                           onClick={() => setDecisions((c) => ({ ...c, [p.id]: "keep" }))}
-                          className={`px-3 py-2 border border-ink mono-tag inline-flex items-center gap-2 ${
-                            choice === "keep" ? "bg-signal text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-                          }`}
+                          className="px-3 py-2 border rounded mono-tag inline-flex items-center gap-2 transition-colors"
+                          style={
+                            choice === "keep"
+                              ? { backgroundColor: "#2E5BFF", color: "#FFFFFF", borderColor: "#2E5BFF" }
+                              : { backgroundColor: "var(--surface-2)", color: "var(--text-2)", borderColor: "var(--hairline)" }
+                          }
                           data-testid={`claim-keep-${p.id}`}
                           aria-pressed={choice === "keep"}
                         >
-                          <Check size={12} /> KEEP
+                          <Check size={12} /> <span style={{ color: "inherit" }}>KEEP</span>
                         </button>
                         <button
                           onClick={() => setDecisions((c) => ({ ...c, [p.id]: "delete" }))}
-                          className={`px-3 py-2 border border-ink mono-tag inline-flex items-center gap-2 ${
-                            choice === "delete" ? "bg-danger text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-                          }`}
+                          className="px-3 py-2 border rounded mono-tag inline-flex items-center gap-2 transition-colors"
+                          style={
+                            choice === "delete"
+                              ? { backgroundColor: "#EF4444", color: "#FFFFFF", borderColor: "#EF4444" }
+                              : { backgroundColor: "var(--surface-2)", color: "var(--text-2)", borderColor: "var(--hairline)" }
+                          }
                           data-testid={`claim-delete-${p.id}`}
                           aria-pressed={choice === "delete"}
                         >
-                          <Trash2 size={12} /> DELETE
+                          <Trash2 size={12} /> <span style={{ color: "inherit" }}>DELETE</span>
                         </button>
                       </div>
                     </li>

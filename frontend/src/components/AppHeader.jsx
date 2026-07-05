@@ -37,7 +37,7 @@ export default function AppHeader({ rightExtra }) {
               <button
                 type="button"
                 onClick={() => setOpen((o) => !o)}
-                className="flex items-center gap-2 px-2 py-1 rounded-full glass hover:bg-white/60 transition-all"
+                className="flex items-center gap-2 px-2 py-1 rounded-full glass hover:bg-[var(--surface-2)] transition-all"
                 aria-expanded={open}
                 aria-haspopup="menu"
                 data-testid="profile-menu-trigger"
@@ -51,7 +51,7 @@ export default function AppHeader({ rightExtra }) {
                   role="menu"
                   data-testid="profile-menu-panel"
                 >
-                  <div className="p-4 border-b border-ink/10 flex items-center gap-3">
+                  <div className="p-4 border-b border-[var(--hairline)] flex items-center gap-3">
                     <Avatar id={user.avatar || "mono-1"} size={36} initial={user.name || user.email} />
                     <div className="min-w-0">
                       <p className="font-display text-base truncate">{user.name || "—"}</p>
@@ -61,7 +61,7 @@ export default function AppHeader({ rightExtra }) {
                   </div>
                   <button
                     onClick={() => { setOpen(false); navigate("/app/new"); }}
-                    className="w-full text-left p-3 mono-tag hover:bg-white/50 flex items-center gap-2 transition-colors"
+                    className="w-full text-left p-3 mono-tag hover:bg-[var(--surface-2)] hover:text-[var(--text)] flex items-center gap-2 transition-colors"
                     role="menuitem"
                     data-testid="profile-menu-new"
                   >
@@ -69,7 +69,7 @@ export default function AppHeader({ rightExtra }) {
                   </button>
                   <button
                     onClick={() => { setOpen(false); navigate("/settings"); }}
-                    className="w-full text-left p-3 mono-tag hover:bg-white/50 flex items-center gap-2 transition-colors"
+                    className="w-full text-left p-3 mono-tag hover:bg-[var(--surface-2)] hover:text-[var(--text)] flex items-center gap-2 transition-colors"
                     role="menuitem"
                     data-testid="profile-menu-settings"
                   >
@@ -77,7 +77,7 @@ export default function AppHeader({ rightExtra }) {
                   </button>
                   <button
                     onClick={async () => { setOpen(false); await logout(); navigate("/", { replace: true }); }}
-                    className="w-full text-left p-3 mono-tag hover:bg-danger hover:text-chalk flex items-center gap-2 border-t border-ink/10 transition-colors"
+                    className="w-full text-left p-3 mono-tag hover:bg-danger hover:!text-white flex items-center gap-2 border-t border-[var(--hairline)] transition-colors"
                     role="menuitem"
                     data-testid="profile-menu-logout"
                   >

@@ -593,20 +593,27 @@ function ReviewedState({ doc }) {
   const isAccept = doc.share_status === "accepted";
   return (
     <div
-      className={`card-brut p-5 sm:p-6 ${isAccept ? "!bg-signal text-chalk" : "!bg-ink text-chalk"}`}
+      className="card-brut p-5 sm:p-6"
+      style={
+        isAccept
+          ? { backgroundColor: "#2E5BFF", color: "#FFFFFF", borderColor: "#2E5BFF" }
+          : { backgroundColor: "#F3F4F6", color: "#0A0A0C", borderColor: "#F3F4F6" }
+      }
       data-testid="review-done-state"
     >
       <div className="flex items-center gap-2">
         {isAccept ? <Check size={16} /> : <AlertTriangle size={16} className="text-danger" />}
-        <p className="mono-tag">{isAccept ? "DOCUMENT ACCEPTED" : "CONCERNS DELIVERED"}</p>
+        <p className="mono-tag" style={{ color: "inherit", opacity: 0.9 }}>
+          {isAccept ? "DOCUMENT ACCEPTED" : "CONCERNS DELIVERED"}
+        </p>
       </div>
-      <h3 className="font-display text-2xl mt-3 text-chalk">Thanks.</h3>
-      <p className="mt-3 text-sm text-chalk">
+      <h3 className="font-display text-2xl mt-3" style={{ color: "inherit" }}>Thanks.</h3>
+      <p className="mt-3 text-sm" style={{ color: "inherit", opacity: 0.9 }}>
         {isAccept
           ? "The project owner has been notified you accepted the sign-off. They'll be in touch with next steps."
           : "Your concerns have been delivered. They'll reply with how they want to proceed."}
       </p>
-      <p className="mono-tag mt-5 text-faint">
+      <p className="mono-tag mt-5" style={{ color: "inherit", opacity: 0.6 }}>
         SIGNED · {doc.share_review?.signature_name}
       </p>
     </div>

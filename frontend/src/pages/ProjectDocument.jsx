@@ -335,7 +335,7 @@ function DocHeader({ project }) {
         </p>
         <Link
           to={`/project/${project.id}`}
-          className="px-3 py-2 border border-ink font-mono text-[11px] tracking-widest uppercase bg-paper hover:bg-ink hover:text-chalk"
+          className="btn-ghost mono-tag"
           data-testid="doc-header-flow-link"
         >
           ← Flow
@@ -551,11 +551,11 @@ function ShareLinkPanel({ url }) {
   return (
     <div className="mt-3">
       <p className="mono-tag text-signal">REVIEW LINK READY</p>
-      <div className="mt-2 border border-ink bg-paper px-3 py-2 flex items-center gap-2">
+      <div className="mt-2 border border-[var(--hairline)] bg-[var(--surface-2)] rounded-md px-3 py-2 flex items-center gap-2">
         <p className="font-mono text-xs truncate" data-testid="doc-share-url">{url}</p>
         <button
           onClick={copy}
-          className="shrink-0 ml-auto px-2 py-1 border border-ink mono-tag bg-chalk hover:bg-ink hover:text-chalk"
+          className="btn-ghost shrink-0 ml-auto mono-tag"
           data-testid="doc-share-copy-btn"
         >
           {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -622,13 +622,16 @@ function FeedbackInline({ project, setProject, onDismiss }) {
             setSentiment("up");
             setOpen(true);
           }}
-          className={`flex-1 py-2 border border-ink flex items-center justify-center gap-2 transition ${
-            sentiment === "up" ? "bg-signal text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-          }`}
+          className="flex-1 py-2 border rounded flex items-center justify-center gap-2 transition-colors"
+          style={
+            sentiment === "up"
+              ? { backgroundColor: "#2E5BFF", color: "#FFFFFF", borderColor: "#2E5BFF" }
+              : { backgroundColor: "var(--surface-2)", color: "var(--text-2)", borderColor: "var(--hairline)" }
+          }
           data-testid="feedback-up-btn"
           aria-pressed={sentiment === "up"}
         >
-          <span className="mono-tag">USEFUL</span>
+          <span className="mono-tag" style={{ color: "inherit" }}>USEFUL</span>
         </button>
         <button
           type="button"
@@ -636,13 +639,16 @@ function FeedbackInline({ project, setProject, onDismiss }) {
             setSentiment("down");
             setOpen(true);
           }}
-          className={`flex-1 py-2 border border-ink flex items-center justify-center gap-2 transition ${
-            sentiment === "down" ? "bg-danger text-chalk" : "bg-chalk hover:bg-ink hover:text-chalk"
-          }`}
+          className="flex-1 py-2 border rounded flex items-center justify-center gap-2 transition-colors"
+          style={
+            sentiment === "down"
+              ? { backgroundColor: "#EF4444", color: "#FFFFFF", borderColor: "#EF4444" }
+              : { backgroundColor: "var(--surface-2)", color: "var(--text-2)", borderColor: "var(--hairline)" }
+          }
           data-testid="feedback-down-btn"
           aria-pressed={sentiment === "down"}
         >
-          <span className="mono-tag">NOT YET</span>
+          <span className="mono-tag" style={{ color: "inherit" }}>NOT YET</span>
         </button>
       </div>
       {open && (
