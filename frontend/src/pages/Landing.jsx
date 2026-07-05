@@ -615,10 +615,10 @@ const TESTIMONIALS = [
   },
   {
     tone: "mint",
-    quote: "It's the first tool that treats a design decision like an object with a reason attached, not just a Figma frame.",
-    name: "Elif Demir",
-    role: "Independent UX consultant · Berlin",
-    initial: "E",
+    quote: "Bracket has changed how our design team collaborates. Everything stays organized, reviews are faster, and our workflow is noticeably smoother.",
+    name: "Tanay Vyas",
+    role: "Founder",
+    initial: "T",
   },
   {
     tone: "ink",
