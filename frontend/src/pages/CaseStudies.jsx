@@ -2,10 +2,16 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, X } from "lucide-react";
 import { CASE_STUDIES } from "../lib/constants";
+import Seo from "../components/Seo";
 
 export default function CaseStudies() {
   return (
     <div data-testid="case-studies-page" className="page-enter">
+      <Seo
+        title="Case studies"
+        description="Real projects, real scopes, real client messages. See exactly how Bracket helped freelancers turn a vague brief into a locked-in decision."
+        path="/case-studies"
+      />
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />

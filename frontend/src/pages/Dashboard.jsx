@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import EmptyStateIllustration from "../components/EmptyStateIllustration";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
+import Seo from "../components/Seo";
 
 const STATUS_PILL = {
   draft:       { className: "status-pill status-pill--draft",  label: "Draft" },
@@ -100,6 +101,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen" data-testid="dashboard-page">
+      <Seo title="Dashboard" path="/app" noindex />
       <main className="max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14 page-enter">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>

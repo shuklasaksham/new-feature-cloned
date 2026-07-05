@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown } from "lucide-react";
+import Seo from "../components/Seo";
 
 const FAQS = [
   {
@@ -65,6 +66,11 @@ function FaqItem({ q, a }) {
 export default function FAQ() {
   return (
     <div data-testid="faq-page" className="page-enter">
+      <Seo
+        title="FAQ"
+        description="Answers to common questions about Bracket — how the 5-step decision loop works, what makes it different from ChatGPT, pricing, privacy, and support."
+        path="/faq"
+      />
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check } from "lucide-react";
 import { PRICING } from "../lib/constants";
+import Seo from "../components/Seo";
 
 export default function Pricing() {
   const [currency, setCurrency] = useState("INR");
@@ -9,6 +10,11 @@ export default function Pricing() {
 
   return (
     <div data-testid="pricing-page" className="page-enter">
+      <Seo
+        title="Pricing"
+        description="Flat, transparent pricing for Bracket. Free early access with generous limits. Pro plan for freelancers and small studios who need unlimited decisions."
+        path="/pricing"
+      />
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />

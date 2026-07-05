@@ -2,10 +2,16 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, X } from "lucide-react";
 import { LAYERS, WALKTHROUGH } from "../lib/constants";
+import Seo from "../components/Seo";
 
 export default function HowItWorks() {
   return (
     <div data-testid="how-it-works-page" className="page-enter">
+      <Seo
+        title="How it works"
+        description="See how Bracket's five-step decision loop turns messy briefs into a locked-in scope, decision doc, and client-ready message — in under 20 minutes."
+        path="/how-it-works"
+      />
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
 import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, PRICING } from "../lib/constants";
 import { api } from "../lib/api";
+import Seo from "../components/Seo";
 
 const Section = ({ id, label, children, className = "" }) => (
   <section id={id} className={`relative ${className}`}>
@@ -58,6 +59,11 @@ export default function Landing() {
 
   return (
     <div data-testid="landing-page" className="page-enter">
+      <Seo
+        title="AI decision coach for designers & freelancers"
+        description="Bracket is an AI decision OS for designers and freelancers. Turn briefs into decisions in five steps: scope, context, decision, artifacts, review."
+        path="/"
+      />
       {/* ============ HERO ============ */}
       <section className="relative overflow-hidden pt-16 md:pt-24 pb-20 md:pb-28" data-testid="hero-section">
         <div className="hero-ambient" aria-hidden="true" />

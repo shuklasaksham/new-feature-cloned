@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { Toaster } from "sonner";
 
 import MarketingLayout from "./components/MarketingLayout";
@@ -34,8 +35,9 @@ import "./App.css";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <HelmetProvider>
+      <AuthProvider>
+        <BrowserRouter>
         <ScrollToTop />
         <Toaster position="top-right" richColors />
         <Routes>
@@ -76,5 +78,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </HelmetProvider>
   );
 }

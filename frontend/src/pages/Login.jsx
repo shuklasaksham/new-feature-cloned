@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, Mail, Lock as LockIcon } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
+import Seo from "../components/Seo";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -109,6 +110,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col" data-testid="login-page">
+      <Seo title="Sign in" path="/login" noindex />
       <header className="marketing-header">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2" aria-label="Bracket home">

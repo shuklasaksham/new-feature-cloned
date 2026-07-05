@@ -1,0 +1,13 @@
+# robots.txt for https://use-bracket.com
+User-agent: *
+Allow: /
+Disallow: /app
+Disallow: /app/
+Disallow: /login
+Disallow: /admin
+Disallow: /admin/
+Disallow: /project/
+Disallow: /r/
+Disallow: /api/
+
+Sitemap: https://use-bracket.com/sitemap.xml

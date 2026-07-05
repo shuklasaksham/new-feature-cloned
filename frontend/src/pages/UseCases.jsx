@@ -2,10 +2,16 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { USE_CASES } from "../lib/constants";
+import Seo from "../components/Seo";
 
 export default function UseCases() {
   return (
     <div data-testid="use-cases-page" className="page-enter">
+      <Seo
+        title="Use cases"
+        description="From brand refreshes to product retainers — see how designers and freelancers use Bracket to unblock scope, kill ambiguity, and close projects faster."
+        path="/use-cases"
+      />
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />
