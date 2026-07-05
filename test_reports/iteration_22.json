@@ -1,0 +1,33 @@
+{
+  "summary": "Step 1 UX overhaul verified end-to-end via browser automation on the preview URL. Guest login → dashboard-new-input+submit → /project/{id}/flow lands on Step 1 with the new UX: kicker copy ('Turn a messy client brief…'), 'under a minute' pill (step1-timepill), all 3 new labels ('What are you building?', 'Who is the client (and who are you actually talking to)?', 'What feels unclear or off?'), and all 3 helper testids (step1-what-helper, step1-who-helper, step1-unclear-helper) render. Auto-focus verified — document.activeElement === step1-what-input ~500ms after mount. Submit (step1-submit-btn) stays disabled when empty AND for 'asdf' gibberish, and step1-what-warning surfaces with the inline step1-inline-sample-btn link. step1-try-sample-btn CTA visible below the form. Clicking Try Sample: pre-fills all 3 textareas with realistic content (what=151 chars, who=130, unclear=215), step1-progress card renders with all 3 rows (detecting/scanning/framing) + estimate ~8/~6/~3 (requirements/clarifications/risks). After ~4-8s the AI returns and step1-framing-output renders (2579 chars), step1-sample-banner shows above and step1-sample-done-banner + step1-analyze-own-btn show below. Clicking Start yours routes back to /app. Auto-save: typing then waiting 700ms writes bracket:step1-draft:<projectId> to localStorage with correct JSON shape, and step1-draft-saved pill briefly appears. Regression on a fresh project confirms legacy Field wrapper testids (step1-what, step1-who, step1-unclear) still resolve.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ProjectFlow.jsx line 1506-1518: Field renders helper inside <label>, so clicking the helper text focuses the enclosing textarea. Cosmetic — user probably intended this — but any anchor/link ever added to helper text would be swallowed by label focus semantics. Consider moving helper <p> outside the <label> or switching wrapper to <div> if helpers ever gain interactive content.",
+    "ProjectFlow.jsx line 384-397: The autosave useEffect returns a cleanup function from *inside* setTimeout's callback — the outer effect's return only clears the outer timeout, so setDraftSaved(false) is scheduled via a nested setTimeout whose cleanup is never re-registered. Works in practice (the nested timer fires 1.4s later) but it's a code-smell / potential React state-after-unmount warning. Prefer a top-level useEffect ref-guard or a single timeout that both flips setDraftSaved(true) then schedules the flip-back.",
+    "ProjectFlow.jsx line 1885: AISuggestions returns null when value < 2 chars OR no items — this means step1-what-suggest testid is intentionally absent until the user types. That's fine, but the review-request wording ('step1-what-suggest AI chips still resolve') should be read as 'render on demand', not 'always in DOM'. Not a bug.",
+    "ProjectFlow.jsx line 429-436 (trySample): pickSample() is called *inside* trySample so a user can get the same sample twice in a row on unlucky rolls. Trivial — but easy fix: track lastSampleKey in a ref and re-roll if it matches."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only scope)", "frontend": "100% — every acceptance criterion in the review request passed"},
+  "test_credentials": "Guest login only, via [data-testid=login-guest-btn] on /login. No email/password needed. Session persists via httpOnly cookie 'session_token'.",
+  "seed_data_creation": "Two guest-scoped test projects created via dashboard-new-submit: 'TEST_step1_ux_project' (id=1912aa90-326e-4bd4-873f-884728860881) and 'TEST_regression_ids'. Both remain in the guest's project list — cleanup optional (guest data auto-expires).",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Project detail route pattern is /project/{id}/flow — NOT /app/p/{id} as the review request implied. Use regex `/project/[a-f0-9-]+/flow` when waiting for navigation after dashboard-new-submit. All 3 sample briefs (fintech-landing / checkout-redesign / coffee-brand) produce >50-char strings in each field, so the >50 assertion is safe. LLM situation call was ~4-8s in this run and returned a valid reframed_problem. If a future run sees the framing timeout, verify EMERGENT_LLM_KEY / LLM_KEY status on the backend first, and remember the request note said 'that's a separate infra issue — flag it, don't fail the UX tests.'",
+  "measurements": {
+    "sample_content_lengths": {"what": 151, "who": 130, "unclear": 215},
+    "framing_output_length_chars": 2579,
+    "auto_focus_delay_observed_ms": "~500 (spec 220ms, verified after wait)",
+    "auto_save_debounce_verified_ms": 900,
+    "localStorage_key": "bracket:step1-draft:{projectId}",
+    "route_pattern_after_project_create": "/project/{uuid}/flow"
+  },
+  "rca_of_the_issue": "N/A — no bug found. Step 1 UX overhaul landed exactly per spec across labels, helper text, auto-focus, gibberish detection, inline-sample fallback, try-sample CTA, sample pre-fill + auto-submit, sequential progress loader with estimate, sample banner, done banner + analyze-own CTA, and localStorage autosave with draft-saved pill."
+}

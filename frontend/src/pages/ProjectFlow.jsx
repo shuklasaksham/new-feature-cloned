@@ -13,6 +13,10 @@ import {
   FolderOpen,
   Copy,
   Pencil,
+  Sparkles,
+  Info,
+  Clock,
+  Wand2,
 } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
@@ -291,53 +295,230 @@ function ErrorBox({ msg }) {
   );
 }
 
+// ---- Sample project pool (for "Try Sample Project") ----
+const SAMPLE_BRIEFS = [
+  {
+    key: "fintech-landing",
+    what:
+      "A launch landing page for a Series-A fintech product. Founder wants launch-day traffic to convert into demo bookings within 3 weeks. Budget is ₹80,000.",
+    who:
+      "A 12-person YC-backed fintech in Bengaluru. Working directly with the co-founder Ankit — no design lead, quick decisions expected.",
+    unclear:
+      "They keep sending Stripe / Linear / Ramp screenshots and calling it 'the vibe', but the page has to explain a fairly technical treasury workflow. Also unsure whether to propose a brand refresh inside the same scope.",
+  },
+  {
+    key: "checkout-redesign",
+    what:
+      "Redesign the mobile checkout for an e-commerce app. Drop-off between cart and payment is ~40%. Ship a v1 in 6 weeks.",
+    who:
+      "In-house team at a fashion D2C startup with 800k MAU. Reporting to the Head of Product. Engineering has 2 sprints allocated.",
+    unclear:
+      "The team is convinced it's a UI problem, but analytics suggests it's mostly form friction and payment failures. And no one has actually watched a real user check out yet.",
+  },
+  {
+    key: "coffee-brand",
+    what:
+      "Naming, logo, and packaging system for a new specialty coffee brand launching in Mumbai. Founder wants a distinct point of view against Blue Tokai and Third Wave. Budget ₹1.2L.",
+    who:
+      "Solo founder, ex-restaurant. Launching with 2 blends. Needs pouch, label, and an Instagram launch kit.",
+    unclear:
+      "The founder switches between 'premium' and 'approachable' every meeting. And she isn't sure whether the brand should sound coffee-nerdy or lifestyle-y.",
+  },
+];
+
+function pickSample() {
+  return SAMPLE_BRIEFS[Math.floor(Math.random() * SAMPLE_BRIEFS.length)];
+}
+
+// Very light gibberish detection: flag inputs that are clearly not a real
+// answer (too short, only digits, single repeated char, keyboard mash).
+function looksLikeGibberish(text) {
+  const t = (text || "").trim();
+  if (t.length < 12) return t.length > 0; // typed something but too short
+  if (/^\d+$/.test(t)) return true;
+  if (/^([a-z])\1{3,}$/i.test(t.replace(/\s+/g, ""))) return true;
+  // Any word in the trio of common keyboard-mash tokens
+  const mashy = /\b(asdf|qwer|hjkl|zxcv|hahaha|lol|test\s?test|123|abc)\b/i;
+  if (mashy.test(t) && t.length < 40) return true;
+  return false;
+}
+
 function Step1({ project, setProject, dirtyRef, onDone }) {
   const initial = project.situation_input || { what: "", who: "", unclear: "" };
-  const [form, setForm] = useState(initial);
+  const draftKey = `bracket:step1-draft:${project.id}`;
+  // Hydrate from local draft if the project has no server-side input yet.
+  const [form, setForm] = useState(() => {
+    if (project.situation_input) return project.situation_input;
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) return { ...initial, ...JSON.parse(raw) };
+    } catch (e) { /* ignore */ }
+    return initial;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [phase, setPhase] = useState(null); // detecting | scanning | framing | done
+  const [isSample, setIsSample] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const whatRef = useRef(null);
   const framing = project.framing;
+  const navigate = useNavigate();
 
-  // Track unsaved input so the logo-click handler can warn
+  // Auto-focus the first input on mount (only when we don't already have an output).
+  useEffect(() => {
+    if (!framing && whatRef.current) {
+      // Slight delay so it happens after page-enter animation
+      const t = setTimeout(() => whatRef.current?.focus(), 220);
+      return () => clearTimeout(t);
+    }
+  }, [framing]);
+
+  // Track unsaved input so the logo-click handler can warn.
   useEffect(() => {
     if (!dirtyRef) return;
     dirtyRef.current = !!(form.what || form.who || form.unclear) && !framing;
     return () => { if (dirtyRef) dirtyRef.current = false; };
   }, [form, framing, dirtyRef]);
 
-  const run = async () => {
+  // Auto-save draft to localStorage (debounced 500ms).
+  useEffect(() => {
+    if (framing) return; // don't overwrite once we have output
+    const handle = setTimeout(() => {
+      try {
+        if (form.what || form.who || form.unclear) {
+          window.localStorage.setItem(draftKey, JSON.stringify(form));
+          setDraftSaved(true);
+          const clear = setTimeout(() => setDraftSaved(false), 1400);
+          return () => clearTimeout(clear);
+        }
+      } catch (e) { /* ignore quota errors */ }
+    }, 500);
+    return () => clearTimeout(handle);
+  }, [form, framing, draftKey]);
+
+  // Clear draft once the server has accepted the input.
+  useEffect(() => {
+    if (framing) {
+      try { window.localStorage.removeItem(draftKey); } catch (e) { /* noop */ }
+    }
+  }, [framing, draftKey]);
+
+  const runInternal = async (payload) => {
     setLoading(true);
     setError("");
+    // Sequential progress checkmarks synced with actual AI latency (~4-6s).
+    setPhase("detecting");
+    const t1 = setTimeout(() => setPhase("scanning"), 900);
+    const t2 = setTimeout(() => setPhase("framing"), 2200);
     try {
-      const { data } = await api.post(`/projects/${project.id}/situation`, form);
+      const { data } = await api.post(`/projects/${project.id}/situation`, payload);
       setProject(data);
+      setPhase("done");
     } catch (e) {
       setError(formatApiError(e));
+      setPhase(null);
     } finally {
+      clearTimeout(t1);
+      clearTimeout(t2);
       setLoading(false);
     }
   };
 
+  const run = () => runInternal(form);
+
+  const trySample = async () => {
+    const s = pickSample();
+    const nextForm = { what: s.what, who: s.who, unclear: s.unclear };
+    setForm(nextForm);
+    setIsSample(true);
+    // Full magical demo: pre-fill AND auto-submit.
+    await runInternal(nextForm);
+  };
+
+  const clearSample = () => {
+    setIsSample(false);
+    navigate("/app");
+  };
+
   const pick = (field) => (s, v) => setForm({ ...form, [field]: mergeSuggestion(v, s) });
+
+  const whatGibberish = form.what && looksLikeGibberish(form.what);
+  const anyGibberish = Boolean(whatGibberish);
+  const canSubmit = !loading && form.what.trim().length >= 12 && !anyGibberish;
 
   return (
     <StepShell
       num={1}
       label="SITUATION FRAMING"
       title="Name what's really happening."
-      kicker="Skip the brief. Describe the situation like you'd tell it to a friend over coffee. Bracket will mirror it back clearly."
+      kicker="Turn a messy client brief into a clear decision in under a minute. Describe the situation like you'd tell it to a friend — Bracket will mirror it back sharper."
       nextHint={framing ? "compress this into what actually matters" : "we name it before we decide it"}
     >
+      <div className="mb-6 flex items-center gap-2 flex-wrap" data-testid="step1-timepill">
+        <span className="mono-tag text-muted inline-flex items-center gap-1.5">
+          <Clock size={12} /> under a minute
+        </span>
+        {draftSaved && !framing && (
+          <span className="mono-tag text-signal inline-flex items-center gap-1.5" data-testid="step1-draft-saved">
+            <Check size={12} /> draft saved
+          </span>
+        )}
+        {isSample && (
+          <span className="mono-tag inline-flex items-center gap-1.5 px-2 py-1 border border-signal text-signal" data-testid="step1-sample-tag">
+            <Sparkles size={12} /> sample project
+          </span>
+        )}
+      </div>
+
+      {isSample && (
+        <div className="card-brut p-4 sm:p-5 mb-6 flex items-start gap-3" data-testid="step1-sample-banner">
+          <Sparkles size={16} className="mt-0.5 text-signal shrink-0" />
+          <div className="flex-1">
+            <p className="t-body">
+              This is a <strong>sample project</strong>. Explore how Bracket thinks — then start your own anytime.
+            </p>
+          </div>
+          <button
+            onClick={clearSample}
+            className="btn-ghost inline-flex items-center gap-1.5 whitespace-nowrap"
+            data-testid="step1-start-own-btn"
+          >
+            Start your own <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
-        <div className="space-y-6" data-testid="step1-form">
-          <Field label="What is the project?" testid="step1-what">
+        <div className="space-y-5" data-testid="step1-form">
+          <Field
+            label="What are you building?"
+            testid="step1-what"
+            helper="A short description of the project. Example: A pricing page for a B2B SaaS launching next month."
+          >
             <textarea
+              ref={whatRef}
               className="textarea-brut"
               rows={3}
-              placeholder="A landing page. Or a whole rebrand. Or something you can't name yet."
+              placeholder="e.g. A landing page for a fintech launching in 3 weeks — needs to convert traffic into demo bookings…"
               value={form.what}
               onChange={(e) => setForm({ ...form, what: e.target.value })}
+              data-testid="step1-what-input"
             />
+            {whatGibberish && (
+              <div className="mt-2 text-xs text-danger inline-flex items-center gap-1.5" data-testid="step1-what-warning">
+                <Info size={12} />
+                That&apos;s a bit short to work with — try a sentence, or{" "}
+                <button
+                  type="button"
+                  onClick={trySample}
+                  className="underline text-signal press"
+                  data-testid="step1-inline-sample-btn"
+                >
+                  load a sample project
+                </button>
+                .
+              </div>
+            )}
             <AISuggestions
               testid="step1-what-suggest"
               step={1}
@@ -347,13 +528,19 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               onPick={pick("what")}
             />
           </Field>
-          <Field label="Who is it for?" testid="step1-who">
+
+          <Field
+            label="Who is the client (and who are you actually talking to)?"
+            testid="step1-who"
+            helper="Company or client, plus the specific person driving the decision. Example: A 20-person SaaS in Berlin. Working with the founder directly."
+          >
             <textarea
               className="textarea-brut"
               rows={3}
-              placeholder="Client / company, and the person you're actually dealing with."
+              placeholder="e.g. A 12-person YC-backed fintech. Working directly with the co-founder — no design lead."
               value={form.who}
               onChange={(e) => setForm({ ...form, who: e.target.value })}
+              data-testid="step1-who-input"
             />
             <AISuggestions
               testid="step1-who-suggest"
@@ -364,13 +551,19 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               onPick={pick("who")}
             />
           </Field>
-          <Field label="What's unclear or feels off?" testid="step1-unclear">
+
+          <Field
+            label="What feels unclear or off?"
+            testid="step1-unclear"
+            helper="The thing you'd normally not say in a kickoff call. Example: They keep changing scope every week, and no one has defined 'done'."
+          >
             <textarea
               className="textarea-brut"
               rows={4}
-              placeholder="What's the thing you'd normally not say out loud?"
+              placeholder="e.g. They send references from Stripe / Linear, but the product is fairly technical. Also unsure whether brand work is in scope."
               value={form.unclear}
               onChange={(e) => setForm({ ...form, unclear: e.target.value })}
+              data-testid="step1-unclear-input"
             />
             <AISuggestions
               testid="step1-unclear-suggest"
@@ -382,10 +575,10 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
             />
           </Field>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap pt-1">
             <button
               onClick={run}
-              disabled={loading || !form.what.trim()}
+              disabled={!canSubmit}
               className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step1-submit-btn"
             >
@@ -404,60 +597,161 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               )}
             </button>
             {framing && (
-              <button onClick={onDone} className="btn-ghost" data-testid="step1-continue-btn">
+              <button onClick={onDone} className="btn-ghost inline-flex items-center gap-2" data-testid="step1-continue-btn">
                 Continue to context <ArrowRight size={14} />
               </button>
             )}
           </div>
+
+          {!framing && !loading && (
+            <div className="pt-2" data-testid="step1-sample-cta-wrap">
+              <button
+                type="button"
+                onClick={trySample}
+                className="btn-ghost inline-flex items-center gap-2 press"
+                data-testid="step1-try-sample-btn"
+              >
+                <Sparkles size={14} /> Need inspiration? Try a sample project
+              </button>
+            </div>
+          )}
+
           <ErrorBox msg={error} />
         </div>
 
         <div>
-          {!framing || loading ? (
+          {loading ? (
+            <Step1Progress phase={phase} />
+          ) : !framing ? (
             <OutputPending
-              title={loading ? "{ output · generating }" : "{ output · pending }"}
-              blurb="Bracket hasn't seen it yet. Fill the three fields on the left. It'll name what's happening."
-              loading={loading}
+              title={"{ output · pending }"}
+              blurb="Bracket hasn't seen it yet. Fill the three fields on the left — or load a sample — and it'll name what's happening in about 5 seconds."
+              loading={false}
             />
           ) : (
-            <OutputCard
-              testid="step1-framing-output"
-              label={"{ 01 · reframed }"}
-              badge={<ClarityPill score={framing.clarity_score} label={framing.clarity_label} />}
-              title={framing.reframed_problem}
-              blockquote={framing.what_to_name}
-              copyText={[framing.reframed_problem, framing.what_to_name, ...(framing.tensions || []).map((t, i) => `${i + 1}. ${t}`)].filter(Boolean).join("\n\n")}
-              onRegenerate={run}
-              reasoning={
-                <>
-                  <p>
-                    Bracket re-read what you wrote and looked for the gap between <em>what you said</em> and <em>what the project actually is</em>. The reframed problem is the version of the brief your future self would have written if they&apos;d started with all the context.
-                  </p>
-                  {framing.clarity_label && (
-                    <p className="mt-2 t-helper">
-                      <span className="t-tag">clarity ·</span> {framing.clarity_label.toLowerCase()} ({framing.clarity_score}/100). Higher means the situation is well-defined; lower means there are still unknowns to surface.
+            <>
+              <OutputCard
+                testid="step1-framing-output"
+                label={"{ 01 · reframed }"}
+                badge={<ClarityPill score={framing.clarity_score} label={framing.clarity_label} />}
+                title={framing.reframed_problem}
+                blockquote={framing.what_to_name}
+                copyText={[framing.reframed_problem, framing.what_to_name, ...(framing.tensions || []).map((t, i) => `${i + 1}. ${t}`)].filter(Boolean).join("\n\n")}
+                onRegenerate={run}
+                reasoning={
+                  <>
+                    <p>
+                      Bracket re-read what you wrote and looked for the gap between <em>what you said</em> and <em>what the project actually is</em>. The reframed problem is the version of the brief your future self would have written if they&apos;d started with all the context.
                     </p>
-                  )}
-                </>
-              }
-              source={
-                <ul className="space-y-1.5 text-sm">
-                  <li><span className="t-tag text-muted">what · </span>{form.what || project.situation_input?.what}</li>
-                  <li><span className="t-tag text-muted">who · </span>{form.who || project.situation_input?.who || "—"}</li>
-                  <li><span className="t-tag text-muted">unclear · </span>{form.unclear || project.situation_input?.unclear || "—"}</li>
-                </ul>
-              }
-            >
-              <OutputSection label="TENSIONS TO WATCH">
-                <OutputList items={framing.tensions || []} variant="numbered" />
-              </OutputSection>
-            </OutputCard>
+                    {framing.clarity_label && (
+                      <p className="mt-2 t-helper">
+                        <span className="t-tag">clarity ·</span> {framing.clarity_label.toLowerCase()} ({framing.clarity_score}/100). Higher means the situation is well-defined; lower means there are still unknowns to surface.
+                      </p>
+                    )}
+                  </>
+                }
+                source={
+                  <ul className="space-y-1.5 text-sm">
+                    <li><span className="t-tag text-muted">what · </span>{form.what || project.situation_input?.what}</li>
+                    <li><span className="t-tag text-muted">who · </span>{form.who || project.situation_input?.who || "—"}</li>
+                    <li><span className="t-tag text-muted">unclear · </span>{form.unclear || project.situation_input?.unclear || "—"}</li>
+                  </ul>
+                }
+              >
+                <OutputSection label="TENSIONS TO WATCH">
+                  <OutputList items={framing.tensions || []} variant="numbered" />
+                </OutputSection>
+              </OutputCard>
+
+              {isSample && (
+                <div className="card-brut mt-5 p-4 sm:p-5 flex items-start gap-3" data-testid="step1-sample-done-banner">
+                  <Wand2 size={16} className="mt-0.5 text-signal shrink-0" />
+                  <div className="flex-1">
+                    <p className="t-body">Ready to analyze <strong>your own</strong> project?</p>
+                    <p className="text-xs text-muted mt-1">Bracket only takes about a minute of your input.</p>
+                  </div>
+                  <button
+                    onClick={clearSample}
+                    className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-1.5 whitespace-nowrap"
+                    data-testid="step1-analyze-own-btn"
+                  >
+                    Start yours <ArrowRight size={14} />
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
     </StepShell>
   );
 }
+
+// Intermediate loader with sequential checkmarks + estimate preview.
+// Shown while the situation API call is in flight (~4-6s).
+function Step1ProgressRow({ target, phase, doneLabel, activeLabel }) {
+  const order = { detecting: 1, scanning: 2, framing: 3, done: 4 };
+  const onOrPast = (order[phase] || 0) >= order[target];
+  const active = phase === target;
+  const done = onOrPast && !active;
+  return (
+    <li className="flex items-center gap-3" data-testid={`step1-progress-${target}`}>
+      <span
+        className={
+          "inline-flex h-5 w-5 items-center justify-center rounded-full border " +
+          (done
+            ? "bg-signal border-signal text-chalk"
+            : active
+            ? "border-signal text-signal"
+            : "border-faint text-muted")
+        }
+      >
+        {done ? <Check size={12} /> : active ? <Loader2 size={11} className="animate-spin" /> : null}
+      </span>
+      <span className={"text-sm " + (done || active ? "text-ink" : "text-muted")}>
+        {done ? doneLabel : active ? activeLabel : doneLabel}
+      </span>
+    </li>
+  );
+}
+
+function Step1Progress({ phase }) {
+  return (
+    <div className="card-brut p-5 sm:p-6 min-h-[280px]" data-testid="step1-progress">
+      <div className="flex items-center justify-between">
+        <p className="mono-label">{"{ output · generating }"}</p>
+        <span className="mono-tag text-signal inline-flex items-center gap-1.5">
+          <Loader2 size={12} className="animate-spin" /> BRACKET IS THINKING
+        </span>
+      </div>
+
+      <ul className="mt-6 space-y-3">
+        <Step1ProgressRow target="detecting" phase={phase} doneLabel="Requirements detected" activeLabel="Detecting requirements…" />
+        <Step1ProgressRow target="scanning" phase={phase} doneLabel="Clarification questions surfaced" activeLabel="Scanning for missing questions…" />
+        <Step1ProgressRow target="framing" phase={phase} doneLabel="Risks & tensions identified" activeLabel="Framing your problem…" />
+      </ul>
+
+      <div className="mt-6 pt-5 border-t border-hairline">
+        <p className="mono-tag text-muted mb-3">ESTIMATE</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center">
+            <p className="text-xl font-semibold">~8</p>
+            <p className="text-xs text-muted mt-1">requirements</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-semibold">~6</p>
+            <p className="text-xs text-muted mt-1">clarifications</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-semibold">~3</p>
+            <p className="text-xs text-muted mt-1">risks</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   const initial = project.context_input || { requirements: "", constraints: "", inspirations: "" };
@@ -1209,11 +1503,16 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
 }
 
 // ---- helpers ----
-function Field({ label, children, testid }) {
+function Field({ label, children, testid, helper }) {
   return (
     <label className="block" data-testid={testid}>
       <span className="mono-tag text-muted">{label}</span>
       <div className="mt-2">{children}</div>
+      {helper && (
+        <p className="mt-1.5 text-xs text-muted leading-relaxed" data-testid={testid ? `${testid}-helper` : undefined}>
+          {helper}
+        </p>
+      )}
     </label>
   );
 }
