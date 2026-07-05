@@ -248,7 +248,17 @@ async def auth_logout(request: Request, response: Response):
 async def auth_guest(response: Response):
     from auth import gen_user_id as _gen_uid
     user_id = _gen_uid()
-    synthetic_email = f"guest+{user_id}@bracket.guest"
+    # Sequential guest numbering: atomic counter in `counters.guest_seq` so
+    # every guest gets a stable, human-readable email like
+    # guest-01@use-bracket.com, guest-02@use-bracket.com, ...
+    counter = await db.counters.find_one_and_update(
+        {"_id": "guest_seq"},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=True,
+    )
+    seq_num = int(counter.get("seq", 1)) if counter else 1
+    synthetic_email = f"guest-{seq_num:02d}@use-bracket.com"
     doc = {
         "user_id": user_id,
         "email": synthetic_email,
@@ -273,13 +283,28 @@ class GuestUpgradeIn(_BM):
     name: str = _Fd(default="", max_length=120)
 
 
+import re as _re
+# Matches both legacy `guest+<id>@bracket.guest` and current
+# `guest-NN@use-bracket.com` synthetic guest emails.
+_GUEST_EMAIL_RE = _re.compile(
+    r"^(guest\+[a-zA-Z0-9_-]+@bracket\.guest|guest-\d+@use-bracket\.com)$",
+    _re.IGNORECASE,
+)
+
+
+def _is_guest_email(email: Optional[str]) -> bool:
+    if not email:
+        return False
+    return bool(_GUEST_EMAIL_RE.match(email.strip().lower()))
+
+
 @api.post("/auth/me/email")
 async def auth_guest_upgrade(body: GuestUpgradeIn, request: Request):
     """A signed-in guest gives us their email + name on their way out.
     Refuses if the email is already taken by a real account."""
     user = await current_user(request, db)
     new_email = body.email.lower().strip()
-    if new_email.endswith("@bracket.guest"):
+    if _is_guest_email(new_email):
         raise HTTPException(status_code=400, detail="That's not a real email.")
     # Block if a real account already exists.
     clash = await db.users.find_one(
@@ -567,7 +592,7 @@ async def admin_list_users(
     async for u in cur:
         uid = u.get("user_id", "")
         email = u.get("email") or ""
-        is_guest = bool(u.get("is_guest")) or email.lower().endswith("@bracket.guest")
+        is_guest = bool(u.get("is_guest")) or _is_guest_email(email)
         pc = counts.get(uid, 0)
 
         # Server-side filters (cheap in a single pass on ≤2000 rows)

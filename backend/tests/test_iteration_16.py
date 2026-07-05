@@ -155,7 +155,11 @@ class TestAuthCore:
         assert r.status_code == 200, r.text
         u = r.json()
         assert u["is_guest"] is True
-        assert u["email"].endswith("@bracket.guest")
+        # Guest emails follow one of two synthetic formats.
+        assert (
+            u["email"].endswith("@bracket.guest")
+            or (u["email"].startswith("guest-") and u["email"].endswith("@use-bracket.com"))
+        ), u["email"]
 
     def test_me_unauthenticated_401(self):
         r = requests.get(f"{API}/auth/me", timeout=15)
