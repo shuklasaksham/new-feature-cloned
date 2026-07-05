@@ -731,6 +731,58 @@ body::before {
   font-size: 13px; line-height: 1.6; color: var(--text);
 }
 
+/* Inline reveal button used inside OutputCard progressive mode.
+   Looks like a subtle text link, hover raises to accent. */
+.disc-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 12px; margin-left: -12px;
+  font-family: "JetBrains Mono", monospace; font-size: 11px;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2);
+  background: transparent; border: 1px solid var(--hairline); border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+}
+.disc-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(46, 91, 255, 0.06); transform: translateY(-1px); }
+.disc-btn:active { transform: translateY(0); }
+.disc-btn .chev { display: inline-block; color: var(--accent); font-weight: 600; }
+
+/* Sample-project cards on the Dashboard empty state.
+   Left-aligned, quiet card with an obvious "Try →" affordance. */
+.sample-card {
+  display: block; width: 100%;
+  padding: 20px 22px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--d-fast) var(--ease-out),
+              transform var(--d-med) var(--ease-out-spring),
+              background var(--d-fast) var(--ease-out),
+              box-shadow var(--d-med) var(--ease-out);
+  min-height: 160px;
+}
+.sample-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  background: var(--surface-2);
+  box-shadow: 0 12px 32px -18px rgba(46, 91, 255, 0.35);
+}
+.sample-card:active { transform: translateY(-1px); }
+
+/* AI-suggestion chip pop-in — each chip fades + scales up on its own
+   animation-delay, creating a satisfying sequential reveal after AI completes. */
+.chips-pop > button {
+  opacity: 0;
+  transform: translateY(6px) scale(0.94);
+  animation: chipPop 380ms var(--ease-out-spring) forwards;
+}
+@keyframes chipPop {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.94); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* Empty-state monospace diagram */
 .empty-frame {
   font-family: "JetBrains Mono", monospace;

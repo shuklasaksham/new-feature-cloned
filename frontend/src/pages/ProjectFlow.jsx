@@ -363,6 +363,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
   const whatRef = useRef(null);
   const framing = project.framing;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sampleKeyParam = searchParams.get("sample");
 
   // Auto-focus the first input on mount (only when we don't already have an output).
   useEffect(() => {
@@ -426,14 +428,29 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
 
   const run = () => runInternal(form);
 
-  const trySample = async () => {
-    const s = pickSample();
+  const trySample = async (forcedKey) => {
+    const s = forcedKey
+      ? (SAMPLE_BRIEFS.find((b) => b.key === forcedKey) || pickSample())
+      : pickSample();
     const nextForm = { what: s.what, who: s.who, unclear: s.unclear };
     setForm(nextForm);
     setIsSample(true);
     // Full magical demo: pre-fill AND auto-submit.
     await runInternal(nextForm);
   };
+
+  // If Dashboard launched us with ?sample=<key>, auto-trigger that specific
+  // brief on first mount (only when no framing already exists).
+  const sampleAutoRun = useRef(false);
+  useEffect(() => {
+    if (sampleAutoRun.current) return;
+    if (!sampleKeyParam) return;
+    if (framing) return; // don't overwrite an existing generation
+    if (loading) return;
+    sampleAutoRun.current = true;
+    trySample(sampleKeyParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sampleKeyParam, framing]);
 
   const clearSample = () => {
     setIsSample(false);
@@ -636,6 +653,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                 blockquote={framing.what_to_name}
                 copyText={[framing.reframed_problem, framing.what_to_name, ...(framing.tensions || []).map((t, i) => `${i + 1}. ${t}`)].filter(Boolean).join("\n\n")}
                 onRegenerate={run}
+                progressive
+                progressiveLabels={{ summary: "Read summary", details: "Show tensions" }}
                 reasoning={
                   <>
                     <p>
@@ -1583,8 +1602,13 @@ function OutputCard({
   reasoning,
   source,
   confidence,
+  progressive = false,
+  progressiveLabels = {},
+  sourceLabel,
 }) {
   const [copied, setCopied] = useState(false);
+  const [revealSummary, setRevealSummary] = useState(!progressive);
+  const [revealDetails, setRevealDetails] = useState(!progressive);
   const doCopy = async () => {
     try {
       await navigator.clipboard.writeText(copyText || `${title || ""}\n\n${blockquote || ""}`.trim());
@@ -1595,6 +1619,11 @@ function OutputCard({
     }
   };
   const hasActions = Boolean(copyText || onRegenerate || onEdit);
+  // In progressive mode, hide action buttons until user has revealed the summary.
+  const showActions = hasActions && (!progressive || revealSummary);
+  const summaryBtnLabel = progressiveLabels.summary || "Read summary";
+  const detailsBtnLabel = progressiveLabels.details || "Show more";
+  const finalSourceLabel = sourceLabel || (progressive ? "Show assumptions" : "What this is based on");
   return (
     <div
       className="output-card-wrap liquid-glass p-5 sm:p-6 animate-scale-in"
@@ -1611,8 +1640,8 @@ function OutputCard({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {badge}
-          {hasActions && (
-            <div className="output-actions" data-testid={testid ? `${testid}-actions` : undefined}>
+          {showActions && (
+            <div className="output-actions animate-fade-up" data-testid={testid ? `${testid}-actions` : undefined}>
               {copyText !== undefined && (
                 <button
                   type="button"
@@ -1657,13 +1686,33 @@ function OutputCard({
       {title && (
         <h3 className="t-h2 mt-3 relative z-10">{title}</h3>
       )}
-      {blockquote && (
-        <p className="mt-4 border-l-2 border-[var(--accent)] pl-4 italic text-[14px] leading-[1.65] relative z-10 text-[var(--text)]">
+      {blockquote && revealSummary && (
+        <p className="mt-4 border-l-2 border-[var(--accent)] pl-4 italic text-[14px] leading-[1.65] relative z-10 text-[var(--text)] animate-fade-up">
           {blockquote}
         </p>
       )}
-      {children && <div className="mt-2 relative z-10">{children}</div>}
-      {(reasoning || source) && (
+      {progressive && blockquote && !revealSummary && (
+        <button
+          type="button"
+          onClick={() => setRevealSummary(true)}
+          className="disc-btn mt-4"
+          data-testid={testid ? `${testid}-reveal-summary` : undefined}
+        >
+          <span className="chev">↓</span> {summaryBtnLabel}
+        </button>
+      )}
+      {children && revealDetails && <div className="mt-2 relative z-10 animate-fade-up">{children}</div>}
+      {progressive && children && revealSummary && !revealDetails && (
+        <button
+          type="button"
+          onClick={() => setRevealDetails(true)}
+          className="disc-btn mt-4"
+          data-testid={testid ? `${testid}-reveal-details` : undefined}
+        >
+          <span className="chev">↓</span> {detailsBtnLabel}
+        </button>
+      )}
+      {(reasoning || source) && (!progressive || revealDetails) && (
         <div className="relative z-10">
           {reasoning && (
             <details className="disc" data-testid={testid ? `${testid}-reasoning` : undefined}>
@@ -1676,7 +1725,7 @@ function OutputCard({
           {source && (
             <details className="disc" data-testid={testid ? `${testid}-source` : undefined}>
               <summary>
-                <span className="chev">›</span> What this is based on
+                <span className="chev">›</span> {finalSourceLabel}
               </summary>
               <div className="disc-body">{source}</div>
             </details>
@@ -1716,7 +1765,7 @@ function OutputList({ items = [], variant = "numbered", testid }) {
   }
 
   return (
-    <ul className="space-y-2 text-sm" data-testid={testid}>
+    <ul className="space-y-2 text-sm stagger-in" data-testid={testid}>
       {items.map((t, i) => {
         if (variant === "strike") {
           return (
@@ -1894,25 +1943,32 @@ function AISuggestions({ step, field, value, context, onPick, testid }) {
   }, [value, field, step, JSON.stringify(context || {})]);
 
   if (!loading && items.length === 0) return null;
+  // Key the wrapper on the items list so each fresh set of suggestions
+  // re-mounts the chip children → the stagger-in animation re-fires
+  // (creates the "chips popping in one-by-one" dopamine moment).
+  const staggerKey = items.length ? items.join("|") : "loading";
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5 stagger-in" data-testid={testid}>
+    <div className="mt-2 flex flex-wrap gap-1.5 items-center" data-testid={testid}>
       <span className="mono-tag text-muted self-center pr-1">
         {loading ? "BRACKET ↘" : "TRY ↘"}
       </span>
       {loading && (
         <span className="mono-tag text-signal self-center animate-pulse">thinking…</span>
       )}
-      {items.map((s, i) => (
-        <button
-          key={`${s}-${i}`}
-          type="button"
-          onClick={() => onPick(s, value)}
-          className="suggest-chip press"
-          data-testid={testid ? `${testid}-${i}` : undefined}
-        >
-          + {s}
-        </button>
-      ))}
+      <div key={staggerKey} className="flex flex-wrap gap-1.5 items-center chips-pop">
+        {items.map((s, i) => (
+          <button
+            key={`${s}-${i}`}
+            type="button"
+            onClick={() => onPick(s, value)}
+            className="suggest-chip press"
+            style={{ animationDelay: `${i * 90}ms` }}
+            data-testid={testid ? `${testid}-${i}` : undefined}
+          >
+            + {s}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

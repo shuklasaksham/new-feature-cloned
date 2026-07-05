@@ -99,6 +99,21 @@ export default function Dashboard() {
     }
   };
 
+  const SAMPLE_CARDS = [
+    { key: "fintech-landing", title: "Landing Page", subtitle: "Fintech Startup", meta: "~45 sec demo", projectName: "Sample · Fintech landing" },
+    { key: "checkout-redesign", title: "Checkout Audit", subtitle: "UX Review", meta: "~45 sec demo", projectName: "Sample · Checkout audit" },
+    { key: "coffee-brand", title: "Coffee Brand", subtitle: "Brand Strategy", meta: "~45 sec demo", projectName: "Sample · Coffee brand" },
+  ];
+
+  const launchSample = async (sample) => {
+    try {
+      const { data } = await api.post("/projects", { project_name: sample.projectName });
+      navigate(`/project/${data.id}/flow?sample=${sample.key}`);
+    } catch (e) {
+      toast.error(formatApiError(e));
+    }
+  };
+
   return (
     <div className="min-h-screen" data-testid="dashboard-page">
       <Seo title="Dashboard" path="/app" noindex />
@@ -109,7 +124,9 @@ export default function Dashboard() {
             <h1 className="t-hero mt-4">
               Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
             </h1>
-            <p className="mt-2 text-[14px] text-[var(--text-2)]">What are we deciding today?</p>
+            <p className="mt-2 text-[14px] text-[var(--text-2)]">
+              Ready for your next client? Turn a messy brief into a confident decision in under a minute.
+            </p>
           </div>
         </div>
 
@@ -187,30 +204,29 @@ export default function Dashboard() {
               >
                 Start a new project
               </button>
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-2" data-testid="empty-starter-chips">
-                <span className="t-meta">Or try a starter:</span>
-                {[
-                  "Acme rebrand · landing",
-                  "Logo direction for fintech",
-                  "Pricing page audit",
-                ].map((name) => (
-                  <button
-                    key={name}
-                    type="button"
-                    onClick={() => {
-                      setCreatingName(name);
-                      setTimeout(() => {
-                        document
-                          .querySelector('[data-testid="dashboard-new-input"]')
-                          ?.focus();
-                      }, 0);
-                    }}
-                    className="suggest-chip press"
-                    data-testid={`empty-starter-${name.split(" ")[0].toLowerCase()}`}
-                  >
-                    + {name}
-                  </button>
-                ))}
+
+              {/* Sample project cards — highest-activation lever, one-click into a full demo */}
+              <div className="mt-12" data-testid="sample-cards-wrap">
+                <p className="mono-label text-[var(--text-3)] mb-4">Or explore a sample</p>
+                <div className="grid sm:grid-cols-3 gap-4 text-left">
+                  {SAMPLE_CARDS.map((s) => (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => launchSample(s)}
+                      className="sample-card group"
+                      data-testid={`sample-card-${s.key}`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <p className="mono-tag text-[var(--text-3)]">{s.meta}</p>
+                        <ArrowRight size={14} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                      <h3 className="t-h3 mt-6">{s.title}</h3>
+                      <p className="text-[13px] text-[var(--text-2)] mt-1">{s.subtitle}</p>
+                      <p className="mt-6 mono-tag text-[var(--accent)]">Try →</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
