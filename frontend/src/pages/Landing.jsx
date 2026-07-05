@@ -188,7 +188,7 @@ export default function Landing() {
             <MetricCard
               label="Risks Identified"
               value={metrics?.risks_identified}
-              tone="ink"
+              tone="emerald"
               testid="metric-risks-identified"
             />
             <MetricCard
@@ -371,7 +371,7 @@ export default function Landing() {
           <TestimonialsBlock testimonials={TESTIMONIALS} />
           <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8">
             <p className="mt-6 text-[13px] text-[var(--text-3)]">
-              Bracket helps <span className="text-[var(--text-2)] font-medium">214 freelancers &amp; teams</span> turn briefs into decisions — from solo ICs to small studios.
+              Bracket helped <span className="text-[var(--text-2)] font-medium">214 freelancers &amp; team</span> so far to turn briefs into decisions, from solo ICs to small studios.
             </p>
           </div>
         </div>
@@ -579,25 +579,11 @@ function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•"
 // ---------- Testimonials data + carousel ----------
 const TESTIMONIALS = [
   {
-    tone: "lavender",
-    quote: "You'll ship a better project just from the clarity Bracket puts in your head before the first Slack message.",
-    name: "Maya Krishnan",
-    role: "Independent brand designer · Bangalore",
-    initial: "M",
-  },
-  {
     tone: "peach",
     quote: "I scoped a ₹1 lakh clothing order with a 14-day deadline. Clear agreement, transparent timelines, delivered on time.",
     name: "Yash Kamdar",
     role: "Manager",
     initial: "Y",
-  },
-  {
-    tone: "lime",
-    quote: "Our timelines are aggressive and Bracket makes us actually decide, not just talk.",
-    name: "Jordan Vale",
-    role: "Head of Design, Ply Studio",
-    initial: "J",
   },
   {
     tone: "sky",
@@ -621,7 +607,7 @@ const TESTIMONIALS = [
     initial: "T",
   },
   {
-    tone: "ink",
+    tone: "lime",
     quote: "Bracket organizes project requirements in one place — teams avoid the mistakes unclear communication creates.",
     name: "Karthick D",
     role: "QA Expert",
