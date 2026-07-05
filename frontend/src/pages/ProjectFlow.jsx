@@ -716,15 +716,16 @@ function Step1ProgressRow({ target, phase, doneLabel, activeLabel }) {
         className={
           "inline-flex h-5 w-5 items-center justify-center rounded-full border " +
           (done
-            ? "bg-signal border-signal text-chalk"
+            ? "border-signal text-chalk"
             : active
             ? "border-signal text-signal"
             : "border-faint text-muted")
         }
+        style={done ? { backgroundColor: "var(--accent)", color: "#FFFFFF" } : undefined}
       >
         {done ? <Check size={12} /> : active ? <Loader2 size={11} className="animate-spin" /> : null}
       </span>
-      <span className={"text-sm " + (done || active ? "text-ink" : "text-muted")}>
+      <span className={"text-sm " + (done || active ? "text-[var(--text)]" : "text-muted")}>
         {done ? doneLabel : active ? activeLabel : doneLabel}
       </span>
     </li>
@@ -1325,15 +1326,15 @@ function GuestUpgradeBanner() {
 
   return (
     <div
-      className="card-brut p-5 sm:p-6 !bg-signal text-chalk mt-6"
+      className="card-brut p-5 sm:p-6 mt-6 relative overflow-hidden guest-upgrade"
       data-testid="guest-upgrade-banner"
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="mono-label">{"{ save it for later }"}</p>
+        <p className="mono-label text-signal">{"{ save it for later }"}</p>
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-chalk/70 hover:text-chalk mono-tag"
+          className="text-[var(--text-3)] hover:text-[var(--text)] mono-tag press"
           data-testid="guest-upgrade-dismiss"
           aria-label="Dismiss"
         >
@@ -1343,7 +1344,7 @@ function GuestUpgradeBanner() {
       <h3 className="t-h2 mt-3">
         Want to come back to this?
       </h3>
-      <p className="text-sm mt-2 opacity-90">
+      <p className="text-sm mt-2 text-[var(--text-2)]">
         You signed in as a guest. Drop your email + name so this project lives in your
         dashboard the next time you sign in.
       </p>
@@ -1354,7 +1355,7 @@ function GuestUpgradeBanner() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@studio.com"
-          className="bg-transparent border-b-2 border-chalk/40 focus:border-chalk outline-none py-2 font-mono text-sm placeholder-chalk/40"
+          className="input-brut"
           data-testid="guest-upgrade-email"
         />
         <input
@@ -1362,27 +1363,27 @@ function GuestUpgradeBanner() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name (optional)"
-          className="bg-transparent border-b-2 border-chalk/40 focus:border-chalk outline-none py-2 font-mono text-sm placeholder-chalk/40"
+          className="input-brut"
           data-testid="guest-upgrade-name"
         />
-        <div className="sm:col-span-2 flex gap-2 items-center mt-2">
+        <div className="sm:col-span-2 flex gap-3 items-center mt-2 flex-wrap">
           <button
             type="submit"
             disabled={saving || !email}
-            className="px-3 py-2 bg-chalk text-signal font-mono text-xs tracking-widest uppercase disabled:opacity-40 inline-flex items-center gap-2"
+            className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center gap-2 disabled:opacity-40"
             data-testid="guest-upgrade-submit"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : null}
-            {saving ? "SAVING…" : "SAVE FOR LATER"}
+            {saving ? "Saving…" : "Save for later"}
           </button>
           <button
             type="button"
             onClick={() => setDismissed(true)}
             disabled={saving}
-            className="mono-tag text-chalk/70 hover:text-chalk"
+            className="btn-ghost mono-tag"
             data-testid="guest-upgrade-skip"
           >
-            SKIP — I&apos;M GOOD
+            Skip — I&apos;m good
           </button>
         </div>
       </form>
@@ -1427,20 +1428,20 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
             copyText={`THE STANCE\n${project.decision?.recommendation?.title || ""}\n\n${project.decision?.recommendation?.rationale || ""}`}
           />
 
-          <div className="card-brut p-5 sm:p-6 !bg-ink text-chalk">
-            <p className="mono-label text-faint">{"{ what to expect }"}</p>
-            <ul className="mt-4 space-y-2 text-sm">
+          <div className="card-brut p-5 sm:p-6">
+            <p className="mono-label text-muted">{"{ what to expect }"}</p>
+            <ul className="mt-4 space-y-2.5 text-sm">
               <li className="flex gap-3">
-                <span className="font-mono text-signal">→</span>
-                <span className="text-chalk">Client will likely push back on scope items 2 and 3.</span>
+                <span className="font-mono text-signal shrink-0">→</span>
+                <span className="text-[var(--text)]">Client will likely push back on scope items 2 and 3.</span>
               </li>
               <li className="flex gap-3">
-                <span className="font-mono text-signal">→</span>
-                <span className="text-chalk">The trade-off on timeline will surface at week 2.</span>
+                <span className="font-mono text-signal shrink-0">→</span>
+                <span className="text-[var(--text)]">The trade-off on timeline will surface at week 2.</span>
               </li>
               <li className="flex gap-3">
-                <span className="font-mono text-signal">→</span>
-                <span className="text-chalk">
+                <span className="font-mono text-signal shrink-0">→</span>
+                <span className="text-[var(--text)]">
                   If someone asks &quot;can we reduce the price?&quot; — your message is already drafted.
                 </span>
               </li>
@@ -1450,32 +1451,32 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
 
         <div className="space-y-4">
           {isLocked ? (
-            <div className="card-brut p-5 sm:p-6 !bg-signal text-chalk" data-testid="step5-locked">
+            <div className="card-brut p-5 sm:p-6 relative overflow-hidden step5-locked-card" data-testid="step5-locked">
               <div className="flex items-center gap-2">
-                <Lock size={16} /> <p className="mono-tag">LOCKED</p>
+                <Lock size={16} className="text-signal" /> <p className="mono-tag text-signal">LOCKED</p>
               </div>
               <h3 className="t-h1 mt-3">Confidence, captured.</h3>
-              <p className="mt-3 text-sm">
+              <p className="mt-3 text-sm text-[var(--text-2)]">
                 Open the document in Bracket — download the PDF or share a review link from there.
                 Your project is also saved to your email; come back anytime with the same address.
               </p>
               <Link
                 to={`/project/${projectId}/document`}
-                className="btn-brut bg-chalk text-ink border-chalk hover:bg-ink hover:text-chalk mt-6 w-full justify-center"
+                className="clay-signal px-4 py-3 t-tag press inline-flex items-center justify-center gap-2 mt-6 w-full"
                 data-testid="step5-open-document-btn"
               >
                 <FileText size={14} /> Open document
               </Link>
               <button
                 onClick={onExport}
-                className="btn-ghost text-chalk border-chalk hover:bg-chalk hover:text-ink mt-3 w-full justify-center"
+                className="btn-ghost mt-3 w-full justify-center"
                 data-testid="step5-export-btn"
               >
                 <Download size={14} /> Quick PDF download
               </button>
               <Link
                 to="/app"
-                className="btn-ghost text-chalk border-chalk hover:bg-chalk hover:text-ink mt-3 w-full justify-center"
+                className="btn-ghost mt-3 w-full justify-center"
                 data-testid="step5-new-project-btn"
               >
                 Start another project <ArrowRight size={14} />
@@ -1843,8 +1844,8 @@ function CopyButton({ text }) {
 // sees that the AI is working — not just the CTA spinner.
 function OutputPending({ title, blurb, loading }) {
   return (
-    <div className="card-brut p-5 sm:p-6 bg-paper min-h-[280px]" data-testid="step-output-pending">
-      <p className="mono-label">{title}</p>
+    <div className="card-brut p-5 sm:p-6 min-h-[280px]" data-testid="step-output-pending">
+      <p className="mono-label text-muted">{title}</p>
       {loading ? (
         <div className="mt-10 flex flex-col items-center justify-center gap-5 py-6">
           <div className="bracket-loader" aria-label="Loading">

@@ -14,19 +14,19 @@ module.exports = {
         chalk:  "#16181D",  // legacy "white" surface → secondary surface
         muted:  "#9CA3AF",  // secondary text
         faint:  "#6B7280",  // muted text
-        signal: "#7C5CFF",  // accent (violet, replaces blue)
-        signalHover: "#6B4AE6",
+        signal: "#2E5BFF",  // accent (blue — matches CSS var --accent)
+        signalHover: "#1E4AEB",
         danger: "#EF4444",
         safe:   "#22C55E",
         background: "#09090B",
         foreground: "#F3F4F6",
         border:     "#262A36",
         input:      "#16181D",
-        ring:       "#7C5CFF",
+        ring:       "#2E5BFF",
         primary:     { DEFAULT: "#F3F4F6", foreground: "#09090B" },
         secondary:   { DEFAULT: "#16181D", foreground: "#F3F4F6" },
         destructive: { DEFAULT: "#EF4444", foreground: "#F3F4F6" },
-        accent:      { DEFAULT: "#7C5CFF", foreground: "#F3F4F6" },
+        accent:      { DEFAULT: "#2E5BFF", foreground: "#F3F4F6" },
         popover:     { DEFAULT: "#1B1D23", foreground: "#F3F4F6" },
         card:        { DEFAULT: "#111113", foreground: "#F3F4F6" },
         muted_:      { DEFAULT: "#1B1D23", foreground: "#9CA3AF" },

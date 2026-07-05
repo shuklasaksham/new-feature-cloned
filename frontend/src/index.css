@@ -457,6 +457,43 @@ body::before {
 .textarea-brut::placeholder,
 .textarea-linear::placeholder { color: var(--text-3); }
 
+/* Single-line input matching textarea-brut aesthetics. */
+.input-brut {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  outline: none;
+  transition: border-color var(--d-fast) var(--ease-out),
+              box-shadow var(--d-fast) var(--ease-out);
+}
+.input-brut:hover { border-color: var(--hairline-hover); }
+.input-brut:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+.input-brut::placeholder { color: var(--text-3); }
+
+/* Accent-tinted card variants — dark surface with a signal-blue border + glow.
+   Used on the guest-upgrade banner and the Step 5 "locked" success card. */
+.guest-upgrade,
+.step5-locked-card {
+  border-color: var(--accent);
+  background:
+    linear-gradient(180deg, rgba(46, 91, 255, 0.06) 0%, transparent 60%),
+    var(--surface);
+  box-shadow: 0 12px 40px -20px rgba(46, 91, 255, 0.35);
+}
+.guest-upgrade::before,
+.step5-locked-card::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 100% 0%, rgba(46, 91, 255, 0.10), transparent 60%);
+  pointer-events: none;
+}
+
 /* Suggestion chip */
 .suggest-chip {
   display: inline-flex; align-items: center; gap: 6px;
