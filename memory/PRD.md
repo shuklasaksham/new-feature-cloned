@@ -271,6 +271,13 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 2. Enforce OTP cooldown server-side.
 3. Consider breaking `ProjectFlow.jsx` (>1900 lines) into per-step child components.
 
+- 2026-07-05 — **Iteration 24 — Step 1 microcopy polish + Dashboard skeleton**:
+  - **Sample banner copy rewritten** — "You're exploring a **sample project**. In about 60 seconds you'll see how Bracket turns a messy brief into structured decisions." (previously "Explore how Bracket thinks — then start your own anytime.")
+  - **Social-proof badge** — new `step1-sample-popular-badge` ("Most users start here") sits next to the `sample project` tag in the step meta row when a sample is active.
+  - **Removed duplicate CTA** — top-of-banner "Start your own" button removed (was `step1-start-own-btn`). The only "Start yours" CTA is now the post-generation `step1-analyze-own-btn` in the done-banner below the OutputCard.
+  - **Dashboard loading skeleton** — replaced the "LOADING…" text on `/app` with 3 shimmer skeleton rows (`dashboard-loading-skeleton`) that mimic the actual project row layout so there's no empty-state flash before projects arrive. Reused `.skeleton-line` shimmer keyframe, added an aliased `.skeleton-bar` utility for flexible height/width usage.
+  - Verified visually — sample banner text + badge + missing top CTA all confirmed in preview. Skeleton renders while `/api/projects` is in flight.
+
 - 2026-07-05 — **Iteration 23 — Step 1 UX overhaul ("impossible to fail")** (verified iteration_22):
   - **Guided labels + helper text + realistic placeholders** — Step 1's three textareas rewritten with explicit questions ("What are you building?", "Who is the client (and who are you actually talking to)?", "What feels unclear or off?"), helper caption below each (`Field` extended with `helper` prop), and concrete example placeholders (fintech landing, YC founder, Stripe references).
   - **Value-prop kicker + "under a minute" pill** — StepShell kicker now leads with "Turn a messy client brief into a clear decision in under a minute…"; a `Clock` pill (`step1-timepill`) sits above the form.

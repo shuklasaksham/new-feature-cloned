@@ -464,9 +464,14 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
           </span>
         )}
         {isSample && (
-          <span className="mono-tag inline-flex items-center gap-1.5 px-2 py-1 border border-signal text-signal" data-testid="step1-sample-tag">
-            <Sparkles size={12} /> sample project
-          </span>
+          <>
+            <span className="mono-tag inline-flex items-center gap-1.5 px-2 py-1 border border-signal text-signal" data-testid="step1-sample-tag">
+              <Sparkles size={12} /> sample project
+            </span>
+            <span className="mono-tag text-muted inline-flex items-center gap-1.5" data-testid="step1-sample-popular-badge">
+              Most users start here
+            </span>
+          </>
         )}
       </div>
 
@@ -475,16 +480,9 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
           <Sparkles size={16} className="mt-0.5 text-signal shrink-0" />
           <div className="flex-1">
             <p className="t-body">
-              This is a <strong>sample project</strong>. Explore how Bracket thinks — then start your own anytime.
+              You&apos;re exploring a <strong>sample project</strong>. In about 60 seconds you&apos;ll see how Bracket turns a messy brief into structured decisions.
             </p>
           </div>
-          <button
-            onClick={clearSample}
-            className="btn-ghost inline-flex items-center gap-1.5 whitespace-nowrap"
-            data-testid="step1-start-own-btn"
-          >
-            Start your own <ArrowRight size={14} />
-          </button>
         </div>
       )}
 

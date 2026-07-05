@@ -142,9 +142,25 @@ export default function Dashboard() {
           </div>
 
           {loading ? (
-            <div className="mt-6 mono-tag text-muted flex items-center gap-2">
-              <Loader2 size={14} className="animate-spin"/> LOADING…
-            </div>
+            <ul
+              className="mt-6 card-brut overflow-hidden divide-y divide-[var(--hairline)]"
+              data-testid="dashboard-loading-skeleton"
+              aria-busy="true"
+              aria-label="Loading projects"
+            >
+              {[0, 1, 2].map((i) => (
+                <li key={i} className="px-5 sm:px-6 py-5 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="skeleton-bar h-4 w-1/3 rounded" />
+                    <div className="mt-3 flex items-center gap-2">
+                      <div className="skeleton-bar h-3 w-16 rounded" />
+                      <div className="skeleton-bar h-3 w-20 rounded" />
+                    </div>
+                  </div>
+                  <div className="skeleton-bar h-8 w-24 rounded hidden sm:block" />
+                </li>
+              ))}
+            </ul>
           ) : projects.length === 0 ? (
             <div
               className="mt-6 card-brut px-6 sm:px-10 py-12 sm:py-16 animate-scale-in text-center"
