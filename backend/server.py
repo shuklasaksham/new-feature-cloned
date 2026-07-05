@@ -112,15 +112,18 @@ class UpdateProfileIn(_BM):
 
 
 @api.post("/auth/google/exchange")
-async def auth_google_exchange(body: GoogleSessionIn, response: Response):
+async def auth_google_exchange(body: GoogleSessionIn, request: Request, response: Response):
     """Exchange the Emergent session_id (from #session_id=... fragment) for an
     httpOnly cookie that the rest of the app uses."""
     data = await exchange_emergent_session(body.session_id)
+    meta = _extract_client_meta(request)
     user = await get_or_create_user_by_email(
         db,
         data["email"],
         name=data.get("name") or "",
         picture=data.get("picture") or "",
+        signup_ip=meta["signup_ip"],
+        signup_user_agent=meta["signup_user_agent"],
     )
     token = await create_session(db, user["user_id"])
     set_session_cookie(response, token)
@@ -152,8 +155,9 @@ async def auth_otp_request(body: OtpRequestIn):
 
 
 @api.post("/auth/otp/verify")
-async def auth_otp_verify(body: OtpVerifyIn, response: Response):
+async def auth_otp_verify(body: OtpVerifyIn, request: Request, response: Response):
     await auth_verify_otp(db, body.email, body.code)
+    meta = _extract_client_meta(request)
     existing = await db.users.find_one({"email": body.email.lower().strip()}, {"_id": 0})
     if existing:
         # Update any fields the user passed (onboarding for fresh accounts).
@@ -164,6 +168,11 @@ async def auth_otp_verify(body: OtpVerifyIn, response: Response):
             updates["designation"] = body.designation.strip()
         if body.avatar:
             updates["avatar"] = body.avatar
+        # Backfill signup meta once if this is the first observed IP/UA.
+        if not existing.get("signup_ip") and meta["signup_ip"]:
+            updates["signup_ip"] = meta["signup_ip"]
+        if not existing.get("signup_user_agent") and meta["signup_user_agent"]:
+            updates["signup_user_agent"] = meta["signup_user_agent"]
         if updates:
             updates["updated_at"] = auth_iso(auth_now())
             await db.users.update_one({"user_id": existing["user_id"]}, {"$set": updates})
@@ -177,6 +186,8 @@ async def auth_otp_verify(body: OtpVerifyIn, response: Response):
             name=body.name,
             designation=body.designation,
             avatar=body.avatar or "mono-1",
+            signup_ip=meta["signup_ip"],
+            signup_user_agent=meta["signup_user_agent"],
         )
         is_new = True
     token = await create_session(db, user["user_id"])
@@ -239,13 +250,35 @@ async def auth_logout(request: Request, response: Response):
     return {"ok": True}
 
 
+def _extract_client_meta(request: Optional[Request]) -> Dict[str, str]:
+    """Best-effort capture of the caller's IP + user-agent for user creation.
+    Prefers Cloudflare's `CF-Connecting-IP`, then the first `X-Forwarded-For`
+    entry (we're behind CF/nginx in production), then the direct socket peer.
+    Both fields are truncated to keep the users doc small."""
+    if request is None:
+        return {"signup_ip": "", "signup_user_agent": ""}
+    headers = request.headers
+    ip = (
+        headers.get("cf-connecting-ip")
+        or (headers.get("x-forwarded-for", "").split(",")[0].strip() if headers.get("x-forwarded-for") else "")
+        or headers.get("x-real-ip")
+        or (request.client.host if request.client else "")
+        or ""
+    )
+    ua = headers.get("user-agent", "")
+    return {
+        "signup_ip": ip[:64],
+        "signup_user_agent": ua[:400],
+    }
+
+
 # ---- GUEST SIGN-IN (no email, no password) ---------------------------------
 # Used by the "Try it without an account" button. Creates an `is_guest: true`
 # user with a synthetic email so the rest of the app (which keys on user_id)
 # keeps working without conditional code paths. The user can later upgrade
 # via POST /auth/me/email to convert the guest into a real account.
 @api.post("/auth/guest")
-async def auth_guest(response: Response):
+async def auth_guest(request: Request, response: Response):
     from auth import gen_user_id as _gen_uid
     user_id = _gen_uid()
     # Sequential guest numbering: atomic counter in `counters.guest_seq` so
@@ -259,6 +292,7 @@ async def auth_guest(response: Response):
     )
     seq_num = int(counter.get("seq", 1)) if counter else 1
     synthetic_email = f"guest-{seq_num:02d}@use-bracket.com"
+    meta = _extract_client_meta(request)
     doc = {
         "user_id": user_id,
         "email": synthetic_email,
@@ -268,6 +302,8 @@ async def auth_guest(response: Response):
         "picture": "",
         "password_hash": "",
         "is_guest": True,
+        "signup_ip": meta["signup_ip"],
+        "signup_user_agent": meta["signup_user_agent"],
         "created_at": auth_iso(auth_now()),
         "updated_at": auth_iso(auth_now()),
     }
@@ -615,6 +651,8 @@ async def admin_list_users(
             "created_at": u.get("created_at"),
             "updated_at": u.get("updated_at"),
             "last_seen_at": u.get("last_seen_at"),
+            "signup_ip": u.get("signup_ip", ""),
+            "signup_user_agent": u.get("signup_user_agent", ""),
             "is_admin": email.lower() in {admin["email"].lower(), *_admin_emails_set()},
             "is_guest": is_guest,
             "project_count": pc,

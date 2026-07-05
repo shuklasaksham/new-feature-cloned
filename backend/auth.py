@@ -207,6 +207,8 @@ async def get_or_create_user_by_email(
     avatar: Optional[str] = None,
     designation: Optional[str] = None,
     picture: Optional[str] = None,
+    signup_ip: Optional[str] = None,
+    signup_user_agent: Optional[str] = None,
 ) -> Dict[str, Any]:
     email = email.lower().strip()
     existing = await db.users.find_one({"email": email}, {"_id": 0})
@@ -217,6 +219,11 @@ async def get_or_create_user_by_email(
             update["picture"] = picture
         if name and not existing.get("name"):
             update["name"] = name
+        # Backfill signup meta ONCE (never overwrite the first-observed values).
+        if signup_ip and not existing.get("signup_ip"):
+            update["signup_ip"] = signup_ip[:64]
+        if signup_user_agent and not existing.get("signup_user_agent"):
+            update["signup_user_agent"] = signup_user_agent[:400]
         await db.users.update_one({"user_id": existing["user_id"]}, {"$set": update})
         existing.update(update)
         return existing
@@ -230,6 +237,8 @@ async def get_or_create_user_by_email(
         "avatar": avatar or "mono-1",  # default brutalist avatar
         "picture": picture or "",
         "password_hash": "",
+        "signup_ip": (signup_ip or "")[:64],
+        "signup_user_agent": (signup_user_agent or "")[:400],
         "created_at": iso(now_utc()),
         "updated_at": iso(now_utc()),
     }
