@@ -444,6 +444,88 @@ async def public_metrics():
     }
 
 
+# ---- Session / acquisition tracking ----------------------------------------
+# Public endpoint the landing page POSTs to on first paint. Captures
+# referrer + UTM params so we can compute acquisition attribution in the
+# admin dashboard. Never links to a specific user unless the visitor later
+# signs in (then user_id is set on the row via a separate merge).
+class SessionTrackIn(_BM):
+    session_id: str = _Fd(min_length=8, max_length=64)
+    path: str = _Fd(default="/", max_length=200)
+    referrer: str = _Fd(default="", max_length=500)
+    utm_source: str = _Fd(default="", max_length=120)
+    utm_medium: str = _Fd(default="", max_length=120)
+    utm_campaign: str = _Fd(default="", max_length=120)
+    utm_term: str = _Fd(default="", max_length=120)
+    utm_content: str = _Fd(default="", max_length=120)
+
+
+def _referrer_bucket(ref: str, utm_source: str) -> str:
+    """Cheap traffic-source bucket. Priority: utm_source > referrer host."""
+    if utm_source:
+        return utm_source.lower()
+    if not ref:
+        return "direct"
+    try:
+        from urllib.parse import urlparse
+        host = (urlparse(ref).hostname or "").lower()
+    except Exception:
+        return "other"
+    for pattern, bucket in [
+        ("google.", "google"),
+        ("bing.", "bing"),
+        ("duckduckgo.", "duckduckgo"),
+        ("twitter.", "twitter"), ("t.co", "twitter"), ("x.com", "twitter"),
+        ("linkedin.", "linkedin"),
+        ("facebook.", "facebook"), ("fb.", "facebook"),
+        ("instagram.", "instagram"),
+        ("youtube.", "youtube"),
+        ("reddit.", "reddit"),
+        ("producthunt.", "producthunt"),
+        ("github.", "github"),
+    ]:
+        if pattern in host:
+            return bucket
+    return host or "other"
+
+
+@api.post("/public/track/session")
+async def track_session(body: SessionTrackIn, request: Request):
+    """Upsert an acquisition-tracking row. Idempotent per session_id."""
+    now = auth_iso(auth_now())
+    source = _referrer_bucket(body.referrer, body.utm_source)
+    # Fingerprint user (best-effort) so we can link if they sign in later.
+    user_id = None
+    try:
+        u = await current_user(request, db)
+        user_id = u.get("user_id")
+    except Exception:
+        user_id = None
+
+    doc = {
+        "referrer": body.referrer,
+        "utm_source": body.utm_source,
+        "utm_medium": body.utm_medium,
+        "utm_campaign": body.utm_campaign,
+        "utm_term": body.utm_term,
+        "utm_content": body.utm_content,
+        "source_bucket": source,
+        "last_path": body.path,
+        "last_seen_at": now,
+    }
+    add_user = {"user_ids": user_id} if user_id else {"user_ids": "__anon__"}
+    await db.sessions.update_one(
+        {"session_id": body.session_id},
+        {
+            "$set": doc,
+            "$setOnInsert": {"first_seen_at": now},
+            "$addToSet": add_user,
+        },
+        upsert=True,
+    )
+    return {"ok": True}
+
+
 # ===========================================================================
 # ADMIN — hidden, gated by ADMIN_EMAILS env var. Not linked from anywhere
 # public. Non-admin sessions get 404 (deliberately misleading) so the
@@ -457,33 +539,54 @@ class AdminResetPasswordIn(_BM):
 
 
 @api.get("/admin/users")
-async def admin_list_users(request: Request):
+async def admin_list_users(
+    request: Request,
+    kind: str = "all",           # all | guest | registered
+    min_projects: int = 0,
+    max_projects: Optional[int] = None,
+):
     admin = await auth_current_admin(request, db)
     # Project counts per user_id, in one aggregation pass.
     counts: Dict[str, int] = {}
-    pipeline = [
+    async for row in db.projects.aggregate([
         {"$match": {"owner_user_id": {"$type": "string"}}},
         {"$group": {"_id": "$owner_user_id", "n": {"$sum": 1}}},
-    ]
-    async for row in db.projects.aggregate(pipeline):
+    ]):
         counts[row["_id"]] = row["n"]
 
     users_out = []
-    cur = db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).limit(500)
+    cur = db.users.find({}, {"_id": 0, "password_hash": 0}).sort("created_at", -1).limit(2000)
     async for u in cur:
+        uid = u.get("user_id", "")
+        email = u.get("email") or ""
+        is_guest = bool(u.get("is_guest")) or email.lower().endswith("@bracket.guest")
+        pc = counts.get(uid, 0)
+
+        # Server-side filters (cheap in a single pass on ≤2000 rows)
+        if kind == "guest" and not is_guest:
+            continue
+        if kind == "registered" and is_guest:
+            continue
+        if pc < min_projects:
+            continue
+        if max_projects is not None and pc > max_projects:
+            continue
+
         users_out.append({
-            "user_id": u.get("user_id"),
-            "email": u.get("email"),
+            "user_id": uid,
+            "email": email,
             "name": u.get("name", ""),
             "designation": u.get("designation", ""),
             "avatar": u.get("avatar", ""),
             "picture": u.get("picture", ""),
             "created_at": u.get("created_at"),
             "updated_at": u.get("updated_at"),
-            "is_admin": (u.get("email") or "").lower() in {admin["email"].lower(), *_admin_emails_set()},
-            "project_count": counts.get(u.get("user_id", ""), 0),
+            "last_seen_at": u.get("last_seen_at"),
+            "is_admin": email.lower() in {admin["email"].lower(), *_admin_emails_set()},
+            "is_guest": is_guest,
+            "project_count": pc,
         })
-    return {"users": users_out, "admin_email": admin["email"]}
+    return {"users": users_out, "admin_email": admin["email"], "filter": {"kind": kind, "min_projects": min_projects, "max_projects": max_projects}}
 
 
 def _admin_emails_set() -> set:
@@ -693,6 +796,118 @@ async def admin_analytics(request: Request):
         hours = [{"hour": h, "value": heat.get((py_idx, h), 0)} for h in range(24)]
         activity_heatmap.append({"day": days_of_week[sun_idx], "hours": hours})
 
+    # ============================================================
+    # ACQUISITION — traffic sources, referrers, campaigns, UTMs.
+    # Reads from the `sessions` collection populated by the public
+    # /api/public/track/session endpoint. Empty until UTM capture has
+    # been live for a while — that's expected and honest.
+    # ============================================================
+    total_sessions = await db.sessions.count_documents({})
+    top_sources: list = []
+    async for row in db.sessions.aggregate([
+        {"$group": {"_id": {"$ifNull": ["$source_bucket", "direct"]}, "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+        {"$limit": 8},
+    ]):
+        top_sources.append({"source": row["_id"] or "direct", "count": row["n"]})
+
+    top_referrers: list = []
+    async for row in db.sessions.aggregate([
+        {"$match": {"referrer": {"$type": "string", "$ne": ""}}},
+        {"$group": {"_id": "$referrer", "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+        {"$limit": 8},
+    ]):
+        top_referrers.append({"referrer": row["_id"], "count": row["n"]})
+
+    top_campaigns: list = []
+    async for row in db.sessions.aggregate([
+        {"$match": {"utm_campaign": {"$type": "string", "$ne": ""}}},
+        {"$group": {"_id": "$utm_campaign", "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+        {"$limit": 8},
+    ]):
+        top_campaigns.append({"campaign": row["_id"], "count": row["n"]})
+
+    utms_captured = await db.sessions.count_documents({
+        "$or": [
+            {"utm_source": {"$ne": ""}},
+            {"utm_medium": {"$ne": ""}},
+            {"utm_campaign": {"$ne": ""}},
+        ]
+    })
+    acquisition = {
+        "total_sessions": total_sessions,
+        "utms_captured": utms_captured,
+        "top_sources": top_sources,
+        "top_referrers": top_referrers,
+        "top_campaigns": top_campaigns,
+    }
+
+    # ============================================================
+    # ACTIVATION — funnel by real Bracket events (option 1c).
+    # Each stage is derived from the projects collection so this
+    # is real, not instrumented.
+    # ============================================================
+    activation = {
+        "started":     await db.projects.count_documents({}),
+        "context":     await db.projects.count_documents({"context": {"$exists": True, "$nin": [None, {}]}}),
+        "decision":    await db.projects.count_documents({"decision": {"$exists": True, "$nin": [None, {}]}}),
+        "published":   await db.projects.count_documents({"status": "locked"}),
+        "shared":      await db.projects.count_documents({"share_status": {"$exists": True, "$nin": [None, "", "none"]}}),
+    }
+
+    # ============================================================
+    # ENGAGEMENT — returning users cohorts, projects/user, avg edits.
+    # Cohorts use last_seen_at written by current_user() middleware.
+    # ============================================================
+    returning_1d  = await db.users.count_documents({"last_seen_at": {"$gte": auth_iso(now - _td(days=1))}})
+    returning_7d  = await db.users.count_documents({"last_seen_at": {"$gte": auth_iso(now - _td(days=7))}})
+    returning_30d = await db.users.count_documents({"last_seen_at": {"$gte": auth_iso(now - _td(days=30))}})
+
+    projects_per_user = 0.0
+    if total_users:
+        projects_per_user = round(total_projects / total_users, 2)
+
+    # Avg edits per project — proxy from time between created_at and
+    # updated_at. Not a true edit count, but a robust availability signal.
+    edits_days = 0.0
+    edit_count = 0
+    cur3 = db.projects.find(
+        {"created_at": {"$exists": True}, "updated_at": {"$exists": True}},
+        {"_id": 0, "created_at": 1, "updated_at": 1},
+    ).limit(2000)
+    async for p in cur3:
+        ca = _iso_to_dt(p.get("created_at"))
+        ua = _iso_to_dt(p.get("updated_at"))
+        if ca and ua and ua > ca:
+            edits_days += max(0.0, (ua - ca).total_seconds() / 86400.0)
+            edit_count += 1
+    avg_edit_span_days = round(edits_days / edit_count, 2) if edit_count else 0.0
+
+    engagement = {
+        "returning_1d": returning_1d,
+        "returning_7d": returning_7d,
+        "returning_30d": returning_30d,
+        "projects_per_user": projects_per_user,
+        "avg_edit_span_days": avg_edit_span_days,
+    }
+
+    # ============================================================
+    # BUSINESS — placeholder section. Real numbers arrive when the
+    # paid tier and download/purchase surfaces ship.
+    # ============================================================
+    business = {
+        "coming_soon": True,
+        "total_published": activation["published"],  # closest real-world proxy today
+        "downloads": 0,
+        "purchases": 0,
+        "revenue": 0,
+        "top_creators": top_users[:5],   # reuse the leaderboard from above
+        "top_categories": [],
+        "repeat_creators": sum(1 for u in top_users if u["projects"] > 1),
+    }
+
     return {
         "generated_at": auth_iso(now),
         "kpis": {
@@ -712,6 +927,10 @@ async def admin_analytics(request: Request):
         "share_funnel": share_funnel,
         "share_accept_rate": share_accept_rate,
         "activity_heatmap": activity_heatmap,
+        "acquisition": acquisition,
+        "activation": activation,
+        "engagement": engagement,
+        "business": business,
     }
 
 

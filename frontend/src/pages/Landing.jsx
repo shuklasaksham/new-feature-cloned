@@ -41,6 +41,35 @@ export default function Landing() {
     };
   }, []);
 
+  // Acquisition tracking — fire once per session. Captures the referrer +
+  // any UTM params so the admin dashboard can attribute traffic sources.
+  useEffect(() => {
+    try {
+      const KEY = "bracket_track_session";
+      let sid = sessionStorage.getItem(KEY);
+      if (!sid) {
+        // Short random-ish id (crypto-safe when available)
+        sid = (crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+        sessionStorage.setItem(KEY, sid);
+      }
+      const params = new URLSearchParams(window.location.search);
+      const payload = {
+        session_id: sid,
+        path: window.location.pathname,
+        referrer: document.referrer || "",
+        utm_source: params.get("utm_source") || "",
+        utm_medium: params.get("utm_medium") || "",
+        utm_campaign: params.get("utm_campaign") || "",
+        utm_term: params.get("utm_term") || "",
+        utm_content: params.get("utm_content") || "",
+      };
+      // Fire-and-forget — never block the landing page on analytics.
+      api.post("/public/track/session", payload).catch(() => {});
+    } catch {
+      // Defensive: any failure here must not touch the render path.
+    }
+  }, []);
+
   const marquee = useMemo(
     () => [
       "Decide before you ship",

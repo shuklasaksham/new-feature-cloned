@@ -35,11 +35,17 @@ export default function AdminDashboard() {
   const [resetting, setResetting] = useState(false);
   const [tab, setTab] = useState("analytics"); // "analytics" | "users"
   const [detailProjectId, setDetailProjectId] = useState(null);
+  const [filterKind, setFilterKind] = useState("all");        // all | guest | registered
+  const [filterProjects, setFilterProjects] = useState("any"); // any | none | one | few | many
 
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/admin/users");
+      const projMap = { any: [0, null], none: [0, 0], one: [1, 1], few: [2, 4], many: [5, null] };
+      const [mn, mx] = projMap[filterProjects] || [0, null];
+      const params = new URLSearchParams({ kind: filterKind, min_projects: String(mn) });
+      if (mx !== null) params.set("max_projects", String(mx));
+      const { data } = await api.get(`/admin/users?${params}`);
       setUsers(data.users || []);
     } catch (e) {
       setError(formatApiError(e));
@@ -47,12 +53,10 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-  // Fire-once on mount when users tab is active. See Dashboard.jsx for rationale.
+  // Reload when the tab becomes users OR when a filter changes on the users tab.
   useEffect(() => {
-    if (tab === "users" && users.length === 0 && !error) {
-      load();
-    }
-  }, [tab]);
+    if (tab === "users") load();
+  }, [tab, filterKind, filterProjects]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -180,6 +184,53 @@ export default function AdminDashboard() {
           )}
         </div>
 
+        {/* Filter chips */}
+        <div className="mt-4 flex flex-wrap items-center gap-2" data-testid="admin-user-filters">
+          <span className="text-[10px] uppercase tracking-wider text-[var(--text-3)] mr-1">Type</span>
+          {[
+            { k: "all",        label: "All" },
+            { k: "guest",      label: "Guests" },
+            { k: "registered", label: "Registered" },
+          ].map((c) => (
+            <button
+              key={c.k}
+              type="button"
+              onClick={() => setFilterKind(c.k)}
+              className={`px-3 py-1.5 rounded-full text-[12px] border transition-colors ${
+                filterKind === c.k
+                  ? "border-[var(--accent)] bg-[var(--accent)]/12 text-[var(--accent)]"
+                  : "border-[var(--hairline)] text-[var(--text-2)] hover:text-[var(--text)]"
+              }`}
+              data-testid={`admin-filter-kind-${c.k}`}
+            >
+              {c.label}
+            </button>
+          ))}
+          <span className="mx-2 text-[var(--text-3)]">·</span>
+          <span className="text-[10px] uppercase tracking-wider text-[var(--text-3)] mr-1">Projects</span>
+          {[
+            { k: "any",  label: "Any" },
+            { k: "none", label: "0" },
+            { k: "one",  label: "1" },
+            { k: "few",  label: "2–4" },
+            { k: "many", label: "5+" },
+          ].map((c) => (
+            <button
+              key={c.k}
+              type="button"
+              onClick={() => setFilterProjects(c.k)}
+              className={`px-3 py-1.5 rounded-full text-[12px] border transition-colors ${
+                filterProjects === c.k
+                  ? "border-[var(--accent)] bg-[var(--accent)]/12 text-[var(--accent)]"
+                  : "border-[var(--hairline)] text-[var(--text-2)] hover:text-[var(--text)]"
+              }`}
+              data-testid={`admin-filter-projects-${c.k}`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
         {loading && (
           <div className="mt-8 flex items-center gap-2 text-[13px] text-[var(--text-3)]">
             <Loader2 size={14} className="animate-spin" /> Loading users…
@@ -213,6 +264,9 @@ export default function AdminDashboard() {
                         {u.email}
                         {u.is_admin && (
                           <span className="ml-2 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--accent)]/15 text-[var(--accent)]">Admin</span>
+                        )}
+                        {u.is_guest && !u.is_admin && (
+                          <span className="ml-2 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--surface-3,#1a1a20)] text-[var(--text-3)]">Guest</span>
                         )}
                       </p>
                       <p className="text-[12px] text-[var(--text-3)] mt-0.5 truncate">

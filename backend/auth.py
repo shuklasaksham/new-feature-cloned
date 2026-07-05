@@ -152,6 +152,15 @@ async def current_user(request: Request, db) -> Dict[str, Any]:
     user = await current_user_optional(request, db)
     if not user:
         raise HTTPException(status_code=401, detail="Sign in to continue.")
+    # Best-effort last_seen tracking (used for admin engagement cohorts).
+    # Silent on failure — we never want auth to hinge on analytics writes.
+    try:
+        await db.users.update_one(
+            {"user_id": user["user_id"]},
+            {"$set": {"last_seen_at": iso(now_utc())}},
+        )
+    except Exception:
+        pass
     return user
 
 

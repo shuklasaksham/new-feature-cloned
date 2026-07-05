@@ -69,38 +69,64 @@ const CustomTooltip = ({ active, payload, label, unit = "" }) => {
   );
 };
 
-// ---- KPI card (uses site card-brut class for consistency) -----------------
-function Kpi({ label, value, unit = "", accent = false, testid }) {
+// ---- KPI card — tinted background palette to match the landing page ----
+const KPI_TONES = {
+  lime:    { bg: "#D6FF48",  text: "#0A0A0C", subText: "#2A2A2E" },
+  coral:   { bg: "#FF7A6B",  text: "#0A0A0C", subText: "#2A0F0A" },
+  violet:  { bg: "#5B3EF7",  text: "#F5F5F7", subText: "rgba(245,245,247,0.68)" },
+  pink:    { bg: "#FFB0D5",  text: "#0A0A0C", subText: "#2A0F1E" },
+  sky:     { bg: "#4FB1FF",  text: "#04121F", subText: "#0F2740" },
+  emerald: { bg: "#5BE3A2",  text: "#04140B", subText: "#0F2820" },
+  lavender:{ bg: "linear-gradient(160deg, #C7CBFB 0%, #E7DFF9 55%, #F1D9EE 100%)", text: "#0A0A0C", subText: "#3B3B44" },
+  peach:   { bg: "linear-gradient(160deg, #FFD5B8 0%, #FFC1B0 55%, #FFB6A8 100%)", text: "#1A0F0A", subText: "#3B2820" },
+  ghost:   { bg: "var(--surface)", text: "var(--text)", subText: "var(--text-3)" }, // dashed placeholder tone
+};
+
+function Kpi({ label, value, unit = "", tone = "ghost", testid }) {
+  const t = KPI_TONES[tone] || KPI_TONES.ghost;
+  const isDashed = tone === "ghost";
   return (
-    <div className="card-brut px-4 py-4" data-testid={testid}>
-      <div
-        className="text-[11px] uppercase tracking-wider"
-        style={{ color: "var(--text-3)" }}
-      >
+    <div
+      className="rounded-2xl px-4 py-4 sm:px-5 sm:py-5 overflow-hidden"
+      style={{
+        background: t.bg,
+        color: t.text,
+        border: isDashed ? "1px dashed var(--hairline)" : "none",
+      }}
+      data-testid={testid}
+    >
+      <div className="text-[11px] uppercase tracking-wider" style={{ color: t.subText }}>
         {label}
       </div>
       <div
         className="mt-2 font-display"
         style={{
-          fontSize: 30,
+          fontSize: 28,
           lineHeight: 1,
-          color: accent ? "var(--accent)" : "var(--text)",
+          color: t.text,
           letterSpacing: "-0.02em",
+          fontWeight: 500,
         }}
       >
         {typeof value === "number" ? value.toLocaleString() : value}
         {unit && (
-          <span
-            style={{
-              fontSize: 14,
-              color: "var(--text-3)",
-              marginLeft: 6,
-            }}
-          >
-            {unit}
-          </span>
+          <span style={{ fontSize: 13, color: t.subText, marginLeft: 6 }}>{unit}</span>
         )}
       </div>
+    </div>
+  );
+}
+
+function SectionHead({ label, title, subtitle }) {
+  return (
+    <div className="pt-6">
+      <span className="section-label"><span className="dot" />{label}</span>
+      <h3 className="mt-3 font-display text-[22px] leading-none" style={{ letterSpacing: "-0.02em", color: "var(--text)" }}>
+        {title}
+      </h3>
+      {subtitle && (
+        <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>{subtitle}</p>
+      )}
     </div>
   );
 }
@@ -303,7 +329,7 @@ export default function AdminAnalytics() {
   }
   if (!data) return null;
 
-  const { kpis, new_users_daily, projects_daily, status_distribution, step_funnel, top_users, share_funnel, activity_heatmap } = data;
+  const { kpis, new_users_daily, projects_daily, status_distribution, step_funnel, top_users, share_funnel, activity_heatmap, acquisition, activation, engagement, business } = data;
 
   const gridProps = { strokeDasharray: "3 3", stroke: COLORS.grid, vertical: false };
   const axisProps = {
@@ -333,12 +359,12 @@ export default function AdminAnalytics() {
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" data-testid="analytics-kpis">
-        <Kpi label="Total users" value={kpis.total_users} testid="kpi-total-users" />
-        <Kpi label="New · 7d" value={kpis.new_users_7d} accent testid="kpi-new-users" />
-        <Kpi label="Total projects" value={kpis.total_projects} testid="kpi-total-projects" />
-        <Kpi label="Locked" value={kpis.locked_projects} testid="kpi-locked" />
-        <Kpi label="Accept rate" value={kpis.share_accept_rate} unit="%" testid="kpi-accept-rate" />
-        <Kpi label="Avg steps" value={kpis.avg_steps} unit="/5" testid="kpi-avg-steps" />
+        <Kpi label="Total users"     value={kpis.total_users}       tone="lime"    testid="kpi-total-users" />
+        <Kpi label="New · 7d"        value={kpis.new_users_7d}      tone="violet"  testid="kpi-new-users" />
+        <Kpi label="Total projects"  value={kpis.total_projects}    tone="coral"   testid="kpi-total-projects" />
+        <Kpi label="Locked"          value={kpis.locked_projects}   tone="emerald" testid="kpi-locked" />
+        <Kpi label="Accept rate"     value={kpis.share_accept_rate} unit="%" tone="sky" testid="kpi-accept-rate" />
+        <Kpi label="Avg steps"       value={kpis.avg_steps}         unit="/5" tone="pink" testid="kpi-avg-steps" />
       </div>
 
       {/* Row 1: two line/area charts */}
@@ -532,6 +558,107 @@ export default function AdminAnalytics() {
       <Card title="Activity heatmap" subtitle="Projects created by hour × weekday · last 90 days" height={200} testid="chart-heatmap">
         <Heatmap data={activity_heatmap} />
       </Card>
+
+      {/* ============ ACQUISITION ============ */}
+      <SectionHead
+        label="Acquisition"
+        title="Where they came from"
+        subtitle={acquisition?.total_sessions ? `${acquisition.total_sessions.toLocaleString()} sessions tracked · ${acquisition.utms_captured.toLocaleString()} with UTM params` : "UTM capture just went live — numbers below will fill in as visitors land."}
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="acquisition-kpis">
+        <Kpi label="Sessions"      value={acquisition?.total_sessions ?? 0}  tone="sky"     testid="kpi-sessions" />
+        <Kpi label="With UTM"      value={acquisition?.utms_captured ?? 0}   tone="lime"    testid="kpi-utms" />
+        <Kpi label="Top source"    value={acquisition?.top_sources?.[0]?.source || "—"} tone="violet" testid="kpi-top-source" />
+        <Kpi label="Top campaign"  value={acquisition?.top_campaigns?.[0]?.campaign || "—"} tone="coral" testid="kpi-top-campaign" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5" data-testid="acquisition-lists">
+        <Card title="Traffic source" subtitle="Sessions by attributed source" height={230}>
+          <ListRows rows={acquisition?.top_sources || []} labelKey="source" valueKey="count" empty="No sessions tracked yet." />
+        </Card>
+        <Card title="Referrers" subtitle="Where the click came from" height={230}>
+          <ListRows rows={acquisition?.top_referrers || []} labelKey="referrer" valueKey="count" empty="No referrer data yet." shorten />
+        </Card>
+        <Card title="Campaigns" subtitle="UTM campaigns" height={230}>
+          <ListRows rows={acquisition?.top_campaigns || []} labelKey="campaign" valueKey="count" empty="No UTM campaigns yet." />
+        </Card>
+      </div>
+
+      {/* ============ ACTIVATION ============ */}
+      <SectionHead
+        label="Activation"
+        title="The five events that matter"
+        subtitle="Mapped to Bracket's real events, not vanity steps."
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" data-testid="activation-kpis">
+        <Kpi label="Started project"    value={activation?.started ?? 0}    tone="lime"    testid="kpi-act-started" />
+        <Kpi label="Added description"  value={activation?.context ?? 0}    tone="sky"     testid="kpi-act-context" />
+        <Kpi label="Uploaded first screen" value={activation?.decision ?? 0} tone="violet" testid="kpi-act-decision" />
+        <Kpi label="Published project"  value={activation?.published ?? 0}  tone="emerald" testid="kpi-act-published" />
+        <Kpi label="Shared project"     value={activation?.shared ?? 0}     tone="pink"    testid="kpi-act-shared" />
+      </div>
+
+      {/* ============ ENGAGEMENT ============ */}
+      <SectionHead
+        label="Engagement"
+        title="Are they coming back?"
+        subtitle="Returning-user cohorts by last-seen. Session duration proxy: create → last edit."
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" data-testid="engagement-kpis">
+        <Kpi label="Returning · 1d"  value={engagement?.returning_1d ?? 0}  tone="coral"   testid="kpi-ret-1d" />
+        <Kpi label="Returning · 7d"  value={engagement?.returning_7d ?? 0}  tone="lavender" testid="kpi-ret-7d" />
+        <Kpi label="Returning · 30d" value={engagement?.returning_30d ?? 0} tone="peach"   testid="kpi-ret-30d" />
+        <Kpi label="Projects / user" value={engagement?.projects_per_user ?? 0} tone="sky" testid="kpi-projects-per-user" />
+        <Kpi label="Avg edit span"   value={engagement?.avg_edit_span_days ?? 0} unit="d" tone="lime" testid="kpi-avg-edit-span" />
+      </div>
+
+      {/* ============ BUSINESS (placeholder) ============ */}
+      <SectionHead
+        label="Business"
+        title="Coming when paid launches"
+        subtitle="These tiles will fill in when downloads and purchases go live. Numbers you see today are honest proxies from the current data model."
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" data-testid="business-kpis">
+        <Kpi label="Total published" value={business?.total_published ?? 0} tone="emerald" testid="kpi-biz-published" />
+        <Kpi label="Downloads"       value={business?.downloads ?? 0}       tone="ghost"   testid="kpi-biz-downloads" />
+        <Kpi label="Purchases"       value={business?.purchases ?? 0}       tone="ghost"   testid="kpi-biz-purchases" />
+        <Kpi label="Revenue"         value={business?.revenue ?? 0}         unit="₹" tone="ghost" testid="kpi-biz-revenue" />
+        <Kpi label="Top categories"  value={(business?.top_categories?.length ?? 0) || "—"} tone="ghost" testid="kpi-biz-categories" />
+        <Kpi label="Repeat creators" value={business?.repeat_creators ?? 0} tone="lime"    testid="kpi-biz-repeat" />
+      </div>
+      <Card title="Top creators" subtitle="By project count · proxy for creator leaderboard" height={220} testid="business-top-creators">
+        <ListRows
+          rows={(business?.top_creators || []).map((c) => ({ label: c.name && c.name !== "—" ? c.name : c.email, count: c.projects }))}
+          labelKey="label"
+          valueKey="count"
+          empty="No creators yet."
+        />
+      </Card>
     </div>
+  );
+}
+
+// ---- Simple two-column list helper ----------------------------------------
+function ListRows({ rows, labelKey, valueKey, empty = "No data", shorten = false }) {
+  if (!rows || rows.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-[12px]" style={{ color: "var(--text-3)" }}>
+        {empty}
+      </div>
+    );
+  }
+  return (
+    <ul className="space-y-1.5">
+      {rows.map((r, i) => {
+        const label = String(r[labelKey] ?? "");
+        const value = r[valueKey];
+        const shownLabel = shorten && label.length > 34 ? label.slice(0, 32) + "…" : label;
+        return (
+          <li key={i} className="flex items-center justify-between gap-3 py-1 border-b border-[var(--hairline)] last:border-b-0">
+            <span className="text-[13px] truncate" style={{ color: "var(--text)" }}>{shownLabel}</span>
+            <span className="text-[13px] font-mono" style={{ color: "var(--text-2)" }}>{typeof value === "number" ? value.toLocaleString() : value}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
