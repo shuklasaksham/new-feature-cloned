@@ -172,13 +172,15 @@ function Hero() {
       className="relative overflow-hidden isolate min-h-[92vh] flex items-center"
       data-testid="landing-hero"
     >
-      {/* Cinematic dark backdrop image (Unsplash — swappable) */}
+      {/* Cinematic dark backdrop image — moody circuit close-up.
+         Reads as "system / operating system / structured logic" — matches
+         "decision OS" thematically better than space photography. */}
       <motion.div
         style={{ y: shouldReduce ? 0 : videoY }}
         className="absolute inset-0 -z-20"
       >
         <img
-          src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2600&q=85"
+          src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2600&q=85"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
@@ -557,7 +559,8 @@ function BentoCard({ tile }) {
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       className={`bento-card group ${tile.span}`}
     >
-      {/* Stock image with dark gradient scrim so text stays readable. */}
+      {/* Stock image with dark gradient scrim so text stays readable.
+         Zooms in on hover for that "peek into the product" feel. */}
       {tile.img && (
         <>
           <img
@@ -566,7 +569,7 @@ function BentoCard({ tile }) {
             aria-hidden="true"
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 h-full w-full object-cover opacity-40 group-hover:opacity-55 transition-opacity duration-500"
+            className="absolute inset-0 h-full w-full object-cover opacity-40 group-hover:opacity-70 scale-100 group-hover:scale-110 transition-[opacity,transform] duration-[700ms] ease-out"
           />
           <div
             aria-hidden="true"

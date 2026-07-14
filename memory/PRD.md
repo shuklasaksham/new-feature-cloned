@@ -431,3 +431,9 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **CaseStudies rebuilt**: Big gradient `01/02` case numerals. Before/After cards are now glass with color-coded borders (danger red border for BEFORE with red glow, blue-signal border for AFTER with blue glow). Italic gradient-quote treatment with big display-italic type. Motion fade-up staggers.
   - **⚠️ Redeploy needed** to push to `use-bracket.com`.
 
+
+- 2026-07-14 — **Iteration 33 — Hero image on-brand + Bento zoom-in hover**:
+  - **Hero image swapped** from Earth-from-space (`photo-1451187580459-43490279c0fa`) → moody circuit close-up (`photo-1518770660439-4636190af475`). Reads as "system / operating system / structured logic" — matches "decision OS" thematically. Blue-lit circuit patterns pair with the signal-blue accent.
+  - **Bento zoom-in hover**: image now scales `1.0 → 1.10` on hover with `transition-[opacity,transform] duration-[700ms]`, opacity bump `0.40 → 0.70`. `overflow: hidden` on `.bento-card` clips the zoom to the card edge — that clean "peek into the product" feel. Text stays fully readable throughout.
+  - **⚠️ Redeploy needed** to push to `use-bracket.com`.
+
