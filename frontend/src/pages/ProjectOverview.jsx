@@ -374,20 +374,21 @@ export default function ProjectOverview() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-start gap-3">
+              <div className="mt-1.5 flex items-center gap-2 flex-wrap">
                 <h1
-                  className="mt-1.5 font-display font-semibold tracking-[-0.028em] leading-[1.1] text-[26px] sm:text-[30px] text-[var(--text)] flex-1 min-w-0 break-words"
+                  className="font-display font-semibold tracking-[-0.028em] leading-[1.1] text-[26px] sm:text-[30px] text-[var(--text)] min-w-0 break-words"
                   data-testid="overview-project-name"
                 >
                   {project.name}
                 </h1>
                 <button
                   onClick={() => setRenaming(true)}
-                  className="flow-header-action shrink-0"
+                  className="overview-rename-icon-btn"
                   data-testid="overview-rename"
                   aria-label="Rename project"
+                  title="Rename project"
                 >
-                  <Pencil size={11} /> <span className="hidden sm:inline">Rename</span>
+                  <Pencil size={13} />
                 </button>
               </div>
             )}

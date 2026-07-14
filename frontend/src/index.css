@@ -1769,6 +1769,134 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 .landing-showcase-static { background: linear-gradient(180deg, #08090A 0%, #050506 100%); }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   CLIENT REVIEW — dark shell, paper-styled doc card, sticky action bar,
+   full-screen sign-off modal.
+   ═══════════════════════════════════════════════════════════════════════ */
+.review-page {
+  background: linear-gradient(
+    180deg,
+    #08090A 0%,
+    #07080A 22%,
+    #06070A 46%,
+    #060709 70%,
+    #050506 100%
+  );
+  color: var(--text);
+}
+.review-header {
+  position: sticky; top: 0; z-index: 30;
+  isolation: isolate;
+}
+.review-header-bg {
+  position: absolute; inset: 0; z-index: -1;
+  background: rgba(8, 9, 10, 0.72);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Paper card — the doc itself stays light so it reads like a formal
+   document, but embedded in the dark shell. */
+.review-doc-card {
+  background: #F7F5EF;
+  color: #1B1D23;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 24px 80px -20px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  overflow: hidden;
+}
+.review-doc-card .mono-tag,
+.review-doc-card .mono-label,
+.review-doc-card .text-muted { color: #4B4D55; }
+.review-doc-card .text-signal { color: var(--accent); }
+
+/* Sticky bottom action bar. */
+.review-action-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 720px;
+  z-index: 40;
+  border-radius: 999px;
+  background: rgba(8, 9, 10, 0.72);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 22px 60px -20px rgba(0, 0, 0, 0.7);
+  animation: reviewBarIn 480ms cubic-bezier(.16, 1, .3, 1);
+}
+.review-action-bar-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px 10px 20px;
+  min-height: 60px;
+}
+@keyframes reviewBarIn {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+@media (max-width: 640px) {
+  .review-action-bar { border-radius: 16px; }
+  .review-action-bar-inner { flex-direction: column; align-items: stretch; gap: 8px; padding: 12px; }
+  .review-action-bar-inner > div:last-child { justify-content: flex-end; }
+}
+
+.review-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  color: var(--text-3);
+}
+
+/* Full-screen sign-off popup. */
+.review-modal-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(3, 4, 6, 0.66);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: bracketDialogOverlayIn 220ms cubic-bezier(.16, 1, .3, 1);
+  overflow-y: auto;
+}
+.review-modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  padding: 32px 28px 24px;
+  border-radius: 16px;
+  animation: bracketDialogCardIn 320ms cubic-bezier(.16, 1, .3, 1);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.review-modal-panel .bracket-dialog-close {
+  font-family: "Poppins", sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  padding-bottom: 2px;
+}
+
+/* Inline pencil icon button — used next to the ProjectOverview title. */
+.overview-rename-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  transition: color .2s ease, background .2s ease, border-color .2s ease;
+  cursor: pointer;
+  align-self: center;
+}
+.overview-rename-icon-btn:hover {
+  color: var(--accent);
+  background: rgba(94, 106, 210, 0.08);
+  border-color: rgba(94, 106, 210, 0.20);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    Landing page — seamless full-page background gradient. One continuous
    dark wash from top to bottom so scrolling never feels like a section
    change. Per-section radial/orb effects sit on top of this base.

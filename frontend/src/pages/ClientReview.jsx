@@ -41,17 +41,17 @@ export default function ClientReview() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="review-page min-h-screen flex items-center justify-center">
         <p className="mono-label">LOADING DOCUMENT…</p>
       </div>
     );
   }
   if (error || !doc) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <div className="border border-danger p-6 bg-chalk max-w-md text-center" data-testid="review-error">
+      <div className="review-page min-h-screen flex items-center justify-center">
+        <div className="card-linear card-linear--solid p-6 max-w-md text-center" data-testid="review-error">
           <p className="mono-tag text-danger">LINK INVALID</p>
-          <p className="mt-2 text-sm">{error || "This review link is no longer valid."}</p>
+          <p className="mt-2 text-sm text-[var(--text-2)]">{error || "This review link is no longer valid."}</p>
           <Link to="/" className="btn-ghost mt-4">Go to Bracket</Link>
         </div>
       </div>
@@ -63,36 +63,77 @@ export default function ClientReview() {
   const ownerReplies = doc.owner_replies || [];
 
   return (
-    <div className="min-h-screen bg-paper" data-testid="client-review-page">
+    <div className="min-h-screen review-page" data-testid="client-review-page">
       <ReviewHeader doc={doc} />
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-6 md:py-10 grid lg:grid-cols-12 gap-6 md:gap-8">
-        {/* DOCUMENT */}
-        <article className="lg:col-span-8 bg-chalk border border-ink shadow-brut">
+
+      <main className="max-w-[960px] mx-auto px-5 sm:px-6 md:px-10 pt-8 md:pt-12 pb-40 md:pb-44">
+        {ownerReplied && (
+          <div className="mb-6">
+            <OwnerReplyDisplay replies={ownerReplies} />
+          </div>
+        )}
+        <article className="review-doc-card" data-testid="review-doc">
           <DocumentBody doc={doc} />
         </article>
+      </main>
 
-        {/* SIDEBAR */}
-        <aside className="lg:col-span-4 lg:sticky lg:top-24 self-start">
-          {ownerReplied && (
-            <OwnerReplyDisplay replies={ownerReplies} />
-          )}
-          {alreadyReviewed ? (
+      {/* Sticky bottom action bar — the sidebar's job, now in a floating bar. */}
+      {!alreadyReviewed && mode === "read" && (
+        <ReviewActionBar
+          ownerReplied={ownerReplied}
+          onAccept={() => setMode("accept")}
+          onReject={() => setMode("reject")}
+        />
+      )}
+      {alreadyReviewed && (
+        <div className="review-action-bar">
+          <div className="review-action-bar-inner">
             <ReviewedState doc={doc} />
-          ) : mode === "read" ? (
-            <ChooseAction
-              ownerReplied={ownerReplied}
-              onAccept={() => setMode("accept")}
-              onReject={() => setMode("reject")}
-            />
-          ) : mode === "accept" ? (
-            <AcceptForm doc={doc} token={token} onDone={(updated) => setDoc(updated)} onCancel={() => setMode("read")} />
-          ) : (
-            <RejectFlow doc={doc} token={token} onDone={(updated) => setDoc(updated)} onCancel={() => setMode("read")} />
-          )}
-        </aside>
-      </div>
-      <footer className="border-t border-ink bg-paper">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-5 flex items-center justify-between">
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen popup for the sign-off form. */}
+      {mode !== "read" && !alreadyReviewed && (
+        <div
+          className="review-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setMode("read");
+          }}
+        >
+          <div className="review-modal-panel card-linear card-linear--solid">
+            <button
+              type="button"
+              className="bracket-dialog-close"
+              onClick={() => setMode("read")}
+              aria-label="Close"
+              data-testid="review-modal-close"
+            >
+              ×
+            </button>
+            {mode === "accept" ? (
+              <AcceptForm
+                doc={doc}
+                token={token}
+                onDone={(updated) => { setDoc(updated); setMode("read"); }}
+                onCancel={() => setMode("read")}
+              />
+            ) : (
+              <RejectFlow
+                doc={doc}
+                token={token}
+                onDone={(updated) => { setDoc(updated); setMode("read"); }}
+                onCancel={() => setMode("read")}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      <footer className="review-footer">
+        <div className="max-w-[960px] mx-auto px-5 sm:px-6 md:px-10 py-5 flex items-center justify-between">
           <p className="mono-tag text-muted">{"{ document via bracket }"}</p>
           <Link to="/" className="mono-tag link-u">BRACKET.DESIGN →</Link>
         </div>
@@ -101,17 +142,53 @@ export default function ClientReview() {
   );
 }
 
+function ReviewActionBar({ onAccept, onReject, ownerReplied = false }) {
+  return (
+    <div className="review-action-bar" data-testid="review-choose-action">
+      <div className="review-action-bar-inner">
+        <div className="flex items-center gap-2 min-w-0">
+          <ShieldCheck size={14} className="text-signal shrink-0" />
+          <p className="mono-tag text-muted text-[11px] truncate">
+            {ownerReplied ? "THEY REPLIED — YOUR MOVE" : "REVIEW · YOUR MOVE"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={onReject}
+            className="btn-ghost"
+            data-testid="review-reject-cta"
+          >
+            Request changes
+          </button>
+          <button
+            type="button"
+            onClick={onAccept}
+            className="btn-primary"
+            data-testid="review-accept-cta"
+          >
+            Accept &amp; sign <ArrowRight size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReviewHeader({ doc }) {
   return (
-    <header className="sticky top-0 z-30 bg-paper border-b border-ink">
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-        <Link to="/" className="shrink-0">
-          <BracketMark size={24} />
+    <header className="review-header">
+      <div className="review-header-bg" aria-hidden="true" />
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3 relative">
+        <Link to="/" className="shrink-0 flex items-center gap-3" aria-label="Bracket">
+          <BracketMark size={22} />
         </Link>
-        <p className="mono-tag text-muted truncate hidden sm:block">
+        <p className="mono-tag text-muted truncate hidden sm:block text-[10.5px]">
           REVIEW · {doc.name?.toUpperCase()}
         </p>
-        <p className="mono-tag text-signal">{(doc.share_status || "PENDING").toUpperCase()}</p>
+        <p className="mono-tag text-signal text-[10.5px]">
+          {(doc.share_status || "PENDING").toUpperCase()}
+        </p>
       </div>
     </header>
   );
@@ -228,38 +305,6 @@ function SimpleList({ title, items, accent = "ink", strike = false }) {
           </li>
         ))}
       </ul>
-    </div>
-  );
-}
-
-function ChooseAction({ onAccept, onReject, ownerReplied = false }) {
-  return (
-    <div className="card-brut p-5 sm:p-6" data-testid="review-choose-action">
-      <div className="flex items-center gap-2">
-        <ShieldCheck size={16} className="text-signal" />
-        <p className="mono-label">{ownerReplied ? "{ they replied — your move }" : "{ your move }"}</p>
-      </div>
-      <p className="mt-3 text-sm text-muted">
-        {ownerReplied
-          ? "Read their reply above, then accept or send back more notes."
-          : "Read through the document. When you're ready, accept and sign it off, or send the project owner your concerns."}
-      </p>
-      <button
-        type="button"
-        onClick={onAccept}
-        className="btn-brut mt-5 w-full justify-center"
-        data-testid="review-accept-cta"
-      >
-        Accept & sign <ArrowRight size={14} />
-      </button>
-      <button
-        type="button"
-        onClick={onReject}
-        className="btn-ghost mt-3 w-full justify-center"
-        data-testid="review-reject-cta"
-      >
-        I {ownerReplied ? "still have" : "have"} concerns
-      </button>
     </div>
   );
 }
@@ -485,8 +530,8 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
           <p className="mono-label">{"{ raise concerns }"}</p>
         </div>
         <p className="mt-3 text-sm text-muted">
-          Tell them what isn't working. Bracket will help shape your concern into specific suggestions
-          before it's sent.
+          Tell them what isn&apos;t working. Bracket will help shape your concern into specific suggestions
+          before it&apos;s sent.
         </p>
         <textarea
           rows={6}

@@ -1746,8 +1746,17 @@ def _pdf_text(s: str) -> str:
     }
     for k, v in replacements.items():
         s = s.replace(k, v)
-    # Final fallback: any remaining non-latin-1 char → its closest ASCII (skip).
-    return s.encode("latin-1", "replace").decode("latin-1")
+    # Decompose accented characters (é → e, ñ → n, etc.) so nothing falls
+    # through to the latin-1 "?" fallback.
+    try:
+        import unicodedata as _u
+        s = _u.normalize("NFKD", s)
+        s = "".join(c for c in s if not _u.combining(c))
+    except Exception:
+        pass
+    # Final fallback: drop any remaining non-latin-1 char rather than
+    # substituting "?" glyphs which read as garbled squares.
+    return s.encode("latin-1", "ignore").decode("latin-1")
 
 
 def _pdf_for(project: dict) -> bytes:
