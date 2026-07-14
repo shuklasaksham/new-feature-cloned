@@ -50,15 +50,27 @@ export default function ClientReview() {
 
   if (loading) {
     return (
-      <div className="review-page min-h-screen flex items-center justify-center">
-        <p className="mono-label">LOADING DOCUMENT…</p>
+      <div className="dashboard-root relative min-h-screen flex items-center justify-center" data-testid="client-review-loading">
+        <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10"
+          style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+        />
+        <p className="mono-label relative">LOADING DOCUMENT…</p>
       </div>
     );
   }
   if (error || !doc) {
     return (
-      <div className="review-page min-h-screen flex items-center justify-center">
-        <div className="card-linear card-linear--solid p-6 max-w-md text-center" data-testid="review-error">
+      <div className="dashboard-root relative min-h-screen flex items-center justify-center" data-testid="client-review-error-page">
+        <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10"
+          style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+        />
+        <div className="card-linear card-linear--solid p-6 max-w-md text-center relative" data-testid="review-error">
           <p className="mono-tag text-danger">LINK INVALID</p>
           <p className="mt-2 text-sm text-[var(--text-2)]">{error || "This review link is no longer valid."}</p>
           <Link to="/" className="btn-ghost mt-4">Go to Bracket</Link>
@@ -72,10 +84,18 @@ export default function ClientReview() {
   const ownerReplies = doc.owner_replies || [];
 
   return (
-    <div className="min-h-screen review-page" data-testid="client-review-page">
+    <div className="dashboard-root relative min-h-screen" data-testid="client-review-page">
+      {/* Cinematic dark backdrop — same recipe as the logged-in dashboard. */}
+      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
+
       <ReviewHeader doc={doc} />
 
-      <main className="max-w-[960px] mx-auto px-5 sm:px-6 md:px-10 pt-8 md:pt-12 pb-40 md:pb-44">
+      <main className="relative max-w-[960px] mx-auto px-5 sm:px-6 md:px-10 pt-8 md:pt-12 pb-40 md:pb-44">
         {ownerReplied && (
           <div className="mb-6">
             <OwnerReplyDisplay replies={ownerReplies} />
