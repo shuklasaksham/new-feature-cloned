@@ -39,6 +39,15 @@ export default function ClientReview() {
     })();
   }, [token]);
 
+  // Lock body scroll whenever the sign-off modal is open, so users can't
+  // accidentally scroll the underlying document behind the popup.
+  useEffect(() => {
+    if (mode === "read") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [mode]);
+
   if (loading) {
     return (
       <div className="review-page min-h-screen flex items-center justify-center">
