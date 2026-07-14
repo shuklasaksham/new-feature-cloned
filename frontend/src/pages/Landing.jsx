@@ -61,8 +61,8 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
           key={i}
           className="inline-block overflow-hidden mr-[0.25em]"
           style={{
-            lineHeight: 1.25,
-            paddingTop: "0.2em",
+            lineHeight: 1.3,
+            paddingTop: "0.35em",
             paddingBottom: "0.4em",
             verticalAlign: "bottom",
           }}
