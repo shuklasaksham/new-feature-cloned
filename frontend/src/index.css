@@ -1503,8 +1503,18 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
    CINEMATIC LANDING — Framer + Lenis. Dark, dramatic, Apple × Awwwards.
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* Hero — gradient text on the second line of the headline. */
+/* Hero — gradient text on the second line of the headline.
+   NOTE: `-webkit-background-clip: text` paints the gradient only within the
+   element's own line-box. If the parent H1 uses a tight line-height, any
+   part of a glyph that overflows the line-box (ascenders, italic slant)
+   ends up transparent (invisible). Force the gradient span to be an
+   inline-block with its own generous line-height so ascenders + descenders
+   sit fully inside the paintable region. */
 .landing-hero-gradient {
+  display: inline-block;
+  line-height: 1.15;
+  padding-top: 0.05em;
+  padding-bottom: 0.1em;
   background: linear-gradient(90deg, #2E5BFF 0%, #7CD5FF 45%, #B7B7FF 100%);
   -webkit-background-clip: text;
   background-clip: text;

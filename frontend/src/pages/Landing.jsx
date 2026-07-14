@@ -52,12 +52,20 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
   return (
     <Tag className={className}>
       {words.map((w, i) => (
-        // `pb`/`pt` give the clipped word room for italic ascenders + descenders
-        // ("g", "y", italic "b/d/l") so nothing gets sliced at extreme sizes.
+        // The wrapper needs its OWN line-height (parent H1s use tight
+        // `leading-[0.98]`, which cuts descenders/italic overhang once
+        // `overflow: hidden` is applied). Explicit `line-height: 1.25` +
+        // generous vertical padding gives the clip box enough room for
+        // "g" tails, italic slant, and periods at any font size.
         <span
           key={i}
-          className="inline-block overflow-hidden align-baseline mr-[0.25em]"
-          style={{ paddingTop: "0.15em", paddingBottom: "0.25em" }}
+          className="inline-block overflow-hidden mr-[0.25em]"
+          style={{
+            lineHeight: 1.25,
+            paddingTop: "0.2em",
+            paddingBottom: "0.4em",
+            verticalAlign: "bottom",
+          }}
         >
           <motion.span
             className="inline-block"
@@ -231,7 +239,7 @@ function Hero() {
           The decision OS for freelancers
         </motion.div>
 
-        <h1 className="mt-6 font-display font-semibold tracking-[-0.032em] leading-[0.98] text-[42px] sm:text-[64px] md:text-[82px] lg:text-[96px] text-[var(--text)]">
+        <h1 className="mt-6 font-display font-semibold tracking-[-0.032em] leading-[1.05] text-[42px] sm:text-[64px] md:text-[82px] lg:text-[96px] text-[var(--text)]">
           <WordReveal text="Paste the mess." tag="span" />
           <br />
           <span className="landing-hero-gradient">
@@ -856,7 +864,7 @@ function FinalCTA() {
           <Zap size={12} /> READY?
         </motion.p>
 
-        <h2 className="mt-6 font-display font-semibold italic tracking-[-0.03em] leading-[0.98] text-[52px] sm:text-[80px] md:text-[104px] lg:text-[128px] text-[var(--text)]">
+        <h2 className="mt-6 font-display font-semibold italic tracking-[-0.03em] leading-[1.05] text-[52px] sm:text-[80px] md:text-[104px] lg:text-[128px] text-[var(--text)]">
           <WordReveal text="Start building." tag="span" />
         </h2>
 
