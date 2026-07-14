@@ -132,10 +132,12 @@ const STAGE_STYLE = {
   accepted:    { backgroundColor: "#22C55E", color: "#0A0A0C", border: "1px solid #22C55E" },
 };
 // Stage precedence: client review outcome > locked > in progress.
+// "awaiting_reply" / "sent" = waiting on the client → shown as IN PROGRESS.
 function projectStage(p) {
   if (p.share_status === "accepted") return { key: "accepted", label: "ACCEPTED" };
-  if (p.share_status === "rejected" || p.share_status === "awaiting_reply")
-    return { key: "concerns", label: "HAVE CONCERNS" };
+  if (p.share_status === "rejected") return { key: "concerns", label: "HAVE CONCERNS" };
+  if (p.share_status === "awaiting_reply" || p.share_status === "sent")
+    return { key: "in_progress", label: "IN PROGRESS" };
   if (p.status === "locked") return { key: "locked", label: "LOCKED" };
   return { key: "in_progress", label: "IN PROGRESS" };
 }

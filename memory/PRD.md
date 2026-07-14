@@ -70,7 +70,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 
 ## Changelog (recent)
 - 2026-06-XX — **Dashboard stage tags + steps-page dead scroll + dark email templates**:
-  - Dashboard project cards now show one of 4 stages via `projectStage()` (Dashboard.jsx): `IN PROGRESS` (default), `LOCKED` (blue #5E6AD2), `HAVE CONCERNS` (red #EF4444, share_status rejected/awaiting_reply), `ACCEPTED` (green #22C55E). testid: `dashboard-stage-{id}`. Old RECENT_STATUS_* maps removed.
+  - Dashboard project cards now show one of 4 stages via `projectStage()` (Dashboard.jsx): `IN PROGRESS` (default, also share_status sent/awaiting_reply — "awaiting a client" counts as in progress per user), `LOCKED` (blue #5E6AD2), `HAVE CONCERNS` (red #EF4444, share_status rejected only), `ACCEPTED` (green #22C55E). testid: `dashboard-stage-{id}`. Old RECENT_STATUS_* maps removed.
   - Steps page (ProjectFlow) dead-scroll fixed — same `.hero-ambient--dashboard::before` 1400px bleed as Dashboard; added `overflow-clip` to page roots of ProjectFlow, Settings, AdminDashboard. Verified: scrollHeight == content bottom (1101px).
   - All 4 email templates (OTP in auth.py; thanks / review-outcome / client-receipt in emailer.py) redesigned to match the dark site design: bg #08090A, card #0F1114 radius 16 border #26282D, Poppins stack, accent #5E6AD2, semantic green/red accents, pill CTA buttons. Demo email sent successfully to support@use-bracket.com (thanks template).
 - 2026-06-XX — **Full modal audit — no visible scrollbars** (user request): tested every modal at 1366×768 with real data. Passing already: bracket-dialog (confirm/prompt), owner ClientReviewModal, reject-write, admin reset-pw, admin bulk-delete. Fixed 3 overflowing modals:
