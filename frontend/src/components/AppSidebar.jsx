@@ -103,13 +103,30 @@ export default function AppSidebar() {
       {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
         <Link to="/app" className="brand-mark" data-testid="sidebar-brand" aria-label="Bracket">
-          <img
-            src="/logo-diamond.png"
-            alt="Bracket"
-            width={26}
-            height={26}
-            style={{ display: "block", flexShrink: 0, objectFit: "contain" }}
-          />
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 32,
+              height: 32,
+              overflow: "hidden",
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src="/logo-diamond.png"
+              alt="Bracket"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                transform: "scale(1.75)",
+                display: "block",
+              }}
+            />
+          </span>
         </Link>
         <button
           type="button"
