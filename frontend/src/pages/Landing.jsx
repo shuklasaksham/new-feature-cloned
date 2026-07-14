@@ -52,18 +52,17 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
   return (
     <Tag className={className}>
       {words.map((w, i) => (
-        // The wrapper needs its OWN line-height (parent H1s use tight
-        // `leading-[0.98]`, which cuts descenders/italic overhang once
-        // `overflow: hidden` is applied). Explicit `line-height: 1.25` +
-        // generous vertical padding gives the clip box enough room for
-        // "g" tails, italic slant, and periods at any font size.
+        // Tight wrapper — just enough padding for italic ascenders and
+        // descenders at extreme sizes, without inflating the line box (which
+        // was creating a huge visual gap between adjacent H1 lines).
         <span
           key={i}
           className="inline-block overflow-hidden mr-[0.25em]"
           style={{
-            lineHeight: 1.3,
-            paddingTop: "0.35em",
-            paddingBottom: "0.4em",
+            lineHeight: 1.05,
+            paddingTop: "0.12em",
+            paddingBottom: "0.22em",
+            marginBottom: "-0.2em",
             verticalAlign: "bottom",
           }}
         >
