@@ -1878,9 +1878,13 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   position: relative;
   width: 100%;
   max-width: 1000px;
-  padding: 40px 44px 32px;
+  padding: 32px 36px 28px;
   border-radius: 20px;
   animation: bracketDialogCardIn 320ms cubic-bezier(.16, 1, .3, 1);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 .review-modal-panel .bracket-dialog-close {
   font-family: "Poppins", sans-serif;
@@ -1892,19 +1896,38 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 @media (max-width: 640px) {
   .review-modal-overlay { padding: 12px; align-items: flex-start; }
-  .review-modal-panel { padding: 28px 20px 20px; max-height: calc(100vh - 24px); overflow-y: auto; }
+  .review-modal-panel { padding: 28px 20px 20px; max-height: calc(100vh - 24px); }
 }
+
+/* Hide the sticky bottom action bar while the sign-off modal is open —
+   the modal fully replaces the read-mode CTAs. */
+body:has(.review-modal-overlay) .review-action-bar { display: none; }
 
 /* Accept form — 2-column layout inside the modal so every checkbox is
    visible at a glance, signature panel sits on the right. */
-.review-accept-form { color: var(--text); }
+.review-accept-form {
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+.review-accept-form > .mb-6 { flex-shrink: 0; }
 .review-accept-grid {
-  display: grid; gap: 28px;
+  display: grid; gap: 24px;
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  align-items: start;
+  align-items: stretch;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.review-accept-grid > * {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 @media (max-width: 900px) {
-  .review-accept-grid { grid-template-columns: 1fr; gap: 24px; }
+  .review-accept-grid { grid-template-columns: 1fr; gap: 20px; }
 }
 
 .review-accept-items {
@@ -1913,7 +1936,12 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   border-radius: 12px;
   padding: 6px;
   background: rgba(255,255,255,0.02);
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
 }
+.review-accept-items::-webkit-scrollbar { width: 6px; }
+.review-accept-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
 .review-accept-item {
   display: flex; align-items: flex-start; gap: 12px;
   padding: 10px 12px;
@@ -1928,6 +1956,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   width: 15px; height: 15px;
   accent-color: var(--accent);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .review-accept-signature {
@@ -1935,6 +1964,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
 }
 .review-accept-input {
   width: 100%;
