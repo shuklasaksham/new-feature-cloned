@@ -116,10 +116,8 @@ export default function ClientReview() {
         />
       )}
       {alreadyReviewed && (
-        <div className="review-action-bar">
-          <div className="review-action-bar-inner">
-            <ReviewedState doc={doc} />
-          </div>
+        <div className="review-status-wrap">
+          <ReviewedState doc={doc} />
         </div>
       )}
 

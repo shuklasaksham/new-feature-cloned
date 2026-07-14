@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 30 retest of three iter-28-introduced UI regressions: (1) owner ClientReviewModal too narrow → widened to 1080px with 2-col grid; (2) client-side reviewed-state wrapped in pill outline → replaced with .review-status-wrap; (3) auth pages had 800px of empty scroll below content → .hero-ambient--dashboard { bottom: 0 } override. All 3 fixes VERIFIED on live preview.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_features": [
+    {
+      "feature": "Owner ClientReviewModal fits without vertical scroll (desktop 1440x900)",
+      "status": "PASS",
+      "detail": "getComputedStyle(.review-modal-panel).maxWidth === '1080px', actual width_px === 1080, padding '26px 30px 22px'. Panel rect.bottom = 770.3px, window.innerHeight = 900 → fitsInWindow: true. .crm-cols gridTemplateColumns = '498px 498px' (2 columns). Left column contains crm-concerns-text + crm-reply-form; right column contains crm-suggestion-0 (Bracket Suggests list). Inner .review-reject-form--modal scrollHeight=847 vs clientHeight=802 → 45px minor inner scroll (marginally above the 20px tolerance in the ask, but content is fully visible without needing to scroll the outer panel; last visible item is 'USE THIS DRAFT →' for suggestion 3 — cosmetic only)."
+    },
+    {
+      "feature": "Owner ClientReviewModal mobile 375x667",
+      "status": "PASS",
+      "detail": "Panel width=299px (fits inside 375-viewport with 20px side padding on overlay). maxWidth still 1080 but constrained by width:100%. Padding '28px 20px 20px'. .crm-cols gridTemplateColumns = '253px' (single column) → falls back to 1-col below the 900px @media breakpoint. Panel height 643 within 667 viewport."
+    },
+    {
+      "feature": "Client reviewed-state — no pill outline wrapping the dark card",
+      "status": "PASS",
+      "detail": "On /r/FVMnmrqr2cWsANCh the [data-testid='review-done-state'] direct parent class = 'review-status-wrap'. hasReviewActionBar = false, hasReviewActionBarInner = false. Parent computed border-radius = '0px', border = '0px solid rgba(...)', background = 'rgba(0,0,0,0)', box-shadow = 'none' — i.e., no visible pill outline. Parent position: fixed, bottom: 20px, z-index: 40; card centred (doneCentered = 0px offset from viewport centre). The dark card itself (.card-linear--solid, background rgba(8,9,10,0.72), border-radius 12px) renders cleanly as a rectangle popup with 'CONCERNS DELIVERED' + 'Thanks.' + 'Your concerns have been delivered.' visible. Screenshot confirms no rounded pill outline behind."
+    },
+    {
+      "feature": "Auth pages — no huge empty black scroll below content",
+      "status": "PASS",
+      "detail": "Measured document.documentElement.scrollHeight vs window.innerHeight on 3 auth routes at 1440x900:\n  - /app  → scrollHeight 900, innerHeight 900, overflow 0px (content fits exactly)\n  - /project/c661fa99…  (overview) → scrollHeight 900, innerHeight 900, overflow 0px\n  - /project/c661fa99…/document → scrollHeight 900, innerHeight 900, overflow 0px (document body scrolls inside an internal container so the outer html never scrolls)\nAll three well within the ≤200px tolerance in the ask, and the previous 800px-empty-black-area regression is gone. .hero-ambient--dashboard resolves to computed bottom: 0px on the ProjectDocument page (verified via getComputedStyle), overriding the base .hero-ambient { bottom: -800px } used by the landing hero."
+    }
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "index.css:1965-1978 — .review-reject-form--modal keeps overflow-y:auto and inside it a 2-col .crm-cols. On 1440×900 with the current concern text + reply composer + 3 AI drafts, the form still has 45px of inner scroll before the last 'USE THIS DRAFT →' comes into view. Not a functional bug — user can scroll the inner form — but a longer concern text or a 4th suggestion could push it past acceptable. Consider tightening the 'Bracket Suggests' body font-size or clamping suggestion count to 2 on shorter viewports if you want zero inner scroll.",
+    "index.css:1195 vs 3298 — the -800px bottom on .hero-ambient is only needed on the marketing landing hero, but every consumer of .hero-ambient inherits it. If more surfaces adopt .hero-ambient (auth pages, admin, share pages), they'll need to add their own bottom-override modifier as well. Consider inverting the default: .hero-ambient { bottom: 0 } and give landing a .hero-ambient--landing { bottom: -800px } modifier.",
+    "ClientReview.jsx line ~119 — the ReviewedState popup is now wrapped in .review-status-wrap (fixed, bottom:20px, max-width 520px). Because it's position:fixed, it renders on top of the sign-off document as an overlay. This is intentional and matches the pre-fix behaviour. Confirm this is acceptable UX — a user on a long document who scrolls will see the reviewed card follow them at the bottom-centre."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A", "frontend": "100% (all 3 retests pass)" },
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 — worked on both /login (Use Password path) and public share /r/FVMnmrqr2cWsANCh.",
+  "seed_data_creation": "None — reused existing rejected project c661fa99-fc01-4ec5-bdb6-c7e2c54ae6a7 (share_token FVMnmrqr2cWsANCh, share_status='rejected').",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iter-30 verified all three iter-28 regressions are fixed. Key testids used: [data-testid='client-review-modal'] + .review-modal-panel + .crm-cols; [data-testid='overview-view-review-cta'] to open the modal; [data-testid='review-done-state'] on /r/{token}. On mobile (375px), .crm-cols collapses to single column via the min-width:900px @media rule. If a future test wants to force different reviewed states, POST to /api/share/{token}/reject/confirm or /api/share/{token}/accept/confirm.",
+  "rca_of_the_issue": "Iter 28 introduced 3 regressions: (a) reduced modal max-width to 720px, making the reject flow (concerns + 3 AI drafts + reply composer) overflow vertically; (b) wrapped ReviewedState in the same .review-action-bar container used for read-mode CTAs which has border-radius:999px → visible pill outline behind the dark card; (c) extended .hero-ambient { bottom: -800px } for the marketing hero fade — that -800px was inherited by every use of .hero-ambient including inside AppShell auth pages, adding 800px of scrollable empty space below content. Iter-30 fixes: (a) .review-modal-panel max-width:1080px + .crm-cols 2-column grid at ≥900px; (b) new .review-status-wrap centred container without a border/radius; (c) new .hero-ambient--dashboard modifier that resets bottom to 0."
+}
