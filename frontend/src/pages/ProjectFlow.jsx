@@ -454,6 +454,28 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     }
   };
 
+  // Hydrate paste passed from Dashboard hero (via sessionStorage) exactly
+  // once on first mount of a fresh project with no framing yet.
+  const pendingPasteHydrated = useRef(false);
+  useEffect(() => {
+    if (pendingPasteHydrated.current) return;
+    if (framing) return;
+    try {
+      const key = `bracket:pending-paste:${project.id}`;
+      const paste = window.sessionStorage.getItem(key);
+      if (paste && !form.raw_paste) {
+        pendingPasteHydrated.current = true;
+        window.sessionStorage.removeItem(key);
+        const nextForm = { raw_paste: paste };
+        setForm(nextForm);
+        // Auto-submit so the user sees Bracket start working immediately —
+        // this is the whole promise of the paste-first flow.
+        runInternal(nextForm);
+      }
+    } catch (e) { /* private mode / quota — user can still submit manually */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project.id, framing]);
+
   const run = () => runInternal(form);
 
   const trySample = async (forcedKey) => {

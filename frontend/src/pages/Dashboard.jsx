@@ -1,326 +1,432 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Loader2, Plus, FileText, Lock, AlertCircle, Check, X as XIcon, Pencil } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUp,
+  Loader2,
+  FileText,
+  Lock,
+  Check,
+  Sparkles,
+  Layers,
+  ListChecks,
+  CalendarRange,
+  AlertTriangle,
+  ScrollText,
+  ClipboardPaste,
+} from "lucide-react";
 import { toast } from "sonner";
-import EmptyStateIllustration from "../components/EmptyStateIllustration";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
 
-const STATUS_PILL = {
-  draft:       { className: "status-pill status-pill--draft",  label: "Draft" },
-  in_progress: { className: "status-pill status-pill--active", label: "In progress" },
-  locked:      { className: "status-pill status-pill--locked", label: "Locked" },
-};
+// Quick-start seed briefs — one click drops a realistic messy paste in the
+// hero input so a curious user can watch Bracket work without typing a word.
+const QUICK_STARTS = [
+  {
+    key: "saas-landing",
+    label: "SaaS Landing Page",
+    kicker: "Fintech · 3-week launch",
+    icon: Layers,
+    paste:
+`Hey — we finally got the greenlight to redo our landing page. Founder here is Ankit.
 
-const SHARE_PILL = {
-  sent:           { className: "status-pill status-pill--wait",     label: "Awaiting review" },
-  accepted:       { className: "status-pill status-pill--success",  label: "Accepted" },
-  rejected:       { className: "status-pill status-pill--danger",   label: "Concerns raised" },
-  awaiting_reply: { className: "status-pill status-pill--wait",     label: "Reply sent" },
+We've been sending you Stripe and Linear as references but honestly our product is way more technical — it's treasury management for startup CFOs. Also budget is 80k INR and we need it in 3 weeks max because we launch on Nov 15.
+
+One thing that has us worried — the current site converts at 0.4% and our sales team is very sensitive about anything they think might hurt demo bookings.
+
+Quick side question — should we do a full brand refresh in the same sprint or is that a separate scope? Let me know if you need anything else!
+
+— Ankit`,
+  },
+  {
+    key: "mobile-app",
+    label: "Mobile App Design",
+    kicker: "Consumer · MVP scope",
+    icon: Layers,
+    paste:
+`Meeting notes // Kickoff for the Loop mobile app
+
+Founder (Priya) wants a v1 iOS app in 8 weeks. Target: gen-Z, 18-24, urban India. Habit tracking + streaks + a very light social feed. She keeps oscillating between "TikTok simple" and "Notion power-user" for the UX.
+
+Team: solo iOS dev, no designer in-house. She'd want us to hand off Figma + a small motion prototype for onboarding. Budget flexible-ish, around 2.5L INR total.
+
+Big open question: should there be a web mirror on day 1? Investors have been asking, but the dev capacity says no. Priya wants my read.
+
+Also — no clear stance yet on whether we launch with premium tier from day 1 or free-only for 6 months.`,
+  },
+  {
+    key: "website-redesign",
+    label: "Website Redesign",
+    kicker: "B2B · Site refresh",
+    icon: Layers,
+    paste:
+`Hi! We're a 40-person B2B analytics company (Series B, based in Austin). Our current marketing site was built 3 years ago by our first designer who's since left. It looks dated and honestly doesn't convert.
+
+What we know: we want to redesign the site (10-12 pages), migrate to a new CMS (Webflow ideally), and get it live before our sales kickoff on Jan 15. Budget is $18-22k.
+
+What we don't know: whether we should refresh the whole brand (colors, type, illustration) at the same time or keep the current identity. Our head of marketing wants a full refresh; our CEO wants "just make it look modern."
+
+Also unclear: how much SEO work is in scope. We rank well on 3 pages we don't want to break during migration.`,
+  },
+  {
+    key: "brand-identity",
+    label: "Brand Identity",
+    kicker: "D2C · Naming + logo",
+    icon: Layers,
+    paste:
+`Meeting notes // Loop Coffee brand kickoff
+
+Priya (solo founder, ex-restaurant, launching 2 blends first) wants:
+— brand naming + logo
+— packaging: pouch + label
+— IG launch kit (10-15 posts)
+
+Budget: 1.2L INR, timeline flexible-ish, needs to be ready before Diwali (early Nov).
+
+References she loves: Blue Tokai for the design language, Third Wave for the tone, "but different" — honestly not sure what she means yet.
+
+She keeps flipping between "premium" (matte, gold foil, coffee-nerdy) and "approachable" (playful, lifestyle, mass appeal). Last meeting she said both in the same sentence.
+
+My worry: 1.2L is tight for full naming + brand + packaging + launch kit. And she has strong opinions but hasn't defined a clear customer or price point yet.`,
+  },
+  {
+    key: "discovery-workshop",
+    label: "Discovery Workshop",
+    kicker: "Enterprise · Pre-project",
+    icon: Layers,
+    paste:
+`We're a mid-size healthcare SaaS (~250 employees) and we've been running the same UX for our provider dashboard for 4 years. Complaints from customers are compounding but every internal proposal to "fix it" has been shot down as too big.
+
+We'd like to run a discovery workshop with our head of product, 2 PMs, our data lead, and 2 customer-success folks. Goal: leave the room with (a) a shared read of what's actually broken, (b) 3 prioritized bets, (c) rough sizing so I can pitch a Q1 project internally.
+
+Timeline: within the next 3 weeks. Budget for workshop + light output doc: $6-8k.
+
+Concerns: our head of product is opinionated and tends to dominate rooms. I want the workshop format to give the CS folks equal air.`,
+  },
+];
+
+const AI_OUTPUTS = [
+  { icon: ListChecks,   label: "Scope",             hint: "in / out / deliverables" },
+  { icon: Layers,       label: "Deliverables",      hint: "sized + owned" },
+  { icon: CalendarRange,label: "Timeline",          hint: "sprints + milestones" },
+  { icon: AlertTriangle,label: "Risks",             hint: "before your client sees them" },
+  { icon: Check,        label: "Decisions",         hint: "with rationale + trade-offs" },
+  { icon: ScrollText,   label: "Client-ready docs", hint: "sign-off + PDF" },
+];
+
+const RECENT_STATUS_STYLE = {
+  draft:       { backgroundColor: "transparent",         color: "var(--text-2)", border: "1px solid var(--hairline)" },
+  in_progress: { backgroundColor: "var(--surface-2)",    color: "var(--text)",   border: "1px solid var(--hairline)" },
+  locked:      { backgroundColor: "#2E5BFF",             color: "#FFFFFF",       border: "1px solid #2E5BFF" },
 };
+const RECENT_STATUS_LABEL = { draft: "DRAFT", in_progress: "IN PROGRESS", locked: "LOCKED" };
 
 export default function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creatingName, setCreatingName] = useState("");
-  const [creating, setCreating] = useState(false);
+  const [paste, setPaste] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const inputRef = useRef(null);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/projects");
-      setProjects(Array.isArray(data) ? data : []);
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setLoading(false);
-    }
-  };
-  // Fire-once on mount. `load` is a stable closure over component state
-  // and re-creating it every render is intentional — we don't want this
-  // effect to re-run. Adding `load` to deps without useCallback would
-  // cause an infinite re-render loop.
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const { data } = await api.get("/projects");
+        setProjects(Array.isArray(data) ? data : []);
+      } catch (e) {
+        toast.error(formatApiError(e));
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
-  const create = async () => {
-    const name = creatingName.trim();
-    if (!name) return toast.error("Give the project a name first.");
-    setCreating(true);
+  // Auto-focus the hero paste box after mount (unless the user hovered a
+  // project card first — we don't want to hijack focus if they're navigating).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (inputRef.current && !document.activeElement?.closest?.("a,button,textarea,input")) {
+        inputRef.current.focus();
+      }
+    }, 260);
+    return () => clearTimeout(t);
+  }, []);
+
+  const wordCount = paste.trim().split(/\s+/).filter(Boolean).length;
+  const canSubmit = paste.trim().length >= 20 && !submitting;
+
+  // Hand off the paste to a new project's Step 1. We stash the paste in
+  // sessionStorage keyed by project id so Step 1 can hydrate it on mount
+  // (avoids URL length limits + accidental sharing of pastes via link).
+  const structureBrief = async () => {
+    if (!canSubmit) return;
+    setSubmitting(true);
     try {
-      const { data } = await api.post("/projects", { project_name: name });
+      const derivedName = deriveProjectName(paste);
+      const { data } = await api.post("/projects", { project_name: derivedName });
+      try {
+        window.sessionStorage.setItem(`bracket:pending-paste:${data.id}`, paste);
+      } catch (e) { /* private-mode / quota — Step 1 shows empty input, no crash */ }
       navigate(`/project/${data.id}/flow`);
     } catch (e) {
       toast.error(formatApiError(e));
-    } finally {
-      setCreating(false);
+      setSubmitting(false);
     }
   };
 
-  const remove = async (id) => {
-    if (!window.confirm("Delete this project? This can't be undone.")) return;
-    try {
-      await api.delete(`/projects/${id}`);
-      setProjects((cur) => cur.filter((p) => p.id !== id));
-      toast.success("Deleted.");
-    } catch (e) {
-      toast.error(formatApiError(e));
-    }
-  };
-
-  // Inline rename state
-  const [renameId, setRenameId] = useState(null);
-  const [renameValue, setRenameValue] = useState("");
-  const renameInputRef = useRef(null);
-
-  const startRename = (p) => {
-    setRenameId(p.id);
-    setRenameValue(p.name);
-    setTimeout(() => renameInputRef.current?.focus(), 50);
-  };
-  const cancelRename = () => {
-    setRenameId(null);
-    setRenameValue("");
-  };
-  const saveRename = async () => {
-    const newName = renameValue.trim();
-    if (!newName) return toast.error("Project name can't be empty.");
-    const id = renameId;
-    if (!id) return;
-    try {
-      const { data } = await api.patch(`/projects/${id}`, { name: newName });
-      setProjects((cur) => cur.map((p) => (p.id === id ? { ...p, name: data.name, updated_at: data.updated_at } : p)));
-      toast.success("Renamed.");
-      cancelRename();
-    } catch (e) {
-      toast.error(formatApiError(e));
-    }
-  };
-
-  const SAMPLE_CARDS = [
-    { key: "fintech-landing", title: "Landing Page", subtitle: "Fintech Startup", meta: "~45 sec demo", projectName: "Sample · Fintech landing" },
-    { key: "checkout-redesign", title: "Checkout Audit", subtitle: "UX Review", meta: "~45 sec demo", projectName: "Sample · Checkout audit" },
-    { key: "coffee-brand", title: "Coffee Brand", subtitle: "Brand Strategy", meta: "~45 sec demo", projectName: "Sample · Coffee brand" },
-  ];
-
-  const launchSample = async (sample) => {
-    try {
-      const { data } = await api.post("/projects", { project_name: sample.projectName });
-      navigate(`/project/${data.id}/flow?sample=${sample.key}`);
-    } catch (e) {
-      toast.error(formatApiError(e));
-    }
+  const applyTemplate = (t) => {
+    setPaste(t.paste);
+    // Nudge the caret into view without stealing scroll if user is browsing.
+    setTimeout(() => inputRef.current?.focus(), 60);
   };
 
   return (
     <div className="min-h-screen" data-testid="dashboard-page">
       <Seo title="Dashboard" path="/app" noindex />
-      <main className="max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14 page-enter">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <span className="section-label"><span className="dot" />Workspace</span>
-            <h1 className="t-hero mt-4">
-              Welcome back{user?.name ? `, ${user.name.split(" ")[0]}` : ""}.
-            </h1>
-            <p className="mt-2 text-[14px] text-[var(--text-2)]">
-              Ready for your next client? Turn a messy brief into a confident decision in under a minute.
-            </p>
-          </div>
-        </div>
-
-        {/* Quick-create row */}
-        <div className="card-brut p-4 sm:p-5 mt-8 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center" data-testid="dashboard-new-row">
-          <input
-            type="text"
-            className="input-line flex-1"
-            placeholder="Name a new project (e.g. Acme rebrand · landing)"
-            value={creatingName}
-            onChange={(e) => setCreatingName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && create()}
-            data-testid="dashboard-new-input"
-          />
-          <button
-            onClick={create}
-            disabled={creating || !creatingName.trim()}
-            className="btn-brut justify-center"
-            data-testid="dashboard-new-submit"
+      <main className="max-w-[1080px] mx-auto px-6 sm:px-8 md:px-10 py-14 md:py-20 page-enter">
+        {/* Hero */}
+        <div className="text-center">
+          <span className="section-label"><span className="dot" />Client Operating System</span>
+          <h1
+            className="mt-6 font-display font-semibold tracking-[-0.03em] leading-[1.05] text-[42px] sm:text-[54px] md:text-[62px]"
+            data-testid="dashboard-hero-headline"
           >
-            {creating ? <Loader2 size={14} className="animate-spin"/> : <Plus size={14} />}
-            New project
-          </button>
+            Turn messy client conversations<br className="hidden sm:block" /> into client-ready projects.
+          </h1>
+          <p className="mt-5 max-w-[640px] mx-auto text-[15px] sm:text-base text-[var(--text-2)] leading-relaxed">
+            Paste an email, WhatsApp chat, meeting notes, or a brief. Bracket automatically generates
+            scope, deliverables, timelines, risks, and documentation — the whole client-ready package.
+          </p>
         </div>
 
-        {/* Projects list */}
-        <div className="mt-10">
-          <div className="flex items-center justify-between">
-            <p className="mono-label">{projects.length} project{projects.length === 1 ? "" : "s"}</p>
-          </div>
-
-          {loading ? (
-            <ul
-              className="mt-6 card-brut overflow-hidden divide-y divide-[var(--hairline)]"
-              data-testid="dashboard-loading-skeleton"
-              aria-busy="true"
-              aria-label="Loading projects"
-            >
-              {[0, 1, 2].map((i) => (
-                <li key={i} className="px-5 sm:px-6 py-5 flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="skeleton-bar h-4 w-1/3 rounded" />
-                    <div className="mt-3 flex items-center gap-2">
-                      <div className="skeleton-bar h-3 w-16 rounded" />
-                      <div className="skeleton-bar h-3 w-20 rounded" />
-                    </div>
-                  </div>
-                  <div className="skeleton-bar h-8 w-24 rounded hidden sm:block" />
-                </li>
-              ))}
-            </ul>
-          ) : projects.length === 0 ? (
-            <div
-              className="mt-6 card-brut px-6 sm:px-10 py-12 sm:py-16 animate-scale-in text-center"
-              data-testid="dashboard-empty"
-            >
-              <div className="flex justify-center">
-                <EmptyStateIllustration size={300} />
+        {/* Hero input — the ONE primary action */}
+        <div className="mt-12 relative" data-testid="dashboard-hero-input-wrap">
+          <div className="hero-input relative">
+            <textarea
+              ref={inputRef}
+              rows={6}
+              value={paste}
+              onChange={(e) => setPaste(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canSubmit) {
+                  e.preventDefault();
+                  structureBrief();
+                }
+              }}
+              placeholder={"Paste your client's message here…\n\nAn email. A WhatsApp thread. Kickoff notes. A Loom transcript. Whatever they sent you — Bracket reads the mess."}
+              className="hero-input-textarea"
+              data-testid="dashboard-hero-paste-input"
+            />
+            <div className="hero-input-footer">
+              <div className="text-xs text-[var(--text-3)] flex items-center gap-3 flex-wrap">
+                <span className="inline-flex items-center gap-1.5">
+                  <ClipboardPaste size={12} /> Paste anything
+                </span>
+                {paste.trim() && (
+                  <span data-testid="dashboard-hero-word-count">
+                    {wordCount} word{wordCount === 1 ? "" : "s"}
+                  </span>
+                )}
               </div>
-              <h2 className="t-h1 mt-8">No bracket created yet</h2>
-              <p className="t-h3 mt-2 text-[var(--text-2)] font-normal">
-                Define your first project clearly, before work begins
-              </p>
-              <p className="text-[13px] text-[var(--text-3)] mt-3">
-                Enter your details to proceed further
-              </p>
               <button
                 type="button"
-                onClick={() => {
-                  document.querySelector('[data-testid="dashboard-new-input"]')?.focus();
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="btn-primary btn-lg mt-8"
-                data-testid="dashboard-empty-start-cta"
+                onClick={structureBrief}
+                disabled={!canSubmit}
+                className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center gap-2 disabled:opacity-40"
+                data-testid="dashboard-hero-structure-btn"
               >
-                Start a new project
+                {submitting ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" /> Setting up…
+                  </>
+                ) : (
+                  <>
+                    Structure this brief <ArrowUp size={13} />
+                  </>
+                )}
               </button>
-
-              {/* Sample project cards — highest-activation lever, one-click into a full demo */}
-              <div className="mt-12" data-testid="sample-cards-wrap">
-                <p className="mono-label text-[var(--text-3)] mb-4">Or explore a sample</p>
-                <div className="grid sm:grid-cols-3 gap-4 text-left">
-                  {SAMPLE_CARDS.map((s) => (
-                    <button
-                      key={s.key}
-                      type="button"
-                      onClick={() => launchSample(s)}
-                      className="sample-card group"
-                      data-testid={`sample-card-${s.key}`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <p className="mono-tag text-[var(--text-3)]">{s.meta}</p>
-                        <ArrowRight size={14} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-transform group-hover:translate-x-0.5" />
-                      </div>
-                      <h3 className="t-h3 mt-6">{s.title}</h3>
-                      <p className="text-[13px] text-[var(--text-2)] mt-1">{s.subtitle}</p>
-                      <p className="mt-6 mono-tag text-[var(--accent)]">Try →</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
-          ) : (
-            <ul className="mt-6 card-brut overflow-hidden divide-y divide-[var(--hairline)] stagger-in" data-testid="dashboard-projects-list">
-              {projects.map((p) => {
-                const sp = STATUS_PILL[p.status] || STATUS_PILL.draft;
-                const ss = SHARE_PILL[p.share_status];
+          </div>
+          <p className="mt-3 text-center text-xs text-[var(--text-3)]">
+            <kbd className="mono-tag px-1.5 py-0.5 rounded border border-[var(--hairline)]">⌘ Enter</kbd> to structure ·
+            <span className="ml-2">Bracket reads the mess so you don&apos;t have to.</span>
+          </p>
+        </div>
+
+        {/* Quick-start briefs */}
+        <div className="mt-14" data-testid="dashboard-quickstart-wrap">
+          <div className="flex items-baseline justify-between mb-4">
+            <p className="mono-label text-[var(--text-3)]">
+              <span className="dot" /> Or start from an example
+            </p>
+            <p className="text-xs text-[var(--text-3)] hidden sm:block">1-click populates the box</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {QUICK_STARTS.map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => applyTemplate(t)}
+                  className="quickstart-card group text-left"
+                  data-testid={`dashboard-quickstart-${t.key}`}
+                >
+                  <Icon size={14} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors" />
+                  <p className="mt-3 text-sm font-medium leading-tight">{t.label}</p>
+                  <p className="mt-1 text-xs text-[var(--text-3)] leading-relaxed">{t.kicker}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* AI output preview — sets expectation of what Bracket produces */}
+        <div className="mt-14" data-testid="dashboard-outputs-wrap">
+          <p className="mono-label text-[var(--text-3)] mb-4">
+            <span className="dot" /> Bracket produces
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            {AI_OUTPUTS.map((o) => {
+              const Icon = o.icon;
+              return (
+                <div key={o.label} className="output-preview-card">
+                  <Icon size={14} className="text-[var(--accent)]" />
+                  <p className="mt-2.5 text-sm font-medium">{o.label}</p>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug">{o.hint}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent projects — only if any exist. Deliberately understated. */}
+        {loading ? (
+          <div
+            className="mt-14 grid sm:grid-cols-2 gap-3"
+            data-testid="dashboard-loading-skeleton"
+            aria-busy="true"
+          >
+            {[0, 1].map((i) => (
+              <div key={i} className="card-brut p-5">
+                <div className="skeleton-bar h-3 w-24 rounded" />
+                <div className="skeleton-bar h-4 w-1/2 rounded mt-3" />
+                <div className="skeleton-bar h-3 w-1/3 rounded mt-3" />
+              </div>
+            ))}
+          </div>
+        ) : projects.length > 0 ? (
+          <div className="mt-14" data-testid="dashboard-recent-wrap">
+            <div className="flex items-baseline justify-between mb-4">
+              <p className="mono-label text-[var(--text-3)]">
+                <span className="dot" /> Recent · {projects.length}
+              </p>
+              <Link
+                to="/app/projects"
+                className="text-xs text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+                data-testid="dashboard-recent-view-all"
+              >
+                View all →
+              </Link>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3" data-testid="dashboard-recent-list">
+              {projects.slice(0, 4).map((p) => {
+                const isLocked = p.status === "locked";
+                const stepPct = Math.round(((p.step || 1) / 5) * 100);
                 return (
-                  <li key={p.id} className="project-row" data-testid={`dashboard-row-${p.id}`}>
-                    <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                      {renameId === p.id ? (
-                        <div className="flex-1 min-w-0 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                          <input
-                            ref={renameInputRef}
-                            type="text"
-                            className="input-line flex-1"
-                            value={renameValue}
-                            onChange={(e) => setRenameValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveRename();
-                              if (e.key === "Escape") cancelRename();
-                            }}
-                            maxLength={120}
-                            data-testid={`dashboard-rename-input-${p.id}`}
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={saveRename}
-                              className="btn-brut"
-                              data-testid={`dashboard-rename-save-${p.id}`}
-                            >
-                              <Check size={12} /> Save
-                            </button>
-                            <button
-                              onClick={cancelRename}
-                              className="btn-ghost"
-                              data-testid={`dashboard-rename-cancel-${p.id}`}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <Link to={`/project/${p.id}`} className="flex-1 min-w-0 group">
-                          <p className="project-row-title">
-                            {p.name}
-                          </p>
-                          <p className="project-row-meta">
-                            Step {p.step}/5 · updated {new Date(p.updated_at).toLocaleDateString()}
-                          </p>
-                        </Link>
-                      )}
-                      {renameId !== p.id && (
-                      <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        <span className={sp.className}>{sp.label}</span>
-                        {ss && <span className={ss.className}>{ss.label}</span>}
-                        {p.status === "locked" && (
-                          <Link
-                            to={`/project/${p.id}/document`}
-                            className="icon-tile inline-flex items-center gap-2 px-3 w-auto"
-                            data-testid={`dashboard-doc-${p.id}`}
-                            title="Open document"
-                          >
-                            <FileText size={13} /> <span className="text-xs">Doc</span>
-                          </Link>
-                        )}
-                        <button
-                          onClick={() => startRename(p)}
-                          className="icon-tile"
-                          data-testid={`dashboard-rename-${p.id}`}
-                          aria-label="Rename project"
-                          title="Rename"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <button
-                          onClick={() => remove(p.id)}
-                          className="icon-tile is-danger"
-                          data-testid={`dashboard-delete-${p.id}`}
-                          aria-label="Delete project"
-                          title="Delete"
-                        >
-                          <XIcon size={13} />
-                        </button>
-                      </div>
-                      )}
+                  <Link
+                    key={p.id}
+                    to={`/project/${p.id}`}
+                    className="recent-card group"
+                    data-testid={`dashboard-recent-${p.id}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-medium text-[15px] truncate flex-1">{p.name}</p>
+                      <span
+                        className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[10px]"
+                        style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
+                      >
+                        {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
+                      </span>
                     </div>
-                  </li>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-[var(--text-3)]">
+                      <span>Step {p.step || 1} / 5</span>
+                      <span>·</span>
+                      <span>{formatDate(p.updated_at)}</span>
+                    </div>
+                    <div className="mt-3 h-[3px] bg-[var(--surface-2)] rounded-full overflow-hidden">
+                      <div
+                        className="h-full transition-all"
+                        style={{ width: `${stepPct}%`, backgroundColor: isLocked ? "#2E5BFF" : "var(--text-2)" }}
+                      />
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-xs">
+                      <span className="text-[var(--text-3)]">
+                        {isLocked ? (
+                          <span className="inline-flex items-center gap-1"><Lock size={11}/> Locked</span>
+                        ) : p.artifacts ? (
+                          <span className="inline-flex items-center gap-1"><FileText size={11}/> Document ready</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1"><Sparkles size={11}/> In progress</span>
+                        )}
+                      </span>
+                      <span className="text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1">
+                        Resume <ArrowRight size={11}/>
+                      </span>
+                    </div>
+                  </Link>
                 );
               })}
-            </ul>
-          )}
-        </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Signed-in-as footer */}
+        <p className="mt-16 text-center text-xs text-[var(--text-3)]">
+          Signed in as {user?.name ? `${user.name.split(" ")[0]}` : (user?.email || "guest")}
+        </p>
       </main>
     </div>
   );
+}
+
+// ---- helpers ----
+
+// Derive a short project name from the first ~5 meaningful words of the paste.
+// Falls back to a timestamped default. Keeps the sidebar list readable.
+function deriveProjectName(paste) {
+  const cleaned = paste
+    .replace(/^(hey|hi|hello|dear)[,!.\s]+/i, "")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
+  const first = cleaned.split(/\s+/).slice(0, 6).join(" ");
+  if (first.length >= 8) {
+    // Trim to a natural word boundary, cap at 60 chars.
+    return (first.length > 60 ? first.slice(0, 57).trimEnd() + "…" : first);
+  }
+  const d = new Date();
+  return `Client brief · ${d.toLocaleString("en", { month: "short", day: "numeric" })}`;
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now - d;
+    const min = Math.floor(diffMs / 60000);
+    if (min < 1) return "just now";
+    if (min < 60) return `${min}m ago`;
+    const hrs = Math.floor(min / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return d.toLocaleDateString("en", { month: "short", day: "numeric" });
+  } catch {
+    return "";
+  }
 }

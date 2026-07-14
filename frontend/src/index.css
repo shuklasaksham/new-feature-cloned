@@ -811,6 +811,94 @@ body::before {
 }
 .sample-card:active { transform: translateY(-1px); }
 
+/* --- Dashboard hero (AI-first paste-anything workspace) --- */
+
+/* Big centerpiece paste box. Focus ring glows subtly to reinforce "this is
+   where you start". Bottom bar keeps CTA in view without a separate section. */
+.hero-input {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  padding: 6px;
+  transition: border-color var(--d-fast) var(--ease-out), box-shadow var(--d-med) var(--ease-out);
+  box-shadow: 0 20px 60px -30px rgba(46, 91, 255, 0.20);
+}
+.hero-input:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 20px 80px -30px rgba(46, 91, 255, 0.55), 0 0 0 4px rgba(46, 91, 255, 0.08);
+}
+.hero-input-textarea {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  padding: 18px 22px 12px;
+  font-family: "Poppins", sans-serif;
+  font-size: 15px; line-height: 1.65;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  min-height: 160px;
+}
+.hero-input-textarea::placeholder { color: var(--text-3); }
+.hero-input-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px 10px 18px;
+  border-top: 1px solid var(--hairline);
+  background: var(--surface-2);
+  border-radius: 0 0 12px 12px;
+}
+
+/* Quick-start template cards — small, quiet, one-click to populate. */
+.quickstart-card {
+  display: block; width: 100%;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color var(--d-fast) var(--ease-out),
+              transform var(--d-med) var(--ease-out-spring),
+              background var(--d-fast) var(--ease-out);
+}
+.quickstart-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  background: var(--surface-2);
+}
+.quickstart-card:active { transform: translateY(0); }
+
+/* AI-output preview tiles — subtle, communicate "here's what you'll get". */
+.output-preview-card {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  transition: border-color var(--d-fast) var(--ease-out), background var(--d-fast) var(--ease-out);
+}
+.output-preview-card:hover {
+  border-color: var(--hairline-hover);
+  background: var(--surface-2);
+}
+
+/* Recent projects — quieter than the hero. */
+.recent-card {
+  display: block;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--d-fast) var(--ease-out),
+              transform var(--d-med) var(--ease-out-spring),
+              background var(--d-fast) var(--ease-out);
+}
+.recent-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  background: var(--surface-2);
+}
+
 /* AI-suggestion chip pop-in — each chip fades + scales up on its own
    animation-delay, creating a satisfying sequential reveal after AI completes. */
 .chips-pop > button {
