@@ -408,8 +408,9 @@ function Showcase() {
   }, []);
 
   // Pointer drag-to-scroll — matches touch-drag UX for mouse users.
-  // Adds momentum/inertia after release so the strip decelerates naturally
-  // instead of stopping dead on pointerup.
+  // Uses a raf-driven lerp during drag and momentum decay on release for
+  // premium, silky feel. Direct-assign scrollLeft = target would work but
+  // feels rigid; interpolating gives a subtle trailing/glide.
   useEffect(() => {
     const strip = stripRef.current;
     if (!strip) return;
@@ -417,32 +418,47 @@ function Showcase() {
     let startX = 0;
     let lastX = 0;
     let lastT = 0;
-    let velocity = 0;    // px per frame @ 60fps
+    let velocity = 0;      // px per 16.7ms (60fps)
+    let targetScroll = strip.scrollLeft;
     let startScroll = 0;
     let moved = false;
     let raf = null;
 
-    const cancelInertia = () => {
+    const cancelLoop = () => {
       if (raf) {
         cancelAnimationFrame(raf);
         raf = null;
       }
     };
-    const applyInertia = () => {
-      if (Math.abs(velocity) < 0.3) {
-        raf = null;
-        velocity = 0;
-        return;
+    const loop = () => {
+      const cur = strip.scrollLeft;
+      if (isDown) {
+        // Ease toward pointer target — 0.22 gives a slight glide without
+        // feeling laggy. Snap when we're within a subpixel.
+        const diff = targetScroll - cur;
+        if (Math.abs(diff) < 0.4) {
+          strip.scrollLeft = targetScroll;
+        } else {
+          strip.scrollLeft = cur + diff * 0.22;
+        }
+        raf = requestAnimationFrame(loop);
+      } else {
+        // Release phase — apply momentum with friction.
+        if (Math.abs(velocity) < 0.25) {
+          raf = null;
+          velocity = 0;
+          return;
+        }
+        strip.scrollLeft = cur - velocity;
+        velocity *= 0.94;
+        raf = requestAnimationFrame(loop);
       }
-      strip.scrollLeft -= velocity;
-      velocity *= 0.93; // friction — feels closest to native touch scroll
-      raf = requestAnimationFrame(applyInertia);
     };
 
     const onPointerDown = (e) => {
       // Ignore drags starting on the arrow buttons.
       if (e.target.closest(".showcase-nav-btn")) return;
-      cancelInertia();
+      cancelLoop();
       isDown = true;
       moved = false;
       startX = e.clientX;
@@ -450,8 +466,10 @@ function Showcase() {
       lastT = performance.now();
       velocity = 0;
       startScroll = strip.scrollLeft;
+      targetScroll = strip.scrollLeft;
       strip.classList.add("is-dragging");
       strip.setPointerCapture?.(e.pointerId);
+      raf = requestAnimationFrame(loop);
     };
     const onPointerMove = (e) => {
       if (!isDown) return;
@@ -464,16 +482,17 @@ function Showcase() {
       velocity = ((e.clientX - lastX) / dt) * 16.7;
       lastX = e.clientX;
       lastT = now;
-      strip.scrollLeft = startScroll - dx;
+      // Update the ease target — the raf loop will glide toward this.
+      targetScroll = startScroll - dx;
     };
     const endDrag = (e) => {
       if (!isDown) return;
       isDown = false;
       strip.classList.remove("is-dragging");
       strip.releasePointerCapture?.(e.pointerId);
-      // Kick off inertia if the flick was noticeable.
-      if (Math.abs(velocity) > 0.5) {
-        raf = requestAnimationFrame(applyInertia);
+      // Loop is already running — it'll switch to momentum mode next tick.
+      if (!raf && Math.abs(velocity) > 0.5) {
+        raf = requestAnimationFrame(loop);
       }
     };
     // Suppress accidental link clicks that happen right after a drag.
@@ -484,9 +503,9 @@ function Showcase() {
         moved = false;
       }
     };
-    // A wheel event should also cancel any lingering inertia so the user
-    // is in control immediately when they take over.
-    const onWheel = () => cancelInertia();
+    // A wheel event should cancel any lingering inertia so the user is
+    // in control immediately when they take over.
+    const onWheel = () => cancelLoop();
 
     strip.addEventListener("pointerdown", onPointerDown);
     strip.addEventListener("pointermove", onPointerMove);
@@ -496,7 +515,7 @@ function Showcase() {
     strip.addEventListener("click", onClickCapture, true);
     strip.addEventListener("wheel", onWheel, { passive: true });
     return () => {
-      cancelInertia();
+      cancelLoop();
       strip.removeEventListener("pointerdown", onPointerDown);
       strip.removeEventListener("pointermove", onPointerMove);
       strip.removeEventListener("pointerup", endDrag);
@@ -535,7 +554,7 @@ function Showcase() {
       <div className="showcase-carousel-wrap mt-14">
         <div
           ref={stripRef}
-          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-proximity pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
+          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
           data-testid="showcase-strip"
         >
           {SHOWCASE.map((c) => (

@@ -1221,6 +1221,10 @@ body::before {
    fade to the page background so consecutive sections dissolve into each
    other instead of showing a hard edge. Applied via `.section-blend` on
    any <section> on the landing / marketing pages.
+
+   The fade is deliberately TALL (240px) with the first ~40% held at fully
+   opaque var(--bg) so any inner section decoration (radial glow, grid,
+   colored wash) is cleanly masked before it can leak into the neighbour.
    ----------------------------------------------------------------------- */
 .section-blend { position: relative; }
 .section-blend::before,
@@ -1229,22 +1233,36 @@ body::before {
   position: absolute;
   left: 0;
   right: 0;
-  height: 140px;
+  height: 240px;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 .section-blend::before {
   top: 0;
-  background: linear-gradient(to bottom, var(--bg) 0%, rgba(8, 9, 10, 0.6) 40%, transparent 100%);
+  background: linear-gradient(
+    to bottom,
+    var(--bg) 0%,
+    var(--bg) 35%,
+    rgba(8, 9, 10, 0.85) 55%,
+    rgba(8, 9, 10, 0.45) 75%,
+    transparent 100%
+  );
 }
 .section-blend::after {
   bottom: 0;
-  background: linear-gradient(to top, var(--bg) 0%, rgba(8, 9, 10, 0.6) 40%, transparent 100%);
+  background: linear-gradient(
+    to top,
+    var(--bg) 0%,
+    var(--bg) 35%,
+    rgba(8, 9, 10, 0.85) 55%,
+    rgba(8, 9, 10, 0.45) 75%,
+    transparent 100%
+  );
 }
-/* Narrower fade on very short sections so we don't wash out content. */
+/* Narrower fade on very short viewports so we don't wash out content. */
 @media (max-width: 640px) {
   .section-blend::before,
-  .section-blend::after { height: 96px; }
+  .section-blend::after { height: 160px; }
 }
 
 /* Reduce motion */
