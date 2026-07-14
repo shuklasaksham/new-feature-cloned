@@ -1184,12 +1184,19 @@ body::before {
 }
 
 /* Hero ambient — cinematic blue-signal radial wash + faint dot grid.
-   Matches Landing's hero gradient scrim, cascaded to every marketing page. */
+   Matches Landing's hero gradient scrim, cascaded to every marketing page.
+   Extends 300px BELOW the hero (via `bottom: -300px`) so the blue wash
+   naturally bleeds into the neighbouring section instead of showing a
+   hard edge where the hero ends. `overflow: visible` lets the bloom
+   bleed vertically; the parent section still clips horizontally. */
 .hero-ambient {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: -300px;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
   z-index: 0;
 }
 .hero-ambient::before {
@@ -1214,55 +1221,6 @@ body::before {
 @keyframes heroPulse {
   from { opacity: 0.65; transform: scale(1); }
   to   { opacity: 1;    transform: scale(1.06); }
-}
-
-/* -----------------------------------------------------------------------
-   Section edge-blend — every landing section gets a top + bottom vertical
-   fade to the page background so consecutive sections dissolve into each
-   other instead of showing a hard edge. Applied via `.section-blend` on
-   any <section> on the landing / marketing pages.
-
-   The fade is deliberately TALL (240px) with the first ~40% held at fully
-   opaque var(--bg) so any inner section decoration (radial glow, grid,
-   colored wash) is cleanly masked before it can leak into the neighbour.
-   ----------------------------------------------------------------------- */
-.section-blend { position: relative; }
-.section-blend::before,
-.section-blend::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 240px;
-  pointer-events: none;
-  z-index: 3;
-}
-.section-blend::before {
-  top: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--bg) 0%,
-    var(--bg) 35%,
-    rgba(8, 9, 10, 0.85) 55%,
-    rgba(8, 9, 10, 0.45) 75%,
-    transparent 100%
-  );
-}
-.section-blend::after {
-  bottom: 0;
-  background: linear-gradient(
-    to top,
-    var(--bg) 0%,
-    var(--bg) 35%,
-    rgba(8, 9, 10, 0.85) 55%,
-    rgba(8, 9, 10, 0.45) 75%,
-    transparent 100%
-  );
-}
-/* Narrower fade on very short viewports so we don't wash out content. */
-@media (max-width: 640px) {
-  .section-blend::before,
-  .section-blend::after { height: 160px; }
 }
 
 /* Reduce motion */

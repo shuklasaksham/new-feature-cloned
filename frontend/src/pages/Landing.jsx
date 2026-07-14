@@ -218,7 +218,7 @@ function Hero() {
 
   return (
     <section
-      className="relative overflow-hidden isolate min-h-[92vh] flex items-center section-blend"
+      className="relative overflow-x-clip isolate min-h-[92vh] flex items-center"
       data-testid="landing-hero"
     >
       {/* Cinematic dark backdrop — same `.hero-ambient` treatment used on
@@ -543,7 +543,7 @@ function Showcase() {
   const canNext = activeIndex < SHOWCASE.length - 1;
 
   return (
-    <section className="relative py-24 md:py-32 section-blend" data-testid="landing-showcase">
+    <section className="relative py-24 md:py-32" data-testid="landing-showcase">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="THE FLOW"
@@ -714,7 +714,7 @@ const BENTO_ICON_MAP = {
 
 function Bento() {
   return (
-    <section className="relative py-24 md:py-32 section-blend" data-testid="landing-bento">
+    <section className="relative py-24 md:py-32" data-testid="landing-bento">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="WHAT'S INSIDE"
@@ -799,7 +799,7 @@ const STORY = [
 
 function Story() {
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden isolate section-blend" data-testid="landing-story" id="story">
+    <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-story" id="story">
       {/* Soft signal-blue wash bottom-left, matches the cinematic gradient
          language on the rest of the page. */}
       <div
@@ -896,7 +896,7 @@ function Testimonials() {
   // Duplicate the array so the CSS marquee (translateX -50%) loops seamlessly.
   const track = [...TESTIMONIALS, ...TESTIMONIALS];
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden isolate section-blend" data-testid="landing-testimonials" id="testimonials">
+    <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-testimonials" id="testimonials">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[420px] w-[900px] blur-[120px] opacity-[0.12] -z-10"
@@ -962,7 +962,7 @@ function PricingSection() {
   const priceFor = (id) => cur[id];
 
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden isolate section-blend" data-testid="landing-pricing" id="pricing">
+    <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-pricing" id="pricing">
       {/* Amber wash behind middle card — sits on the seamless page bg. */}
       <div
         aria-hidden="true"
@@ -1086,7 +1086,7 @@ function PricingCard({ tier, price, symbol, popular }) {
 // ─── SECTION 5: FINAL CTA / FOOTER BAND ──────────────────────────────────
 function FinalCTA() {
   return (
-    <section className="relative py-32 md:py-40 overflow-hidden isolate section-blend" data-testid="landing-final-cta">
+    <section className="relative py-32 md:py-40 overflow-x-clip isolate" data-testid="landing-final-cta">
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 opacity-40"
