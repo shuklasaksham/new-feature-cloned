@@ -4,9 +4,9 @@ import React from "react";
  * BracketMark — official Bracket brand mark.
  *
  * Uses `/logo-diamond.png` — the blue diamond icon (no text).
- * The source PNG has ~40% whitespace padding on each side, so we render
- * inside a fixed-size wrapper and scale the img up so the actual diamond
- * fills the reserved box.
+ * The source PNG has whitespace padding on the sides; we let the img
+ * naturally fit its container with a modest upscale to fill the box
+ * without clipping the diamond corners.
  *
  * `label` and `variant` are kept for API compatibility (unused now).
  */
@@ -17,30 +17,23 @@ export default function BracketMark({
   className = "",
 }) {
   void label; void variant;
+  // Use ~1.55× the requested size so the visible diamond matches the
+  // caller's intent (source PNG has ~35% empty padding around the mark).
+  const box = Math.round(size * 1.55);
   return (
-    <span
+    <img
+      src="/logo-diamond.png"
+      alt="Bracket"
+      width={box}
+      height={box}
       className={className}
       style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: size,
-        height: size,
+        display: "block",
         flexShrink: 0,
-        overflow: "hidden",
+        objectFit: "contain",
+        marginLeft: `-${Math.round((box - size) / 2)}px`,
+        marginRight: `-${Math.round((box - size) / 2)}px`,
       }}
-    >
-      <img
-        src="/logo-diamond.png"
-        alt="Bracket"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "contain",
-          transform: "scale(1.75)",
-          display: "block",
-        }}
-      />
-    </span>
+    />
   );
 }

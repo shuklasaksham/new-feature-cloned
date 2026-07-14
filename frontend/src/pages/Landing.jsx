@@ -900,8 +900,7 @@ function PricingSection() {
 
   return (
     <section className="relative py-28 md:py-36 overflow-hidden isolate" data-testid="landing-pricing" id="pricing">
-      {/* Near-black backdrop with amber wash behind middle card */}
-      <div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, #050506 0%, #08090A 100%)" }} />
+      {/* Amber wash behind middle card — sits on the seamless page bg. */}
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-1/3 mx-auto h-[600px] w-[900px] blur-[120px] opacity-[0.22] -z-10"

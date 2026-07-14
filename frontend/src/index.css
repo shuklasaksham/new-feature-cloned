@@ -2005,19 +2005,19 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   Landing page — seamless full-page background gradient. One continuous
-   dark wash from top to bottom so scrolling never feels like a section
-   change. Per-section radial/orb effects sit on top of this base.
+   Landing page — seamless full-page background. Uses `background-attachment:
+   fixed` so the gradient stays glued to the viewport during scroll — the
+   background never "changes" as sections come and go, which was creating
+   visible horizontal seams between sections.
    ═══════════════════════════════════════════════════════════════════════ */
 .landing-page-bg {
-  background: linear-gradient(
-    180deg,
-    #08090A 0%,
-    #07080A 22%,
-    #06070A 46%,
-    #060709 70%,
-    #050506 100%
-  );
+  background-color: #08090A;
+  background-image:
+    radial-gradient(1200px 800px at 15% 8%, rgba(94, 106, 210, 0.09), transparent 60%),
+    radial-gradient(900px 600px at 90% 40%, rgba(124, 213, 255, 0.05), transparent 65%),
+    radial-gradient(1000px 700px at 30% 90%, rgba(94, 106, 210, 0.06), transparent 65%);
+  background-attachment: fixed, fixed, fixed;
+  background-repeat: no-repeat;
 }
 
 /* Carousel — hide native scrollbar but keep scroll interactivity */
@@ -3015,18 +3015,17 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 .page-loader-diamond {
   display: block;
   filter: drop-shadow(0 0 24px rgba(94, 106, 210, 0.55));
-  transform: scale(1.7);
   animation: pageLoaderDiamondIn 720ms cubic-bezier(.16, 1, .3, 1),
              pageLoaderDiamondFloat 2.4s cubic-bezier(.4, 0, .6, 1) 720ms infinite alternate;
 }
 
 @keyframes pageLoaderDiamondIn {
-  from { opacity: 0; transform: scale(1.2) rotate(-8deg); }
-  to   { opacity: 1; transform: scale(1.7) rotate(0); }
+  from { opacity: 0; transform: scale(0.85) rotate(-8deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0); }
 }
 @keyframes pageLoaderDiamondFloat {
-  from { transform: translateY(-2px) scale(1.7); }
-  to   { transform: translateY(2px) scale(1.75); }
+  from { transform: translateY(-2px) scale(1); }
+  to   { transform: translateY(2px) scale(1.03); }
 }
 
 /* Signal-blue underline that grows from centre after the braces land. */

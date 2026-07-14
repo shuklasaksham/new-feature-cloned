@@ -39,8 +39,8 @@ export default function PageLoader() {
         <img
           src="/logo-diamond.png"
           alt=""
-          width={80}
-          height={80}
+          width={140}
+          height={140}
           className="page-loader-diamond"
           aria-hidden="true"
         />
