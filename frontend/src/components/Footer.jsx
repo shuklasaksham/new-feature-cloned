@@ -15,7 +15,7 @@ export default function Footer() {
             <BracketMark size={24} label={true} />
           </Link>
           <p className="mt-4 max-w-sm text-[13px] leading-[1.65] text-[var(--text-2)]">
-            A senior creative peer&apos;s judgement, installed between your input and your output. Decide what to do — not just how to do it.
+            Bracket is the AI decision workspace for client projects. From messy conversations to client-ready deliverables — in minutes.
           </p>
           <p className="mt-5 text-[11px] font-mono tracking-[0.08em] uppercase text-[var(--text-3)]">v 1.0 · Designed to decide</p>
 
