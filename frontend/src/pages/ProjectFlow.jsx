@@ -44,7 +44,6 @@ export default function ProjectFlow() {
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(1);
   const dirtyRef = useRef(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -111,19 +110,6 @@ export default function ProjectFlow() {
     }
   };
 
-  // Logo click: take user to dashboard, but warn if they have unsaved input
-  // in the current step. We track this via the `dirty` ref each step writes to.
-  const handleLogoClick = (e) => {
-    e.preventDefault();
-    if (dirtyRef.current) {
-      const ok = window.confirm(
-        "You may have unsaved input in this step. Generate the AI output before leaving, or it'll be lost. Leave anyway?",
-      );
-      if (!ok) return;
-    }
-    navigate("/app");
-  };
-
   return (
     <div className="min-h-screen relative" data-testid="project-flow-page">
       {/* Cinematic dashboard backdrop — unified with /app so post-login pages share the same visual language. */}
@@ -134,26 +120,25 @@ export default function ProjectFlow() {
         style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
       />
       <div className="flow-root">
-      <header className="flow-header sticky top-0 z-30">
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
-            <a href="/app" onClick={handleLogoClick} className="shrink-0 cursor-pointer" data-testid="flow-logo-link" aria-label="Bracket">
-              <img src="/logo-icon1.png" alt="" width={20} height={24} style={{ display: "block" }} />
-            </a>
-            <span className="flow-header-divider" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <p className="mono-tag text-muted text-[10px]">PROJECT</p>
-              <p
-                className="font-semibold text-[14px] tracking-[-0.012em] leading-tight truncate mt-0.5"
-                data-testid="flow-project-name"
-              >
-                {project?.name}
-              </p>
-            </div>
+      <main
+        className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-10 pt-8 md:pt-10 pb-6 md:pb-8"
+        key={currentStep}
+      >
+        {/* Page header — was previously a sticky top nav; now lives inline with
+            the flow so the sidebar is the only chrome on screen. */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <p className="mono-tag text-muted text-[10px]">PROJECT</p>
+            <h1
+              className="mt-1 font-display font-semibold tracking-[-0.02em] leading-[1.15] text-[22px] sm:text-[26px] text-[var(--text)] truncate"
+              data-testid="flow-project-name"
+            >
+              {project?.name}
+            </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {isLocked && (
-              <span className="status-pill status-pill--active hidden sm:inline-flex">
+              <span className="status-pill status-pill--active hidden sm:inline-flex" data-testid="flow-locked-pill">
                 <Lock size={11} className="-ml-0.5" /> Locked
               </span>
             )}
@@ -188,7 +173,9 @@ export default function ProjectFlow() {
             </Link>
           </div>
         </div>
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-10 pb-3 pt-1">
+
+        {/* Journey pipeline */}
+        <div className="mt-6">
           <p className="mono-tag text-muted mb-2 hidden sm:block text-[10px]" data-testid="milestone-tracker-label">
             YOUR JOURNEY
           </p>
@@ -225,12 +212,8 @@ export default function ProjectFlow() {
             })}
           </div>
         </div>
-      </header>
 
-      <main
-        className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-8 py-6 md:py-8"
-        key={currentStep}
-      >
+        <div className="mt-8 md:mt-10">
         {currentStep === 1 && (
           <Step1 project={project} setProject={setProject} dirtyRef={dirtyRef} onDone={() => setCurrentStep(2)} />
         )}
@@ -270,6 +253,7 @@ export default function ProjectFlow() {
             projectId={project.id}
           />
         )}
+        </div>
       </main>
       </div>
     </div>

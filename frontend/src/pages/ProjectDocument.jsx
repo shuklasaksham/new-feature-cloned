@@ -127,9 +127,33 @@ export default function ProjectDocument() {
         style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
       />
 
-      <DocHeader project={project} />
+      <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-6 md:py-8">
+        {/* Inline page header — replaces the sticky top nav so the left sidebar
+            is the only chrome on screen. */}
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-6 md:mb-8">
+          <div className="min-w-0 flex-1">
+            <p className="mono-tag text-muted text-[10px]">DOCUMENT</p>
+            <h1
+              className="mt-1 font-display font-semibold tracking-[-0.02em] leading-[1.15] text-[22px] sm:text-[26px] text-[var(--text)] truncate"
+              data-testid="doc-project-name"
+            >
+              {project.name}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              to={`/project/${project.id}`}
+              className="flow-header-action"
+              data-testid="doc-header-flow-link"
+              title="Back to flow"
+              aria-label="Back to flow"
+            >
+              <ArrowLeft size={12} /> <span className="hidden sm:inline">Back to flow</span>
+            </Link>
+          </div>
+        </div>
 
-      <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-6 md:py-8 grid lg:grid-cols-12 gap-6 md:gap-8">
+        <div className="grid lg:grid-cols-12 gap-6 md:gap-8">
         {/* DOCUMENT BODY — glass card matching dashboard/steps cards. */}
         <article className="lg:col-span-8 doc-card">
           <div className="doc-container">
@@ -321,38 +345,13 @@ export default function ProjectDocument() {
             </div>
           </div>
         </aside>
+        </div>
       </div>
     </div>
   );
 }
 
 // ---- Layout helpers ----
-function DocHeader({ project }) {
-  return (
-    <header className="flow-header sticky top-0 z-30">
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-        <Link to="/app" className="shrink-0 flex items-center gap-3" data-testid="doc-logo-link" aria-label="Bracket">
-          <img src="/logo-icon1.png" alt="" width={20} height={24} style={{ display: "block" }} />
-          <span className="flow-header-divider" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="mono-tag text-muted text-[10px]">DOCUMENT</p>
-            <p className="font-semibold text-[13px] tracking-[-0.012em] leading-tight truncate mt-0.5 max-w-[320px]">
-              {project.name}
-            </p>
-          </div>
-        </Link>
-        <Link
-          to={`/project/${project.id}`}
-          className="flow-header-action"
-          data-testid="doc-header-flow-link"
-        >
-          ← Back to flow
-        </Link>
-      </div>
-    </header>
-  );
-}
-
 function DocDivider() {
   return <div className="my-6 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />;
 }
