@@ -501,3 +501,8 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Section edge-blend** (`index.css` `.section-blend`): Every landing `<section>` gets a matching `linear-gradient(var(--bg) → transparent)` fade at top + bottom (140px desktop / 96px mobile). No hard boundaries between sections.
   - **`{ }` → `< >`**: All decorative mono labels swapped across ClientReview, ClientReviewModal, ProjectDocument, ProjectOverview, ProjectFlow, ClaimProjects, AdminLogin, Footer, and the bracket loader `<...>`.
 
+- 2026-07-14 — **Iteration 41 — Modal top-cut + dashboard dead-scroll (P0 regression fix)**:
+  - **Modal top-cut** (`index.css` `.review-modal-overlay`): Root cause was `align-items: center` on the flex overlay clipping the panel's top when the modal was taller than the viewport (browsers won't let you scroll up to see the pushed-out portion). Fix: `align-items: safe center` + `margin: auto` on `.review-modal-panel`, and swapped `max-height: calc(100vh - 48px)` → `100dvh` for stable sizing on mobile browsers with collapsing address bars. Verified at 1440×900 and 1366×768.
+  - **Dashboard / Overview dead-scroll** (`index.css` `.dashboard-root`): `.hero-ambient::before` is a 1400px-tall absolute gradient inside `.hero-ambient` (`overflow: visible`) which extended past `.dashboard-root`, pushing `.app-shell-main`'s scroll height beyond the content. Swapped `overflow-x: clip` → `overflow: clip` on `.dashboard-root`. Both axes clipped, no scroll container created, internal scroll still works. `main_scrollHeight == main_clientHeight` after fix.
+
+
