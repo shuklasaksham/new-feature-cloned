@@ -3,29 +3,23 @@ import React from "react";
 /**
  * BracketMark — official Bracket brand mark.
  *
- * • `label={false}` (default) → `/logo-icon1.png` — icon-only `{ }` bracket
- *   shape (145×179). Used in collapsed sidebar, ProjectFlow header, etc.
- * • `label={true}`            → `/logo-mark1.png` — full "BRA{ }KET"
- *   wordmark (688×179). Used in top navbars, footers, expanded sidebar.
- *
- * `variant` is kept for API compatibility but has no visual effect.
+ * Uses `/logo-diamond.png` — the blue diamond icon without any text.
+ * `label` and `variant` props are kept for API compatibility but the
+ * mark is always the same square glyph now (no wordmark variant).
  */
 export default function BracketMark({
   size = 24,
   label = false,
-  // eslint-disable-next-line no-unused-vars
   variant = "chalk",
   className = "",
 }) {
-  // Both PNGs are 179px tall; widths differ (icon 145, wordmark 688).
-  const src = label ? "/logo-mark1.png" : "/logo-icon1.png";
-  const aspect = label ? 688 / 179 : 145 / 179;
-  const width = Math.round(size * aspect);
+  // label + variant kept for API compatibility (unused).
+  void label; void variant;
   return (
     <img
-      src={src}
+      src="/logo-diamond.png"
       alt="Bracket"
-      width={width}
+      width={size}
       height={size}
       style={{ display: "block", flexShrink: 0, objectFit: "contain" }}
       className={className}

@@ -3009,33 +3009,23 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 
 .page-loader-mark {
   position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
 }
 
-.page-loader-svg {
+.page-loader-diamond {
   display: block;
-  overflow: visible;
-  filter: drop-shadow(0 0 14px rgba(94, 106, 210, 0.55));
+  filter: drop-shadow(0 0 24px rgba(94, 106, 210, 0.55));
+  animation: pageLoaderDiamondIn 720ms cubic-bezier(.16, 1, .3, 1),
+             pageLoaderDiamondFloat 2.4s cubic-bezier(.4, 0, .6, 1) 720ms infinite alternate;
 }
 
-/* Each brace is a stroked SVG path. We hide it with stroke-dashoffset
-   equal to the path length, then animate it to 0 to reveal the drawing. */
-.page-loader-brace {
-  fill: none;
-  stroke: #F7F7F8;
-  stroke-width: 3.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 260;
-  stroke-dashoffset: 260;
-  animation: pageLoaderDraw 900ms cubic-bezier(.65, 0, .35, 1) forwards;
+@keyframes pageLoaderDiamondIn {
+  from { opacity: 0; transform: scale(0.7) rotate(-8deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0); }
 }
-.page-loader-brace--left  { animation-delay: 120ms; }
-.page-loader-brace--right { animation-delay: 240ms; }
-
-@keyframes pageLoaderDraw {
-  from { stroke-dashoffset: 260; }
-  to   { stroke-dashoffset: 0;   }
+@keyframes pageLoaderDiamondFloat {
+  from { transform: translateY(-2px) scale(1); }
+  to   { transform: translateY(2px) scale(1.03); }
 }
 
 /* Signal-blue underline that grows from centre after the braces land. */
@@ -3058,11 +3048,10 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-loader-brace,
+  .page-loader-diamond,
   .page-loader-underline,
   .page-loader-halo {
     animation: none;
-    stroke-dashoffset: 0;
     transform: none;
     opacity: 1;
   }

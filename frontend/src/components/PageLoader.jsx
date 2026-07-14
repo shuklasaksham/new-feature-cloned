@@ -36,26 +36,16 @@ export default function PageLoader() {
       <div className="page-loader-halo" aria-hidden="true" />
 
       <div className="page-loader-mark">
-        <svg
-          viewBox="0 0 84 84"
-          width="84"
-          height="84"
-          className="page-loader-svg"
+        <img
+          src="/logo-diamond.png"
+          alt=""
+          width={80}
+          height={80}
+          className="page-loader-diamond"
           aria-hidden="true"
-        >
-          {/* Left brace { — hand-drawn typographic curl */}
-          <path
-            className="page-loader-brace page-loader-brace--left"
-            d="M 34 14 C 24 14, 20 18, 20 26 L 20 36 C 20 40, 16 42, 10 42 C 16 42, 20 44, 20 48 L 20 58 C 20 66, 24 70, 34 70"
-          />
-          {/* Right brace } — mirror curl */}
-          <path
-            className="page-loader-brace page-loader-brace--right"
-            d="M 50 14 C 60 14, 64 18, 64 26 L 64 36 C 64 40, 68 42, 74 42 C 68 42, 64 44, 64 48 L 64 58 C 64 66, 60 70, 50 70"
-          />
-        </svg>
+        />
 
-        {/* Signal-blue underline that grows from centre once the braces land. */}
+        {/* Signal-blue underline that grows from centre once the mark lands. */}
         <span className="page-loader-underline" aria-hidden="true" />
       </div>
     </div>
