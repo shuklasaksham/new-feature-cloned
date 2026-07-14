@@ -69,6 +69,12 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-02-14 — **Visual polish batch (CTA + backgrounds + navbar)**:
+  - Primary CTA color changed globally to **white pill** (`#FFFFFF` bg, `#08090A` text). Affects `.btn-primary`, `.btn-brut`, `.clay-signal`, `.cinema-cta-pill`, `.landing-cta-primary`. Consistent Apple-style white hero CTA throughout marketing + app.
+  - **Go Pro CTA reverted to amber gradient** (`#FFD180 → #FFB84C`) on `.landing-plan-cta--popular` — restores the "featured tier" differentiation lost during the earlier accent-color unification.
+  - **Homepage navbar backdrop blur intensified**: `.cinema-nav-bg` opacity dropped from 0.85 → 0.55 with `blur(24px) saturate(160%)`, so hero content now visibly bleeds through the sticky nav on scroll.
+  - **App backgrounds unified**: `ProjectFlow`, `AdminDashboard`, and `Settings` now use the same `hero-ambient hero-ambient--dashboard` + `linear-gradient(180deg, #08090A, #06070A, #050506)` stack as `Dashboard`/`ProjectOverview`/`ProjectDocument`. Seamless dot-grid + soft blue glow across all post-login views.
+  - **CTA radius unified to pill**: all CTA classes already at 999px; admin utility buttons (`Purge all guests`, `Delete selected`) switched from `rounded-md` → `rounded-full` for consistency.
 - 2025-12 — Initial MVP: marketing + JWT + 5-step flow + artifacts + lock-in.
 - 2026-01 — Currency toggle, Pricing, Stripe checkout, share/templates/revisions/simulator.
 - 2026-02 — **Waitlist pivot** → custom domain use-bracket.com.

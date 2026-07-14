@@ -179,8 +179,15 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div data-testid="admin-dashboard-page">
-      <main className="max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14 page-enter">
+    <div className="relative min-h-full" data-testid="admin-dashboard-page">
+      {/* Cinematic dashboard backdrop — unified with /app. */}
+      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
+      <main className="relative max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14 page-enter">
         {/* Page intro — matches /app dashboard */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
@@ -345,7 +352,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={doPurgeGuests}
                 disabled={purging}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--hairline)] text-[12px] text-[var(--text-2)] hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--hairline)] text-[12px] text-[var(--text-2)] hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50 transition-colors"
                 data-testid="admin-purge-guests"
                 title="Delete all guest users + their data"
               >
@@ -356,7 +363,7 @@ export default function AdminDashboard() {
                 type="button"
                 onClick={askDelete}
                 disabled={selected.size === 0}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--danger)]/40 text-[12px] text-[var(--danger)] hover:bg-[var(--danger)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--danger)]/40 text-[12px] text-[var(--danger)] hover:bg-[var(--danger)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 data-testid="admin-delete-selected"
               >
                 <Trash2 size={12} /> Delete selected

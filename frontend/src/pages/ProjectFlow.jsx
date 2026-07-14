@@ -126,9 +126,13 @@ export default function ProjectFlow() {
 
   return (
     <div className="min-h-screen relative" data-testid="project-flow-page">
-      {/* Cinematic ambient layers — matches Landing hero visual language. */}
-      <div className="flow-ambient" aria-hidden="true" />
-      <div className="flow-grain" aria-hidden="true" />
+      {/* Cinematic dashboard backdrop — unified with /app so post-login pages share the same visual language. */}
+      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
       <div className="flow-root">
       <header className="flow-header sticky top-0 z-30">
         <div className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">

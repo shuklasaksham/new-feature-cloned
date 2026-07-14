@@ -52,8 +52,15 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen" data-testid="settings-page">
-      <main className="max-w-[760px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14 page-enter">
+    <div className="relative min-h-full" data-testid="settings-page">
+      {/* Cinematic dashboard backdrop — unified with /app. */}
+      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
+      <main className="relative max-w-[760px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14 page-enter">
         <button
           type="button"
           onClick={() => navigate(-1)}
