@@ -755,27 +755,30 @@ function ReviewedState({ doc }) {
   const isAccept = doc.share_status === "accepted";
   return (
     <div
-      className="card-brut p-5 sm:p-6"
-      style={
-        isAccept
-          ? { backgroundColor: "#5E6AD2", color: "#FFFFFF", borderColor: "#5E6AD2" }
-          : { backgroundColor: "#F3F4F6", color: "#0A0A0C", borderColor: "#F3F4F6" }
-      }
+      className="card-linear card-linear--solid p-5 sm:p-6"
       data-testid="review-done-state"
     >
       <div className="flex items-center gap-2">
-        {isAccept ? <Check size={16} /> : <AlertTriangle size={16} className="text-danger" />}
-        <p className="mono-tag" style={{ color: "inherit", opacity: 0.9 }}>
+        {isAccept ? (
+          <Check size={16} className="text-signal" />
+        ) : (
+          <AlertTriangle size={16} className="text-danger" />
+        )}
+        <p
+          className={`mono-tag text-[10.5px] ${isAccept ? "text-signal" : "text-danger"}`}
+        >
           {isAccept ? "DOCUMENT ACCEPTED" : "CONCERNS DELIVERED"}
         </p>
       </div>
-      <h3 className="font-display text-2xl mt-3" style={{ color: "inherit" }}>Thanks.</h3>
-      <p className="mt-3 text-sm" style={{ color: "inherit", opacity: 0.9 }}>
+      <h3 className="font-display font-semibold tracking-[-0.02em] text-[22px] sm:text-[26px] mt-3 text-[var(--text)]">
+        Thanks.
+      </h3>
+      <p className="mt-3 text-sm text-[var(--text-2)]">
         {isAccept
           ? "The project owner has been notified you accepted the sign-off. They'll be in touch with next steps."
           : "Your concerns have been delivered. They'll reply with how they want to proceed."}
       </p>
-      <p className="mono-tag mt-5" style={{ color: "inherit", opacity: 0.6 }}>
+      <p className="mono-tag text-muted mt-5 text-[10.5px]">
         SIGNED · {doc.share_review?.signature_name}
       </p>
     </div>

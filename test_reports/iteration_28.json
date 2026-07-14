@@ -1,0 +1,48 @@
+{
+  "summary": "Verified the 3 fixes from this iteration on the live demo project (c661fa99-fc01-4ec5-bdb6-c7e2c54ae6a7, share_token=FVMnmrqr2cWsANCh). (1) PDF EXPORT: pypdf extraction of /api/projects/{id}/export.pdf shows both long alternative titles wrap naturally across 2 lines with clean word boundaries — 'Accept refresh-only scope NOW, hard-lock the existing brand, ship Webflow site in 10' → 'days with SEO 1:1 migration.' and 'Decline the engagement, refer them to a brand strategy partner, offer to execute' → 'post-strategy in 4-6 weeks.'. No '...' truncation anywhere; § character still absent (0 occurrences). _safe_multi_cell working. (2) OWNER MODAL WIDTH: On desktop viewport 1440px, the .review-modal-panel opened via [data-testid='overview-view-review-cta'] computes maxWidth=720px, actual width_px=720, padding='28px 30px 24px'. On mobile viewport 640px, width fits screen (564px). Content (concerns, 3 AI drafts, reply composer) all visible; no wasted whitespace. (3) CLIENT REVIEWED-STATE STYLING: /r/{token} for the rejected demo project renders [data-testid='review-done-state'] with classes 'card-linear card-linear--solid p-5 sm:p-6', computed background-color rgba(8,9,10,0.72) (dark, NOT #F3F4F6 white). H3 'Thanks.' color rgb(247,247,248) (near-white). BUT — the 'CONCERNS DELIVERED' mono-tag renders grey rgb(112,112,123), NOT red as required — see bug below. Backend regression suite: 4/4 pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ClientReview.jsx ReviewedState mono-tag",
+        "issue": "'CONCERNS DELIVERED' and 'DOCUMENT ACCEPTED' render in grey rgb(112,112,123) — the Tailwind text-danger / text-signal utility class is being overridden by the .mono-tag { color: var(--text-3) } rule in index.css:177. Because @tailwind utilities is loaded at index.css:3 (top) and .mono-tag is defined later (line 177), the .mono-tag color declaration wins at equal specificity. The user-requested RED tag color for concerns and GREEN/SIGNAL for accept is NOT visible.",
+        "selector": "[data-testid='review-done-state'] .mono-tag",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_features": [
+    {"feature": "PDF alt-title wrapping (_safe_multi_cell)", "status": "PASS", "detail": "Both long alt titles wrap at word boundaries across 2 lines. No '...' anywhere in extracted text. Max wrapped line = 117 chars; page media width 595.28pt, 15mm margins. Text extraction shows natural continuation lines ('days with SEO 1:1 migration.', 'post-strategy in 4-6 weeks.') and rest of alt body still renders."},
+    {"feature": "PDF § character absence", "status": "PASS", "detail": "Regression check: pypdf full-text extraction shows 0 occurrences of \\u00a7 across 5 pages / 15290 chars."},
+    {"feature": "Owner ClientReviewModal max-width 720px (desktop)", "status": "PASS", "detail": "getComputedStyle(.review-modal-panel).maxWidth === '720px', getBoundingClientRect().width === 720 on 1440px viewport. Padding computed '28px 30px 24px'. Classes 'review-modal-panel card-linear card-linear--solid'. Content dense — concerns text + 3 Bracket suggests + reply composer + timing all fit."},
+    {"feature": "Owner ClientReviewModal responsive (mobile)", "status": "PASS", "detail": "On 640px viewport, width_px = 564 (viewport - horizontal padding), maxWidth still 720px but constrained by width:100%. Padding tightens to '28px 20px 20px' per @media(max-width:640px)."},
+    {"feature": "ReviewedState dark background", "status": "PASS", "detail": "backgroundColor rgba(8,9,10,0.72) (from .card-linear--solid) — dark, matches Bracket theme. No inline white bg."},
+    {"feature": "ReviewedState h3 near-white text", "status": "PASS", "detail": "H3 'Thanks.' computed color rgb(247,247,248) via var(--text) — high contrast on dark bg."},
+    {"feature": "ReviewedState mono-tag colour", "status": "FAIL", "detail": "Expected text-danger red (#EF4444) for 'CONCERNS DELIVERED' or text-signal accent for 'DOCUMENT ACCEPTED'; actual rgb(112,112,123) grey from .mono-tag { color: var(--text-3) } overriding Tailwind utilities due to cascade order."}
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_28_pdf_wrap.py",
+    "/app/test_reports/pytest/iter28plus.xml"
+  ],
+  "action_items": [
+    "Fix mono-tag color override in ClientReview.jsx ReviewedState: either (a) inline style color for the tag e.g. style={{color: isAccept ? 'var(--accent)' : 'var(--danger)'}}, (b) use !important on the utility class, or (c) add a nested rule like .card-linear--solid .mono-tag.text-danger { color: var(--danger); } after the .mono-tag definition. Recommended: switch the tag element off .mono-tag and use a bespoke class like .review-status-tag with the desired color baked-in, or move the color declaration into a Tailwind @layer utilities so it wins."
+  ],
+  "critical_code_review_comments": [
+    "ClientReview.jsx line 767-771 — Tailwind utility color classes on .mono-tag will be silently ignored anywhere else in the app that combines them. Consider extracting mono-tag base styles into an @layer components rule so utilities remain overridable, or explicitly document that .mono-tag ignores color utilities.",
+    "server.py _safe_multi_cell is used consistently for user-content lines now — good defence-in-depth against any future long-string overflow. Consider replacing the remaining plain p.cell(0, 6, ...) calls (if any) with _safe_multi_cell for uniform behaviour.",
+    "index.css:1917 mobile @media rule uses max-width:640px (matches Tailwind sm breakpoint) — consistent.",
+    "ReviewedState dark background works via translucent rgba(8,9,10,0.72) with backdrop-filter blur; make sure the parent container has a non-black background where this component sits (client review page uses ambient dot grid — verified visually, looks correct)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_28_pdf_wrap.py (new)"
+  ],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "6/7 sub-checks (mono-tag color is the miss)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026",
+  "seed_data_creation": "None — reused the existing rejected demo project.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Demo project c661fa99-fc01-4ec5-bdb6-c7e2c54ae6a7 currently has share_status='rejected', decision has 2 long alternatives ('Accept refresh-only scope NOW...', 'Decline the engagement...'), share_token=FVMnmrqr2cWsANCh. Login form: /login → click 'I have a password →' → 2 <input> fields (no type=email, no type=submit) → click role=button name='Sign in'. Project overview route is /project/{id}. The 'View concerns & reply' CTA testid is 'overview-view-review-cta'; modal testid 'client-review-modal', panel class '.review-modal-panel'. To retest the mono-tag color fix, just reload /r/FVMnmrqr2cWsANCh and evaluate getComputedStyle on the CONCERNS DELIVERED element — must not equal rgb(112,112,123).",
+  "rca_of_the_issue": "index.css declares @tailwind utilities at line 3, but .mono-tag { color: var(--text-3); } at line 177. Since Tailwind's text-danger/text-signal (color: #EF4444 / var(--accent)) live inside the earlier utilities layer, and both selectors have equal specificity (0,1,0), the later .mono-tag declaration wins. Adding text-danger to a <p class='mono-tag'> element therefore has NO effect. Fix requires either changing cascade order, upping specificity, or using inline style."
+}

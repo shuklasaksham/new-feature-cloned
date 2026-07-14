@@ -2272,8 +2272,11 @@ def _pdf_for(project: dict) -> bytes:
             for alt in decision["alternatives"]:
                 p.set_text_color(*_INK)
                 p.set_font("Helvetica", "B", 11)
-                _reset_x()
-                p.cell(0, 6, _pdf_text("- " + (alt.get("title") or "")), ln=1)
+                # multi_cell — alternative titles can be very long ("Accept
+                # refresh-only scope NOW, hard-lock the existing brand, ship
+                # Webflow site in 10 days with SEO"). Single-line cell()
+                # overflows past the right margin — always wrap.
+                _safe_multi_cell(0, 6, "- " + (alt.get("title") or ""))
                 p.set_font("Helvetica", "", 10)
                 p.set_text_color(*_INK_2)
                 if alt.get("when_to_choose"):
