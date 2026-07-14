@@ -1712,21 +1712,41 @@ def _pdf_text(s: str) -> str:
     if not s:
         return ""
     s = str(s)
-    # Common unicode → ASCII substitutions.
+    # Common unicode → ASCII substitutions. Explicit high-codepoint fallbacks
+    # for characters that appear in AI output (arrows, checks, section marks).
     replacements = {
-        "—": "-",   # em dash
-        "–": "-",   # en dash
-        "…": "...", # ellipsis
-        "\u2018": "'", "\u2019": "'",  # curly single
-        "\u201c": '"', "\u201d": '"',  # curly double
-        "•": "*",
-        "→": "->",
-        "←": "<-",
-        "·": "-",   # middle dot
-        "₹": "Rs.",
+        "\u2013": "-",   # en dash
+        "\u2014": "-",   # em dash
+        "\u2015": "-",   # horizontal bar
+        "\u2212": "-",   # minus sign
+        "\u2026": "...", # ellipsis
+        "\u2018": "'", "\u2019": "'", "\u201a": "'",       # curly single
+        "\u201c": '"', "\u201d": '"', "\u201e": '"',       # curly double
+        "\u00ab": '"', "\u00bb": '"',                       # guillemets
+        "\u2022": "*",   # bullet
+        "\u25cf": "*",   # black circle
+        "\u25a0": "*",   # black square
+        "\u2192": "->",  # right arrow
+        "\u2190": "<-",  # left arrow
+        "\u2194": "<->", # left-right arrow
+        "\u2713": "v",   # check
+        "\u2717": "x",   # ballot x
+        "\u2192\ufe0e": "->",
+        "\u00b7": "-",   # middle dot
+        "\u2027": "-",   # hyphenation point
+        "\u20b9": "Rs.", # rupee
+        "\u20ac": "EUR", # euro
+        "\u00a3": "GBP", # pound
+        "\u2028": " ", "\u2029": " ",  # line/para separator
+        "\u00a0": " ",   # nbsp
+        "\u200b": "",    # zero-width space
+        "\u2011": "-",   # non-breaking hyphen
+        "\u00d7": "x",   # multiplication
+        "\u00f7": "/",   # division
     }
     for k, v in replacements.items():
         s = s.replace(k, v)
+    # Final fallback: any remaining non-latin-1 char → its closest ASCII (skip).
     return s.encode("latin-1", "replace").decode("latin-1")
 
 
@@ -1810,7 +1830,7 @@ def _pdf_for(project: dict) -> bytes:
         p.set_font("Helvetica", "B", 8)
         p.set_text_color(*_ACCENT)
         _reset_x()
-        p.cell(0, 4, _pdf_text("§ " + s.upper()), ln=1)
+        _safe_multi_cell(0, 4, "\u00a7 " + s.upper())
         p.ln(1)
         # Faint hairline under the section tag.
         p.set_draw_color(230, 232, 238)
@@ -1936,7 +1956,7 @@ def _pdf_for(project: dict) -> bytes:
                 p.set_text_color(230, 74, 74)
                 p.set_font("Helvetica", "B", 10)
                 _reset_x()
-                p.cell(0, 6, _pdf_text(f"[{r.get('severity', 'LOW')}] {r.get('risk', '')}"), ln=1)
+                _safe_multi_cell(0, 6, f"[{r.get('severity', 'LOW')}] {r.get('risk', '')}")
                 p.set_text_color(80, 80, 80)
                 p.set_font("Helvetica", "", 10)
                 if r.get("mitigation"):
@@ -1978,7 +1998,7 @@ def _pdf_for(project: dict) -> bytes:
                 p.set_text_color(230, 74, 74)
                 p.set_font("Helvetica", "B", 10)
                 _reset_x()
-                p.cell(0, 6, _pdf_text(f"[{r.get('severity','LOW')}] {r.get('flag','')}"), ln=1)
+                _safe_multi_cell(0, 6, f"[{r.get('severity','LOW')}] {r.get('flag','')}")
                 p.set_text_color(80, 80, 80)
                 p.set_font("Helvetica", "", 10)
                 if r.get("why"):

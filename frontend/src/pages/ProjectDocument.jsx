@@ -118,12 +118,20 @@ export default function ProjectDocument() {
   const isReviewed = project.share_status === "accepted" || project.share_status === "rejected";
 
   return (
-    <div className="min-h-screen bg-paper" data-testid="project-document-page">
+    <div className="dashboard-root relative min-h-screen" data-testid="project-document-page">
+      {/* Same cinematic backdrop as Dashboard/Overview — one visual universe. */}
+      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
+
       <DocHeader project={project} />
 
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-6 md:py-8 grid lg:grid-cols-12 gap-6 md:gap-8">
-        {/* DOCUMENT BODY */}
-        <article className="lg:col-span-8 bg-chalk border border-ink shadow-brut">
+      <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-6 md:py-8 grid lg:grid-cols-12 gap-6 md:gap-8">
+        {/* DOCUMENT BODY — glass card matching dashboard/steps cards. */}
+        <article className="lg:col-span-8 doc-card">
           <div className="doc-container">
             <p className="mono-label">{"{ sign-off document }"}</p>
             <h1 className="doc-h1 font-display uppercase mt-3">
@@ -225,20 +233,12 @@ export default function ProjectDocument() {
         </article>
 
         {/* SIDEBAR — sticky so actions stay visible while user scans doc. */}
-        <aside className="lg:col-span-4 space-y-4 doc-sidebar">
-          <Link
-            to={`/project/${project.id}`}
-            className="btn-ghost w-full justify-center"
-            data-testid="doc-back-to-flow"
-          >
-            <ArrowLeft size={14} /> Back to the flow
-          </Link>
-
+        <aside className="lg:col-span-4 space-y-3 doc-sidebar">
           <button
             type="button"
             onClick={downloadPdf}
             disabled={downloading}
-            className="btn-brut w-full justify-center"
+            className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center justify-center gap-2 w-full disabled:opacity-40"
             data-testid="doc-download-pdf-btn"
           >
             {downloading ? (
@@ -252,10 +252,10 @@ export default function ProjectDocument() {
             )}
           </button>
 
-          <div className="card-brut p-5 sm:p-6">
+          <div className="doc-card p-5 sm:p-6">
             <div className="flex items-center gap-2">
               <ShieldCheck size={16} className="text-signal" />
-              <p className="mono-label">{"{ client review }"}</p>
+              <p className="mono-tag text-muted text-[10px]">CLIENT REVIEW</p>
             </div>
 
             {project.share_status === "accepted" && (
@@ -278,13 +278,13 @@ export default function ProjectDocument() {
 
             {!isReviewed && !project.share_token && (
               <>
-                <p className="mt-3 text-sm text-muted">
+                <p className="mt-3 text-[12.5px] text-[var(--text-3)] leading-relaxed">
                   Send a clean, branded link to your client. They&apos;ll check off each scope item and sign,
                   or send back concerns with AI-assisted suggestions.
                 </p>
                 <button
                   onClick={mintShare}
-                  className="btn-brut mt-5 w-full justify-center"
+                  className="clay-signal px-4 py-2 t-tag press inline-flex items-center justify-center gap-2 w-full mt-4"
                   data-testid="doc-share-create-btn"
                 >
                   <LinkIcon size={14} /> Create review link
@@ -307,9 +307,9 @@ export default function ProjectDocument() {
             />
           )}
 
-          <div className="card-brut p-5 sm:p-6 bg-paper">
-            <p className="mono-label">{"{ status }"}</p>
-            <div className="mt-3 space-y-2 text-sm">
+          <div className="doc-card p-5 sm:p-6">
+            <p className="mono-tag text-muted text-[10px]">STATUS</p>
+            <div className="mt-3 space-y-2 text-[13px]">
               <Row label="Project" value={project.status?.toUpperCase()} />
               <Row label="Review" value={(project.share_status || "none").toUpperCase()} />
               {project.share_status === "accepted" && (
@@ -329,20 +329,24 @@ export default function ProjectDocument() {
 // ---- Layout helpers ----
 function DocHeader({ project }) {
   return (
-    <header className="sticky top-0 z-30 bg-paper border-b border-ink">
+    <header className="flow-header sticky top-0 z-30">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-        <Link to="/app" className="shrink-0" data-testid="doc-logo-link">
-          <BracketMark size={24} />
+        <Link to="/app" className="shrink-0 flex items-center gap-3" data-testid="doc-logo-link" aria-label="Bracket">
+          <img src="/logo-icon1.png" alt="" width={20} height={24} style={{ display: "block" }} />
+          <span className="flow-header-divider" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="mono-tag text-muted text-[10px]">DOCUMENT</p>
+            <p className="font-semibold text-[13px] tracking-[-0.012em] leading-tight truncate mt-0.5 max-w-[320px]">
+              {project.name}
+            </p>
+          </div>
         </Link>
-        <p className="mono-tag text-muted truncate hidden sm:block max-w-[40%]">
-          DOCUMENT · {project.name?.toUpperCase()}
-        </p>
         <Link
           to={`/project/${project.id}`}
-          className="btn-ghost mono-tag"
+          className="flow-header-action"
           data-testid="doc-header-flow-link"
         >
-          ← Flow
+          ← Back to flow
         </Link>
       </div>
     </header>
@@ -350,15 +354,20 @@ function DocHeader({ project }) {
 }
 
 function DocDivider() {
-  return <div className="my-8 h-px bg-ink/30" />;
+  return <div className="my-6 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />;
 }
 
 function DocSection({ num, label, children }) {
   return (
-    <section className="mt-10 first:mt-0">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="mono-tag bg-ink text-chalk px-2 py-1">{num}</span>
-        <p className="mono-tag text-muted">{label}</p>
+    <section className="mt-8 first:mt-0">
+      <div className="flex items-center gap-3 mb-3">
+        <span
+          className="font-mono px-2 py-0.5 text-[10px] rounded"
+          style={{ background: "rgba(94, 106, 210, 0.16)", color: "var(--accent)" }}
+        >
+          {num}
+        </span>
+        <p className="mono-tag text-muted text-[10px]">{label}</p>
       </div>
       {children}
     </section>
@@ -368,23 +377,28 @@ function DocSection({ num, label, children }) {
 function DocList({ title, items, accent = "ink", strike = false }) {
   if (!items?.length) return null;
   return (
-    <div className="mt-5">
+    <div className="mt-4">
       <p
-        className={`mono-tag ${
-          accent === "signal" ? "text-signal" : accent === "muted" ? "text-muted" : "text-ink"
+        className={`mono-tag text-[10px] ${
+          accent === "signal" ? "text-signal" : accent === "muted" ? "text-muted" : "text-[var(--text-2)]"
         }`}
       >
         {title}
       </p>
       <ul className="mt-2 space-y-2">
         {items.map((it, i) => (
-          <li key={i} className={`flex gap-3 text-sm sm:text-base ${strike ? "line-through text-muted" : ""}`}>
+          <li
+            key={i}
+            className={`flex gap-2.5 text-[13px] leading-relaxed ${
+              strike ? "line-through opacity-60" : ""
+            } text-[var(--text-2)]`}
+          >
             <span
-              className={`font-mono ${
-                accent === "signal" ? "text-signal" : accent === "muted" ? "text-muted" : "text-ink"
+              className={`font-mono mt-0.5 text-[11px] ${
+                accent === "signal" ? "text-signal" : accent === "muted" ? "text-muted" : "text-[var(--text-3)]"
               }`}
             >
-              {strike ? "×" : "•"}
+              {strike ? "×" : "·"}
             </span>
             <span>{it}</span>
           </li>
