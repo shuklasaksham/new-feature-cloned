@@ -9,7 +9,6 @@ import {
   Settings as SettingsIcon,
   HelpCircle,
 } from "lucide-react";
-import BracketMark from "./BracketMark";
 import Avatar from "./Avatar";
 import { useAuth } from "../lib/AuthContext";
 
@@ -103,12 +102,26 @@ export default function AppSidebar() {
     >
       {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
-        <Link to="/app" className="brand-mark" data-testid="sidebar-brand">
-          {collapsed ? (
-            <BracketMark size={26} label={false} />
-          ) : (
-            <BracketMark size={24} label={true} />
-          )}
+        <Link to="/app" className="brand-mark" data-testid="sidebar-brand" aria-label="Bracket">
+          {/* Both marks stacked; opacity + width crossfade with the sidebar
+              transition, so switching modes feels like the wordmark
+              telescopes into the `{ }` icon (and back) instead of hard swapping. */}
+          <span className="sidebar-brand-swap" aria-hidden="true">
+            <img
+              src="/logo-mark1.png"
+              alt=""
+              className="sidebar-brand-img sidebar-brand-img--wordmark"
+              width={92}
+              height={24}
+            />
+            <img
+              src="/logo-icon1.png"
+              alt=""
+              className="sidebar-brand-img sidebar-brand-img--icon"
+              width={21}
+              height={26}
+            />
+          </span>
         </Link>
         <button
           type="button"

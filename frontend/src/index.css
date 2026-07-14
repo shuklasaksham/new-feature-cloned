@@ -1167,6 +1167,42 @@ body::before {
   letter-spacing: -0.012em;
   min-width: 0;
 }
+
+/* Brand crossfade — both PNGs live in the same slot; opacity transitions
+   with the sidebar width so switching between collapsed (icon) and expanded
+   (wordmark) feels like a single continuous morph instead of a hard swap. */
+.sidebar-brand-swap {
+  position: relative;
+  display: inline-block;
+  width: 92px;
+  height: 26px;
+  transition: width var(--d-base) var(--ease-spring);
+}
+.sidebar-brand-img {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  display: block;
+  pointer-events: none;
+  transition: opacity var(--d-base) var(--ease-out);
+}
+.sidebar-brand-img--wordmark {
+  height: 24px;
+  width: auto;
+  opacity: 1;
+}
+.sidebar-brand-img--icon {
+  height: 26px;
+  width: auto;
+  opacity: 0;
+}
+/* Collapsed sidebar → shrink the slot + swap the visible mark. */
+.app-sidebar.is-collapsed .sidebar-brand-swap {
+  width: 21px;
+}
+.app-sidebar.is-collapsed .sidebar-brand-img--wordmark { opacity: 0; }
+.app-sidebar.is-collapsed .sidebar-brand-img--icon { opacity: 1; }
 .brand-text { white-space: nowrap; }
 .collapse-btn {
   width: 24px;
