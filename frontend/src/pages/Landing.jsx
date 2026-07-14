@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
+  Check,
   Sparkles,
   Layers,
   ListChecks,
@@ -238,7 +239,7 @@ function Hero() {
           className="mono-tag text-signal inline-flex items-center gap-2"
         >
           <span className="dot" style={{ background: "var(--accent)" }} />
-          The decision OS for freelancers
+          FROM CHAOS TO CLARITY
         </motion.div>
 
         <h1 className="mt-6 font-display font-semibold tracking-[-0.032em] leading-[1.05] text-[42px] sm:text-[64px] md:text-[82px] lg:text-[96px] text-[var(--text)]">
@@ -255,9 +256,8 @@ function Hero() {
           transition={{ delay: 0.6, duration: 0.7 }}
           className="mt-6 max-w-[620px] text-[15px] sm:text-lg text-[var(--text-2)] leading-relaxed"
         >
-          Bracket turns a messy client conversation — an email, a WhatsApp thread, a Loom
-          transcript — into a decision, a scope doc, a client message and a paper trail.
-          In under a minute.
+          Paste an email, WhatsApp chat or meeting notes. Bracket turns them into scope,
+          deliverables, risks, timelines and client-ready documentation in under a minute.
         </motion.p>
 
         <motion.div
@@ -271,7 +271,7 @@ function Hero() {
             testid="hero-cta-primary"
             className="landing-cta-primary"
           >
-            <span>Start free</span>
+            <span>Start your first project</span>
             <ArrowRight size={16} />
           </MagneticButton>
           <Link
@@ -279,12 +279,12 @@ function Hero() {
             className="landing-cta-ghost"
             data-testid="hero-cta-secondary"
           >
-            <span>How it works</span>
+            <span>See it in action</span>
             <ArrowUpRight size={14} />
           </Link>
           <p className="hero-early-access-pill" data-testid="hero-early-access-pill">
-            <span className="hero-early-access-dot" aria-hidden="true" />
-            Free during early access — no card needed
+            <Check size={12} strokeWidth={2.5} className="hero-early-access-check" aria-hidden="true" />
+            Free during early access
           </p>
         </motion.div>
 

@@ -2430,6 +2430,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   background: rgba(75, 227, 155, 0.08);
   border: 1px solid rgba(75, 227, 155, 0.24);
 }
+.hero-early-access-check {
+  color: #4BE39B;
+  filter: drop-shadow(0 0 6px rgba(75, 227, 155, 0.55));
+}
 .hero-early-access-dot {
   width: 6px;
   height: 6px;
