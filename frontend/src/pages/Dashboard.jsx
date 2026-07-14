@@ -306,14 +306,6 @@ export default function Dashboard() {
                 : "Paste a client conversation and Bracket does the thinking."}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={focusComposer}
-            className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center gap-2 self-start sm:self-auto"
-            data-testid="dashboard-new-project-btn"
-          >
-            <Plus size={13} /> New project
-          </button>
         </motion.header>
 
         {/* Stat pills — only show when the user has projects. */}
