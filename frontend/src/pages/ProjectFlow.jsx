@@ -359,20 +359,20 @@ function Workbench({
 function CelebrationChips({ items = [], milestone }) {
   const filtered = items.filter((it) => (it.count ?? 0) > 0 || it.label === "clarity/100");
   return (
-    <div className="workbench-celebration-stack">
-      <span className="workbench-milestone-badge">
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="mono-tag text-signal inline-flex items-center gap-1.5">
         <Check size={11} strokeWidth={2.5} /> {milestone}
       </span>
-      {filtered.length > 0 && (
-        <div className="workbench-stat-strip">
-          {filtered.map((it) => (
-            <div key={it.key || it.label} className="workbench-stat-cell">
-              <span className="workbench-stat-value">{it.count}</span>
-              <span className="workbench-stat-label">{it.label}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <span className="text-[var(--text-3)] text-[11px]">·</span>
+      {filtered.map((it, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span className="text-[var(--text-3)] text-[10px]">·</span>}
+          <span className="inline-flex items-baseline gap-1 text-[12px]">
+            <span className="font-display font-semibold text-signal tabular-nums">{it.count}</span>
+            <span className="text-muted text-[10.5px]">{it.label}</span>
+          </span>
+        </React.Fragment>
+      ))}
     </div>
   );
 }
