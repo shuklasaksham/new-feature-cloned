@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2, Mail, Lock as LockIcon } from "lucide-react";
 import BracketMark from "../components/BracketMark";
 import { api, formatApiError } from "../lib/api";
@@ -8,9 +8,7 @@ import Seo from "../components/Seo";
 
 export default function Login() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { setUser, refresh } = useAuth();
-  const nextPath = new URLSearchParams(location.search).get("next") || "/app";
 
   // 3 phases: pick (chooser) → otp (input code) → done
   const [phase, setPhase] = useState("pick");
@@ -77,9 +75,9 @@ export default function Login() {
       setUser(data.user);
       await refresh();
       if (data.is_new || !data.user?.name || !data.user?.designation) {
-        navigate(`/onboarding?next=${encodeURIComponent(nextPath)}`);
+        navigate("/onboarding?next=%2Fapp");
       } else {
-        navigate(nextPath);
+        navigate("/app");
       }
     } catch (e) {
       setError(formatApiError(e));
@@ -100,7 +98,7 @@ export default function Login() {
       });
       setUser(data.user);
       await refresh();
-      navigate(nextPath);
+      navigate("/app");
     } catch (e) {
       setError(formatApiError(e));
     } finally {
