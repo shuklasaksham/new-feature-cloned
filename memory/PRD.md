@@ -445,3 +445,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Step OutputCards** get a **gradient signal-blue top highlight** (`::after` pseudo, 90deg linear gradient hairline from transparent → signal-blue → sky → transparent), reinforcing the cinematic language at the individual card level.
   - **⚠️ Redeploy needed** to push to `use-bracket.com`.
 
+
+
+- 2026-07-14 — **Iteration 35 — Horizontal scroll math fix + ProjectFlow cinematic elevation**:
+  - **Showcase blank-scroll — proper fix**: previous `vw` math (`-${(cards-1)*58}vw`) still overshot on desktop because the cards' `max-w-[620px]` cap makes each card only ~32vw at 1920px viewport (not 55vw). Replaced with **dynamic pixel-based measurement**: `ResizeObserver` on the strip → `scrollWidth - viewport + 40px buffer` → `useTransform` maps `scrollYProgress` to `[0, -travel]` in pixels. Container height also derived from measured travel (`travelVw * 0.85 + 100vh`). Last card ("Locked. Signed. Shipped.") now lands cleanly at the right edge across all viewport sizes (1280 / 1440 / 1920+). No more blank end.
+  - **ProjectFlow cinematic elevation** (`ProjectFlow.jsx` + CSS):
+    * New `.flow-ambient` fixed background: radial blue-signal wash top-left + secondary sky wash bottom-right + vertical black gradient. Matches Landing hero.
+    * `.flow-grain` SVG-turbulence film-grain overlay (opacity 0.035, mix-blend overlay).
+    * `.workbench-topbar` upgraded — larger padding (20/24px), rounded to 18px, backdrop-blur 14px + saturate 140%, stronger inset highlight + drop shadow. Radial gradient overlay (blue + sky).
+    * `.workbench-num` gradient scaled up (32→44px, tri-stop blue/cyan/violet, text-shadow bloom).
+    * `.workbench-celebration` chip: fatter padding, stronger border, blue box-shadow.
+    * `StepShell` rewritten with **Framer Motion staggered entry** — top bar → previously → step body, `ease: [0.16, 1, 0.3, 1]`, 0.08s stagger. Respects `useReducedMotion`.
+    * Step chapter title scaled up (`text-[24→32px]`), body kicker larger.
+  - Both fixes verified with screenshots at 1920 / 1440 / 1280 viewports.

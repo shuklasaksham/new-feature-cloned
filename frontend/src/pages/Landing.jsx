@@ -374,17 +374,50 @@ const SHOWCASE = [
 function Showcase() {
   const shouldReduce = useReducedMotion();
   const wrapRef = useRef(null);
+  const stripRef = useRef(null);
+  // Measured horizontal distance the strip must travel (in px). We compute
+  // it from actual rendered widths — the max-w cap on cards on large screens
+  // makes fixed vw math wildly incorrect and creates the "blank end" bug.
+  const [travel, setTravel] = useState(0);
+
+  useEffect(() => {
+    if (shouldReduce) return;
+    const measure = () => {
+      const strip = stripRef.current;
+      if (!strip) return;
+      // scrollWidth includes the last card's width and its right edge —
+      // even with pl padding, the visible right edge = scrollWidth.
+      const stripWidth = strip.scrollWidth;
+      const vw = window.innerWidth;
+      // How far to translate so the last card's right edge lines up
+      // with the viewport's right edge. Add a small breathing gutter (40px).
+      const distance = Math.max(0, stripWidth - vw + 40);
+      setTravel(distance);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (stripRef.current) ro.observe(stripRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [shouldReduce]);
+
   const { scrollYProgress } = useScroll({
     target: wrapRef,
     offset: ["start start", "end end"],
   });
-  const cards = SHOWCASE.length;
-  const totalHeight = (cards - 1) * 70 + 40;
-  // Each card is now 55vw wide + gap; total shift is (cards-1) * 58vw.
+  // Container height in vh — proportional to horizontal travel. 1vw of travel
+  // ≈ 0.85vh of scroll depth, plus 1 viewport so the section pins for the
+  // full duration. Falls back to a reasonable default before measurement.
+  const travelVw = travel > 0 ? (travel / window.innerWidth) * 100 : 200;
+  const totalHeight = Math.max(180, Math.round(travelVw * 0.85 + 100));
+
   const x = useTransform(
     scrollYProgress,
     [0.02, 0.98],
-    ["0vw", `-${(cards - 1) * 58}vw`]
+    [0, -travel]
   );
 
   if (shouldReduce) {
@@ -419,8 +452,9 @@ function Showcase() {
         </div>
         <div className="relative flex-1 flex items-center overflow-hidden">
           <motion.div
+            ref={stripRef}
             style={{ x }}
-            className="flex gap-8 pl-[5vw] will-change-transform"
+            className="flex gap-8 pl-[5vw] pr-[5vw] will-change-transform"
           >
             {SHOWCASE.map((c) => (
               <div key={c.tag} className="shrink-0 w-[86vw] sm:w-[55vw] max-w-[620px]">

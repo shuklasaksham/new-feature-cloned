@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   ArrowLeft,
@@ -125,7 +126,11 @@ export default function ProjectFlow() {
   };
 
   return (
-    <div className="min-h-screen" data-testid="project-flow-page">
+    <div className="min-h-screen relative" data-testid="project-flow-page">
+      {/* Cinematic ambient layers — matches Landing hero visual language. */}
+      <div className="flow-ambient" aria-hidden="true" />
+      <div className="flow-grain" aria-hidden="true" />
+      <div className="flow-root">
       <header className="sticky top-0 z-30 glass">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-4 sm:gap-6 min-w-0">
@@ -221,7 +226,7 @@ export default function ProjectFlow() {
       </header>
 
       <main
-        className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-8 py-4 md:py-5 animate-fade-up"
+        className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-8 py-6 md:py-8"
         key={currentStep}
       >
         {currentStep === 1 && (
@@ -264,6 +269,7 @@ export default function ProjectFlow() {
           />
         )}
       </main>
+      </div>
     </div>
   );
 }
@@ -390,11 +396,29 @@ function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, as
   const prevText = previously && previously.length > 160
     ? previously.slice(0, 157).trimEnd() + "…"
     : previously;
+  const shouldReduce = useReducedMotion();
+  // Staggered cinematic entry — top bar → previously rail → step body.
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: shouldReduce ? 0 : 0.08, delayChildren: 0.05 },
+    },
+  };
+  const item = {
+    hidden: { opacity: 0, y: shouldReduce ? 0 : 14 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+  };
   return (
-    <div className="page-enter">
+    <motion.div
+      key={num}
+      variants={container}
+      initial="hidden"
+      animate="show"
+    >
       {/* Workbench top bar — chapter meta on the left, celebration chip on the right when done. */}
-      <div className="workbench-topbar" data-testid={`step${num}-topbar`}>
-        <div className="flex items-center gap-4 min-w-0 flex-1">
+      <motion.div variants={item} className="workbench-topbar" data-testid={`step${num}-topbar`}>
+        <div className="flex items-center gap-4 sm:gap-5 min-w-0 flex-1">
           <span className="workbench-num" aria-hidden="true">{`0${num}`}</span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
@@ -405,7 +429,7 @@ function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, as
                 </p>
               )}
             </div>
-            <h1 className="mt-1 font-display font-semibold tracking-[-0.02em] leading-[1.12] text-[22px] sm:text-[24px] md:text-[26px]">{title}</h1>
+            <h1 className="mt-1.5 font-display font-semibold tracking-[-0.024em] leading-[1.08] text-[24px] sm:text-[28px] md:text-[32px] text-[var(--text)]">{title}</h1>
           </div>
         </div>
         {celebration && (
@@ -413,34 +437,34 @@ function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, as
             {celebration}
           </div>
         )}
-      </div>
+      </motion.div>
 
       {kicker && !celebration && (
-        <p className="mt-2 text-muted text-[13px] leading-relaxed max-w-3xl">{kicker}</p>
+        <motion.p variants={item} className="mt-3 text-muted text-[13.5px] leading-relaxed max-w-3xl">{kicker}</motion.p>
       )}
 
       {prevText && (
-        <div className="mt-2 flex" data-testid={`step${num}-previously`}>
+        <motion.div variants={item} className="mt-3 flex" data-testid={`step${num}-previously`}>
           <div className="story-rail">
             <span className="label">↩ previously</span>
             <span>{prevText}</span>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {nextUp && nextUp.length > 0 && !celebration && (
-        <div className="mt-3 inline-flex items-center gap-2 flex-wrap text-[11px] text-muted" data-testid={`step${num}-next-up`}>
+        <motion.div variants={item} className="mt-3 inline-flex items-center gap-2 flex-wrap text-[11px] text-muted" data-testid={`step${num}-next-up`}>
           <span className="mono-tag text-signal">NEXT →</span>
           {nextUp.map((n, i) => (
             <span key={i} className="inline-flex items-center gap-1">
               <Check size={10} className="text-signal" /> {n}
             </span>
           ))}
-        </div>
+        </motion.div>
       )}
 
-      <div className="mt-4 md:mt-5">{children}</div>
-    </div>
+      <motion.div variants={item} className="mt-5 md:mt-6">{children}</motion.div>
+    </motion.div>
   );
 }
 
