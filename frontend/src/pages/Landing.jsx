@@ -332,9 +332,10 @@ function HeroMetrics() {
 const SHOWCASE = [
   {
     tag: "01 · UNDERSTAND",
-    title: "Paste anything. Bracket reads it.",
+    title: "Paste anything. Bracket understands it.",
     body:
-      "Emails, WhatsApp threads, Loom transcripts, unformatted PDFs. Bracket parses raw client mess into a reframed problem, a clarity score, and the tensions no one said out loud.",
+      "Paste an email, WhatsApp chat, meeting notes or a transcript. Bracket uncovers the goals, assumptions, stakeholders and hidden context automatically.",
+    output: "Structured Brief",
     accent: "#5E6AD2",
     icon: Compass,
   },
@@ -342,15 +343,17 @@ const SHOWCASE = [
     tag: "02 · SIMPLIFY",
     title: "The signal. Not the noise.",
     body:
-      "Keeps only what moves the call. Cuts noise, surfaces hidden assumptions everyone's quietly acting on, and hands you a two-sentence version of the problem.",
+      "Bracket filters distractions, surfaces what actually matters, and rewrites the problem into one clear, actionable direction.",
+    output: "Clear Problem Statement",
     accent: "#7CD5FF",
     icon: Layers,
   },
   {
     tag: "03 · STRATEGY",
-    title: "A stance. Not a menu.",
+    title: "A decision. Not a debate.",
     body:
-      "Bracket picks a side, scores its confidence, stress-tests it against the risks your client never mentioned, and shows you the runner-up if you challenge it.",
+      "Bracket recommends the strongest path forward, explains why it works, and highlights the trade-offs before you commit.",
+    output: "Confident Recommendation",
     accent: "#FFB84C",
     icon: Sparkles,
   },
@@ -358,15 +361,17 @@ const SHOWCASE = [
     tag: "04 · EXECUTION",
     title: "Scope. Message. Ready to send.",
     body:
-      "The scope doc, the client message, the assumptions, the risk flags — drafted in your voice. Copy-paste ready. Zero rewriting.",
+      "Your scope, client message, deliverables and documentation are drafted in your voice — ready to review and share.",
+    output: "Client-Ready Deliverables",
     accent: "#B7B7FF",
     icon: ListChecks,
   },
   {
-    tag: "05 · REVIEW",
+    tag: "05 · DECISION",
     title: "Locked. Signed. Shipped.",
     body:
-      "Lock the call so it survives the 3am rethink. Open the polished document — PDF export or a client review link, straight from Bracket.",
+      "Export polished documents, share with clients, and keep every assumption and decision in one place for future reference.",
+    output: "Complete Decision Record",
     accent: "#4BE39B",
     icon: AlertTriangle,
   },
@@ -552,6 +557,19 @@ function ShowcaseCard({ card }) {
         <p className="mt-4 max-w-[440px] text-[13.5px] sm:text-sm text-[var(--text-2)] leading-relaxed">
           {card.body}
         </p>
+        {card.output && (
+          <div
+            className="mt-7 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11.5px] tracking-[0.02em]"
+            style={{
+              background: `${card.accent}14`,
+              border: `1px solid ${card.accent}40`,
+              color: card.accent,
+            }}
+          >
+            <span className="mono-tag" style={{ color: card.accent, opacity: 0.75 }}>OUTPUT</span>
+            <span style={{ color: "var(--text)" }}>{card.output}</span>
+          </div>
+        )}
       </div>
     </div>
   );
