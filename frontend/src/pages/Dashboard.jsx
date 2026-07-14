@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   ScrollText,
   ClipboardPaste,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -124,6 +126,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [paste, setPaste] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showAllProjects, setShowAllProjects] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -174,6 +177,33 @@ export default function Dashboard() {
     } catch (e) {
       toast.error(formatApiError(e));
       setSubmitting(false);
+    }
+  };
+
+  // Optimistic rename — prompt, PATCH, patch local state on success. Keeps
+  // the interaction snappy on the dashboard.
+  const renameProject = async (p) => {
+    const nextName = window.prompt("Rename project:", p.name);
+    const trimmed = (nextName || "").trim();
+    if (!trimmed || trimmed === p.name) return;
+    try {
+      const { data } = await api.patch(`/projects/${p.id}`, { name: trimmed });
+      setProjects((list) => list.map((x) => (x.id === p.id ? { ...x, name: data.name } : x)));
+      toast.success("Renamed.");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    }
+  };
+
+  // Confirm + DELETE. Removes from local list on success.
+  const deleteProject = async (p) => {
+    if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
+    try {
+      await api.delete(`/projects/${p.id}`);
+      setProjects((list) => list.filter((x) => x.id !== p.id));
+      toast.success("Project deleted.");
+    } catch (e) {
+      toast.error(formatApiError(e));
     }
   };
 
@@ -323,49 +353,72 @@ export default function Dashboard() {
               <p className="mono-label text-[var(--text-3)]">
                 <span className="dot" /> Recent · {projects.length}
               </p>
-              <Link
-                to="/app/projects"
-                className="text-[11px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
-                data-testid="dashboard-recent-view-all"
-              >
-                View all →
-              </Link>
+              {projects.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllProjects((v) => !v)}
+                  className="text-[11px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+                  data-testid="dashboard-recent-view-all"
+                >
+                  {showAllProjects ? "Show fewer ←" : `View all ${projects.length} →`}
+                </button>
+              )}
             </div>
-            <div className="grid sm:grid-cols-2 gap-2.5" data-testid="dashboard-recent-list">
-              {projects.slice(0, 2).map((p) => {
+            <div className={`grid sm:grid-cols-2 gap-2.5 ${showAllProjects ? "max-h-[46vh] overflow-y-auto pr-1 dash-scroll" : ""}`} data-testid="dashboard-recent-list">
+              {(showAllProjects ? projects : projects.slice(0, 2)).map((p) => {
                 const isLocked = p.status === "locked";
                 const stepPct = Math.round(((p.step || 1) / 5) * 100);
                 return (
-                  <Link
+                  <div
                     key={p.id}
-                    to={`/project/${p.id}`}
-                    className="recent-card recent-card--compact group"
+                    className="recent-card recent-card--compact group relative"
                     data-testid={`dashboard-recent-${p.id}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="font-medium text-[13px] truncate flex-1">{p.name}</p>
-                      <span
-                        className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[10px]"
-                        style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
+                    <Link to={`/project/${p.id}`} className="block">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="font-medium text-[13px] truncate flex-1 pr-16">{p.name}</p>
+                        <span
+                          className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[10px]"
+                          style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
+                        >
+                          {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
+                        <span>Step {p.step || 1} / 5</span>
+                        <span>·</span>
+                        <span>{formatDate(p.updated_at)}</span>
+                      </div>
+                      <div className="mt-2 h-[2px] bg-[var(--surface-2)] rounded-full overflow-hidden">
+                        <div
+                          className="h-full transition-all"
+                          style={{ width: `${stepPct}%`, backgroundColor: isLocked ? "#2E5BFF" : "var(--text-2)" }}
+                        />
+                      </div>
+                    </Link>
+                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); renameProject(p); }}
+                        className="p-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+                        title="Rename"
+                        aria-label="Rename project"
+                        data-testid={`dashboard-recent-rename-${p.id}`}
                       >
-                        {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
-                      </span>
+                        <Pencil size={11} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
+                        className="p-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--danger)] transition-colors"
+                        title="Delete"
+                        aria-label="Delete project"
+                        data-testid={`dashboard-recent-delete-${p.id}`}
+                      >
+                        <Trash2 size={11} />
+                      </button>
                     </div>
-                    <div className="mt-1.5 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
-                      <span>Step {p.step || 1} / 5</span>
-                      <span>·</span>
-                      <span>{formatDate(p.updated_at)}</span>
-                      <span className="ml-auto text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1">
-                        Resume <ArrowRight size={10}/>
-                      </span>
-                    </div>
-                    <div className="mt-2 h-[2px] bg-[var(--surface-2)] rounded-full overflow-hidden">
-                      <div
-                        className="h-full transition-all"
-                        style={{ width: `${stepPct}%`, backgroundColor: isLocked ? "#2E5BFF" : "var(--text-2)" }}
-                      />
-                    </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>

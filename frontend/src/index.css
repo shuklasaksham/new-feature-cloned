@@ -882,6 +882,27 @@ body::before {
 }
 .output-preview-card--compact { padding: 10px 12px; border-radius: 8px; }
 
+/* Scrollable output card — used when a big AI answer would otherwise force
+   the whole page to scroll. Constrained to viewport minus flow header + CTA
+   space, then scrolls internally. Custom slim scrollbar for the dark theme. */
+.output-card--scrollable {
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.output-card--scrollable::-webkit-scrollbar { width: 6px; }
+.output-card--scrollable::-webkit-scrollbar-track { background: transparent; }
+.output-card--scrollable::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: 3px;
+}
+.output-card--scrollable::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+.dash-scroll::-webkit-scrollbar { width: 6px; }
+.dash-scroll::-webkit-scrollbar-track { background: transparent; }
+.dash-scroll::-webkit-scrollbar-thumb { background: var(--hairline-strong); border-radius: 3px; }
+.dash-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
 /* Recent projects — quieter than the hero. */
 .recent-card {
   display: block;

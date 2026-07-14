@@ -305,14 +305,21 @@ function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, as
         </div>
       )}
       <div className="mt-4 md:mt-5">{children}</div>
-      {nextHint && (
-        <div className="mt-4 flex" data-testid={`step${num}-next-hint`}>
-          <div className="story-rail is-next">
-            <span className="label">next ↪</span>
-            <span>{nextHint}</span>
-          </div>
-        </div>
-      )}
+    </div>
+  );
+}
+
+// NextHintRail — small "next ↪" story-rail rendered inline under a step's
+// CTA button so it doesn't jump when the right column grows/shrinks on
+// expand/collapse.
+function NextHintRail({ text, testid }) {
+  if (!text) return null;
+  return (
+    <div className="mt-3 flex" data-testid={testid}>
+      <div className="story-rail is-next">
+        <span className="label">next ↪</span>
+        <span>{text}</span>
+      </div>
     </div>
   );
 }
@@ -754,6 +761,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
           )}
 
           <ErrorBox msg={error} />
+          <NextHintRail testid="step1-next-hint" text={framing ? "compress into what matters" : undefined} />
+
         </div>
 
         <div className={framing ? "lg:col-span-5" : ""}>
@@ -772,6 +781,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                 badge={<ClarityPill score={framing.clarity_score} label={framing.clarity_label} />}
                 title={framing.reframed_problem}
                 blockquote={framing.what_to_name}
+                scrollable
                 copyText={[framing.reframed_problem, framing.what_to_name, ...(framing.tensions || []).map((t, i) => `${i + 1}. ${t}`)].filter(Boolean).join("\n\n")}
                 onRegenerate={run}
                 progressive
@@ -1043,6 +1053,8 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             )}
           </div>
           <ErrorBox msg={error} />
+          <NextHintRail testid="step2-next-hint" text={compressed ? "pick the call" : undefined} />
+
         </div>
 
         <div className={compressed ? "lg:col-span-5" : ""}>
@@ -1072,6 +1084,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               testid="step2-context-output"
               label={"{ 02 · what actually matters }"}
               blockquote={compressed.what_actually_matters}
+              scrollable
               copyText={[
                 compressed.what_actually_matters,
                 (compressed.key_signals || []).length ? `KEY SIGNALS\n${(compressed.key_signals || []).map((s) => `→ ${s}`).join("\n")}` : "",
@@ -1257,6 +1270,8 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
             )}
           </div>
           <ErrorBox msg={error} />
+          <NextHintRail testid="step3-next-hint" text={decision ? "artifacts next" : undefined} />
+
         </div>
 
         <div className={decision ? "lg:col-span-5" : ""}>
@@ -1282,7 +1297,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
               loading={false}
             />
           ) : (
-            <div className="space-y-6" data-testid="step3-decision-output">
+            <div className="output-card--scrollable space-y-6 pr-1" data-testid="step3-decision-output">
               <OutputCard
                 testid="step3-recommendation-output"
                 label={"{ 03 · recommendation }"}
@@ -1492,6 +1507,8 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
         )}
       </div>
       <ErrorBox msg={error} />
+      <NextHintRail testid="step4-next-hint" text={artifacts ? "lock it in" : undefined} />
+
 
       {loading ? (
         <div className="mt-5">
@@ -1521,7 +1538,7 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
       ) : (
         <div className="mt-4 grid lg:grid-cols-12 gap-5" data-testid="step4-artifacts-output">
           {/* Scope + client message stacked on the left (2 cols on wide) */}
-          <div className="lg:col-span-9 space-y-5">
+          <div className="lg:col-span-9 space-y-5 output-card--scrollable pr-1">
             <div className="grid md:grid-cols-2 gap-5">
               <OutputCard
                 testid="artifact-SCOPE_DOC"
@@ -1947,6 +1964,7 @@ function OutputCard({
   progressive = false,
   progressiveLabels = {},
   sourceLabel,
+  scrollable = false,
 }) {
   const [copied, setCopied] = useState(false);
   const [revealSummary, setRevealSummary] = useState(!progressive);
@@ -1968,7 +1986,7 @@ function OutputCard({
   const finalSourceLabel = sourceLabel || (progressive ? "Show assumptions" : "What this is based on");
   return (
     <div
-      className="output-card-wrap liquid-glass p-5 sm:p-6 animate-scale-in"
+      className={`output-card-wrap liquid-glass p-5 sm:p-6 animate-scale-in ${scrollable ? "output-card--scrollable" : ""}`}
       data-testid={testid}
     >
       <div className="flex items-start justify-between gap-3 relative z-10">
@@ -2029,9 +2047,21 @@ function OutputCard({
         <h3 className="t-h2 mt-3 relative z-10">{title}</h3>
       )}
       {blockquote && revealSummary && (
-        <p className="mt-4 border-l-2 border-[var(--accent)] pl-4 italic text-[14px] leading-[1.65] relative z-10 text-[var(--text)] animate-fade-up">
-          {blockquote}
-        </p>
+        <div className="relative z-10 mt-4 animate-fade-up">
+          <p className="border-l-2 border-[var(--accent)] pl-4 italic text-[14px] leading-[1.65] text-[var(--text)]">
+            {blockquote}
+          </p>
+          {progressive && (
+            <button
+              type="button"
+              onClick={() => { setRevealSummary(false); setRevealDetails(false); }}
+              className="disc-btn mt-3"
+              data-testid={testid ? `${testid}-hide-summary` : undefined}
+            >
+              <span className="chev">↑</span> Hide
+            </button>
+          )}
+        </div>
       )}
       {progressive && blockquote && !revealSummary && (
         <button
@@ -2043,7 +2073,21 @@ function OutputCard({
           <span className="chev">↓</span> {summaryBtnLabel}
         </button>
       )}
-      {children && revealDetails && <div className="mt-2 relative z-10 animate-fade-up">{children}</div>}
+      {children && revealDetails && (
+        <div className="mt-2 relative z-10 animate-fade-up">
+          {children}
+          {progressive && (
+            <button
+              type="button"
+              onClick={() => setRevealDetails(false)}
+              className="disc-btn mt-3"
+              data-testid={testid ? `${testid}-hide-details` : undefined}
+            >
+              <span className="chev">↑</span> Hide {detailsBtnLabel.replace(/^Show\s+/i, "").toLowerCase()}
+            </button>
+          )}
+        </div>
+      )}
       {progressive && children && revealSummary && !revealDetails && (
         <button
           type="button"
