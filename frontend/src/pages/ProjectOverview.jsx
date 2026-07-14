@@ -189,6 +189,24 @@ function StepSummary({ step, project }) {
       </div>
     );
   }
+  // Empty-state teaching: for steps that haven't produced output yet, explain
+  // what Bracket will surface here so the user understands the value before
+  // starting. Turns dead "TODO" rows into small activation prompts.
+  const EMPTY_TEACHING = {
+    1: "We'll re-read your paste and name what's actually happening — the reframed problem, tensions your client won't say out loud, and a clarity score.",
+    2: "We'll strip your paste down to the few signals that move the call, cut the noise, and flag the assumptions everyone is quietly acting on.",
+    3: "We'll pick a side (not a menu), stress-test it against risks your client never mentioned, and score confidence so you know when to push back.",
+    4: "We'll draft the scope doc, the client message, the assumptions, and the risk flags — all in your voice, ready to send.",
+    5: "We'll lock the call so it survives the 3am rethink, then open the polished document for review or PDF export.",
+  };
+  const blurb = EMPTY_TEACHING[step.n];
+  if (blurb) {
+    return (
+      <div className="mt-3 text-sm" data-testid={`overview-empty-teaching-${step.n}`}>
+        <p className="text-muted leading-relaxed">{blurb}</p>
+      </div>
+    );
+  }
   return null;
 }
 
@@ -514,7 +532,7 @@ export default function ProjectOverview() {
 
         {/* Step grid */}
         <section className="mt-10" data-testid="overview-steps">
-          <p className="mono-label">{"{ five steps · status + edit }"}</p>
+          <p className="mono-label">{"{ your journey · five milestones }"}</p>
           <ul className="mt-4 card-brut overflow-hidden divide-y divide-ink/10">
             {STEPS.map((step) => {
               const done =
@@ -544,7 +562,7 @@ export default function ProjectOverview() {
                       className="btn-ghost"
                       data-testid={`overview-edit-${step.n}`}
                     >
-                      <Pencil size={12}/> {done ? "EDIT" : current ? "CONTINUE" : "START"}
+                      <Pencil size={12}/> {done ? "REFINE" : current ? "CONTINUE" : "START"}
                     </button>
                   </div>
                 </li>

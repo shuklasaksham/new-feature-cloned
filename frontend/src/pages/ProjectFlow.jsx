@@ -25,11 +25,14 @@ import { useAuth } from "../lib/AuthContext";
 import { toast } from "sonner";
 
 const STEPS = [
-  { n: 1, key: "situation", label: "Situation framing", glyph: "{ 01 }" },
-  { n: 2, key: "context", label: "Context compression", glyph: "{ 02 }" },
-  { n: 3, key: "decision", label: "Decision engine", glyph: "{ 03 }" },
-  { n: 4, key: "artifacts", label: "Artifacts", glyph: "{ 04 }" },
-  { n: 5, key: "lock", label: "Confidence lock-in", glyph: "{ 05 }" },
+  // `label` is what we render while the step is TODO or ACTIVE (task-oriented).
+  // `milestone` is what we render once the step is DONE — a completed
+  // achievement verb, framing the flow as a journey.
+  { n: 1, key: "situation",  label: "Situation framing",   milestone: "Project understood",  glyph: "{ 01 }" },
+  { n: 2, key: "context",    label: "Context compression", milestone: "Signals compressed",  glyph: "{ 02 }" },
+  { n: 3, key: "decision",   label: "Decision engine",     milestone: "Decision made",       glyph: "{ 03 }" },
+  { n: 4, key: "artifacts",  label: "Artifacts",           milestone: "Artifacts drafted",   glyph: "{ 04 }" },
+  { n: 5, key: "lock",       label: "Confidence lock-in",  milestone: "Locked & signed",     glyph: "{ 05 }" },
 ];
 
 export default function ProjectFlow() {
@@ -178,12 +181,19 @@ export default function ProjectFlow() {
           </div>
         </div>
         <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-4 pt-1 border-b border-[var(--hairline)]">
-          <div className="step-pipeline">
+          <p className="mono-tag text-muted mb-3 hidden sm:block" data-testid="milestone-tracker-label">
+            YOUR JOURNEY
+          </p>
+          <div className="step-pipeline" data-testid="milestone-tracker">
             {STEPS.map((s, i) => {
               const done =
                 (project?.step || 1) > s.n ||
                 (project?.step === s.n && project?.status === "locked");
               const active = currentStep === s.n;
+              // When a step is done, show its milestone verb ("Project understood");
+              // otherwise show the task label ("Situation framing"). This turns
+              // the pipeline into a completion-oriented journey tracker.
+              const nodeLabel = done ? s.milestone : s.label;
               return (
                 <React.Fragment key={s.n}>
                   <button
@@ -191,9 +201,10 @@ export default function ProjectFlow() {
                     className={`step-node press ${active ? "is-active" : done ? "is-done" : ""}`}
                     data-testid={`step-nav-${s.n}`}
                     aria-current={active ? "step" : undefined}
+                    title={done ? `Milestone reached: ${s.milestone}` : s.label}
                   >
                     <span className="step-num">{done && !active ? <Check size={11} strokeWidth={2.5} /> : s.n}</span>
-                    <span className="hidden sm:inline">{s.label}</span>
+                    <span className="hidden sm:inline">{nodeLabel}</span>
                   </button>
                   {i < STEPS.length - 1 && (
                     <span
@@ -369,6 +380,68 @@ function looksLikeGibberish(text) {
 
 function wordCount(s) {
   return (s || "").trim().split(/\s+/).filter(Boolean).length;
+}
+
+// TransformationCard — celebrates the AI's work by comparing what the user
+// pasted (raw words) against what Bracket extracted (structured signals).
+// Rendered at the end of Steps 1-3 once output exists. Reinforces perceived
+// value ("I pasted a mess, Bracket returned a plan") and answers "why paste?".
+function TransformationCard({ pasteText, items = [], testid, note }) {
+  const wc = wordCount(pasteText);
+  if (!wc) return null;
+  const hasAny = items.some((it) => (it.count ?? 0) > 0);
+  if (!hasAny) return null;
+  return (
+    <div
+      className="mt-5 card-brut p-5 sm:p-6 border-l-2 border-signal animate-fade-up"
+      data-testid={testid || "transformation-card"}
+    >
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <p className="mono-label text-signal">{"{ transformation }"}</p>
+        <span className="mono-tag text-muted">from mess → to signal</span>
+      </div>
+      <div className="mt-4 flex items-baseline gap-2 flex-wrap">
+        <span
+          className="font-display text-3xl sm:text-4xl text-[var(--text)] tabular-nums"
+          data-testid={testid ? `${testid}-word-count` : undefined}
+        >
+          {wc.toLocaleString()}
+        </span>
+        <span className="mono-tag text-muted">words in</span>
+        <span className="mono-tag text-muted">→</span>
+        {items.filter((it) => (it.count ?? 0) > 0).map((it, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <span className="mono-tag text-muted">·</span>}
+            <span
+              className="font-display text-3xl sm:text-4xl text-signal tabular-nums"
+              data-testid={testid ? `${testid}-${it.key || i}` : undefined}
+            >
+              {it.count}
+            </span>
+            <span className="mono-tag text-muted">{it.label}</span>
+          </React.Fragment>
+        ))}
+      </div>
+      {note && (
+        <p className="mt-3 text-xs text-muted italic">{note}</p>
+      )}
+    </div>
+  );
+}
+
+// Empty-state teaching card. Shown inside a section where an AI-extracted
+// list came back empty — reassures the user Bracket looked and either found
+// nothing worth flagging, or that they'll see items surface as they iterate.
+function EmptyModuleHint({ title, blurb, testid }) {
+  return (
+    <div
+      className="mt-3 border border-dashed border-[var(--hairline-strong)] rounded p-4 text-sm text-muted"
+      data-testid={testid || "empty-module-hint"}
+    >
+      <p className="mono-tag text-signal">{title}</p>
+      <p className="mt-2 leading-relaxed">{blurb}</p>
+    </div>
+  );
 }
 
 function Step1({ project, setProject, dirtyRef, onDone }) {
@@ -679,9 +752,27 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                 }
               >
                 <OutputSection label="TENSIONS TO WATCH">
-                  <OutputList items={framing.tensions || []} variant="numbered" />
+                  {(framing.tensions || []).length > 0 ? (
+                    <OutputList items={framing.tensions || []} variant="numbered" />
+                  ) : (
+                    <EmptyModuleHint
+                      testid="step1-tensions-empty"
+                      title="No tensions surfaced yet"
+                      blurb="Bracket didn't spot a hidden contradiction in your paste. That's rare — usually there's at least one. Paste more context (Slack thread, the actual brief PDF text) and challenge Bracket again to double-check."
+                    />
+                  )}
                 </OutputSection>
               </OutputCard>
+
+              <TransformationCard
+                testid="step1-transformation"
+                pasteText={project.situation_input?.raw_paste || form.raw_paste}
+                items={[
+                  { key: "tensions",   label: "tensions named",   count: (framing.tensions || []).length },
+                  { key: "clarity",    label: "clarity score",    count: framing.clarity_score || 0 },
+                ]}
+                note={`You pasted a mess. Bracket returned a reframed problem${framing.clarity_score ? `, a clarity read of ${framing.clarity_score}/100,` : ""} and ${(framing.tensions || []).length} tension${(framing.tensions || []).length === 1 ? "" : "s"} worth watching.`}
+              />
 
               {isSample && (
                 <div className="card-brut mt-5 p-4 sm:p-5 flex items-start gap-3" data-testid="step1-sample-done-banner">
@@ -927,6 +1018,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               loading={false}
             />
           ) : (
+            <>
             <OutputCard
               testid="step2-context-output"
               label={"{ 02 · what actually matters }"}
@@ -957,17 +1049,53 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               }
             >
               <OutputSection label="KEY SIGNALS">
-                <OutputList items={compressed.key_signals || []} variant="arrow" />
+                {(compressed.key_signals || []).length > 0 ? (
+                  <OutputList items={compressed.key_signals || []} variant="arrow" />
+                ) : (
+                  <EmptyModuleHint
+                    testid="step2-signals-empty"
+                    title="No key signals extracted"
+                    blurb="Bracket read your paste but didn't find distinct signals worth keeping. Try adding more of the raw conversation — Slack threads, call transcripts, brand references — and challenge it again."
+                  />
+                )}
               </OutputSection>
               <OutputSection label="NOISE REMOVED">
-                <OutputList items={compressed.noise_removed || []} variant="strike" />
+                {(compressed.noise_removed || []).length > 0 ? (
+                  <OutputList items={compressed.noise_removed || []} variant="strike" />
+                ) : (
+                  <EmptyModuleHint
+                    testid="step2-noise-empty"
+                    title="Nothing struck as noise"
+                    blurb="Every line in your paste seemed load-bearing. If that feels off, paste the fuller version of the brief — Bracket is best at cutting once it has too much to read."
+                  />
+                )}
               </OutputSection>
-              {compressed.hidden_assumptions?.length > 0 && (
+              {compressed.hidden_assumptions?.length > 0 ? (
                 <OutputSection label="HIDDEN ASSUMPTIONS">
                   <OutputList items={compressed.hidden_assumptions} variant="danger" />
                 </OutputSection>
+              ) : (
+                <OutputSection label="HIDDEN ASSUMPTIONS">
+                  <EmptyModuleHint
+                    testid="step2-assumptions-empty"
+                    title="No hidden assumptions surfaced"
+                    blurb="Bracket will call out things everyone acts on but nobody said aloud — the quiet reasons projects go sideways. Add more context (kickoff notes, WhatsApp, references) to give it more to catch."
+                  />
+                </OutputSection>
               )}
             </OutputCard>
+
+            <TransformationCard
+              testid="step2-transformation"
+              pasteText={project.context_input?.raw_paste || form.raw_paste}
+              items={[
+                { key: "signals",     label: "key signals",        count: (compressed.key_signals || []).length },
+                { key: "noise",       label: "noise stripped",     count: (compressed.noise_removed || []).length },
+                { key: "assumptions", label: "hidden assumptions", count: (compressed.hidden_assumptions || []).length },
+              ]}
+              note={`Bracket kept only what moves the call. Everything else was cut.`}
+            />
+            </>
           )}
         </div>
       </div>
@@ -1140,38 +1268,77 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                 </button>
               )}
 
-              {showAlternatives && decision.alternatives?.length > 0 && (
-                <OutputCard label={"{ 03 · alternatives }"}>
-                  <div className="space-y-4">
-                    {decision.alternatives.map((a, i) => (
-                      <div
-                        key={i}
-                        className="border-t border-[var(--hairline)] pt-4 first:border-t-0 first:pt-0"
-                      >
-                        <p className="t-h3">{a.title}</p>
-                        <p className="text-sm text-muted mt-1">
-                          <span className="mono-tag">WHEN →</span> {a.when_to_choose}
-                        </p>
-                        <p className="text-sm text-muted mt-1">
-                          <span className="mono-tag">COST →</span> {a.cost}
-                        </p>
+              {showAlternatives && (
+                <>
+                  {decision.alternatives?.length > 0 ? (
+                    <OutputCard label={"{ 03 · alternatives }"}>
+                      <div className="space-y-4">
+                        {decision.alternatives.map((a, i) => (
+                          <div
+                            key={i}
+                            className="border-t border-[var(--hairline)] pt-4 first:border-t-0 first:pt-0"
+                          >
+                            <p className="t-h3">{a.title}</p>
+                            <p className="text-sm text-muted mt-1">
+                              <span className="mono-tag">WHEN →</span> {a.when_to_choose}
+                            </p>
+                            <p className="text-sm text-muted mt-1">
+                              <span className="mono-tag">COST →</span> {a.cost}
+                            </p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </OutputCard>
+                    </OutputCard>
+                  ) : (
+                    <OutputCard label={"{ 03 · alternatives }"}>
+                      <EmptyModuleHint
+                        testid="step3-alternatives-empty"
+                        title="No alternative paths worth naming"
+                        blurb="Bracket thought about the other directions and none stacked up. If you want to force it, challenge the call above — Bracket will re-argue and surface the runner-up."
+                      />
+                    </OutputCard>
+                  )}
+
+                  {decision.tradeoffs?.length > 0 ? (
+                    <OutputCard label={"{ 03 · trade-offs }"}>
+                      <OutputList items={decision.tradeoffs} variant="arrow" />
+                    </OutputCard>
+                  ) : (
+                    <OutputCard label={"{ 03 · trade-offs }"}>
+                      <EmptyModuleHint
+                        testid="step3-tradeoffs-empty"
+                        title="No trade-offs called out"
+                        blurb="Bracket didn't find a meaningful cost to this direction. That's suspicious. Every decision costs something — challenge the recommendation and ask what you're giving up."
+                      />
+                    </OutputCard>
+                  )}
+
+                  {decision.risks?.length > 0 ? (
+                    <OutputCard label={"{ 03 · risks }"}>
+                      <OutputList items={decision.risks} variant="severity" />
+                    </OutputCard>
+                  ) : (
+                    <OutputCard label={"{ 03 · risks }"}>
+                      <EmptyModuleHint
+                        testid="step3-risks-empty"
+                        title="No risks yet — we'll surface them as you iterate"
+                        blurb="Bracket will call out the risks your client never mentioned before they happen. Add more context in Step 02 (or paste the fuller brief) and challenge the call again to stress-test it."
+                      />
+                    </OutputCard>
+                  )}
+                </>
               )}
 
-              {showAlternatives && decision.tradeoffs?.length > 0 && (
-                <OutputCard label={"{ 03 · trade-offs }"}>
-                  <OutputList items={decision.tradeoffs} variant="arrow" />
-                </OutputCard>
-              )}
-
-              {showAlternatives && decision.risks?.length > 0 && (
-                <OutputCard label={"{ 03 · risks }"}>
-                  <OutputList items={decision.risks} variant="severity" />
-                </OutputCard>
-              )}
+              <TransformationCard
+                testid="step3-transformation"
+                pasteText={project.decision_input?.raw_paste || form.raw_paste}
+                items={[
+                  { key: "call",         label: "recommendation",  count: decision.recommendation?.title ? 1 : 0 },
+                  { key: "alternatives", label: "alternatives",    count: (decision.alternatives || []).length },
+                  { key: "risks",        label: "risks stress-tested", count: (decision.risks || []).length },
+                ]}
+                note={decision.recommendation?.confidence ? `Called with ${decision.recommendation.confidence}% confidence — not a menu, a stance.` : `A stance, not a menu.`}
+              />
             </div>
           )}
         </div>
@@ -1549,13 +1716,6 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
               >
                 <Download size={14} /> Quick PDF download
               </button>
-              <Link
-                to="/app"
-                className="btn-ghost mt-3 w-full justify-center"
-                data-testid="step5-new-project-btn"
-              >
-                Start another project <ArrowRight size={14} />
-              </Link>
             </div>
           ) : (
             <div className="card-brut p-5 sm:p-6">
@@ -1590,11 +1750,41 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
           )}
         </div>
       </div>
+
+      {isLocked && (
+        <div
+          className="mt-10 card-brut p-6 sm:p-8 relative overflow-hidden animate-fade-up"
+          data-testid="step5-second-project-nudge"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(46, 91, 255, 0.10) 0%, var(--surface) 60%)",
+            borderColor: "rgba(46, 91, 255, 0.25)",
+          }}
+        >
+          <p className="mono-label text-signal">{"{ next client · ready? }"}</p>
+          <div className="mt-3 flex items-start justify-between gap-6 flex-wrap">
+            <div className="max-w-2xl">
+              <h3 className="t-h1">Ready for your next client?</h3>
+              <p className="mt-3 text-sm text-[var(--text-2)] leading-relaxed">
+                This project is locked and won&apos;t survive the next brief change without you noticing.
+                Bracket works best when it&apos;s the first thing you open — before you write the reply,
+                before you say yes, before you fill the Notion doc. Start the next one now while
+                the workflow is fresh.
+              </p>
+            </div>
+            <Link
+              to="/app"
+              className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              data-testid="step5-new-project-btn"
+            >
+              Start a new project <ArrowRight size={14} />
+            </Link>
+          </div>
+        </div>
+      )}
     </StepShell>
   );
 }
-
-// ---- helpers ----
 function Field({ label, children, testid, helper }) {
   return (
     <label className="block" data-testid={testid}>
@@ -1736,10 +1926,10 @@ function OutputCard({
                   onClick={onEdit}
                   className="output-action-btn"
                   data-testid={testid ? `${testid}-edit` : "output-edit"}
-                  title="Edit input"
-                  aria-label="Edit input"
+                  title="Refine with AI"
+                  aria-label="Refine with AI"
                 >
-                  <Pencil size={11} /> Edit
+                  <Pencil size={11} /> Refine with AI
                 </button>
               )}
               {onRegenerate && (
@@ -1748,10 +1938,10 @@ function OutputCard({
                   onClick={onRegenerate}
                   className="output-action-btn"
                   data-testid={testid ? `${testid}-regenerate` : "output-regenerate"}
-                  title="Regenerate"
-                  aria-label="Regenerate"
+                  title="Challenge this — ask Bracket to re-argue it"
+                  aria-label="Challenge this"
                 >
-                  <RefreshCw size={11} /> Redo
+                  <RefreshCw size={11} /> Challenge this
                 </button>
               )}
             </div>
