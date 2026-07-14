@@ -172,58 +172,21 @@ function CountUp({ to, suffix = "", className = "" }) {
 // ─── HERO ────────────────────────────────────────────────────────────────
 function Hero() {
   const shouldReduce = useReducedMotion();
-  const heroRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ["start start", "end start"],
-  });
-  const videoY = useTransform(scrollYProgress, [0, 1], [0, 160]);
-  const scrimOpacity = useTransform(scrollYProgress, [0, 0.6], [0.55, 0.95]);
 
   return (
     <section
-      ref={heroRef}
       className="relative overflow-hidden isolate min-h-[92vh] flex items-center"
       data-testid="landing-hero"
     >
-      {/* Cinematic dark backdrop — Bracket's own brand illustration:
-         mess → `{ }` → structured document → checklist. Reads exactly like
-         our value prop, no metaphor decoding needed. */}
-      <motion.div
-        style={{ y: shouldReduce ? 0 : videoY }}
-        className="absolute inset-0 -z-20"
-      >
-        <img
-          src="https://customer-assets.emergentagent.com/job_design-decided/artifacts/lyyj4r0p_image%20%281%29%201.webp"
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover"
-          loading="eager"
-          decoding="async"
-        />
-      </motion.div>
-
-      {/* Gradient scrim */}
-      <motion.div
+      {/* Cinematic dark backdrop — same `.hero-ambient` treatment used on
+         the Login page (blue-signal radial wash + subtle dot grid). Keeps
+         the whole app in one visual universe, without a photo backdrop. */}
+      <div aria-hidden="true" className="hero-ambient" />
+      <div
         aria-hidden="true"
-        style={{ opacity: shouldReduce ? 0.9 : scrimOpacity }}
         className="absolute inset-0 -z-10"
-      >
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(120% 80% at 20% 20%, rgba(46,91,255,0.20) 0%, rgba(8,9,10,0.65) 40%, rgba(8,9,10,0.94) 75%, #08090A 100%)",
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(8,9,10,0.35) 0%, rgba(8,9,10,0.35) 50%, rgba(8,9,10,0.9) 100%)",
-          }}
-        />
-      </motion.div>
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
 
       <FilmGrain opacity={0.06} />
 
