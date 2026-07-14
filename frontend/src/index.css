@@ -57,7 +57,7 @@
 
   /* Decision step indicators (Workflow) */
   --step-done:   #22C55E;  /* green for completed */
-  --step-active: #F59E0B;  /* amber for current */
+  --step-active: #5E6AD2;  /* signal-blue for current — matches brand accent */
   --step-pending:#3F3F46;  /* zinc for pending */
 
   /* Legacy aliases — keep existing JSX working */
@@ -705,7 +705,7 @@ body::before {
   background: var(--step-active);
   color: #FFFFFF;
   border-color: var(--step-active);
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.22);
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.22);
 }
 .step-node.is-active .dot { background: var(--step-active); }
 

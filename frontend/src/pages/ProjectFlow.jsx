@@ -789,7 +789,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
   };
 
   const pasteGibberish = form.raw_paste && looksLikeGibberish(form.raw_paste);
-  const canSubmit = !loading && (form.raw_paste || "").trim().length >= 20 && !pasteGibberish;
+  const canSubmit = !loading && (form.raw_paste || "").trim().length > 0 && !pasteGibberish;
 
   return (
     <StepShell
@@ -1126,7 +1126,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
     }
   };
 
-  const canSubmit = !loading && (form.raw_paste || "").trim().length >= 20;
+  const canSubmit = !loading && (form.raw_paste || "").trim().length > 0;
 
   return (
     <StepShell
@@ -1337,7 +1337,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
     }
   };
 
-  const canSubmit = !loading && (form.raw_paste || "").trim().length >= 15;
+  const canSubmit = !loading && (form.raw_paste || "").trim().length > 0;
 
   return (
     <StepShell
