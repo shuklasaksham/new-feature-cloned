@@ -175,9 +175,9 @@ function CountUp({ to, suffix = "", className = "" }) {
 function HeroOrbs() {
   const shouldReduce = useReducedMotion();
   const orbs = [
-    { size: 560, top: "-14%",  left: "-10%", bg: "rgba(255,255,255,0.10)", dx: 22,  dy: -14, dur: 14 },
-    { size: 440, top: "38%",   left: "82%",  bg: "rgba(255,255,255,0.09)", dx: -22, dy: -10, dur: 18 },
-    { size: 520, top: "66%",   left: "90%",  bg: "rgba(124,213,255,0.08)", dx: 16,  dy: 12,  dur: 20 },
+    { size: 640, top: "-18%",  left: "-12%", bg: "rgba(255,255,255,0.05)", dx: 22,  dy: -14, dur: 14 },
+    { size: 520, top: "34%",   left: "82%",  bg: "rgba(255,255,255,0.04)", dx: -22, dy: -10, dur: 18 },
+    { size: 620, top: "66%",   left: "92%",  bg: "rgba(124,213,255,0.05)", dx: 16,  dy: 12,  dur: 20 },
   ];
   return (
     <div aria-hidden="true" className="absolute inset-0 -z-[5] pointer-events-none overflow-hidden">
@@ -193,8 +193,8 @@ function HeroOrbs() {
             height: o.size,
             top: o.top,
             left: o.left,
-            background: `radial-gradient(circle at 40% 40%, ${o.bg} 0%, rgba(255,255,255,0) 62%)`,
-            filter: "blur(28px)",
+            background: `radial-gradient(circle at 45% 45%, ${o.bg} 0%, rgba(255,255,255,0) 55%)`,
+            filter: "blur(70px)",
           }}
         />
       ))}
@@ -736,6 +736,115 @@ function StoryChapter({ chapter, index }) {
   );
 }
 
+// ─── SECTION 4c: TESTIMONIALS (marquee, cinematic) ───────────────────────
+const TESTIMONIALS = [
+  {
+    quote:
+      "I used to spend 4am hours second-guessing a scope. Bracket picks the call, tells me why, and hands me the client message. I don't argue with it anymore.",
+    name: "Ankita Rao",
+    role: "Independent designer · Bengaluru",
+    accent: "#2E5BFF",
+  },
+  {
+    quote:
+      "The 'challenge this' button is genuinely the killer feature. It's not agreeing with me for the sake of it — it's arguing back. That's the difference.",
+    name: "Marcus Fields",
+    role: "Freelance product designer · Berlin",
+    accent: "#7CD5FF",
+  },
+  {
+    quote:
+      "Sent a Bracket-drafted scope doc to a client who's usually 20 rounds of nitpicks. Signed in a day. I've never had that happen without a phone call first.",
+    name: "Priya Ganesan",
+    role: "Brand studio of 3 · Mumbai",
+    accent: "#4BE39B",
+  },
+  {
+    quote:
+      "Our juniors used to defer every ambiguous scoping question up to me. With Bracket in the loop, they ship a decisioned brief and I sign off in 5 minutes.",
+    name: "Devon Lakhani",
+    role: "Design agency lead · Toronto",
+    accent: "#FFB84C",
+  },
+  {
+    quote:
+      "Feels like a senior designer looking over my shoulder. Not passive-aggressive — actually helpful. Bought Pro after the first paste.",
+    name: "Yuki Tanaka",
+    role: "UI freelancer · Osaka",
+    accent: "#B7B7FF",
+  },
+  {
+    quote:
+      "The risk-flagging saved me from a fixed-price contract that would've bled me for 6 weeks. Bracket named the risk before I did. Priced it in.",
+    name: "Sam Okoye",
+    role: "Product design consultant · Lagos",
+    accent: "#FF6B9D",
+  },
+];
+
+function Testimonials() {
+  // Duplicate the array so the CSS marquee (translateX -50%) loops seamlessly.
+  const track = [...TESTIMONIALS, ...TESTIMONIALS];
+  return (
+    <section className="relative py-28 md:py-36 overflow-hidden isolate" data-testid="landing-testimonials" id="testimonials">
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[420px] w-[900px] blur-[120px] opacity-[0.12] -z-10"
+        style={{ background: "radial-gradient(closest-side, #2E5BFF, transparent 70%)" }}
+      />
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
+        <SectionHeading
+          tag="FROM THE FIELD"
+          title="Freelancers ship faster with Bracket."
+          center
+        />
+      </div>
+      {/* Marquee row — full-bleed, hover pauses. */}
+      <div className="mt-14 md:mt-20 overflow-hidden" data-testid="testimonials-track-wrap">
+        <div className="testimonial-track">
+          {track.map((t, i) => (
+            <TestimonialCard key={i} card={t} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TestimonialCard({ card }) {
+  return (
+    <div
+      className="testimonial-card liquid-glass shrink-0 w-[360px] sm:w-[420px] p-7 sm:p-8 relative isolate"
+      style={{ "--card-accent": card.accent }}
+    >
+      <div
+        aria-hidden="true"
+        className="absolute -top-16 -right-16 h-[260px] w-[260px] rounded-full blur-[70px] opacity-[0.20] -z-10"
+        style={{ background: `radial-gradient(closest-side, ${card.accent}, transparent 70%)` }}
+      />
+      <p className="font-display italic tracking-[-0.01em] leading-[1.35] text-[16px] sm:text-[17.5px] text-[var(--text)]">
+        &ldquo;{card.quote}&rdquo;
+      </p>
+      <div className="mt-6 flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="inline-flex items-center justify-center w-9 h-9 rounded-full font-display font-semibold text-[13px]"
+          style={{
+            background: `${card.accent}22`,
+            color: card.accent,
+          }}
+        >
+          {card.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+        </span>
+        <div>
+          <p className="text-[13px] font-medium text-[var(--text)]">{card.name}</p>
+          <p className="mono-tag text-muted text-[10px]">{card.role}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── SECTION 5: PRICING (glassmorphic, middle amber-glowed) ──────────────
 function PricingSection() {
   const [currency, setCurrency] = useState("USD");
@@ -1002,6 +1111,7 @@ export default function Landing() {
       <Showcase />
       <Bento />
       <Story />
+      <Testimonials />
       <PricingSection />
       <FinalCTA />
     </>

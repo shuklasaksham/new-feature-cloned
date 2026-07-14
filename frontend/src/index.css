@@ -1907,3 +1907,13 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   padding-top: clamp(80px, 12vw, 160px);
   padding-bottom: clamp(80px, 12vw, 160px);
 }
+
+/* Admin — checkbox styling that matches the dark surface. Blue accent tick
+   from the browser's native checkbox, sized up so it's easy to click. */
+.admin-checkbox {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  border-radius: 3px;
+}

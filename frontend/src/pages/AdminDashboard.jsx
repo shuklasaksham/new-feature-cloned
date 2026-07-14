@@ -9,6 +9,8 @@ import {
   Check,
   BarChart3,
   Users,
+  Trash2,
+  UserX,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -37,6 +39,10 @@ export default function AdminDashboard() {
   const [detailProjectId, setDetailProjectId] = useState(null);
   const [filterKind, setFilterKind] = useState("all");        // all | guest | registered
   const [filterProjects, setFilterProjects] = useState("any"); // any | none | one | few | many
+  const [selected, setSelected] = useState(new Set());        // user_ids checked in the list
+  const [confirmDelete, setConfirmDelete] = useState(null);   // { count, dry } | null
+  const [deleting, setDeleting] = useState(false);
+  const [purging, setPurging] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -107,6 +113,68 @@ export default function AdminDashboard() {
       toast.error(formatApiError(err));
     } finally {
       setResetting(false);
+    }
+  };
+
+  // ─── Bulk selection + deletion ─────────────────────────────────────
+  const toggleOne = (uid) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(uid)) next.delete(uid); else next.add(uid);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelected(new Set());
+  const allSelected = filtered.length > 0 && filtered.every((u) => selected.has(u.user_id) || u.is_admin);
+  const toggleAll = () => {
+    if (allSelected) {
+      clearSelection();
+    } else {
+      // Select every non-admin visible row
+      setSelected(new Set(filtered.filter((u) => !u.is_admin).map((u) => u.user_id)));
+    }
+  };
+  // Reset selection whenever filters change
+  useEffect(() => { clearSelection(); }, [filterKind, filterProjects]);
+
+  const askDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    try {
+      const { data } = await api.post("/admin/users/delete", { user_ids: ids, confirm: false });
+      setConfirmDelete({ count: data.matched_users, cascade: data.cascade, ids });
+    } catch (e) {
+      toast.error(formatApiError(e));
+    }
+  };
+  const doDelete = async () => {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    try {
+      const { data } = await api.post("/admin/users/delete", { user_ids: confirmDelete.ids, confirm: true });
+      toast.success(`Deleted ${data.deleted?.users || 0} users, ${data.deleted?.projects || 0} projects.`);
+      setConfirmDelete(null);
+      clearSelection();
+      await load();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const doPurgeGuests = async () => {
+    if (!window.confirm("Delete ALL guest users + their data across the workspace? This cannot be undone.")) return;
+    setPurging(true);
+    try {
+      const { data } = await api.post("/admin/purge-guests");
+      const n = data.deleted?.users || 0;
+      toast.success(n === 0 ? "No guest users found." : `Purged ${n} guests + ${data.deleted?.projects || 0} projects.`);
+      await load();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setPurging(false);
     }
   };
 
@@ -241,6 +309,62 @@ export default function AdminDashboard() {
           <p className="mt-8 text-[13px] text-[var(--danger)]" data-testid="admin-error">{error}</p>
         )}
 
+        {/* Bulk-action toolbar — always visible on the users tab so admins can
+            purge guests in one click, or multi-select rows for deletion. */}
+        {!loading && !error && (
+          <div
+            className="mt-6 flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg border border-[var(--hairline)] bg-[var(--surface-2)]/60"
+            data-testid="admin-bulk-toolbar"
+          >
+            <label className="inline-flex items-center gap-2 text-[12px] text-[var(--text-2)] select-none cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="admin-checkbox"
+                data-testid="admin-select-all"
+              />
+              Select all visible ({filtered.filter((u) => !u.is_admin).length})
+            </label>
+            <span className="text-[var(--text-3)] text-[11px]">·</span>
+            <span className="text-[12px] text-[var(--text-2)]" data-testid="admin-selected-count">
+              {selected.size} selected
+            </span>
+            {selected.size > 0 && (
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="text-[11px] text-[var(--text-3)] underline hover:text-[var(--text)]"
+                data-testid="admin-clear-selection"
+              >
+                Clear
+              </button>
+            )}
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={doPurgeGuests}
+                disabled={purging}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--hairline)] text-[12px] text-[var(--text-2)] hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50 transition-colors"
+                data-testid="admin-purge-guests"
+                title="Delete all guest users + their data"
+              >
+                {purging ? <Loader2 size={12} className="animate-spin" /> : <UserX size={12} />}
+                Purge all guests
+              </button>
+              <button
+                type="button"
+                onClick={askDelete}
+                disabled={selected.size === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--danger)]/40 text-[12px] text-[var(--danger)] hover:bg-[var(--danger)]/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                data-testid="admin-delete-selected"
+              >
+                <Trash2 size={12} /> Delete selected
+              </button>
+            </div>
+          </div>
+        )}
+
         {!loading && !error && (
           <ul className="card-brut mt-6 overflow-hidden divide-y divide-[var(--hairline)]" data-testid="admin-user-list">
             {filtered.map((u) => {
@@ -252,6 +376,21 @@ export default function AdminDashboard() {
                     className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-[var(--surface-2)] cursor-pointer transition-colors"
                     onClick={() => toggle(u)}
                   >
+                    {!u.is_admin && (
+                      <label
+                        onClick={(e) => e.stopPropagation()}
+                        className="shrink-0 inline-flex items-center cursor-pointer"
+                        title="Select for bulk actions"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selected.has(u.user_id)}
+                          onChange={() => toggleOne(u.user_id)}
+                          className="admin-checkbox"
+                          data-testid={`admin-user-checkbox-${u.user_id}`}
+                        />
+                      </label>
+                    )}
                     <button
                       className="shrink-0 text-[var(--text-3)]"
                       aria-label={isOpen ? "Collapse" : "Expand"}
@@ -403,6 +542,67 @@ export default function AdminDashboard() {
           projectId={detailProjectId}
           onClose={() => setDetailProjectId(null)}
         />
+      )}
+
+      {/* Bulk delete confirmation */}
+      {confirmDelete && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-5 z-[60]"
+          onClick={() => !deleting && setConfirmDelete(null)}
+          data-testid="admin-delete-modal"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="card-brut w-full max-w-md p-6 sm:p-8"
+          >
+            <div className="flex items-center justify-between">
+              <span className="section-label" style={{ color: "var(--danger)" }}>
+                <span className="dot" style={{ background: "var(--danger)" }} />
+                Delete users
+              </span>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                className="text-[var(--text-3)] hover:text-[var(--text)]"
+                data-testid="admin-delete-close"
+              >
+                <XIcon size={16} />
+              </button>
+            </div>
+            <p className="text-[14px] mt-4">
+              Delete <strong>{confirmDelete.count}</strong> user{confirmDelete.count === 1 ? "" : "s"}?
+            </p>
+            <ul className="mt-3 text-[12.5px] text-[var(--text-2)] space-y-1">
+              <li>· {confirmDelete.cascade?.projects || 0} projects will be removed</li>
+              <li>· {confirmDelete.cascade?.user_sessions || 0} sessions revoked</li>
+              <li>· {confirmDelete.cascade?.email_otps || 0} pending OTP codes cleared</li>
+            </ul>
+            <p className="mt-3 text-[11.5px] text-[var(--danger)]">This cannot be undone.</p>
+
+            <div className="mt-6 flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+                className="btn-ghost"
+                data-testid="admin-delete-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={doDelete}
+                disabled={deleting}
+                className="btn-brut inline-flex items-center gap-2"
+                style={{ background: "var(--danger)", color: "#fff", borderColor: "var(--danger)" }}
+                data-testid="admin-delete-confirm"
+              >
+                {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                {deleting ? "Deleting…" : "Delete forever"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

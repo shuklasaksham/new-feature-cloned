@@ -787,6 +787,102 @@ async def admin_purge_users(body: PurgeUsersIn, request: Request):
     return result
 
 
+class DeleteUsersIn(_BM):
+    user_ids: List[str] = _Fd(default_factory=list)
+    confirm: bool = _Fd(default=False)
+
+
+@api.post("/admin/users/delete")
+async def admin_delete_users(body: DeleteUsersIn, request: Request):
+    """Bulk-delete users by explicit `user_ids` + cascade projects/sessions/OTPs.
+    Never deletes admins. Dry-run by default (confirm=True to actually delete)."""
+    admin = await auth_current_admin(request, db)
+    if not body.user_ids:
+        return {"dry_run": True, "matched_users": 0, "deleted": {"users": 0, "projects": 0, "user_sessions": 0, "email_otps": 0}}
+    admin_emails_lower = {admin["email"].lower(), *(e.lower() for e in _admin_emails_set())}
+    # Fetch victims, skip admins
+    victims = await db.users.find(
+        {"user_id": {"$in": body.user_ids}},
+        {"_id": 0, "user_id": 1, "email": 1},
+    ).to_list(length=100000)
+    victims = [v for v in victims if (v.get("email") or "").lower() not in admin_emails_lower]
+    victim_ids = [v["user_id"] for v in victims]
+    victim_emails = [v["email"] for v in victims if v.get("email")]
+
+    if not body.confirm:
+        pc = await db.projects.count_documents(
+            {"$or": [{"owner_user_id": {"$in": victim_ids}}, {"creator_email": {"$in": victim_emails}}]}
+        )
+        sc = await db.user_sessions.count_documents({"user_id": {"$in": victim_ids}})
+        oc = await db.email_otps.count_documents({"email": {"$in": victim_emails}}) if victim_emails else 0
+        return {
+            "dry_run": True,
+            "matched_users": len(victim_ids),
+            "cascade": {"projects": pc, "user_sessions": sc, "email_otps": oc},
+        }
+
+    # Cascade delete
+    proj_del = await db.projects.delete_many(
+        {"$or": [{"owner_user_id": {"$in": victim_ids}}, {"creator_email": {"$in": victim_emails}}]}
+    )
+    sess_del = await db.user_sessions.delete_many({"user_id": {"$in": victim_ids}})
+    otp_del_count = 0
+    if victim_emails:
+        otp_del = await db.email_otps.delete_many({"email": {"$in": victim_emails}})
+        otp_del_count = otp_del.deleted_count
+    users_del = await db.users.delete_many({"user_id": {"$in": victim_ids}})
+    logger.info(
+        "[admin/users/delete] admin=%s deleted users=%s projects=%s sessions=%s otps=%s",
+        admin["email"], users_del.deleted_count, proj_del.deleted_count, sess_del.deleted_count, otp_del_count,
+    )
+    return {
+        "dry_run": False,
+        "matched_users": len(victim_ids),
+        "deleted": {
+            "users": users_del.deleted_count,
+            "projects": proj_del.deleted_count,
+            "user_sessions": sess_del.deleted_count,
+            "email_otps": otp_del_count,
+        },
+    }
+
+
+@api.post("/admin/purge-guests")
+async def admin_purge_guests(request: Request):
+    """One-shot: delete ALL guest users (is_guest=True or `*@bracket.guest`)
+    across the workspace + cascade their data. Idempotent. Never touches
+    non-guest accounts or admins. Used to clean up automation / drive-by
+    guest sessions from both preview and production."""
+    admin = await auth_current_admin(request, db)
+    filt = {"$or": [{"is_guest": True}, {"email": {"$regex": r"@bracket\.guest$"}}]}
+    guests = await db.users.find(filt, {"_id": 0, "user_id": 1, "email": 1}).to_list(length=100000)
+    ids = [g["user_id"] for g in guests]
+    emails = [g["email"] for g in guests if g.get("email")]
+    if not ids:
+        return {"deleted": {"users": 0, "projects": 0, "user_sessions": 0, "email_otps": 0}}
+    proj_del = await db.projects.delete_many(
+        {"$or": [{"owner_user_id": {"$in": ids}}, {"creator_email": {"$in": emails}}]}
+    )
+    sess_del = await db.user_sessions.delete_many({"user_id": {"$in": ids}})
+    otp_count = 0
+    if emails:
+        otp_del = await db.email_otps.delete_many({"email": {"$in": emails}})
+        otp_count = otp_del.deleted_count
+    users_del = await db.users.delete_many(filt)
+    logger.info(
+        "[admin/purge-guests] admin=%s deleted users=%s projects=%s sessions=%s otps=%s",
+        admin["email"], users_del.deleted_count, proj_del.deleted_count, sess_del.deleted_count, otp_count,
+    )
+    return {
+        "deleted": {
+            "users": users_del.deleted_count,
+            "projects": proj_del.deleted_count,
+            "user_sessions": sess_del.deleted_count,
+            "email_otps": otp_count,
+        },
+    }
+
+
 @api.get("/admin/projects/{project_id}")
 async def admin_project_detail(project_id: str, request: Request):
     """Full project document for the admin drill-down. Includes every step's
