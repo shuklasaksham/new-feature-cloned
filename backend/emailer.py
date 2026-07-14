@@ -268,3 +268,150 @@ async def send_review_outcome_email(
     except Exception as e:
         logger.exception(f"review-outcome email failed for {owner_email}: {e}")
         return False
+
+
+# --- CLIENT RECEIPT EMAIL --------------------------------------------------
+def _client_receipt_html(project_name: str, review: dict, share_url: str) -> str:
+    is_accept = review.get("type") == "accept"
+    pname = (project_name or "the project").strip() or "the project"
+    signer = (review.get("signature_name") or "there").strip()
+    role = (review.get("role") or "").strip()
+    signer_line = f"{signer}{', ' + role if role else ''}"
+    accent = "#0033FF" if is_accept else "#D02620"
+    chip = "SIGN-OFF CONFIRMED" if is_accept else "CONCERNS RECEIVED"
+    headline = (
+        "You signed the sign-off." if is_accept else "We received your concerns."
+    )
+    if is_accept:
+        count = review.get("accepted_count", 0)
+        total = review.get("total_items", 0)
+        body_block = (
+            f"<p style='margin:0 0 14px 0;font-size:16px;line-height:1.6;color:#0A0A0A;'>"
+            f"Hi {signer_line} — you signed off on <strong>{pname}</strong> "
+            f"and confirmed <strong>{count}/{total}</strong> items. We've attached "
+            f"the signed PDF for your records."
+            f"</p>"
+            f"<p style='margin:0 0 14px 0;font-size:16px;line-height:1.6;color:#0A0A0A;'>"
+            f"The project owner has also been notified — expect their next update soon."
+            f"</p>"
+        )
+    else:
+        concerns = (review.get("concerns") or "").strip()
+        safe = concerns.replace("<", "&lt;").replace(">", "&gt;")
+        body_block = (
+            f"<p style='margin:0 0 14px 0;font-size:16px;line-height:1.6;color:#0A0A0A;'>"
+            f"Hi {signer_line} — thanks for taking the time on <strong>{pname}</strong>. "
+            f"Here's a copy of what you sent back so you have it on record:"
+            f"</p>"
+            f"<div style='margin:14px 0;padding:14px;border-left:3px solid #0A0A0A;background:#F4F4F0;"
+            f"font-size:14px;line-height:1.55;color:#525252;white-space:pre-wrap;'>"
+            f"{safe}</div>"
+            f"<p style='margin:0 0 14px 0;font-size:16px;line-height:1.6;color:#0A0A0A;'>"
+            f"The project owner has been notified and will respond via the same review link."
+            f"</p>"
+        )
+    return f"""<!doctype html>
+<html><body style="margin:0;padding:0;background:#F4F4F0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0A0A0A;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4F0;padding:40px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #0A0A0A;">
+<tr><td style="padding:32px 32px 0 32px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:{accent};">
+    &#123; bracket &middot; {chip.lower()} &#125;
+  </p>
+</td></tr>
+<tr><td style="padding:20px 32px 0 32px;">
+  <h1 style="margin:0;font-size:30px;line-height:1.1;font-weight:900;letter-spacing:-0.02em;color:#0A0A0A;">
+    <span style="color:{accent};">{headline}</span>
+  </h1>
+</td></tr>
+<tr><td style="padding:20px 32px 0 32px;">
+  {body_block}
+  <a href="{share_url}" style="display:inline-block;padding:14px 22px;background:#0A0A0A;color:#ffffff;text-decoration:none;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;border:1px solid #0A0A0A;">
+    View the document &rarr;
+  </a>
+</td></tr>
+<tr><td style="padding:32px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#525252;border-top:1px solid #D4D4D0;padding-top:20px;">
+    Bracket &middot; Decisions for designers
+  </p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+
+def _client_receipt_text(project_name: str, review: dict, share_url: str) -> str:
+    is_accept = review.get("type") == "accept"
+    pname = (project_name or "the project").strip() or "the project"
+    signer = (review.get("signature_name") or "there").strip()
+    if is_accept:
+        count = review.get("accepted_count", 0)
+        total = review.get("total_items", 0)
+        return (
+            f"Hi {signer},\n\n"
+            f"You signed off on {pname}. {count}/{total} items confirmed.\n"
+            f"The signed PDF is attached for your records.\n\n"
+            f"View the document: {share_url}\n\n"
+            "— Bracket\nDecisions for designers"
+        )
+    return (
+        f"Hi {signer},\n\n"
+        f"We received your concerns on {pname}. Here's what you sent:\n\n"
+        f"{(review.get('concerns') or '').strip()}\n\n"
+        f"The project owner will respond via the same review link:\n{share_url}\n\n"
+        "— Bracket\nDecisions for designers"
+    )
+
+
+async def send_client_receipt_email(
+    client_email: str,
+    project_name: str,
+    review: dict,
+    share_url: str,
+    pdf_bytes: bytes = b"",
+    pdf_filename: str = "sign-off.pdf",
+) -> bool:
+    """Send the client a receipt of their action.
+    - Accept: attach the signed PDF.
+    - Reject: echo their concerns back as a paper trail.
+    Fire-and-forget — never raises."""
+    if not client_email:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning("RESEND_API_KEY not set; skipping client-receipt email")
+        return False
+    resend.api_key = api_key
+    is_accept = review.get("type") == "accept"
+    subject = (
+        f"Signed: {project_name} — copy for your records"
+        if is_accept
+        else f"Concerns received: {project_name}"
+    )
+    params = {
+        "from": _sender(),
+        "to": [client_email],
+        "subject": subject,
+        "html": _client_receipt_html(project_name, review, share_url),
+        "text": _client_receipt_text(project_name, review, share_url),
+        "reply_to": os.environ.get("SENDER_EMAIL", ""),
+    }
+    if is_accept and pdf_bytes:
+        # Resend accepts base64-encoded attachments.
+        import base64
+        params["attachments"] = [{
+            "filename": pdf_filename,
+            "content": base64.b64encode(pdf_bytes).decode("ascii"),
+        }]
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(
+            f"client-receipt email sent to {client_email}: "
+            f"{result.get('id') if isinstance(result, dict) else result}"
+        )
+        return True
+    except Exception as e:
+        logger.exception(f"client-receipt email failed for {client_email}: {e}")
+        return False

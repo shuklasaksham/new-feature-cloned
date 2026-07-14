@@ -38,7 +38,7 @@ from ai_engine import (
     extract_decision_from_paste,
     generate_project_title,
 )
-from emailer import send_thanks_email, send_review_outcome_email
+from emailer import send_thanks_email, send_review_outcome_email, send_client_receipt_email
 from auth import (
     SESSION_COOKIE,
     current_user,
@@ -1839,7 +1839,7 @@ def _pdf_for(project: dict) -> bytes:
         p.set_font("Helvetica", "B", 8)
         p.set_text_color(*_ACCENT)
         _reset_x()
-        _safe_multi_cell(0, 4, "\u00a7 " + s.upper())
+        _safe_multi_cell(0, 4, s.upper())
         p.ln(1)
         # Faint hairline under the section tag.
         p.set_draw_color(230, 232, 238)
@@ -2123,6 +2123,7 @@ class AcceptIn(BaseModel):
     acceptances: Dict[str, bool] = Field(default_factory=dict)
     signature_name: str = Field(min_length=1, max_length=120)
     role: str = Field(default="", max_length=120)
+    client_email: EmailStr
 
 
 @api.post("/share/{token}/accept")
@@ -2140,6 +2141,7 @@ async def client_accept(token: str, body: AcceptIn):
         "submitted_at": _now_iso(),
         "signature_name": body.signature_name.strip(),
         "role": (body.role or "").strip(),
+        "client_email": str(body.client_email).strip().lower(),
         "acceptances": body.acceptances,
         "accepted_count": accepted_count,
         "total_items": total,
@@ -2149,7 +2151,7 @@ async def client_accept(token: str, body: AcceptIn):
         {"$set": {"share_status": "accepted", "share_review": review, "updated_at": _now_iso()}},
     )
     project = await db.projects.find_one({"share_token": token}, {"_id": 0})
-    # Fire-and-forget owner notification — must never block client response.
+    # Fire-and-forget notifications — must never block client response.
     try:
         await send_review_outcome_email(
             owner_email=project.get("creator_email", ""),
@@ -2160,6 +2162,22 @@ async def client_accept(token: str, body: AcceptIn):
         )
     except Exception as e:
         logger.warning(f"accept outcome email crashed: {e}")
+    # Also mail the client — with the signed PDF attached — as a receipt.
+    try:
+        pdf_bytes = _pdf_for(project)
+        safe_name = "".join(c if c.isalnum() else "-" for c in (project.get("name") or "bracket")).strip("-").lower() or "bracket"
+        base = os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com").rstrip("/")
+        share_url = f"{base}/r/{token}"
+        await send_client_receipt_email(
+            client_email=review["client_email"],
+            project_name=project.get("name", ""),
+            review=review,
+            share_url=share_url,
+            pdf_bytes=pdf_bytes,
+            pdf_filename=f"{safe_name}-signed.pdf",
+        )
+    except Exception as e:
+        logger.warning(f"client receipt (accept) email crashed: {e}")
     return _public_view(project)
 
 
@@ -2192,6 +2210,7 @@ class RejectConfirmIn(BaseModel):
     concerns: str = Field(min_length=4, max_length=4000)
     signature_name: str = Field(min_length=1, max_length=120)
     role: str = Field(default="", max_length=120)
+    client_email: EmailStr
     ai_suggestions: Dict[str, Any] = Field(default_factory=dict)
 
 
@@ -2207,6 +2226,7 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
         "submitted_at": _now_iso(),
         "signature_name": body.signature_name.strip(),
         "role": (body.role or "").strip(),
+        "client_email": str(body.client_email).strip().lower(),
         "concerns": body.concerns.strip(),
         "ai_suggestions": body.ai_suggestions,
     }
@@ -2226,6 +2246,18 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
         )
     except Exception as e:
         logger.warning(f"reject outcome email crashed: {e}")
+    # Send the client a receipt echoing back their concerns.
+    try:
+        base = os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com").rstrip("/")
+        share_url = f"{base}/r/{token}"
+        await send_client_receipt_email(
+            client_email=review["client_email"],
+            project_name=project.get("name", ""),
+            review=review,
+            share_url=share_url,
+        )
+    except Exception as e:
+        logger.warning(f"client receipt (reject) email crashed: {e}")
     return _public_view(project)
 
 

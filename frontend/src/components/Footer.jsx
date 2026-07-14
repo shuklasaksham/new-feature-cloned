@@ -8,7 +8,7 @@ const colLink = "text-[13px] text-[var(--text-2)] hover:text-[var(--text)] trans
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[var(--hairline)] mt-0" data-testid="site-footer">
+    <footer className="relative z-10 border-t border-[var(--hairline)] mt-0" data-testid="site-footer">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-14 md:py-20 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
         <div className="col-span-2 md:col-span-2">
           <Link to="/" className="inline-flex items-center gap-2">

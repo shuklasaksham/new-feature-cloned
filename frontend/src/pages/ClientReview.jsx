@@ -382,6 +382,7 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
   );
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState("");
 
@@ -398,6 +399,9 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
   const submit = async () => {
     if (!allChecked) return setErr("Tick each item before signing — it's the whole point.");
     if (!name.trim()) return setErr("Add your name as signature.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return setErr("Enter a valid email — we'll send you the signed PDF here.");
+    }
     setSubmitting(true);
     setErr("");
     try {
@@ -405,6 +409,7 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
         acceptances,
         signature_name: name.trim(),
         role: role.trim(),
+        client_email: email.trim(),
       });
       onDone(data);
     } catch (e) {
@@ -494,6 +499,24 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
               data-testid="review-signature-role"
             />
           </label>
+          <label className="block mt-4">
+            <span className="mono-tag text-muted flex items-center gap-2 text-[10.5px]">
+              <Pen size={12} /> YOUR EMAIL (REQUIRED)
+            </span>
+            <input
+              type="email"
+              className="review-accept-input mt-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@company.com"
+              data-testid="review-signature-email"
+              required
+              autoComplete="email"
+            />
+            <span className="mt-2 block text-[11px] text-[var(--text-3)] leading-relaxed">
+              We&apos;ll email you the signed PDF for your records.
+            </span>
+          </label>
 
           {err && (
             <p className="mt-4 text-sm text-danger" data-testid="review-accept-error">
@@ -505,7 +528,7 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
             <button
               type="button"
               onClick={submit}
-              disabled={submitting || !allChecked || !name.trim()}
+              disabled={submitting || !allChecked || !name.trim() || !email.trim()}
               className="btn-primary flex-1 justify-center"
               data-testid="review-accept-submit"
             >
@@ -531,6 +554,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
   const [concerns, setConcerns] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
+  const [email, setEmail] = useState("");
   const [suggestions, setSuggestions] = useState(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -552,6 +576,9 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
 
   const confirm = async () => {
     if (!name.trim()) return setErr("Add your name as signature.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return setErr("Enter a valid email — we'll email you a copy of your concerns.");
+    }
     setLoading(true);
     setErr("");
     try {
@@ -559,6 +586,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
         concerns: concerns.trim(),
         signature_name: name.trim(),
         role: role.trim(),
+        client_email: email.trim(),
         ai_suggestions: suggestions || {},
       });
       onDone(data);
@@ -678,6 +706,24 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
             data-testid="review-signature-role"
           />
         </label>
+        <label className="block mt-3">
+          <span className="mono-tag text-muted flex items-center gap-2 text-[10.5px]">
+            <Pen size={12} /> YOUR EMAIL (REQUIRED)
+          </span>
+          <input
+            type="email"
+            className="review-accept-input mt-2"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            data-testid="review-signature-email"
+            required
+            autoComplete="email"
+          />
+          <span className="mt-2 block text-[11px] text-[var(--text-3)] leading-relaxed">
+            We&apos;ll email you a copy of the concerns you sent.
+          </span>
+        </label>
       </div>
 
       {err && <p className="mt-3 text-sm text-danger" data-testid="review-reject-confirm-error">{err}</p>}
@@ -686,7 +732,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
         <button
           type="button"
           onClick={confirm}
-          disabled={loading || !name.trim()}
+          disabled={loading || !name.trim() || !email.trim()}
           className="btn-primary flex-1 justify-center"
           data-testid="review-reject-confirm"
         >

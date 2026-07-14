@@ -1,0 +1,35 @@
+{
+  "summary": "Iteration 27 verified all 3 fixes: (1) marketing Footer renders on / /how-it-works /use-cases /pricing /case-studies /faq with Product+Connect columns visible above the fold at bottom, (2) generated PDF (via /api/projects/{id}/export.pdf) contains NO '§' (U+00A7) in extracted text (pypdf) while section headings 'SCOPE' remain, (3) both /api/share/{token}/accept and /reject/confirm now require client_email (EmailStr) — POST without it returns 422, invalid email returns 422, and valid email is persisted lowercased+trimmed to share_review.client_email. Frontend AcceptForm and RejectFlow (suggestions phase) both render a mandatory 'YOUR EMAIL (REQUIRED)' input with data-testid='review-signature-email'; submit button disabled while email empty; invalid regex triggers 'Enter a valid email' client-side error; valid email produces 200 accept/reject. E2E accept flow ended in review-done-state 'DOCUMENT ACCEPTED'; e2e reject flow ended in 'CONCERNS DELIVERED'. Backend suite: 8/8 pytest tests passed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verified_features": [
+    {"feature": "PDF § removal", "status": "PASS", "detail": "pypdf-extracted text from /api/projects/{demo}/export.pdf contains 0 occurrences of '\\u00a7'. 'SCOPE' heading still present. My initial byte-level test caught 0xA7 inside FlateDecode compressed streams (false positives) — text-level extraction is the correct check."},
+    {"feature": "Marketing footer on all routes", "status": "PASS", "detail": "data-testid='site-footer' rendered in viewport on /how-it-works, /use-cases, /pricing, /case-studies, /faq, and / (landing). Footer top ~511px on 900px viewport (fully visible). Screenshot confirms PRODUCT column (How it works / Use cases / Pricing / Case studies) and CONNECT column (Start a project / support@use-bracket.com / @use_bracket / LinkedIn) both render. z-index=10 lifts above marketing-ambient overlay."},
+    {"feature": "Accept flow — mandatory client_email UI", "status": "PASS", "detail": "AcceptForm shows label 'YOUR EMAIL (REQUIRED)' + input data-testid='review-signature-email'. Submit button disabled while email empty (verified via is_disabled()). Invalid email like 'not-an-email' surfaces client-side error 'Enter a valid email — we'll send you the signed PDF here.' via [data-testid=review-accept-error]."},
+    {"feature": "Accept flow — 200 with client_email persisted", "status": "PASS", "detail": "POST /api/share/{token}/accept body includes client_email; response 200. Playwright captured request+response. Backend test confirms share_review.client_email stored as 'test-accept@example.com' (lowercased+trimmed from '  TEST-Accept@Example.COM  ')."},
+    {"feature": "Reject flow — mandatory client_email UI on suggestions phase", "status": "PASS", "detail": "After typing concerns and clicking 'See Bracket suggestions', suggestions phase renders same 'YOUR EMAIL (REQUIRED)' input. Submit ('Send concerns') disabled while empty. Invalid email surfaces 'Enter a valid email — we'll email you a copy of your concerns.' error."},
+    {"feature": "Reject flow — 200 with client_email persisted", "status": "PASS", "detail": "POST /api/share/{token}/reject/confirm 200 with client_email in body. Backend test confirms lowercased+trimmed persistence."},
+    {"feature": "Backend 422 validation", "status": "PASS", "detail": "AcceptIn/RejectConfirmIn pydantic models with EmailStr: missing client_email → 422 (field required); invalid email like 'not-an-email' → 422 with 'value is not a valid email address'. All four assertions passed."}
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_27.py",
+    "/app/test_reports/pytest/iter27.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PDF sanitization: server.py `_pdf_text()` should scrub § globally at output time (currently H() no longer prepends '\\u00a7 ', but any § from user content flowing into the PDF wouldn't be caught). Consider adding '\\u00a7': '' to the sanitization dict in _pdf_text for defense-in-depth.",
+    "ClientReview.jsx duplicates the email-regex + client-side error copy between AcceptForm and RejectFlow. Extract a helper `validateClientEmail(str)` to avoid divergence.",
+    "AcceptForm submit's disabled condition is `!allChecked || !name.trim() || !email.trim()` — only checks non-empty, not shape. That's fine because regex check runs on submit(); but the UX inconsistency (button enabled with an invalid string) could be tightened by also requiring the regex to pass before enabling.",
+    "Backend server.py: /accept & /reject/confirm both call `send_client_receipt_email` inside a try/except that logs `warning`. RESEND_API_KEY presence isn't checked before construction. Emailer is fire-and-forget per spec — verified endpoints return 200 even when email side-effect fails.",
+    "MarketingLayout renders Footer for the landing route too (isLanding true still hits the return path with Footer). Good — consistent site chrome."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_27.py (new)"
+  ],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% (accept + reject e2e + 6 marketing routes)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 — logged in via POST /api/auth/login (cookie session).",
+  "seed_data_creation": "Temporarily reset project b3f9a641-0d99-4c1d-b6c3-9ddc663ce5e6 share_status to 'sent' (unsetting share_review) via mongosh three times: once for the Playwright accept e2e, once for the Playwright reject e2e, and once (auto via pytest fixture with backup/restore) for the persistence tests. After tests, project restored to share_status='accepted' with a synthetic share_review (signature 'E2E Client Accept', client_email='e2e-client@example.com') to leave the demo dashboard in a stable state.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Demo project id=b3f9a641-0d99-4c1d-b6c3-9ddc663ce5e6, share_token=kN7yqFxgdXWs3BC5. Public accept/reject endpoints work without auth. To exercise flows: reset via `mongosh bracket_db --eval 'db.projects.updateOne({id:...}, {$set:{share_status:\"sent\"}, $unset:{share_review:\"\"}})'`. Backend regression file: /app/backend/tests/test_iteration_27.py uses a resettable_project fixture (backup+restore share_status/share_review). Run with `REACT_APP_BACKEND_URL=... MONGO_URL=... DB_NAME=bracket_db pytest backend/tests/test_iteration_27.py -v`. The ClientReview modal Accept CTA needs a normal .click() (not force=True) — force=True skips React's synthetic event handler on the button so the modal never opens."
+}
