@@ -290,25 +290,6 @@ function Hero() {
         {/* Live metrics micro-strip */}
         <HeroMetrics />
       </div>
-
-      {/* Scroll cue */}
-      {!shouldReduce && (
-        <motion.div
-          aria-hidden="true"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.6, duration: 1 }}
-          className="absolute left-1/2 bottom-8 -translate-x-1/2 z-20 text-[var(--text-3)] text-[11px] tracking-[0.2em] uppercase"
-        >
-          <span className="block text-center">Scroll</span>
-          <motion.span
-            className="block mx-auto mt-2 h-8 w-px bg-[var(--text-3)]"
-            animate={{ scaleY: [0.3, 1, 0.3] }}
-            style={{ transformOrigin: "top" }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </motion.div>
-      )}
     </section>
   );
 }
@@ -481,9 +462,6 @@ function Showcase() {
               </div>
             ))}
           </motion.div>
-        </div>
-        <div className="pb-10 mono-tag text-muted text-center text-[10px]">
-          scroll to advance ↓
         </div>
       </div>
     </section>
