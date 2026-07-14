@@ -57,7 +57,7 @@ export default function Onboarding() {
       <header className="marketing-header">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center">
           <Link to="/" className="flex items-center gap-2" aria-label="Bracket home">
-            <BracketMark size={26} label={true} />
+            <BracketMark size={40} label={true} />
           </Link>
         </div>
       </header>

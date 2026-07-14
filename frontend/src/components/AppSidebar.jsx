@@ -106,9 +106,8 @@ export default function AppSidebar() {
           <img
             src="/logo-diamond.png"
             alt="Bracket"
-            width={44}
-            height={44}
-            style={{ display: "block", flexShrink: 0, objectFit: "contain", margin: "-9px" }}
+            height={30}
+            style={{ display: "block", flexShrink: 0, objectFit: "contain", height: 30, width: "auto" }}
           />
         </Link>
         <button

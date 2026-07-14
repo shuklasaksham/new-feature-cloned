@@ -211,7 +211,7 @@ function ReviewHeader({ doc }) {
       <div className="review-header-bg" aria-hidden="true" />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3 relative">
         <Link to="/" className="shrink-0 flex items-center gap-3" aria-label="Bracket">
-          <BracketMark size={22} />
+          <BracketMark size={34} />
         </Link>
         <p className="mono-tag text-muted truncate hidden sm:block text-[10.5px]">
           REVIEW · {doc.name?.toUpperCase()}

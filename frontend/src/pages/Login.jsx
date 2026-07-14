@@ -114,7 +114,7 @@ export default function Login() {
       <header className="marketing-header">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2" aria-label="Bracket home">
-            <BracketMark size={26} label={true} />
+            <BracketMark size={40} label={true} />
           </Link>
           <Link to="/" className="marketing-nav-link">← Back to site</Link>
         </div>
