@@ -59,13 +59,17 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
         // was creating a huge visual gap between adjacent H1 lines).
         <span
           key={i}
-          className="inline-block overflow-hidden mr-[0.25em]"
+          className="inline-block overflow-hidden"
           style={{
             lineHeight: 1.05,
             paddingTop: "0.22em",
             paddingBottom: "0.22em",
+            paddingLeft: "0.14em",
+            paddingRight: "0.14em",
             marginTop: "-0.1em",
             marginBottom: "-0.2em",
+            marginLeft: "-0.14em",
+            marginRight: "calc(0.25em - 0.14em)",
             verticalAlign: "bottom",
           }}
         >
