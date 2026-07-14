@@ -1,28 +1,31 @@
 import React from "react";
 
 /**
- * BracketMark — the official Bracket brand mark.
+ * BracketMark — official Bracket brand mark.
  *
- * Always renders the gradient `{ }` icon at `/logo-icon1.png`. Older callers
- * that pass `label={true}` (Navbar, Login, Footer, Sidebar-expanded) still
- * work — we ignore the flag and render icon-only, per the brand direction
- * (no wordmark, just the mark).
+ * • `label={false}` (default) → `/logo-icon1.png` — icon-only `{ }` bracket
+ *   shape (145×179). Used in collapsed sidebar, ProjectFlow header, etc.
+ * • `label={true}`            → `/logo-mark1.png` — full "BRA{ }KET"
+ *   wordmark (688×179). Used in top navbars, footers, expanded sidebar.
+ *
+ * `variant` is kept for API compatibility but has no visual effect.
  */
 export default function BracketMark({
   size = 24,
-  // eslint-disable-next-line no-unused-vars
   label = false,
   // eslint-disable-next-line no-unused-vars
   variant = "chalk",
   className = "",
 }) {
-  const iconAspect = 688 / 179; // width / height of the attached PNG (as-is)
-  const iconWidth = Math.round(size * iconAspect);
+  // Both PNGs are 179px tall; widths differ (icon 145, wordmark 688).
+  const src = label ? "/logo-mark1.png" : "/logo-icon1.png";
+  const aspect = label ? 688 / 179 : 145 / 179;
+  const width = Math.round(size * aspect);
   return (
     <img
-      src="/logo-icon1.png"
+      src={src}
       alt="Bracket"
-      width={iconWidth}
+      width={width}
       height={size}
       style={{ display: "block", flexShrink: 0, objectFit: "contain" }}
       className={className}
