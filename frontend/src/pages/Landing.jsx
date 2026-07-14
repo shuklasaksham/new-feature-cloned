@@ -707,7 +707,7 @@ const STORY = [
     year: "Aug 2025",
     title: "Bracket started at 3am.",
     body:
-      "Two founders — one freelance designer, one product engineer — kept watching the same movie play out. A client pastes a chaotic brief in WhatsApp at 11pm. The designer stares at it until 3am, unsure whether to say yes, negotiate scope, or push back. The decision — not the deliverable — was the actual work. Bracket was our attempt to compress that 4-hour agony into a 60-second workflow.",
+      "A freelancer receives a messy client brief. Hours disappear trying to understand the scope, price the work, and write the perfect response. We built Bracket to compress that entire process into minutes.",
     accent: "#5E6AD2",
   },
   {
@@ -715,7 +715,7 @@ const STORY = [
     year: "Oct → Dec 2025",
     title: "We tried to be another writing tool.",
     body:
-      "V1 shipped as a Notion-style AI wordsmith — pretty, generic, forgettable. Designers didn't need better prose; they needed a stance. We over-indexed on formatting and under-indexed on judgment. Six weeks of building the wrong thing. We killed 70% of it in one weekend and rebuilt around a single question: what would a senior designer *decide* here?",
+      "Version one generated better documents. The problem wasn't writing — it was deciding. We rebuilt Bracket around one question: \u201CWhat would an experienced product designer do next?\u201D",
     accent: "#FF6B6B",
   },
   {
@@ -723,15 +723,15 @@ const STORY = [
     year: "Feb 2026",
     title: "A decision, not a document.",
     body:
-      "Bracket now takes the messy paste, picks a side, scores its confidence, stress-tests it against the risks your client never named, and hands you the scope doc + client message drafted in your voice. Freelancers use it to lock the call before the 3am rethink. Agencies use it so juniors stop deferring every scoping question up the ladder.",
+      "Bracket understands your client brief, recommends a direction, explains the trade-offs, and prepares everything you need to move forward — from scope and deliverables to client-ready communication.",
     accent: "#4BE39B",
   },
   {
     chapter: "04 · FUTURE",
     year: "Q3 2026 →",
-    title: "The client-side loop.",
+    title: "Where we're going.",
     body:
-      "Next: a two-sided decision surface. Clients sign, reject, or counter — right inside Bracket — and every reply feeds back into the stance. Longer horizon, we're building the memory layer so Bracket remembers your voice across projects, and the studio layer so teams can share decision language. Same brand promise: better decisions, not more tools.",
+      "We're building the operating system for client work — where every decision, conversation, revision and document stays connected. Same promise. Better decisions, not more tools.",
     accent: "#B7B7FF",
   },
 ];
@@ -749,7 +749,7 @@ function Story() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="THE STORY"
-          title="Built the wrong thing. Then we listened."
+          title="The turning point."
         />
         <div className="mt-14 md:mt-20 grid gap-6 md:gap-8 md:grid-cols-2">
           {STORY.map((s, i) => (
