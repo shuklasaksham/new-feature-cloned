@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   ScrollText,
   ClipboardPaste,
+  Paperclip,
   Pencil,
   Trash2,
   Plus,
@@ -136,7 +137,9 @@ export default function Dashboard() {
   const [paste, setPaste] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showAllProjects, setShowAllProjects] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     (async () => {
@@ -186,6 +189,73 @@ export default function Dashboard() {
     } catch (e) {
       toast.error(formatApiError(e));
       setSubmitting(false);
+    }
+  };
+
+  // ─── FILE UPLOAD BRIEF ────────────────────────────────────────────────
+  // Accept PDF / TXT / PNG / JPEG. Backend parses the file, extracts text
+  // (or OCRs images via Gemini), and (if the brief has enough info) chains
+  // Steps 1-4 in the background. We poll every 3s for up to 3 minutes and
+  // land the user on whichever step the pipeline actually reached.
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    const okTypes = ["application/pdf", "text/plain", "image/png", "image/jpeg", "image/jpg"];
+    const okExt = /\.(pdf|txt|png|jpe?g)$/i.test(file.name || "");
+    if (!okTypes.includes(file.type) && !okExt) {
+      toast.error("Only PDF, TXT, PNG, or JPEG files are supported.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("File is too large (max 8 MB).");
+      return;
+    }
+    setUploading(true);
+    const toastId = toast.loading("Reading your brief… Bracket is thinking.");
+    let projectId = null;
+    try {
+      const fd = new FormData();
+      fd.append("file", file, file.name);
+      const { data } = await api.post("/projects/upload-brief", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 90000,
+      });
+      projectId = data.id;
+      toast.dismiss(toastId);
+      // Immediate feedback — the auto-advance runs in the background.
+      const pollToast = toast.loading("Brief loaded. Bracket is generating your document…");
+      // Poll up to 3 min for the auto-advance to complete.
+      const started = Date.now();
+      let finalStatus = data.auto_advance_status || "pending";
+      while (Date.now() - started < 180000) {
+        await new Promise((r) => setTimeout(r, 3000));
+        try {
+          const { data: p } = await api.get(`/projects/${projectId}`);
+          if (p.auto_advance_status && p.auto_advance_status !== "pending") {
+            finalStatus = p.auto_advance_status;
+            break;
+          }
+          if (p.step >= 5) { finalStatus = "advanced"; break; }
+        } catch { /* keep polling on transient errors */ }
+      }
+      toast.dismiss(pollToast);
+      if (finalStatus === "advanced") {
+        toast.success("Brief complete — jumping to the final step.");
+      } else if (finalStatus === "partial") {
+        toast.info("Brief mostly ready — finish the last step manually.");
+      } else if (finalStatus === "insufficient") {
+        toast.info("Brief loaded. Bracket will guide you from Step 1.");
+      } else {
+        toast.info("Brief loaded — pick up from where Bracket got to.");
+      }
+      navigate(`/project/${projectId}/flow`);
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error(formatApiError(e));
+      // If the project was created before an error, still land on it.
+      if (projectId) navigate(`/project/${projectId}/flow`);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -369,23 +439,51 @@ export default function Dashboard() {
                   <kbd className="mono-tag px-1.5 py-0.5 rounded border border-[var(--hairline)]">⌘↵</kbd> to structure
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={structureBrief}
-                disabled={!canSubmit}
-                className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-2 disabled:opacity-40"
-                data-testid="dashboard-hero-structure-btn"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 size={13} className="animate-spin" /> Setting up…
-                  </>
-                ) : (
-                  <>
-                    Structure this brief <ArrowUp size={13} />
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.txt,.png,.jpg,.jpeg,application/pdf,text/plain,image/png,image/jpeg"
+                  className="hidden"
+                  onChange={(e) => handleFileUpload(e.target.files?.[0])}
+                  data-testid="dashboard-file-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading || submitting}
+                  className="clay-ghost px-3 py-2 t-tag press inline-flex items-center gap-1.5 disabled:opacity-40"
+                  data-testid="dashboard-hero-upload-btn"
+                  title="Upload a PDF, TXT, PNG or JPEG brief"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 size={12} className="animate-spin" /> Reading…
+                    </>
+                  ) : (
+                    <>
+                      <Paperclip size={12} /> Attach file
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={structureBrief}
+                  disabled={!canSubmit}
+                  className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-2 disabled:opacity-40"
+                  data-testid="dashboard-hero-structure-btn"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 size={13} className="animate-spin" /> Setting up…
+                    </>
+                  ) : (
+                    <>
+                      Structure this brief <ArrowUp size={13} />
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </motion.section>

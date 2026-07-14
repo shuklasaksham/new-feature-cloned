@@ -164,7 +164,7 @@ export default function ClientReview() {
 
       <footer className="review-footer">
         <div className="max-w-[960px] mx-auto px-5 sm:px-6 md:px-10 py-5 flex items-center justify-between">
-          <p className="mono-tag text-muted">{"{ document via bracket }"}</p>
+          <p className="mono-tag text-muted">{"< document via bracket >"}</p>
           <Link to="/" className="mono-tag link-u">BRACKET.DESIGN →</Link>
         </div>
       </footer>
@@ -227,7 +227,7 @@ function ReviewHeader({ doc }) {
 function DocumentBody({ doc }) {
   return (
     <div className="px-6 md:px-12 py-8 md:py-14">
-      <p className="mono-label">{"{ sign-off document }"}</p>
+      <p className="mono-label">{"< sign-off document >"}</p>
       <h1 className="font-display text-3xl sm:text-5xl md:text-6xl uppercase mt-3 leading-[0.95]">{doc.name}</h1>
       <p className="mono-tag text-muted mt-3">
         PREPARED BY {(doc.creator_name || "the project owner").toUpperCase()}
@@ -342,7 +342,7 @@ function SimpleList({ title, items, accent = "ink", strike = false }) {
 function OwnerReplyDisplay({ replies }) {
   return (
     <div className="card-brut p-5 sm:p-6 mb-4" data-testid="review-owner-replies">
-      <p className="mono-label text-signal">{"{ reply from the creator }"}</p>
+      <p className="mono-label text-signal">{"< reply from the creator >"}</p>
       <div className="mt-3 space-y-3">
         {replies.map((r, i) => (
           <div key={i} className="border-l-2 border-signal pl-3">

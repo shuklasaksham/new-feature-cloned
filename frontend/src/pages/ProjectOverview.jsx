@@ -469,7 +469,7 @@ export default function ProjectOverview() {
           >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="min-w-0">
-                <p className="mono-label">{"{ client review }"}</p>
+                <p className="mono-label">{"< client review >"}</p>
                 <h2 className="font-display font-semibold tracking-[-0.02em] text-[20px] sm:text-[24px] mt-2 leading-[1.15] text-[var(--text)]">
                   {project.share_status === "accepted" && <>Client <span className="text-signal">accepted</span> the call.</>}
                   {project.share_status === "rejected" && <>Client <span className="text-danger">raised concerns</span>.</>}

@@ -218,7 +218,7 @@ function Hero() {
 
   return (
     <section
-      className="relative overflow-hidden isolate min-h-[92vh] flex items-center"
+      className="relative overflow-hidden isolate min-h-[92vh] flex items-center section-blend"
       data-testid="landing-hero"
     >
       {/* Cinematic dark backdrop — same `.hero-ambient` treatment used on
@@ -408,20 +408,47 @@ function Showcase() {
   }, []);
 
   // Pointer drag-to-scroll — matches touch-drag UX for mouse users.
+  // Adds momentum/inertia after release so the strip decelerates naturally
+  // instead of stopping dead on pointerup.
   useEffect(() => {
     const strip = stripRef.current;
     if (!strip) return;
     let isDown = false;
     let startX = 0;
+    let lastX = 0;
+    let lastT = 0;
+    let velocity = 0;    // px per frame @ 60fps
     let startScroll = 0;
     let moved = false;
+    let raf = null;
+
+    const cancelInertia = () => {
+      if (raf) {
+        cancelAnimationFrame(raf);
+        raf = null;
+      }
+    };
+    const applyInertia = () => {
+      if (Math.abs(velocity) < 0.3) {
+        raf = null;
+        velocity = 0;
+        return;
+      }
+      strip.scrollLeft -= velocity;
+      velocity *= 0.93; // friction — feels closest to native touch scroll
+      raf = requestAnimationFrame(applyInertia);
+    };
 
     const onPointerDown = (e) => {
       // Ignore drags starting on the arrow buttons.
       if (e.target.closest(".showcase-nav-btn")) return;
+      cancelInertia();
       isDown = true;
       moved = false;
       startX = e.clientX;
+      lastX = e.clientX;
+      lastT = performance.now();
+      velocity = 0;
       startScroll = strip.scrollLeft;
       strip.classList.add("is-dragging");
       strip.setPointerCapture?.(e.pointerId);
@@ -430,6 +457,13 @@ function Showcase() {
       if (!isDown) return;
       const dx = e.clientX - startX;
       if (Math.abs(dx) > 4) moved = true;
+      // Track instantaneous velocity for the release phase.
+      const now = performance.now();
+      const dt = Math.max(1, now - lastT);
+      // px per 16.7ms → gives a natural feel at 60fps
+      velocity = ((e.clientX - lastX) / dt) * 16.7;
+      lastX = e.clientX;
+      lastT = now;
       strip.scrollLeft = startScroll - dx;
     };
     const endDrag = (e) => {
@@ -437,6 +471,10 @@ function Showcase() {
       isDown = false;
       strip.classList.remove("is-dragging");
       strip.releasePointerCapture?.(e.pointerId);
+      // Kick off inertia if the flick was noticeable.
+      if (Math.abs(velocity) > 0.5) {
+        raf = requestAnimationFrame(applyInertia);
+      }
     };
     // Suppress accidental link clicks that happen right after a drag.
     const onClickCapture = (e) => {
@@ -446,6 +484,9 @@ function Showcase() {
         moved = false;
       }
     };
+    // A wheel event should also cancel any lingering inertia so the user
+    // is in control immediately when they take over.
+    const onWheel = () => cancelInertia();
 
     strip.addEventListener("pointerdown", onPointerDown);
     strip.addEventListener("pointermove", onPointerMove);
@@ -453,13 +494,16 @@ function Showcase() {
     strip.addEventListener("pointercancel", endDrag);
     strip.addEventListener("pointerleave", endDrag);
     strip.addEventListener("click", onClickCapture, true);
+    strip.addEventListener("wheel", onWheel, { passive: true });
     return () => {
+      cancelInertia();
       strip.removeEventListener("pointerdown", onPointerDown);
       strip.removeEventListener("pointermove", onPointerMove);
       strip.removeEventListener("pointerup", endDrag);
       strip.removeEventListener("pointercancel", endDrag);
       strip.removeEventListener("pointerleave", endDrag);
       strip.removeEventListener("click", onClickCapture, true);
+      strip.removeEventListener("wheel", onWheel);
     };
   }, []);
 
@@ -480,7 +524,7 @@ function Showcase() {
   const canNext = activeIndex < SHOWCASE.length - 1;
 
   return (
-    <section className="relative py-24 md:py-32" data-testid="landing-showcase">
+    <section className="relative py-24 md:py-32 section-blend" data-testid="landing-showcase">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="THE FLOW"
@@ -491,7 +535,7 @@ function Showcase() {
       <div className="showcase-carousel-wrap mt-14">
         <div
           ref={stripRef}
-          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
+          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-proximity pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
           data-testid="showcase-strip"
         >
           {SHOWCASE.map((c) => (
@@ -651,7 +695,7 @@ const BENTO_ICON_MAP = {
 
 function Bento() {
   return (
-    <section className="relative py-24 md:py-32" data-testid="landing-bento">
+    <section className="relative py-24 md:py-32 section-blend" data-testid="landing-bento">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="WHAT'S INSIDE"
@@ -736,7 +780,7 @@ const STORY = [
 
 function Story() {
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden isolate" data-testid="landing-story" id="story">
+    <section className="relative py-28 md:py-36 overflow-hidden isolate section-blend" data-testid="landing-story" id="story">
       {/* Soft signal-blue wash bottom-left, matches the cinematic gradient
          language on the rest of the page. */}
       <div
@@ -833,7 +877,7 @@ function Testimonials() {
   // Duplicate the array so the CSS marquee (translateX -50%) loops seamlessly.
   const track = [...TESTIMONIALS, ...TESTIMONIALS];
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden isolate" data-testid="landing-testimonials" id="testimonials">
+    <section className="relative py-28 md:py-36 overflow-hidden isolate section-blend" data-testid="landing-testimonials" id="testimonials">
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[420px] w-[900px] blur-[120px] opacity-[0.12] -z-10"
@@ -899,7 +943,7 @@ function PricingSection() {
   const priceFor = (id) => cur[id];
 
   return (
-    <section className="relative py-28 md:py-36 overflow-hidden isolate" data-testid="landing-pricing" id="pricing">
+    <section className="relative py-28 md:py-36 overflow-hidden isolate section-blend" data-testid="landing-pricing" id="pricing">
       {/* Amber wash behind middle card — sits on the seamless page bg. */}
       <div
         aria-hidden="true"
@@ -1023,7 +1067,7 @@ function PricingCard({ tier, price, symbol, popular }) {
 // ─── SECTION 5: FINAL CTA / FOOTER BAND ──────────────────────────────────
 function FinalCTA() {
   return (
-    <section className="relative py-32 md:py-40 overflow-hidden isolate" data-testid="landing-final-cta">
+    <section className="relative py-32 md:py-40 overflow-hidden isolate section-blend" data-testid="landing-final-cta">
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 opacity-40"

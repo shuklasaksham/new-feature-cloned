@@ -67,7 +67,7 @@ export default function ClaimProjects() {
 
       <main className="flex-1 flex items-start justify-center px-5 sm:px-6 py-10">
         <div className="w-full max-w-2xl">
-          <p className="mono-label">{"{ welcome back }"}</p>
+          <p className="mono-label">{"< welcome back >"}</p>
           <h1 className="font-display text-4xl sm:text-5xl uppercase mt-3 leading-[0.95]">
             We found projects under <span className="text-signal">your email.</span>
           </h1>

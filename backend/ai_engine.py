@@ -9,7 +9,11 @@ import uuid
 import asyncio
 import logging
 from typing import Optional
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.llm.chat import (
+    LlmChat,
+    UserMessage,
+    ImageContent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,22 +36,41 @@ MODEL_MAP = {
 
 
 SYSTEM_VOICE = (
-    "You are Bracket — a senior advisor for designers, freelancers, and "
-    "independent creative pros (illustrators, copywriters, photographers, "
-    "video editors, indie devs, content creators, brand consultants). "
-    "You speak like a confident, opinionated senior peer mentoring someone "
-    "working solo or in a small shop. Sharp, warm, never corporate. "
-    "You help people decide, not just do. Avoid generic advice. Be specific, "
-    "direct, and human. "
-    "AUDIENCE: do NOT assume only visual design. Your suggestions and "
-    "examples must work for any independent creative discipline. Translate "
-    "design jargon into plain language when relevant. "
+    "You are Bracket — a senior advisor for independent creatives and small "
+    "teams navigating client projects. Your audience spans FIVE personas:\n"
+    "  1. INDIE_CREATIVES — writers, photographers, video editors, illustrators, "
+    "indie devs, content creators, brand consultants working solo.\n"
+    "  2. SMALL_AGENCIES — 2-10 person studios juggling several clients.\n"
+    "  3. INHOUSE_PRODUCT — in-house product designers navigating stakeholders.\n"
+    "  4. JUNIORS_LEVELLING_UP — junior designers/creatives learning to think "
+    "senior, hold their ground, and communicate decisions.\n"
+    "  5. INDEPENDENT_DESIGNERS — freelance designers running their own book.\n"
+    "\n"
+    "FIRST STEP OF EVERY REPLY: silently infer which persona the user most "
+    "likely is from their words (do NOT ask, do NOT print the label). Adapt "
+    "voice, examples, and stakes to that persona:\n"
+    "  • Indie creatives → language of their craft (footage, drafts, prints), "
+    "solo economics, small budgets in INR.\n"
+    "  • Small agencies → team-scale concerns (utilisation, PM handoff, retainer).\n"
+    "  • In-house product designers → stakeholder alignment, PM/eng handoff, "
+    "org politics, roadmap trade-offs.\n"
+    "  • Juniors levelling up → teach the reasoning behind the move, name the "
+    "framework, model senior-designer confidence without being condescending.\n"
+    "  • Independent designers → freelance economics, scope creep, boundaries "
+    "with clients.\n"
+    "\n"
+    "VOICE: confident, opinionated senior peer. Sharp, warm, human — never "
+    "corporate. Help people decide, not just do. No generic advice. Be specific "
+    "and direct. Translate discipline-specific jargon into plain language so a "
+    "writer, photographer, or dev can follow a design conversation and vice-versa.\n"
+    "\n"
     "CURRENCY: All monetary amounts MUST be in Indian Rupees using the '₹' "
     "symbol (e.g. ₹50,000 or ₹2L). Never use $, USD, £, € or any other "
     "currency, even if the user mentions one — convert or restate in INR. "
-    "Use Indian number conventions (lakh / crore) where appropriate. "
-    "You always respond in strict JSON matching the requested schema, "
-    "with NO markdown fences, NO preamble, NO commentary — just the JSON object."
+    "Use Indian number conventions (lakh / crore) where appropriate.\n"
+    "\n"
+    "You always respond in strict JSON matching the requested schema, with NO "
+    "markdown fences, NO preamble, NO commentary — just the JSON object."
 )
 
 
@@ -128,10 +151,12 @@ async def run_field_suggestions(
 
     prompt = (
         f'FIELD: {field} | PARTIAL: "{partial}" | CTX: {ctx}\n'
-        "User is a designer/freelancer/indie creative filling a decision form. "
+        "User is an independent creative or small-team member (designer, writer, "
+        "photographer, video editor, illustrator, dev, in-house product designer, "
+        "or junior levelling up) filling a decision form. "
         "Return 4 short autofill phrases (2-7 words each) that naturally continue "
-        f'"{partial}" — specific, not generic. If partial is empty, give 4 starters. '
-        'JSON: {"suggestions":["...","...","...","..."]}'
+        f'"{partial}" — specific to their persona, not generic. If partial is empty, '
+        'give 4 starters. JSON: {"suggestions":["...","...","...","..."]}'
     )
     try:
         data = await _run_fast(prompt)
@@ -478,3 +503,140 @@ Return STRICT JSON:
 
 3 suggestions exactly. Pure JSON only."""
     return await _run(prompt, engine)
+
+
+# ---------------------------------------------------------------------------
+# File-upload brief ingestion
+# ---------------------------------------------------------------------------
+
+async def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/png") -> str:
+    """Given a client-brief screenshot (PNG or JPEG), use Gemini vision to
+    extract ALL readable text and describe any diagrams/references. Returns
+    plain text (multi-line) or empty string on failure.
+
+    Uses Gemini Flash for cost + latency; images are passed as base64.
+    """
+    if not image_bytes:
+        return ""
+    try:
+        import base64
+        b64 = base64.b64encode(image_bytes).decode("ascii")
+    except Exception as e:
+        logger.warning("image base64 encoding failed: %s", e)
+        return ""
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key:
+        return ""
+    chat = LlmChat(
+        api_key=api_key,
+        session_id=str(uuid.uuid4()),
+        system_message=(
+            "You are a careful transcriber. When shown a client-brief screenshot, "
+            "extract EVERY readable line of text verbatim. Also briefly describe "
+            "any visual references (moodboards, wireframes, colour palettes). "
+            "Output plain text only — no markdown, no fences, no commentary."
+        ),
+    ).with_model("gemini", "gemini-3-flash-preview")
+    prompt = (
+        "Read this screenshot of a client brief / conversation. Return every "
+        "readable line of text and a short description of any visual references. "
+        "Plain text only."
+    )
+    try:
+        response = await asyncio.wait_for(
+            chat.send_message(
+                UserMessage(text=prompt, file_contents=[ImageContent(image_base64=b64)])
+            ),
+            timeout=STEP_TIMEOUT_S,
+        )
+        return (response or "").strip()
+    except asyncio.TimeoutError:
+        logger.warning("extract_text_from_image timed out after %ss", STEP_TIMEOUT_S)
+        return ""
+    except Exception as e:
+        logger.warning("extract_text_from_image failed: %s", e)
+        return ""
+
+
+async def extract_full_brief_from_paste(raw_paste: str) -> dict:
+    """One-shot extraction: given a long, structured brief (usually parsed
+    from a PDF or text file), pull out EVERY step's inputs so the project
+    can jump straight to Step 5 if the info is complete.
+
+    Returns:
+        {
+          "situation":  {"what": str, "who": str, "unclear": str},
+          "context":    {"requirements": str, "constraints": str, "inspirations": str},
+          "decision":   {"optimizing_for": str, "tradeoffs": str, "risks": str},
+          "sufficient": bool,       # true only if all 9 fields have content
+          "persona":    str,        # inferred audience tag
+        }
+    """
+    text = (raw_paste or "").strip()
+    if not text:
+        return {
+            "situation": {"what": "", "who": "", "unclear": ""},
+            "context": {"requirements": "", "constraints": "", "inspirations": ""},
+            "decision": {"optimizing_for": "", "tradeoffs": "", "risks": ""},
+            "sufficient": False,
+            "persona": "",
+        }
+    prompt = (
+        "The user uploaded a client brief (PDF text, note dump, or transcribed image). "
+        "Extract inputs for a 5-step decision workflow. Be honest — leave a field empty "
+        "if the brief truly doesn't mention it. Do NOT invent details.\n\n"
+        "Also infer the user's persona from the writing style:\n"
+        "  - INDIE_CREATIVE (solo writer/photo/video/illustrator/dev)\n"
+        "  - SMALL_AGENCY (2-10 person studio)\n"
+        "  - INHOUSE_PRODUCT (in-house product designer)\n"
+        "  - JUNIOR (junior levelling up)\n"
+        "  - INDEPENDENT_DESIGNER (freelance designer)\n\n"
+        f"BRIEF:\n---\n{text[:12000]}\n---\n\n"
+        "Return JSON only: "
+        "{"
+        '"situation": {"what":"","who":"","unclear":""}, '
+        '"context": {"requirements":"","constraints":"","inspirations":""}, '
+        '"decision": {"optimizing_for":"","tradeoffs":"","risks":""}, '
+        '"persona": ""'
+        "}"
+    )
+    try:
+        data = await _run_fast(prompt)
+    except Exception as e:
+        logger.warning("extract_full_brief_from_paste failed: %s", e)
+        return {
+            "situation": {"what": text[:500], "who": "", "unclear": ""},
+            "context": {"requirements": "", "constraints": "", "inspirations": ""},
+            "decision": {"optimizing_for": "", "tradeoffs": "", "risks": ""},
+            "sufficient": False,
+            "persona": "",
+        }
+
+    def _sanitize(d: dict, keys: list[str], cap: int) -> dict:
+        out = {}
+        for k in keys:
+            v = d.get(k, "") if isinstance(d, dict) else ""
+            out[k] = str(v or "").strip()[:cap]
+        return out
+
+    situation = _sanitize(data.get("situation") or {}, ["what", "who", "unclear"], 500)
+    context   = _sanitize(data.get("context")   or {}, ["requirements", "constraints", "inspirations"], 800)
+    decision  = _sanitize(data.get("decision")  or {}, ["optimizing_for", "tradeoffs", "risks"], 800)
+
+    # "Sufficient" means enough to auto-run all three input steps and land on Step 5.
+    # We require at least the two structural fields per step (skipping "unclear" and
+    # "inspirations" which are optional nice-to-haves).
+    sufficient = bool(
+        situation["what"] and situation["who"]
+        and context["requirements"] and context["constraints"]
+        and decision["optimizing_for"] and decision["tradeoffs"]
+    )
+    persona = str(data.get("persona") or "").strip().upper()[:40]
+
+    return {
+        "situation": situation,
+        "context": context,
+        "decision": decision,
+        "sufficient": sufficient,
+        "persona": persona,
+    }

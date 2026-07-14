@@ -22,7 +22,63 @@ import {
 } from "lucide-react";
 import { api, formatApiError, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
+import { useDialog } from "../components/Dialog";
 import { toast } from "sonner";
+
+// Downstream fields cleared when a user reworks an earlier step. Mirrors
+// the backend `_STEP_DOWNSTREAM_FIELDS` — kept as a client-side hint so
+// we know whether a cascade confirmation is even necessary.
+const STEP_DOWNSTREAM_KEYS = {
+  1: ["framing", "context", "decision", "artifacts", "locked_at"],
+  2: ["context", "decision", "artifacts", "locked_at"],
+  3: ["decision", "artifacts", "locked_at"],
+  4: ["artifacts", "locked_at"],
+  5: ["locked_at"],
+};
+
+/**
+ * Guard the "rework an earlier step" flow. If any downstream output would
+ * be invalidated, prompt the user, then hit the backend reset endpoint
+ * so we start fresh. Returns:
+ *  - false → cancelled, caller should abort.
+ *  - true  → nothing to reset, caller can just re-run.
+ *  - project (object) → reset succeeded, caller should setProject(...) THEN re-run.
+ */
+async function guardStepRework(step, project, confirmDialog) {
+  const keys = (STEP_DOWNSTREAM_KEYS[step] || []).filter(
+    (k) => k !== "locked_at" && k !== "framing" && k !== "context" && k !== "decision" && k !== "artifacts"
+      ? false
+      : Boolean(project?.[k])
+  );
+  // Only flag if there's actual downstream data (framing exists is fine —
+  // that's the CURRENT step's output; we care about steps AFTER `step`).
+  const downstreamMap = {
+    1: ["context", "decision", "artifacts"],
+    2: ["decision", "artifacts"],
+    3: ["artifacts"],
+    4: [],
+    5: [],
+  };
+  const hasDownstream = (downstreamMap[step] || []).some((k) => Boolean(project?.[k]));
+  if (!hasDownstream) return true;
+
+  const ok = await confirmDialog({
+    title: "Rework this step?",
+    message:
+      "Editing this step will clear everything Bracket generated after it. You'll re-run the next steps with your new input. Your own paste inputs on later steps stay put.",
+    confirmLabel: "Rework it",
+    cancelLabel: "Keep as-is",
+    tone: "danger",
+  });
+  if (!ok) return false;
+  try {
+    const { data } = await api.post(`/projects/${project.id}/reset-from-step/${step}`);
+    return data;
+  } catch (e) {
+    toast.error(formatApiError(e));
+    return false;
+  }
+}
 
 const STEPS = [
   // `label` is what we render while the step is TODO or ACTIVE (task-oriented).
@@ -605,7 +661,7 @@ function TransformationCard({ pasteText, items = [], testid, note }) {
       data-testid={testid || "transformation-card"}
     >
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="mono-label text-signal">{"{ transformation }"}</p>
+        <p className="mono-label text-signal">{"< transformation >"}</p>
         <span className="mono-tag text-muted">from mess → to signal</span>
       </div>
       <div className="mt-4 flex items-baseline gap-2 flex-wrap">
@@ -655,6 +711,7 @@ function EmptyModuleHint({ title, blurb, testid }) {
 function Step1({ project, setProject, dirtyRef, onDone }) {
   const initial = project.situation_input || { raw_paste: "", what: "", who: "", unclear: "" };
   const draftKey = `bracket:step1-draft:${project.id}`;
+  const { confirm: confirmDialog } = useDialog();
   // Hydrate from local draft if the project has no server-side input yet.
   const [form, setForm] = useState(() => {
     if (project.situation_input) return { raw_paste: "", ...project.situation_input };
@@ -715,6 +772,14 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
   }, [framing, draftKey]);
 
   const runInternal = async (payload) => {
+    // Cascade guard — if downstream steps already have Bracket output,
+    // ask before overwriting. Applies only when framing already exists
+    // (i.e., this is a re-run, not the first pass).
+    if (project.framing) {
+      const guard = await guardStepRework(1, project, confirmDialog);
+      if (!guard) return;
+      if (guard !== true) setProject(guard);
+    }
     setLoading(true);
     setError("");
     // Sequential progress checkmarks synced with actual AI latency (~4-6s).
@@ -1098,6 +1163,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   const [error, setError] = useState("");
   const [phase, setPhase] = useState(null);
   const compressed = project.context;
+  const { confirm: confirmDialog } = useDialog();
 
   useEffect(() => {
     if (!dirtyRef) return;
@@ -1106,6 +1172,12 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   }, [form, compressed, dirtyRef]);
 
   const run = async () => {
+    // Cascade guard on re-runs.
+    if (project.context) {
+      const guard = await guardStepRework(2, project, confirmDialog);
+      if (!guard) return;
+      if (guard !== true) setProject(guard);
+    }
     setLoading(true);
     setError("");
     setPhase("reading");
@@ -1309,6 +1381,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
   const [phase, setPhase] = useState(null);
   const [showAlternatives, setShowAlternatives] = useState(false);
   const decision = project.decision;
+  const { confirm: confirmDialog } = useDialog();
 
   useEffect(() => {
     if (!dirtyRef) return;
@@ -1317,6 +1390,11 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
   }, [form, decision, dirtyRef]);
 
   const run = async () => {
+    if (project.decision) {
+      const guard = await guardStepRework(3, project, confirmDialog);
+      if (!guard) return;
+      if (guard !== true) setProject(guard);
+    }
     setLoading(true);
     setError("");
     setPhase("weighing");
@@ -1785,7 +1863,7 @@ function GuestUpgradeBanner() {
       data-testid="guest-upgrade-banner"
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="mono-label text-signal">{"{ save it for later }"}</p>
+        <p className="mono-label text-signal">{"< save it for later >"}</p>
         <button
           type="button"
           onClick={() => setDismissed(true)}
@@ -1885,7 +1963,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
           />
 
           <div className="card-brut p-4 sm:p-5">
-            <p className="mono-label text-muted">{"{ what to expect }"}</p>
+            <p className="mono-label text-muted">{"< what to expect >"}</p>
             <ul className="mt-3 space-y-2 text-sm">
               <li className="flex gap-3">
                 <span className="font-mono text-signal shrink-0">→</span>
@@ -2356,11 +2434,11 @@ function OutputPending({ title, blurb, loading }) {
       {loading ? (
         <div className="mt-10 flex flex-col items-center justify-center gap-5 py-6">
           <div className="bracket-loader" aria-label="Loading">
-            <span>{"{"}</span>
+            <span>{"<"}</span>
             <span className="dot" />
             <span className="dot" />
             <span className="dot" />
-            <span>{"}"}</span>
+            <span>{">"}</span>
           </div>
           <p className="mono-tag text-signal">BRACKET IS THINKING…</p>
         </div>

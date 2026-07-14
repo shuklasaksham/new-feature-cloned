@@ -7,10 +7,11 @@ load_dotenv(ROOT_DIR / ".env")
 
 import os
 import io
+import asyncio
 import logging
 from typing import List, Literal, Dict, Any, Optional
 
-from fastapi import FastAPI, APIRouter, HTTPException, Query, Request, Response
+from fastapi import FastAPI, APIRouter, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
@@ -36,6 +37,8 @@ from ai_engine import (
     extract_situation_from_paste,
     extract_context_from_paste,
     extract_decision_from_paste,
+    extract_text_from_image,
+    extract_full_brief_from_paste,
     generate_project_title,
 )
 from emailer import send_thanks_email, send_review_outcome_email, send_client_receipt_email
@@ -1269,6 +1272,251 @@ async def create_project(body: CreateProjectIn, request: Request):
     return doc
 
 
+# ---- FILE-UPLOAD PROJECT CREATION ---------------------------------------
+# Accept a PDF / TXT / PNG / JPEG describing a client brief. Extract its
+# text, seed a project with the paste, and (if the brief is complete enough)
+# auto-run all three input steps so the user lands on Step 5 immediately.
+_ALLOWED_UPLOAD_MIMES = {
+    "application/pdf": "pdf",
+    "text/plain": "txt",
+    "image/png": "png",
+    "image/jpeg": "jpeg",
+    "image/jpg": "jpeg",
+}
+_UPLOAD_MAX_BYTES = 8 * 1024 * 1024   # 8 MB is plenty for a client brief.
+
+
+async def _extract_text_from_upload(raw: bytes, mime: str, filename: str) -> str:
+    """Dispatch to the right parser based on MIME. Returns plain text."""
+    kind = _ALLOWED_UPLOAD_MIMES.get(mime)
+    if not kind and filename:
+        # Fall back on extension when the browser reported the wrong MIME.
+        ext = (filename.rsplit(".", 1)[-1] or "").lower()
+        kind = {"pdf": "pdf", "txt": "txt", "png": "png", "jpg": "jpeg", "jpeg": "jpeg"}.get(ext)
+    if kind == "txt":
+        try:
+            return raw.decode("utf-8", errors="replace").strip()
+        except Exception:
+            return ""
+    if kind == "pdf":
+        try:
+            import io
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(raw))
+            parts: list[str] = []
+            for page in reader.pages:
+                try:
+                    txt = page.extract_text() or ""
+                except Exception:
+                    txt = ""
+                if txt.strip():
+                    parts.append(txt.strip())
+            return "\n\n".join(parts).strip()
+        except Exception as e:
+            logger.warning("pdf parse failed: %s", e)
+            return ""
+    if kind in ("png", "jpeg"):
+        return await extract_text_from_image(raw, mime_type=f"image/{'jpeg' if kind == 'jpeg' else 'png'}")
+    return ""
+
+
+@api.post("/projects/upload-brief", response_model=ProjectOut)
+async def upload_brief(request: Request, file: UploadFile = File(...)):
+    """Create a project from an uploaded PDF / TXT / PNG / JPEG brief.
+
+    The response includes the extracted `raw_paste` on the project's
+    `situation_input` so the frontend can either hand-off to Step 1
+    (default) or auto-advance the user to Step 5 when the brief is complete.
+    Auto-advance state is signalled via the project's `step` field being 4
+    (i.e., artifacts step reached automatically).
+    """
+    user = await current_user(request, db)
+    mime = (file.content_type or "").lower().strip()
+    if mime not in _ALLOWED_UPLOAD_MIMES:
+        # Give the client a second chance by extension.
+        ext = (file.filename or "").rsplit(".", 1)[-1].lower()
+        if ext not in {"pdf", "txt", "png", "jpg", "jpeg"}:
+            raise HTTPException(status_code=415, detail="Only PDF, TXT, PNG, or JPEG files are supported.")
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty file.")
+    if len(raw) > _UPLOAD_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File is too large (max 8 MB).")
+
+    text = await _extract_text_from_upload(raw, mime, file.filename or "")
+    if not text or len(text.strip()) < 20:
+        raise HTTPException(
+            status_code=422,
+            detail="We couldn't pull useful text out of this file. Try pasting the brief manually.",
+        )
+
+    # Ask Haiku for a project title from the extracted text.
+    pname = f"Uploaded · {(file.filename or 'brief')[:40]}"
+    name_source = "heuristic"
+    try:
+        ai_title = await generate_project_title(text)
+        if ai_title and len(ai_title) >= 3:
+            pname = ai_title[:120]
+            name_source = "ai"
+    except Exception as e:
+        logger.warning("upload_brief title generation failed: %s", e)
+
+    now = _now_iso()
+    doc = {
+        "id": _uuid(),
+        "name": pname,
+        "name_source": name_source,
+        "creator_name": user.get("name", ""),
+        "creator_email": user["email"],
+        "owner_user_id": user["user_id"],
+        "engine": "claude",
+        "status": "draft",
+        "step": 1,
+        "situation_input": None,
+        "framing": None,
+        "context_input": None,
+        "context": None,
+        "decision_input": None,
+        "decision": None,
+        "artifacts": None,
+        "locked_at": None,
+        "feedback": None,
+        "share_token": None,
+        "share_status": "none",
+        "share_review": None,
+        "owner_replies": [],
+        "created_at": now,
+        "updated_at": now,
+        # Extra bit the frontend uses to know we came from a file upload.
+        "brief_source": {
+            "filename": file.filename or "",
+            "mime": mime,
+            "bytes": len(raw),
+            "extracted_chars": len(text),
+        },
+    }
+    await db.projects.insert_one(doc)
+    # Seed situation_input with the raw paste immediately so the user can
+    # do Step 1 manually even if the auto-advance never completes.
+    await db.projects.update_one(
+        {"id": doc["id"]},
+        {"$set": {
+            "situation_input": {"raw_paste": text},
+            "auto_advance_status": "pending",
+            "updated_at": _now_iso(),
+        }},
+    )
+
+    # Fire-and-forget the whole auto-advance chain (framing → context →
+    # decision → artifacts). This can take 60-120s and would blow past the
+    # ingress proxy timeout if awaited synchronously — so we return the
+    # project immediately and the frontend polls until `auto_advance_status`
+    # settles to `advanced` (Step 5) or `partial` / `failed`.
+    async def _auto_advance_task():
+        try:
+            extracted = await extract_full_brief_from_paste(text)
+        except Exception as e:
+            logger.warning("upload_brief full-extract failed: %s", e)
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {"auto_advance_status": "failed", "updated_at": _now_iso()}},
+            )
+            return
+        if not extracted.get("sufficient"):
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {"auto_advance_status": "insufficient", "updated_at": _now_iso()}},
+            )
+            return
+        sit = extracted["situation"]
+        ctx = extracted["context"]
+        dec = extracted["decision"]
+        sit_input = {**sit, "raw_paste": text}
+        ctx_input = {**ctx, "raw_paste": text}
+        dec_input = {**dec, "raw_paste": text}
+        try:
+            framing = await run_situation_framing(sit_input, "claude")
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {
+                    "situation_input": sit_input,
+                    "framing": framing,
+                    "step": 2,
+                    "status": "in_progress",
+                    "updated_at": _now_iso(),
+                }},
+            )
+        except Exception as e:
+            logger.warning("upload_brief framing failed: %s", e)
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {"auto_advance_status": "failed", "updated_at": _now_iso()}},
+            )
+            return
+        try:
+            context_out = await run_context_compression(ctx_input, framing, "claude")
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {
+                    "context_input": ctx_input,
+                    "context": context_out,
+                    "step": 3,
+                    "updated_at": _now_iso(),
+                }},
+            )
+        except Exception as e:
+            logger.warning("upload_brief context failed: %s", e)
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {"auto_advance_status": "partial", "updated_at": _now_iso()}},
+            )
+            return
+        try:
+            decision_out = await run_decision_engine(dec_input, framing, context_out, "claude")
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {
+                    "decision_input": dec_input,
+                    "decision": decision_out,
+                    "step": 4,
+                    "updated_at": _now_iso(),
+                }},
+            )
+        except Exception as e:
+            logger.warning("upload_brief decision failed: %s", e)
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {"auto_advance_status": "partial", "updated_at": _now_iso()}},
+            )
+            return
+        try:
+            project_for_artifacts = await _get_project_or_404(doc["id"])
+            artifacts = await run_artifacts(project_for_artifacts, "claude")
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {
+                    "artifacts": artifacts,
+                    "step": 5,
+                    "auto_advance_status": "advanced",
+                    "updated_at": _now_iso(),
+                }},
+            )
+        except Exception as e:
+            logger.warning("upload_brief artifacts failed: %s", e)
+            await db.projects.update_one(
+                {"id": doc["id"]},
+                {"$set": {"auto_advance_status": "partial", "updated_at": _now_iso()}},
+            )
+            return
+
+    # Kick off the background task without blocking the HTTP response.
+    asyncio.create_task(_auto_advance_task())
+
+    project = await _get_project_or_404(doc["id"])
+    project["auto_advanced"] = False   # not yet — frontend polls status.
+    return project
+
+
 @api.get("/projects")
 async def list_my_projects(request: Request):
     user = await current_user(request, db)
@@ -1365,6 +1613,60 @@ async def unlock_project(project_id: str, request: Request):
     await db.projects.update_one(
         {"id": p["id"]},
         {"$set": {"status": "in_progress", "locked_at": None, "updated_at": _now_iso()}},
+    )
+    return await _get_project_or_404(project_id)
+
+
+# ---- CASCADING EDITS -----------------------------------------------------
+# When a user re-does an earlier step, everything downstream is stale and
+# must be regenerated. This endpoint wipes the downstream *outputs* (Bracket's
+# generated JSON) so the flow re-runs cleanly. The user's own paste inputs on
+# later steps are preserved so they don't have to type everything again.
+_STEP_DOWNSTREAM_FIELDS = {
+    # Editing step 1 → wipes 2, 3, 4 outputs + artifacts + lock
+    1: [
+        "framing",
+        "context", "context_input",
+        "decision", "decision_input",
+        "artifacts",
+        "locked_at",
+    ],
+    # Editing step 2 → wipes 3, 4 outputs
+    2: [
+        "context",
+        "decision", "decision_input",
+        "artifacts",
+        "locked_at",
+    ],
+    # Editing step 3 → wipes 4 output
+    3: [
+        "decision",
+        "artifacts",
+        "locked_at",
+    ],
+    # Step 4/5 — nothing further downstream to wipe.
+    4: ["artifacts", "locked_at"],
+    5: ["locked_at"],
+}
+
+
+@api.post("/projects/{project_id}/reset-from-step/{step}", response_model=ProjectOut)
+async def reset_downstream_from_step(project_id: str, step: int, request: Request):
+    p = await _get_owned_project_or_404(project_id, request)
+    if step not in _STEP_DOWNSTREAM_FIELDS:
+        raise HTTPException(status_code=400, detail="Invalid step number.")
+    unset = {f: "" for f in _STEP_DOWNSTREAM_FIELDS[step]}
+    # Also flip the project back to draft and reset step pointer to `step`.
+    await db.projects.update_one(
+        {"id": p["id"]},
+        {
+            "$unset": unset,
+            "$set": {
+                "status": "in_progress" if step > 1 else "draft",
+                "step": step,
+                "updated_at": _now_iso(),
+            },
+        },
     )
     return await _get_project_or_404(project_id)
 

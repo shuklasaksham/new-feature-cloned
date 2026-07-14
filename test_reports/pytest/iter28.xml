@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="1" failures="10" skipped="0" tests="12" time="181.070" timestamp="2026-07-14T19:05:24.764608+00:00" hostname="agent-env-17f6f2f9-f6e5-450a-b228-8c90cd724b80"><testcase classname="backend.tests.test_iteration_28.TestUploadValidation" name="test_zip_returns_415" time="24.051"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestUploadValidation" name="test_docx_returns_415" time="15.131"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestUploadValidation" name="test_empty_file_returns_400" time="15.131"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestUploadValidation" name="test_oversize_returns_413" time="30.256"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=30)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestUploadValidation" name="test_tiny_text_returns_422" time="15.166"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=15)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestTxtUploadAndAutoAdvance" name="test_upload_returns_fast_and_starts_background" time="20.102"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestTxtUploadAndAutoAdvance" name="test_auto_advance_completes_within_90s" time="0.000"><failure message="AssertionError: previous upload test must run first&#10;assert None">E   AssertionError: previous upload test must run first
+    assert None</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestPdfUpload" name="test_pdf_extracts_and_creates_project" time="0.725"><failure message="fpdf.errors.FPDFException: Not enough horizontal space to render a single character">E   fpdf.errors.FPDFException: Not enough horizontal space to render a single character</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestResetFromStep" name="test_reset_from_step_1_clears_all_downstream" time="20.149"><error message="failed on setup with &quot;requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)&quot;">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)</error></testcase><testcase classname="backend.tests.test_iteration_28.TestResetFromStep" name="test_reset_from_step_2_preserves_framing" time="20.119"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestResetFromStep" name="test_reset_from_step_3_preserves_framing_and_context" time="20.140"><failure message="requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)">E   TimeoutError: The read operation timed out
+
+The above exception was the direct cause of the following exception:
+E   urllib3.exceptions.ReadTimeoutError: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)
+
+During handling of the above exception, another exception occurred:
+E   requests.exceptions.ReadTimeout: HTTPSConnectionPool(host='design-decided.preview.emergentagent.com', port=443): Read timed out. (read timeout=20)</failure></testcase><testcase classname="backend.tests.test_iteration_28.TestPersonaCoverage" name="test_all_5_personas_present" time="0.000" /></testsuite></testsuites>

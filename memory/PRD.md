@@ -479,3 +479,25 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **New Story section (above Pricing)**: 4-chapter grid (Origin / Mistakes / Now / Future) with color-coded accents (blue → red → green → violet), radial corner glow per card, `.liquid-glass` treatment, and Framer Motion staggered entry. Content: how Bracket started at 3am, what we did wrong (built a writing tool), where we are now (decision engine), what's next (client-side loop + memory layer).
   - **"Claude Sonnet 4.5" → "BRACKET AI"** replaced in all user-facing surfaces: `ProjectFlow.jsx` project header, `ProjectOverview.jsx` engine badge, `FAQ.jsx` training-policy answer. Backend keeps the actual model names — this is UI-only rebranding.
 
+
+- 2026-07-14 — **Iteration 37 — Client sign-off flow polish + owner CTA + real-time**:
+  - **RejectFlow scroll fix** (`ClientReview.jsx` + `index.css`): New `.review-reject-form` class adds `overflow-y: auto` + `overscroll-behavior: contain` so the concerns popup scrolls on short viewports.
+  - **Owner-side CTA + modal** (`ClientReviewModal.jsx` new component): inline "concerns raised" panel replaced with a compact summary card + "View concerns & reply" CTA that opens a full-screen modal containing concerns, AI suggestions, reply thread, and composer. `AcceptedBadge`/`RejectedBadge` removed.
+  - **Real-time polling**: `ProjectOverview.jsx` + `ProjectDocument.jsx` poll `/api/projects/{id}` every 6s while awaiting client action — owners see updates within ~7s without refreshing.
+
+- 2026-07-14 — **Iteration 38 — Client email + PDF cleanup + marketing footer**:
+  - **Mandatory client email** on accept + reject flows (`data-testid='review-signature-email'`). Backend `AcceptIn`/`RejectConfirmIn` now include `client_email: EmailStr`.
+  - **Client receipt email** (`emailer.py` `send_client_receipt_email`): accept → mails signed PDF as base64 attachment; reject → mails concerns back as a paper trail.
+  - **PDF `§` removed**: `H(s)` no longer prepends `\u00a7 ` to section headings.
+  - **Marketing footer visibility**: Footer given `position: relative; z-index: 10` so `.marketing-ambient` (fixed z:0) no longer paints over it.
+
+- 2026-07-14 — **Iteration 39 — File upload brief + persona-aware AI + cascading step edits**:
+  - **File upload brief** (`POST /api/projects/upload-brief`, `Dashboard.jsx` "Attach file" button): PDF (`pypdf`), TXT (utf-8), PNG/JPEG (Gemini vision OCR). If sufficient (`extract_full_brief_from_paste` returns 6/9 fields), backend fire-and-forgets a chain of Steps 1→4 and lands the user on Step 5. Frontend polls `auto_advance_status` every 3s.
+  - **Persona-aware master prompt** (`ai_engine.py` `SYSTEM_VOICE`): Bracket silently infers 1 of 5 personas (indie creatives / small agencies / in-house product / juniors / independent designers) and adapts voice + examples.
+  - **Cascading step edits**: `POST /api/projects/{id}/reset-from-step/{step}` clears downstream outputs. `guardStepRework` helper in `ProjectFlow.jsx` shows a confirm dialog before proceeding.
+
+- 2026-07-14 — **Iteration 40 — Smooth carousel drag + section blend + `{ }` → `< >`**:
+  - **Smooth carousel inertia** (`Landing.jsx`): drag now tracks velocity and applies `raf` deceleration (friction 0.93) after release. Snap changed to `snap-proximity` so inertia doesn't fight snap points.
+  - **Section edge-blend** (`index.css` `.section-blend`): Every landing `<section>` gets a matching `linear-gradient(var(--bg) → transparent)` fade at top + bottom (140px desktop / 96px mobile). No hard boundaries between sections.
+  - **`{ }` → `< >`**: All decorative mono labels swapped across ClientReview, ClientReviewModal, ProjectDocument, ProjectOverview, ProjectFlow, ClaimProjects, AdminLogin, Footer, and the bracket loader `<...>`.
+

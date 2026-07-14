@@ -87,7 +87,7 @@ export default function AdminLogin() {
         <div className="w-full max-w-sm border border-chalk/30 bg-ink p-6 sm:p-8" data-testid="admin-login-form">
           <div className="flex items-center gap-2 text-signal">
             <ShieldAlert size={14} />
-            <span className="mono-tag">{"{ admin console }"}</span>
+            <span className="mono-tag">{"< admin console >"}</span>
           </div>
           <h1 className="font-display text-3xl uppercase mt-3 leading-[0.95]">
             Restricted.

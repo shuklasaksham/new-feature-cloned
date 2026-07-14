@@ -72,3 +72,11 @@ class ProjectOut(BaseModel):
     owner_user_id: Optional[str] = ""
     created_at: str
     updated_at: str
+    # Optional metadata used by the file-upload flow (frontend uses these
+    # to skip Step 1's manual paste UI and land the user on Step 5).
+    brief_source: Optional[Dict[str, Any]] = None
+    auto_advanced: Optional[bool] = None
+    # Progression status for the async auto-advance chain kicked off by
+    # /projects/upload-brief. Values: pending | advanced | partial |
+    # insufficient | failed. Absent for projects not created via upload.
+    auto_advance_status: Optional[str] = None
