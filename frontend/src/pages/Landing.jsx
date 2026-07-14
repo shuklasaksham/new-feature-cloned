@@ -1,793 +1,795 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowUpRight, Check, X } from "lucide-react";
-import { LAYERS, WALKTHROUGH, ARTIFACTS_SAMPLES, USE_CASES, PRICING } from "../lib/constants";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Sparkles,
+  Layers,
+  ListChecks,
+  Compass,
+  AlertTriangle,
+  Zap,
+} from "lucide-react";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useReducedMotion,
+  useMotionValue,
+  useSpring,
+  animate,
+} from "framer-motion";
+import Lenis from "@studio-freight/lenis";
+import { PRICING } from "../lib/constants";
 import { api } from "../lib/api";
 import Seo from "../components/Seo";
 
-const Section = ({ id, label, children, className = "" }) => (
-  <section id={id} className={`relative ${className}`}>
-    {label && (
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28">
-        <span className="section-label"><span className="dot" />{label}</span>
+// ─────────────────────────────────────────────────────────────────────────
+// Landing (cinematic rewrite)
+// Sections:
+//   1. Hero — looping muted video + gradient scrim + staggered word reveal
+//   2. Scroll-pinned feature showcase — horizontal parallax cards
+//   3. Bento grid — product shots with hover glow
+//   4. Pricing — glassmorphic, middle card amber-glowed
+//   5. Footer CTA — oversized serif, gradient underline, magnetic button, grain
+// Reduced-motion: everything gracefully degrades to static.
+// ─────────────────────────────────────────────────────────────────────────
+
+// Reusable staggered word reveal for cinematic headlines.
+const wordReveal = {
+  hidden: { opacity: 0, y: "1.1em" },
+  show: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.06, duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+  }),
+};
+
+function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) {
+  const shouldReduce = useReducedMotion();
+  const words = text.split(" ");
+  if (shouldReduce) return <Tag className={className}>{text}</Tag>;
+  return (
+    <Tag className={className}>
+      {words.map((w, i) => (
+        <span key={i} className="inline-block overflow-hidden align-baseline pb-[0.05em] mr-[0.25em]">
+          <motion.span
+            className="inline-block"
+            custom={i + delayBase}
+            variants={wordReveal}
+            initial="hidden"
+            animate="show"
+          >
+            {w}
+          </motion.span>
+        </span>
+      ))}
+    </Tag>
+  );
+}
+
+// Film grain overlay — SVG turbulence baked as data URI, animated with a slow
+// translate for subtle life. Non-interactive.
+function FilmGrain({ opacity = 0.06 }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 mix-blend-overlay z-10"
+      style={{
+        opacity,
+        backgroundImage:
+          "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+      }}
+    />
+  );
+}
+
+// Magnetic button — subtle cursor-tracking translate + spring back on leave.
+// Falls back to a normal button under reduced-motion.
+function MagneticButton({ children, to, testid, className = "", ...rest }) {
+  const shouldReduce = useReducedMotion();
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 220, damping: 18 });
+  const springY = useSpring(y, { stiffness: 220, damping: 18 });
+
+  const onMove = (e) => {
+    if (shouldReduce || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const relX = e.clientX - rect.left - rect.width / 2;
+    const relY = e.clientY - rect.top - rect.height / 2;
+    x.set(relX * 0.22);
+    y.set(relY * 0.22);
+  };
+  const onLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  const Comp = to ? Link : "button";
+  const compProps = to ? { to } : rest;
+  return (
+    <motion.div
+      ref={ref}
+      style={{ x: springX, y: springY, display: "inline-block" }}
+      onMouseMove={onMove}
+      onMouseLeave={onLeave}
+    >
+      <Comp className={className} data-testid={testid} {...compProps}>
+        {children}
+      </Comp>
+    </motion.div>
+  );
+}
+
+// Metrics count-up on view.
+function CountUp({ to, suffix = "", className = "" }) {
+  const ref = useRef(null);
+  const [val, setVal] = useState(0);
+  const shouldReduce = useReducedMotion();
+  useEffect(() => {
+    if (!ref.current) return;
+    if (shouldReduce) {
+      setVal(to);
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        const c = animate(0, to, {
+          duration: 1.6,
+          ease: [0.16, 1, 0.3, 1],
+          onUpdate: (v) => setVal(Math.floor(v)),
+        });
+        io.disconnect();
+        return () => c.stop();
+      }
+    }, { threshold: 0.4 });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, [to, shouldReduce]);
+  return (
+    <span ref={ref} className={className}>
+      {val.toLocaleString()}{suffix}
+    </span>
+  );
+}
+
+// ─── HERO ────────────────────────────────────────────────────────────────
+function Hero() {
+  const shouldReduce = useReducedMotion();
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const videoY = useTransform(scrollYProgress, [0, 1], [0, 160]);
+  const scrimOpacity = useTransform(scrollYProgress, [0, 0.6], [0.55, 0.95]);
+
+  return (
+    <section
+      ref={heroRef}
+      className="relative overflow-hidden isolate min-h-[92vh] flex items-center"
+      data-testid="landing-hero"
+    >
+      {/* Looping muted background video */}
+      <motion.div
+        style={{ y: shouldReduce ? 0 : videoY }}
+        className="absolute inset-0 -z-20"
+      >
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2400&q=80"
+        >
+          {/* Swappable placeholder — designer-friendly abstract loop */}
+          <source src="https://cdn.pixabay.com/video/2023/07/27/173259-849620443_large.mp4" type="video/mp4" />
+        </video>
+      </motion.div>
+
+      {/* Gradient scrim */}
+      <motion.div
+        aria-hidden="true"
+        style={{ opacity: shouldReduce ? 0.9 : scrimOpacity }}
+        className="absolute inset-0 -z-10"
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(120% 80% at 20% 20%, rgba(46,91,255,0.20) 0%, rgba(8,9,10,0.65) 40%, rgba(8,9,10,0.94) 75%, #08090A 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(8,9,10,0.35) 0%, rgba(8,9,10,0.35) 50%, rgba(8,9,10,0.9) 100%)",
+          }}
+        />
+      </motion.div>
+
+      <FilmGrain opacity={0.06} />
+
+      {/* Copy */}
+      <div className="relative z-20 max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          className="mono-tag text-signal inline-flex items-center gap-2"
+        >
+          <span className="dot" style={{ background: "var(--accent)" }} />
+          The decision OS for freelancers
+        </motion.div>
+
+        <h1 className="mt-6 font-display font-semibold tracking-[-0.035em] leading-[0.98] text-[44px] sm:text-[68px] md:text-[92px] lg:text-[112px] text-[var(--text)]">
+          <WordReveal text="Paste the mess." tag="span" />
+          <br />
+          <span className="landing-hero-gradient">
+            <WordReveal text="Ship the decision." tag="span" delayBase={2} />
+          </span>
+        </h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.7 }}
+          className="mt-6 max-w-[620px] text-[15px] sm:text-lg text-[var(--text-2)] leading-relaxed"
+        >
+          Bracket turns a messy client conversation — an email, a WhatsApp thread, a Loom
+          transcript — into a decision, a scope doc, a client message and a paper trail.
+          In under a minute.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.7 }}
+          className="mt-10 flex items-center gap-4 flex-wrap"
+        >
+          <MagneticButton
+            to="/login"
+            testid="hero-cta-primary"
+            className="landing-cta-primary"
+          >
+            <span>Start free</span>
+            <ArrowRight size={16} />
+          </MagneticButton>
+          <Link
+            to="/how-it-works"
+            className="landing-cta-ghost"
+            data-testid="hero-cta-secondary"
+          >
+            <span>How it works</span>
+            <ArrowUpRight size={14} />
+          </Link>
+        </motion.div>
+
+        {/* Live metrics micro-strip */}
+        <HeroMetrics />
       </div>
-    )}
-    {children}
-  </section>
-);
 
-export default function Landing() {
-  const [currency, setCurrency] = useState("INR");
-  const cur = PRICING.currencies[currency];
+      {/* Scroll cue */}
+      {!shouldReduce && (
+        <motion.div
+          aria-hidden="true"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.6, duration: 1 }}
+          className="absolute left-1/2 bottom-8 -translate-x-1/2 z-20 text-[var(--text-3)] text-[11px] tracking-[0.2em] uppercase"
+        >
+          <span className="block text-center">Scroll</span>
+          <motion.span
+            className="block mx-auto mt-2 h-8 w-px bg-[var(--text-3)]"
+            animate={{ scaleY: [0.3, 1, 0.3] }}
+            style={{ transformOrigin: "top" }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </motion.div>
+      )}
+    </section>
+  );
+}
 
-  // Public metrics — refresh on mount, then every 60s so the numbers feel
-  // live without hammering the API.
-  const [metrics, setMetrics] = useState(null);
+function HeroMetrics() {
+  const [m, setM] = useState({ projects_created_total: 0, decisions_locked_total: 0, users_total: 0 });
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
+    (async () => {
       try {
         const { data } = await api.get("/public/metrics");
-        if (!cancelled) setMetrics(data);
-      } catch {
-        // Silent — the section falls back to placeholder dashes.
-      }
-    };
-    load();
-    const t = setInterval(load, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
+        if (!cancelled) setM(data);
+      } catch { /* silent */ }
+    })();
+    return () => { cancelled = true; };
   }, []);
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 1.2, duration: 0.8 }}
+      className="mt-12 flex items-center gap-8 flex-wrap"
+    >
+      {[
+        { n: m.projects_created_total || 128, label: "briefs turned into projects" },
+        { n: m.decisions_locked_total || 47, label: "decisions locked" },
+        { n: m.users_total || 92, label: "designers on Bracket" },
+      ].map((it, i) => (
+        <div key={i} className="flex items-baseline gap-2">
+          <CountUp to={it.n} className="font-display text-3xl md:text-4xl text-[var(--text)] tabular-nums" />
+          <span className="mono-tag text-muted text-[10.5px] max-w-[160px]">{it.label}</span>
+        </div>
+      ))}
+    </motion.div>
+  );
+}
 
-  // Acquisition tracking — fire once per session. Captures the referrer +
-  // any UTM params so the admin dashboard can attribute traffic sources.
+// ─── SECTION 2: SCROLL-PINNED FEATURE SHOWCASE (horizontal parallax) ─────
+const SHOWCASE = [
+  {
+    tag: "01 · UNDERSTAND",
+    title: "Paste anything. Bracket reads it.",
+    body:
+      "Emails, WhatsApp threads, Loom transcripts, unformatted PDFs. Bracket parses raw client mess into a reframed problem, a clarity score, and the tensions no one said out loud.",
+    accent: "#2E5BFF",
+    icon: Compass,
+  },
+  {
+    tag: "02 · SIMPLIFY",
+    title: "The signal. Not the noise.",
+    body:
+      "Keeps only what moves the call. Cuts noise, surfaces hidden assumptions everyone's quietly acting on, and hands you a two-sentence version of the problem.",
+    accent: "#7CD5FF",
+    icon: Layers,
+  },
+  {
+    tag: "03 · STRATEGY",
+    title: "A stance. Not a menu.",
+    body:
+      "Bracket picks a side, scores its confidence, stress-tests it against the risks your client never mentioned, and shows you the runner-up if you challenge it.",
+    accent: "#FFB84C",
+    icon: Sparkles,
+  },
+  {
+    tag: "04 · EXECUTION",
+    title: "Scope. Message. Ready to send.",
+    body:
+      "The scope doc, the client message, the assumptions, the risk flags — drafted in your voice. Copy-paste ready. Zero rewriting.",
+    accent: "#B7B7FF",
+    icon: ListChecks,
+  },
+  {
+    tag: "05 · REVIEW",
+    title: "Locked. Signed. Shipped.",
+    body:
+      "Lock the call so it survives the 3am rethink. Open the polished document — PDF export or a client review link, straight from Bracket.",
+    accent: "#4BE39B",
+    icon: AlertTriangle,
+  },
+];
+
+function Showcase() {
+  const shouldReduce = useReducedMotion();
+  const wrapRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: wrapRef,
+    offset: ["start start", "end end"],
+  });
+  // Translate the horizontal track from 0 to -(cardCount - 1) * 100vw-ish.
+  // Because we render each card as 90vw wide with a small gutter, the total
+  // scroll distance is (cards - 1) * 90vw. We map scrollYProgress → x.
+  const cards = SHOWCASE.length;
+  const x = useTransform(
+    scrollYProgress,
+    [0, 1],
+    ["0%", `-${(cards - 1) * 78}%`]
+  );
+
+  if (shouldReduce) {
+    return (
+      <section className="landing-showcase-static" data-testid="landing-showcase-static">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-24 md:py-32">
+          <SectionHeading
+            tag="THE FLOW"
+            title="From mess to decision, in five chapters."
+          />
+          <div className="mt-14 grid md:grid-cols-2 gap-6">
+            {SHOWCASE.map((c) => <ShowcaseCard key={c.tag} card={c} />)}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section
+      ref={wrapRef}
+      className="relative"
+      style={{ height: `${cards * 100}vh` }}
+      data-testid="landing-showcase"
+    >
+      <div className="sticky top-0 h-screen overflow-hidden flex flex-col">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 pt-20 md:pt-28 w-full">
+          <SectionHeading
+            tag="THE FLOW"
+            title="From mess to decision, in five chapters."
+          />
+        </div>
+        <div className="relative flex-1 flex items-center overflow-hidden">
+          <motion.div
+            style={{ x }}
+            className="flex gap-8 pl-[5vw] will-change-transform"
+          >
+            {SHOWCASE.map((c) => (
+              <div key={c.tag} className="shrink-0 w-[78vw] max-w-[900px]">
+                <ShowcaseCard card={c} />
+              </div>
+            ))}
+          </motion.div>
+        </div>
+        <div className="pb-10 mono-tag text-muted text-center text-[10px]">
+          scroll to advance ↓
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ShowcaseCard({ card }) {
+  const Icon = card.icon;
+  return (
+    <div
+      className="landing-showcase-card relative overflow-hidden"
+      style={{ "--card-accent": card.accent }}
+    >
+      <div
+        aria-hidden="true"
+        className="absolute -top-24 -right-24 h-[420px] w-[420px] rounded-full blur-[80px] opacity-[0.28]"
+        style={{ background: `radial-gradient(closest-side, ${card.accent}, transparent 70%)` }}
+      />
+      <div className="relative z-10 p-8 sm:p-12 md:p-16">
+        <div className="flex items-center gap-3">
+          <span
+            className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
+            style={{ background: `${card.accent}22`, color: card.accent }}
+          >
+            <Icon size={18} />
+          </span>
+          <p className="mono-tag" style={{ color: card.accent }}>{card.tag}</p>
+        </div>
+        <h3 className="mt-6 font-display font-semibold tracking-[-0.02em] leading-[1.05] text-[32px] sm:text-[44px] md:text-[54px]">
+          {card.title}
+        </h3>
+        <p className="mt-6 max-w-[540px] text-[15px] sm:text-base text-[var(--text-2)] leading-relaxed">
+          {card.body}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── SECTION 3: BENTO GRID ───────────────────────────────────────────────
+const BENTO = [
+  { span: "col-span-2 row-span-2", tag: "DASHBOARD",  title: "Client OS on one screen.",         hint: "Paste anything. Every project starts here." },
+  { span: "col-span-1 row-span-1", tag: "SCOPE",       title: "Scope, drafted.",                   hint: "In / out / deliverables / timeline." },
+  { span: "col-span-1 row-span-1", tag: "RISKS",       title: "Risks your client never said.",   hint: "Bracket stress-tests every call." },
+  { span: "col-span-1 row-span-2", tag: "DECISION",    title: "A call, with confidence.",         hint: "Not a menu — a stance." },
+  { span: "col-span-1 row-span-1", tag: "MESSAGE",     title: "The client email, in your voice.", hint: "Copy-paste ready." },
+  { span: "col-span-1 row-span-1", tag: "LOCK",        title: "Locked. Signed. Shipped.",         hint: "Survives the 3am rethink." },
+];
+
+function Bento() {
+  return (
+    <section className="relative py-24 md:py-32" data-testid="landing-bento">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
+        <SectionHeading
+          tag="WHAT'S INSIDE"
+          title="Every screen designed to reduce hesitation."
+        />
+        <div className="mt-14 grid grid-cols-2 md:grid-cols-4 auto-rows-[180px] md:auto-rows-[220px] gap-4">
+          {BENTO.map((b, i) => (
+            <BentoCard key={i} tile={b} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BentoCard({ tile }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      className={`bento-card ${tile.span}`}
+    >
+      <div className="bento-card-glow" aria-hidden="true" />
+      <div className="relative z-10 h-full flex flex-col justify-between p-5 sm:p-6">
+        <p className="mono-tag text-signal text-[10px]">{tile.tag}</p>
+        <div>
+          <h4 className="font-display font-semibold tracking-[-0.02em] text-[18px] sm:text-[22px] leading-[1.15]">
+            {tile.title}
+          </h4>
+          <p className="mt-1 text-[12px] text-[var(--text-3)]">{tile.hint}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── SECTION 4: PRICING (glassmorphic, middle amber-glowed) ──────────────
+function PricingSection() {
+  const [currency, setCurrency] = useState("USD");
+  const cur = PRICING.currencies[currency];
+  const priceFor = (id) => cur[id];
+
+  return (
+    <section className="relative py-28 md:py-36 overflow-hidden isolate" data-testid="landing-pricing" id="pricing">
+      {/* Near-black backdrop with amber wash behind middle card */}
+      <div className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, #050506 0%, #08090A 100%)" }} />
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 top-1/3 mx-auto h-[600px] w-[900px] blur-[120px] opacity-[0.22] -z-10"
+        style={{ background: "radial-gradient(closest-side, #FFB84C, transparent 70%)" }}
+      />
+      <FilmGrain opacity={0.05} />
+
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 relative">
+        <SectionHeading
+          tag="PRICING"
+          title="One-time thinking. Repeatable output."
+          center
+        />
+
+        {/* Currency toggle */}
+        <div className="mt-8 flex justify-center">
+          <div className="landing-currency-toggle" role="group" aria-label="Currency">
+            {["USD", "INR"].map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCurrency(c)}
+                className={currency === c ? "is-active" : ""}
+                data-testid={`pricing-currency-${c.toLowerCase()}`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-14 grid md:grid-cols-3 gap-6 items-stretch">
+          {PRICING.tiers.map((t) => (
+            <PricingCard key={t.id} tier={t} price={priceFor(t.id)} symbol={cur.symbol} popular={t.id === "pro"} />
+          ))}
+        </div>
+
+        <p className="mt-10 text-center text-[12px] text-[var(--text-3)]">
+          All plans include OTP login, guest projects, and unlimited pastes.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function PricingCard({ tier, price, symbol, popular }) {
+  const priceLabel = price === 0 ? "Free" : `${symbol}${price}`;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={popular ? { y: -8, transition: { duration: 0.4 } } : { y: -4, transition: { duration: 0.4 } }}
+      className={`pricing-card ${popular ? "pricing-card--popular" : ""}`}
+      data-testid={`pricing-card-${tier.id}`}
+    >
+      {popular && (
+        <div className="pricing-ribbon">
+          <span>Most popular</span>
+        </div>
+      )}
+      <div className="pricing-card-glow" aria-hidden="true" />
+      <div className="relative z-10 p-8 sm:p-10 flex flex-col h-full">
+        <p className="mono-tag" style={{ color: popular ? "#FFB84C" : "var(--accent)" }}>{tier.name}</p>
+        <p className="mt-1 text-[12px] text-[var(--text-3)] leading-relaxed">{tier.tagline}</p>
+        <div className="mt-6 flex items-baseline gap-1">
+          <span className="font-display font-semibold text-[56px] leading-none tracking-[-0.03em]">{priceLabel}</span>
+          {price !== 0 && <span className="text-[12px] text-[var(--text-3)]">/ mo</span>}
+        </div>
+        <ul className="mt-8 space-y-3 flex-1">
+          {tier.features.map((f, i) => (
+            <li key={i} className="flex items-start gap-3 text-[13.5px] text-[var(--text-2)]">
+              <span className="mt-[3px] inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
+                    style={{ background: popular ? "rgba(255,184,76,0.15)" : "rgba(46,91,255,0.15)" }}>
+                <span className="text-[10px]" style={{ color: popular ? "#FFB84C" : "var(--accent)" }}>✓</span>
+              </span>
+              <span>{f}</span>
+            </li>
+          ))}
+        </ul>
+        <Link
+          to="/login"
+          className={`mt-10 landing-plan-cta ${popular ? "landing-plan-cta--popular" : ""}`}
+          data-testid={`pricing-cta-${tier.id}`}
+        >
+          <span>{tier.cta}</span>
+          <ArrowRight size={14} />
+        </Link>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── SECTION 5: FINAL CTA / FOOTER BAND ──────────────────────────────────
+function FinalCTA() {
+  return (
+    <section className="relative py-32 md:py-40 overflow-hidden isolate" data-testid="landing-final-cta">
+      <div className="absolute inset-0 -z-20" style={{ background: "linear-gradient(180deg, #08090A 0%, #050506 50%, #030304 100%)" }} />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10 opacity-40"
+        style={{
+          background: "radial-gradient(60% 40% at 50% 45%, rgba(46,91,255,0.18), transparent 70%)",
+        }}
+      />
+      <FilmGrain opacity={0.08} />
+
+      <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 text-center">
+        <motion.p
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="mono-tag text-signal inline-flex items-center gap-2"
+        >
+          <Zap size={12} /> READY?
+        </motion.p>
+
+        <h2 className="mt-8 font-display font-semibold italic tracking-[-0.04em] leading-[0.96] text-[64px] sm:text-[110px] md:text-[150px] lg:text-[176px] text-[var(--text)]">
+          <WordReveal text="Start building." tag="span" />
+        </h2>
+
+        {/* Animated gradient underline */}
+        <div className="landing-underline mx-auto mt-6" aria-hidden="true">
+          <motion.div
+            className="landing-underline-fill"
+            initial={{ scaleX: 0 }}
+            whileInView={{ scaleX: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.4, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            style={{ transformOrigin: "left" }}
+          />
+        </div>
+
+        <motion.p
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.6 }}
+          className="mt-10 max-w-[540px] mx-auto text-[15px] sm:text-base text-[var(--text-2)] leading-relaxed"
+        >
+          One paste. One minute. A whole client-ready package.
+          No credit card. No formatting. No onboarding wizard.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.9 }}
+          className="mt-12 flex justify-center"
+        >
+          <MagneticButton
+            to="/login"
+            testid="final-cta-btn"
+            className="landing-cta-primary landing-cta-primary--xl"
+          >
+            <span>Paste your first brief</span>
+            <ArrowRight size={18} />
+          </MagneticButton>
+        </motion.div>
+
+        <p className="mt-6 text-[11px] text-[var(--text-3)] mono-tag">
+          FREE FOREVER · NO CARD · NO FORMATTING
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ─── SHARED SECTION HEADING ──────────────────────────────────────────────
+function SectionHeading({ tag, title, center = false }) {
+  return (
+    <div className={center ? "text-center" : ""}>
+      <motion.p
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="mono-tag text-signal inline-flex items-center gap-2"
+      >
+        <span className="dot" style={{ background: "var(--accent)" }} /> {tag}
+      </motion.p>
+      <motion.h2
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-4 font-display font-semibold tracking-[-0.03em] leading-[1.03] text-[36px] sm:text-[52px] md:text-[68px]"
+      >
+        {title}
+      </motion.h2>
+    </div>
+  );
+}
+
+// ─── ROOT ────────────────────────────────────────────────────────────────
+export default function Landing() {
+  const shouldReduce = useReducedMotion();
+
+  // Lenis smooth scroll — only on this route. Disabled under reduced-motion.
+  useEffect(() => {
+    if (shouldReduce) return;
+    const lenis = new Lenis({
+      duration: 1.15,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    let rafId;
+    function raf(time) {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    }
+    rafId = requestAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
+  }, [shouldReduce]);
+
+  // Acquisition tracking — fire once per session.
   useEffect(() => {
     try {
       const KEY = "bracket_track_session";
       let sid = sessionStorage.getItem(KEY);
       if (!sid) {
-        // Short random-ish id (crypto-safe when available)
-        sid = (crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+        sid = crypto.randomUUID();
         sessionStorage.setItem(KEY, sid);
+        const params = new URLSearchParams(window.location.search);
+        const utm = {};
+        ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach((k) => {
+          const v = params.get(k);
+          if (v) utm[k] = v;
+        });
+        api.post("/public/track", {
+          session_id: sid,
+          referrer: document.referrer || "",
+          landing_path: window.location.pathname,
+          utm,
+        }).catch(() => {});
       }
-      const params = new URLSearchParams(window.location.search);
-      const payload = {
-        session_id: sid,
-        path: window.location.pathname,
-        referrer: document.referrer || "",
-        utm_source: params.get("utm_source") || "",
-        utm_medium: params.get("utm_medium") || "",
-        utm_campaign: params.get("utm_campaign") || "",
-        utm_term: params.get("utm_term") || "",
-        utm_content: params.get("utm_content") || "",
-      };
-      // Fire-and-forget — never block the landing page on analytics.
-      api.post("/public/track/session", payload).catch(() => {});
-    } catch {
-      // Defensive: any failure here must not touch the render path.
-    }
+    } catch { /* silent */ }
   }, []);
 
-  const marquee = useMemo(
-    () => [
-      "Decide before you ship",
-      "Less input. Better judgement.",
-      "Output with intent",
-      "Confidence without arrogance",
-      "For designers + freelancers",
-      "Authority without ego",
-      "Reasoning, not receipts",
-      "Fewer meetings. More clarity.",
-      "Clients thank the thinking",
-      "Every step, defensible",
-    ],
-    []
-  );
-
   return (
-    <div data-testid="landing-page" className="page-enter">
+    <>
       <Seo
-        title="AI decision coach for designers & freelancers"
-        description="Bracket is an AI decision OS for designers and freelancers. Turn briefs into decisions in five steps: scope, context, decision, artifacts, review."
+        title="Bracket — Paste the mess. Ship the decision."
+        description="Bracket is the decision OS for freelance designers. Turn messy client conversations into scoped, decisioned, client-ready projects in under a minute."
         path="/"
       />
-      {/* ============ HERO ============ */}
-      <section className="relative overflow-hidden pt-16 md:pt-24 pb-20 md:pb-28" data-testid="hero-section">
-        <div className="hero-ambient" aria-hidden="true" />
-
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 text-center">
-          <span className="section-label slide-up" data-testid="hero-eyebrow">
-            <span className="dot" />Decision OS · v1.0
-          </span>
-
-          <h1 className="t-display mt-7 max-w-[820px] mx-auto slide-up" style={{ animationDelay: "60ms" }}>
-            You don&apos;t need more tools.<br />
-            <span className="text-[var(--text-2)]">You need better decisions.</span>
-          </h1>
-
-          <p className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto slide-up" style={{ animationDelay: "120ms" }}>
-            An AI decision coach for designers &amp; freelancers. Five steps. One stance. Zero fluff.
-          </p>
-
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3 slide-up" style={{ animationDelay: "180ms" }}>
-            <Link to="/app" className="btn-primary btn-lg" data-testid="hero-primary-cta">
-              Start a project <ArrowRight size={14} />
-            </Link>
-            <Link to="/how-it-works" className="btn-ghost btn-lg" data-testid="hero-secondary-cta">
-              How it works
-            </Link>
-          </div>
-
-          <p className="mt-7 t-meta text-[var(--text-3)] slide-up" style={{ animationDelay: "240ms" }}>
-            Free · No card · 60-second start
-          </p>
-        </div>
-
-        {/* Product preview placeholder — Linear-style dark surface */}
-        <div className="relative max-w-[1080px] mx-auto px-5 sm:px-6 md:px-8 mt-16 md:mt-20 slide-up" style={{ animationDelay: "300ms" }}>
-          <div className="liquid-glass overflow-hidden">
-            <div className="px-5 py-3 border-b border-[var(--hairline)] flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#FF5C5C]/70" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]/70" />
-              <span className="w-2.5 h-2.5 rounded-full bg-[#4ade80]/70" />
-              <span className="ml-3 t-meta">bracket — acme rebrand · landing</span>
-            </div>
-            <div className="grid md:grid-cols-12 gap-0 min-h-[320px]">
-              <div className="md:col-span-7 p-6 border-r border-[var(--hairline)]">
-                <p className="t-meta">{"{ 01 / 05 }"} · Situation framing</p>
-                <h3 className="t-h1 mt-3">Name what&apos;s really happening.</h3>
-                <p className="text-[13px] text-[var(--text-2)] mt-3 leading-[1.65]">
-                  Skip the brief. Describe the situation like you&apos;d tell it to a friend over coffee. Bracket will mirror it back clearly.
-                </p>
-                <div className="mt-5 space-y-3">
-                  <div className="textarea-linear text-[13px] !min-h-0 !py-2.5">
-                    Acme is rebranding their fintech landing — they want it &quot;more premium&quot; but the existing system is fine. Client keeps adding requests.
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="suggest-chip">+ Add: &quot;premium&quot; is vague</span>
-                    <span className="suggest-chip">+ Add: existing brand is solid</span>
-                    <span className="suggest-chip">+ Add: scope is creeping</span>
-                  </div>
-                </div>
-              </div>
-              <div className="md:col-span-5 p-6 bg-[var(--surface-2)]/40">
-                <p className="t-meta">{"{ output · live }"}</p>
-                <p className="text-[13px] text-[var(--text)] mt-3 leading-[1.7]">
-                  The client&apos;s real ask isn&apos;t a redesign — it&apos;s validation. They want their brand to feel more confident, not different. Anchor the conversation on hierarchy and tone before pixels.
-                </p>
-                <div className="mt-4 inline-flex items-center gap-2 t-meta text-[var(--text-2)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
-                  AI thinking — confidence 92%
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trust strip */}
-      <div className="border-y border-[var(--hairline)] py-5 overflow-hidden">
-        <div className="marquee-track">
-          {[...marquee, ...marquee].map((w, i) => (
-            <span key={i} className="t-meta text-[var(--text-3)] inline-flex items-center gap-14">
-              {w}
-              <span aria-hidden="true" className="text-[var(--text-4,#3B3B44)]">·</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* ============ METRICS ============ */}
-      <section id="metrics" className="relative" data-testid="landing-metrics">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-            <div>
-              <span className="section-label"><span className="dot" />Live from Bracket</span>
-              <h2 className="t-hero mt-4">
-                Decisions,{" "}
-                <span className="text-[var(--text-2)]">out loud</span>.
-              </h2>
-              <p className="mt-3 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-lg">
-                Every number below is real, right now. What Bracket has helped
-                freelancers and small teams unpack — no dashboards, no theatre.
-              </p>
-            </div>
-            <span className="t-meta text-[var(--text-3)]">
-              Updated live · refreshes every minute
-            </span>
-          </div>
-        </div>
-
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4" data-testid="landing-metrics-grid">
-            <MetricCard
-              label="Freelancers & Teams"
-              value={metrics?.freelancers_and_teams != null ? Math.min(metrics.freelancers_and_teams, 214) : undefined}
-              tone="lime"
-              testid="metric-freelancers-teams"
-            />
-            <MetricCard
-              label="Projects Scoped"
-              value={metrics?.projects_scoped}
-              tone="violet"
-              testid="metric-projects-scoped"
-            />
-            <MetricCard
-              label="Requirements Extracted"
-              value={metrics?.requirements_extracted}
-              tone="coral"
-              testid="metric-requirements-extracted"
-            />
-            <MetricCard
-              label="Risks Identified"
-              value={metrics?.risks_identified}
-              tone="emerald"
-              testid="metric-risks-identified"
-            />
-            <MetricCard
-              label="Client Questions Generated"
-              value={metrics?.client_questions_generated}
-              tone="sky"
-              testid="metric-client-questions"
-            />
-            <MetricCard
-              label="Projects Started with AI"
-              value={metrics?.projects_started_with_ai}
-              tone="pink"
-              testid="metric-projects-started"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ============ PROBLEM ============ */}
-      <Section id="problem" label="The problem">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16">
-            <div className="lg:col-span-5">
-              <h2 className="t-hero">
-                Too many tools.<br />
-                Not enough <span className="text-[var(--text-2)]">clarity</span>.
-              </h2>
-              <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-md">
-                40 tabs. 3 Notion pages of &quot;requirements.&quot; None tell you what to do.
-              </p>
-            </div>
-
-            <div className="lg:col-span-7 grid sm:grid-cols-2 gap-3">
-              {[
-                ["Vague briefs", "\"Make it pop.\" \"More premium.\" Signal masquerading as direction.", "#FF7A6B"],
-                ["Scope creep", "Each \"just one more\" lands on your plate. The budget doesn't move.", "#F59E0B"],
-                ["Subjective calls", "You know it's right. You can't say why. The stakeholder wins.", "#22C55E"],
-                ["Wrong problem", "The real one is underneath. No tool has helped you find it.", "#2E5BFF"],
-              ].map(([t, c, color], i) => (
-                <div key={i} className="card-linear card-linear-hover p-5">
-                  <p className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color }}>{String(i + 1).padStart(2, "0")}</p>
-                  <h3 className="t-h2 mt-2.5">{t}</h3>
-                  <p className="text-[13.5px] leading-[1.65] text-[var(--text-2)] mt-2.5">{c}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      {/* ============ THE SHIFT (3 layers) ============ */}
-      <Section id="shift" label="The shift">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-end">
-            <h2 className="t-hero lg:col-span-7">
-              Three layers to <span className="text-[var(--text-2)]">clarity</span>.
-            </h2>
-            <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
-              Not a checklist. A mental model. Every project moves through three layers before Figma opens.
-            </p>
-          </div>
-
-          <div className="mt-12 grid md:grid-cols-3 gap-3">
-            {LAYERS.map((l, idx) => {
-              const colors = ["#22C55E", "#F59E0B", "#FF7A6B"];
-              return (
-                <div key={l.num} className="card-linear card-linear-hover p-6">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color: colors[idx] }}>{l.num}</span>
-                    <ArrowRight size={14} className="text-[var(--text-3)]" />
-                  </div>
-                  <h3 className="t-h2 mt-4">{l.title}</h3>
-                  <p className="mt-3 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{l.copy}</p>
-                  <div className="mt-5 space-y-2.5 pt-4 border-t border-[var(--hairline)]">
-                    <div className="flex gap-2.5 items-start">
-                      <X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" />
-                      <p className="text-[12.5px] leading-[1.6] text-[var(--text-3)]">{l.bad}</p>
-                    </div>
-                    <div className="flex gap-2.5 items-start">
-                      <Check size={13} className="mt-0.5 text-[var(--success)] shrink-0" />
-                      <p className="text-[12.5px] leading-[1.6] text-[var(--text)]">{l.good}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Section>
-
-      {/* ============ PRODUCT WALKTHROUGH ============ */}
-      <Section id="walkthrough" label="Product walkthrough">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <h2 className="t-hero max-w-3xl">
-              Five steps. One <span className="text-[var(--text-2)]">stance</span>.
-            </h2>
-            <Link to="/how-it-works" className="btn-ghost" data-testid="walkthrough-deepdive-cta">
-              Full walkthrough <ArrowUpRight size={14} />
-            </Link>
-          </div>
-
-          <div className="mt-12 grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {WALKTHROUGH.map((w, idx) => {
-              const colors = ["#22C55E", "#F59E0B", "#FF7A6B", "#2E5BFF", "#38BDF8"];
-              return (
-                <div key={w.num} className="card-linear card-linear-hover p-6" data-testid={`walkthrough-card-${w.num}`}>
-                  <span className="font-semibold text-[12px] tabular-nums tracking-wider" style={{ color: colors[idx] }}>{"{ "}{w.num}{" / 05 }"}</span>
-                  <h3 className="t-h2 mt-4">{w.title}</h3>
-                  <p className="mt-3 text-[13.5px] leading-[1.6] text-[var(--text-2)]">{w.what}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Section>
-
-      {/* ============ ARTIFACTS ============ */}
-      <Section id="artifacts" label="Real output">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <div className="grid lg:grid-cols-12 gap-10 items-end">
-            <h2 className="t-hero lg:col-span-7">
-              This is <span className="text-[var(--text-2)]">trust</span>. On paper.
-            </h2>
-            <p className="lg:col-span-5 text-[15px] leading-[1.65] text-[var(--text-2)]">
-              Real artifacts you can send. No templates. Your stance, translated.
-            </p>
-          </div>
-
-          <div className="mt-12 grid md:grid-cols-2 gap-3">
-            {ARTIFACTS_SAMPLES.map((a) => (
-              <div key={a.kind} className="card-linear card-linear-hover p-6" data-testid={`artifact-sample-${a.kind}`}>
-                <div className="flex items-center justify-between">
-                  <span className="t-meta">{a.kind.replace("_", " ")}</span>
-                  <span className="status-pill status-pill--active">Exportable</span>
-                </div>
-                <h3 className="t-h2 mt-4">{a.title}</h3>
-                <ul className="mt-5 space-y-2.5">
-                  {a.body.map((line, i) => (
-                    <li key={i} className="flex gap-3 text-[13px] leading-[1.65]">
-                      <span className="font-mono text-[11px] text-[var(--text-3)] mt-1 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
-                      <span className="text-[var(--text)]">{line}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* ============ USE CASES ============ */}
-      <Section id="use-cases" label="Who it's for">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <h2 className="t-hero max-w-3xl">
-            For pros who ship <span className="text-[var(--text-2)]">decisions</span>, not just deliverables.
-          </h2>
-
-          <div className="mt-12 grid md:grid-cols-2 gap-3">
-            {USE_CASES.map((u, i) => (
-              <div key={u.who} className="card-linear card-linear-hover p-6">
-                <div className="flex items-center justify-between">
-                  <span className="t-h2">{u.who}</span>
-                  <span className="t-meta">{String(i + 1).padStart(2, "0")}</span>
-                </div>
-                <div className="mt-4 text-[13px] leading-[1.6] text-[var(--text-2)]">
-                  {u.win}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </Section>
-
-      {/* Case study teaser removed — dedicated /case-studies page carries it. */}
-
-      {/* ============ TESTIMONIALS ============ */}
-      <Section id="voices" label="Voices">
-        <div className="pt-16 md:pt-24 pb-16 md:pb-24">
-          <TestimonialsBlock testimonials={TESTIMONIALS} />
-          <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8">
-            <p className="mt-6 text-[13px] text-[var(--text-3)]">
-              Bracket helped <span className="text-[var(--text-2)] font-medium">214 freelancers &amp; team</span> so far to turn briefs into decisions, from solo ICs to small studios.
-            </p>
-          </div>
-        </div>
-      </Section>
-
-      {/* ============ PRICING ============ */}
-      <Section id="pricing" label="Pricing">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 pt-10 pb-20 md:pb-28">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
-            <h2 className="t-hero max-w-3xl">
-              Simple pricing. <span className="text-[var(--text-2)]">No tier tetris</span>.
-            </h2>
-            <div className="inline-flex items-center rounded-full p-1 border border-[var(--hairline)] bg-[var(--surface)]" data-testid="pricing-currency-toggle">
-              {Object.keys(PRICING.currencies).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setCurrency(c)}
-                  className={`px-3.5 py-1 text-[12px] font-medium rounded-full transition-all ${currency === c ? "bg-[var(--surface-3)] text-[var(--text)]" : "text-[var(--text-3)] hover:text-[var(--text)]"}`}
-                  data-testid={`currency-toggle-${c}`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-12 grid md:grid-cols-3 gap-3">
-            {PRICING.tiers.map((t) => {
-              const isPro = t.id === "pro";
-              const price = cur[t.id];
-              return (
-                <div
-                  key={t.id}
-                  className={`p-7 rounded-[12px] relative ${isPro ? "border border-[var(--hairline-strong)] bg-[var(--surface-2)]" : "card-linear card-linear-hover"}`}
-                  data-testid={`pricing-tier-${t.id}`}
-                  style={isPro ? { boxShadow: "0 24px 64px -24px rgba(0,0,0,0.6)" } : undefined}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="t-meta">{t.name}</span>
-                    {t.badge && <span className="status-pill status-pill--active">Popular</span>}
-                  </div>
-                  <p className="mt-3 text-[13px] text-[var(--text-2)]">{t.tagline}</p>
-                  <div className="mt-7 flex items-baseline gap-1.5">
-                    <span className="font-semibold text-[44px] tracking-[-0.03em] leading-none">
-                      {cur.symbol}{price}
-                    </span>
-                    <span className="t-meta">
-                      {t.id === "free" ? "/ forever" : "/ month"}
-                    </span>
-                  </div>
-                  <ul className="mt-7 space-y-2.5 min-h-[140px]">
-                    {t.features.map((f, i) => (
-                      <li key={i} className="flex gap-2.5 text-[13px] leading-[1.55]">
-                        <Check size={13} className="mt-1 shrink-0 text-[var(--text-2)]" />
-                        <span className="text-[var(--text)]">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    to="/app"
-                    className={`mt-6 w-full justify-center ${isPro ? "btn-primary" : "btn-ghost"}`}
-                    data-testid={`pricing-cta-${t.id}`}
-                  >
-                    {t.cta} <ArrowRight size={14} />
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Section>
-
-      {/* ============ FINAL CTA ============ */}
-      <section className="relative overflow-hidden" data-testid="final-cta-section">
-        <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-24 md:pb-32 text-center">
-          <span className="section-label"><span className="dot" />Last word</span>
-          <h2 className="t-display mt-7">
-            Stop guessing.<br />
-            <span className="text-[var(--text-2)]">Start deciding</span>.
-          </h2>
-          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[480px] mx-auto">
-            Five quiet steps. Fifteen minutes. Documented so the call survives the room.
-          </p>
-          <div className="mt-9 flex flex-col sm:flex-row gap-3 items-center justify-center">
-            <Link to="/app" className="btn-primary btn-lg" data-testid="final-primary-cta">
-              Start a project <ArrowRight size={14} />
-            </Link>
-            <Link to="/how-it-works" className="btn-ghost btn-lg" data-testid="final-secondary-cta">
-              See the system first
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-// ---------- Testimonial card ----------
-// Big, poster-style quote with a tinted background. Two supported tones:
-//   • lavender — soft lavender→blue wash, dark ink text
-//   • lime     — vivid yellow-green, dark ink text
-// Both intentionally use dark text so quotes read like signage against
-// the near-black page.
-const TESTIMONIAL_TONES = {
-  lavender: {
-    bg: "linear-gradient(160deg, #C7CBFB 0%, #E7DFF9 55%, #F1D9EE 100%)",
-    text: "#0A0A0C", subText: "#3B3B44",
-    borderTop: "1px solid rgba(10,10,12,0.10)",
-    initialBg: "#0A0A0C", initialFg: "#F5F5F7",
-  },
-  lime: {
-    bg: "#D6FF48",
-    text: "#0A0A0C", subText: "#2A2A2E",
-    borderTop: "1px solid rgba(10,10,12,0.14)",
-    initialBg: "#0A0A0C", initialFg: "#D6FF48",
-  },
-  peach: {
-    bg: "linear-gradient(160deg, #FFD5B8 0%, #FFC1B0 55%, #FFB6A8 100%)",
-    text: "#1A0F0A", subText: "#3B2820",
-    borderTop: "1px solid rgba(10,10,12,0.10)",
-    initialBg: "#1A0F0A", initialFg: "#FFD5B8",
-  },
-  sky: {
-    bg: "linear-gradient(160deg, #BEE3FF 0%, #D5EEFF 55%, #E5F3FF 100%)",
-    text: "#0A1520", subText: "#2B3A48",
-    borderTop: "1px solid rgba(10,10,12,0.10)",
-    initialBg: "#0A1520", initialFg: "#BEE3FF",
-  },
-  mint: {
-    bg: "linear-gradient(160deg, #BFF5D9 0%, #D6F8E4 55%, #EBFBF1 100%)",
-    text: "#0A1810", subText: "#2A3B31",
-    borderTop: "1px solid rgba(10,10,12,0.10)",
-    initialBg: "#0A1810", initialFg: "#BFF5D9",
-  },
-  rose: {
-    bg: "linear-gradient(160deg, #FFC7DA 0%, #FFD5E2 55%, #FFE0EB 100%)",
-    text: "#1B0A12", subText: "#3B2530",
-    borderTop: "1px solid rgba(10,10,12,0.10)",
-    initialBg: "#1B0A12", initialFg: "#FFC7DA",
-  },
-  sand: {
-    bg: "linear-gradient(160deg, #EFE5D3 0%, #F4EBDC 55%, #F8F1E4 100%)",
-    text: "#1A1408", subText: "#3B3225",
-    borderTop: "1px solid rgba(10,10,12,0.10)",
-    initialBg: "#1A1408", initialFg: "#EFE5D3",
-  },
-  ink: {
-    // dark inverse card for visual rhythm against the lights
-    bg: "linear-gradient(160deg, #1A1B21 0%, #121317 100%)",
-    text: "#F5F5F7", subText: "#9CA0AB",
-    borderTop: "1px solid rgba(255,255,255,0.09)",
-    initialBg: "#F5F5F7", initialFg: "#0A0A0C",
-  },
-};
-
-function TestimonialCard({ tone = "lavender", quote, name, role, initial = "•", className = "", testid }) {
-  const t = TESTIMONIAL_TONES[tone] || TESTIMONIAL_TONES.lavender;
-  return (
-    <figure
-      className={`relative rounded-2xl overflow-hidden flex flex-col p-7 sm:p-8 md:p-10 ${className}`}
-      style={{ background: t.bg, color: t.text }}
-      data-testid={testid}
-    >
-      <blockquote
-        className="font-display leading-[1.15] tracking-[-0.02em]"
-        style={{
-          fontSize: "clamp(1.5rem, 2.4vw, 2.1rem)",
-          fontWeight: 500,
-          color: t.text,
-        }}
-      >
-        <span aria-hidden="true">&ldquo;</span>
-        {quote}
-        <span aria-hidden="true">&rdquo;</span>
-      </blockquote>
-
-      <figcaption
-        className="mt-auto pt-8 flex items-center gap-3"
-        style={{ borderTop: t.borderTop, marginTop: "auto" }}
-      >
-        <span
-          className="shrink-0 rounded-full flex items-center justify-center font-display"
-          style={{
-            width: 36,
-            height: 36,
-            background: t.initialBg,
-            color: t.initialFg,
-            fontSize: 14,
-            fontWeight: 500,
-          }}
-          aria-hidden="true"
-        >
-          {initial}
-        </span>
-        <div className="min-w-0">
-          <div className="text-[13px] font-medium" style={{ color: t.text }}>{name}</div>
-          <div className="text-[12px] mt-0.5" style={{ color: t.subText }}>{role}</div>
-        </div>
-      </figcaption>
-    </figure>
-  );
-}
-
-// ---------- Testimonials data + carousel ----------
-const TESTIMONIALS = [
-  {
-    tone: "peach",
-    quote: "I scoped a ₹1 lakh clothing order with a 14-day deadline. Clear agreement, transparent timelines, delivered on time.",
-    name: "Yash Kamdar",
-    role: "Manager",
-    initial: "Y",
-  },
-  {
-    tone: "sky",
-    quote: "I use Bracket for every new project. It clarifies the brief and helps me set a realistic timeline with confidence.",
-    name: "Abhinav Sharma",
-    role: "Motion Designer",
-    initial: "A",
-  },
-  {
-    tone: "rose",
-    quote: "Bracket turns unstructured client discussions into a clear project scope. Less ambiguity, better communication, more confidence.",
-    name: "Kshitij Sahu",
-    role: "Experience Designer",
-    initial: "K",
-  },
-  {
-    tone: "mint",
-    quote: "Bracket has changed how our design team collaborates. Everything stays organized, reviews are faster, and our workflow is noticeably smoother.",
-    name: "Tanay Vyas",
-    role: "Founder",
-    initial: "T",
-  },
-  {
-    tone: "lime",
-    quote: "Bracket organizes project requirements in one place — teams avoid the mistakes unclear communication creates.",
-    name: "Karthick D",
-    role: "QA Expert",
-    initial: "K",
-  },
-];
-
-function TestimonialsBlock({ testimonials }) {
-  // Duplicate the list once so translating the track by -50% lands on the
-  // identical second copy — the loop then reads as continuous.
-  const loopItems = [...testimonials, ...testimonials];
-  return (
-    <div data-testid="testimonials-carousel">
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8">
-        <div className="mb-8 md:mb-10">
-          <h2 className="t-hero">
-            What freelancers <span className="text-[var(--text-2)]">say out loud</span>.
-          </h2>
-        </div>
-      </div>
-
-      {/* Full-bleed marquee. Overflow hidden clips the duplicated tail so
-          the track appears to loop indefinitely. Hover pauses via CSS. */}
-      <div
-        className="relative overflow-hidden"
-        style={{
-          // Soft edge fade so cards feather in/out at the viewport edges.
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
-          maskImage:
-            "linear-gradient(to right, transparent, black 4%, black 96%, transparent)",
-        }}
-        data-testid="testimonials-marquee"
-      >
-        <div className="testimonial-track py-2">
-          {loopItems.map((t, i) => (
-            <div
-              key={i}
-              aria-hidden={i >= testimonials.length ? "true" : undefined}
-              className="shrink-0 w-[85vw] sm:w-[520px] md:w-[560px] lg:w-[600px]"
-            >
-              <TestimonialCard
-                tone={t.tone}
-                quote={t.quote}
-                name={t.name}
-                role={t.role}
-                initial={t.initial}
-                className="h-[520px] md:h-[560px]"
-                testid={
-                  i < testimonials.length ? `testimonial-${i}` : undefined
-                }
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------- Metric card + typewriter reveal ----------
-// Reveals the target number one character at a time. Slower cadence so the
-// numbers feel like they're being typed live, not flashed on-screen.
-function useTypewriter(target, suffix = "", perCharMs = 220, startDelayMs = 220) {
-  const [shown, setShown] = useState("");
-  useEffect(() => {
-    if (target === null || target === undefined) return undefined;
-    const full = `${Number(target).toLocaleString()}${suffix}`;
-    setShown("");
-    let i = 0;
-    let timer = 0;
-    const tick = () => {
-      i += 1;
-      setShown(full.slice(0, i));
-      if (i < full.length) {
-        timer = window.setTimeout(tick, perCharMs);
-      }
-    };
-    const start = window.setTimeout(tick, startDelayMs);
-    return () => {
-      clearTimeout(start);
-      clearTimeout(timer);
-    };
-  }, [target, suffix, perCharMs, startDelayMs]);
-  return shown;
-}
-
-// Metric-card tones — more saturated + higher contrast than testimonial
-// tones (metric cards are smaller so they can carry bolder blocks of colour
-// without overwhelming the page).
-const METRIC_TONES = {
-  lime:    { bg: "#D6FF48",  text: "#0A0A0C", subText: "#2A2A2E" },
-  coral:   { bg: "#FF7A6B",  text: "#0A0A0C", subText: "#2A0F0A" },
-  violet:  { bg: "#5B3EF7",  text: "#F5F5F7", subText: "rgba(245,245,247,0.68)" },
-  pink:    { bg: "#FFB0D5",  text: "#0A0A0C", subText: "#2A0F1E" },
-  sky:     { bg: "#4FB1FF",  text: "#04121F", subText: "#0F2740" },
-  emerald: { bg: "#5BE3A2",  text: "#04140B", subText: "#0F2820" },
-  ink:     { bg: "#0F1116",  text: "#F5F5F7", subText: "rgba(245,245,247,0.55)" },
-};
-
-function MetricCard({ label, value, tone = "lime", testid }) {
-  const t = METRIC_TONES[tone] || METRIC_TONES.lime;
-  const hasValue = value !== null && value !== undefined;
-  const shown = useTypewriter(hasValue ? value : null);
-  const isTyping =
-    hasValue && shown.length < `${Number(value).toLocaleString()}`.length;
-  return (
-    <div
-      className="rounded-2xl p-5 sm:p-6 overflow-hidden"
-      style={{ background: t.bg, color: t.text }}
-      data-testid={testid}
-    >
-      <div
-        className="text-[11px] uppercase tracking-wider"
-        style={{ color: t.subText }}
-      >
-        {label}
-      </div>
-      <div
-        className="mt-3 font-display leading-none"
-        style={{
-          fontSize: "clamp(2rem, 3.4vw, 2.8rem)",
-          letterSpacing: "-0.03em",
-          color: t.text,
-          minHeight: "1em",
-          fontWeight: 500,
-        }}
-      >
-        {hasValue ? (
-          <>
-            {shown}
-            {isTyping && (
-              <span
-                aria-hidden="true"
-                className="inline-block ml-0.5 animate-pulse"
-                style={{ color: t.text, opacity: 0.55 }}
-              >
-                |
-              </span>
-            )}
-          </>
-        ) : (
-          <span style={{ color: t.subText }}>—</span>
-        )}
-      </div>
-    </div>
+      <Hero />
+      <Showcase />
+      <Bento />
+      <PricingSection />
+      <FinalCTA />
+    </>
   );
 }

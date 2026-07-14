@@ -268,6 +268,123 @@ export default function ProjectFlow() {
   );
 }
 
+// Workbench — split-screen "workbench" layout used by Steps 1-3.
+// Left panel = user input (paste + CTA), Right panel = Bracket's live output.
+// A compact bar above the panels shows the chapter title on the left and,
+// once the AI has run, a celebration chip on the right — that's the dopamine
+// hit condensed into the persistent top strip.
+//
+// Design choices:
+// - Panels are separated by a subtle hairline; both sit inside a card frame
+//   so they read as *one canvas split*, not two adjacent boxes.
+// - Left panel bottom is anchored (CTA + hint stay put on expand/collapse).
+// - Right panel scrolls internally when output is very long — the outer page
+//   never scrolls.
+function Workbench({
+  num,
+  chapterLabel,
+  isDone,
+  ask,
+  title,
+  kicker,
+  nextUp,
+  previously,
+  celebration,
+  left,
+  right,
+  bottom,
+}) {
+  const prevText = previously && previously.length > 160
+    ? previously.slice(0, 157).trimEnd() + "…"
+    : previously;
+  return (
+    <div className="workbench page-enter" data-testid={`workbench-step${num}`}>
+      {/* Top strip: chapter meta on the left, live celebration chip on the right. */}
+      <div className="workbench-topbar">
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="workbench-num" aria-hidden="true">{`0${num}`}</span>
+          <div className="min-w-0">
+            <p className="mono-tag text-muted text-[10px]">CHAPTER {num} / 05</p>
+            <p className="t-h3 text-[15px] truncate">{chapterLabel}</p>
+          </div>
+        </div>
+        {isDone && celebration && (
+          <div className="workbench-celebration animate-fade-up" data-testid={`step${num}-celebration`}>
+            {celebration}
+          </div>
+        )}
+      </div>
+
+      {/* Split panels */}
+      <div className="workbench-panels">
+        {/* LEFT — input canvas */}
+        <div className="workbench-panel workbench-panel--left" data-testid={`step${num}-left-panel`}>
+          <div className="workbench-panel-body">
+            {prevText && (
+              <div className="mb-2 flex" data-testid={`step${num}-previously`}>
+                <div className="story-rail">
+                  <span className="label">↩ previously</span>
+                  <span>{prevText}</span>
+                </div>
+              </div>
+            )}
+            {ask && !isDone && (
+              <p className="mono-tag text-signal mt-1 mb-1 inline-flex items-center gap-1.5" data-testid={`step${num}-ask`}>
+                <Sparkles size={11} /> BRACKET ASKS
+              </p>
+            )}
+            <h1 className="t-hero mt-0 text-[22px] sm:text-[26px] md:text-[28px] leading-[1.15]">{title}</h1>
+            {kicker && <p className="mt-2 text-muted text-[13px] leading-relaxed">{kicker}</p>}
+            {nextUp && nextUp.length > 0 && !isDone && (
+              <div className="mt-3 inline-flex items-center gap-2 flex-wrap text-[11px] text-muted" data-testid={`step${num}-next-up`}>
+                <span className="mono-tag text-signal">NEXT →</span>
+                {nextUp.map((n, i) => (
+                  <span key={i} className="inline-flex items-center gap-1">
+                    <Check size={10} className="text-signal" /> {n}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="mt-4">{left}</div>
+          </div>
+          {bottom && (
+            <div className="workbench-panel-bottom">{bottom}</div>
+          )}
+        </div>
+
+        {/* RIGHT — Bracket's output */}
+        <div className="workbench-panel workbench-panel--right" data-testid={`step${num}-right-panel`}>
+          <div className="workbench-panel-body workbench-panel-body--scroll">
+            {right}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Small chip list for the top-bar celebration (e.g., "5 tensions · 42 clarity").
+function CelebrationChips({ items = [], milestone }) {
+  const filtered = items.filter((it) => (it.count ?? 0) > 0 || it.label === "clarity/100");
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <span className="mono-tag text-signal inline-flex items-center gap-1.5">
+        <Check size={11} strokeWidth={2.5} /> {milestone}
+      </span>
+      <span className="text-[var(--text-3)] text-[11px]">·</span>
+      {filtered.map((it, i) => (
+        <React.Fragment key={i}>
+          {i > 0 && <span className="text-[var(--text-3)] text-[10px]">·</span>}
+          <span className="inline-flex items-baseline gap-1 text-[12px]">
+            <span className="font-display font-semibold text-signal tabular-nums">{it.count}</span>
+            <span className="text-muted text-[10.5px]">{it.label}</span>
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, ask, children }) {
   // Truncate long "previously" summaries so the rail stays a single-line-ish reminder.
   const prevText = previously && previously.length > 180

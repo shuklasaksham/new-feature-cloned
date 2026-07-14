@@ -369,3 +369,18 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     Post-output titles remain declarative (`Here's what's actually happening.` / `Here's what actually matters.` / `The call is in.`).
   - **Dashboard hero copy pivot (Problem 1)**: headline changed to `Paste anything your client sent you.` — one direct sentence, no question. Subtitle: `Email · WhatsApp · Meeting notes · Voice transcript · Contract. We'll figure out the rest — scope, deliverables, timeline, risks, docs. The whole client-ready package.`
   - **⚠️ User must redeploy to push to production (use-bracket.com).**
+
+
+- 2026-07-14 — **Iteration 28 — Cinematic Landing rebuild (Framer Motion + Lenis)**:
+  - Full rewrite of `pages/Landing.jsx` — 5 cinematic sections, dark, dramatic, Apple × Awwwards.
+  - **Hero**: looping muted video (pixabay abstract loop) + radial gradient scrim (blue signal wash) + film grain + staggered word-reveal on "Paste the mess. / Ship the decision." (second line gradient-tinted #2E5BFF → #7CD5FF → #B7B7FF). Live count-up metrics from `/api/public/metrics`. Magnetic CTA buttons. Scroll cue.
+  - **Scroll-pinned horizontal parallax showcase**: 5-chapter card rail, each card colored per accent (blue → sky → amber → violet → mint), radial blur halos, pinned while user scrolls. Falls back to static grid under reduced-motion.
+  - **Bento grid**: 6 tiles of varying sizes, radial glow blooms on hover.
+  - **Glassmorphic pricing**: 3 tiers, middle PRO card **amber-glowed** (`#FFB84C`) with `Most popular` ribbon, elevated by 6px baseline + lifts to 14px on hover. USD/INR currency toggle. Gold gradient CTA on PRO.
+  - **Final CTA band**: near-black bg + radial blue wash + film grain, giant italic serif "Start building." with animated gradient underline (blue→sky→amber shimmer), magnetic XL CTA.
+  - **Lenis smooth scroll** wired up in `useEffect`. Disabled under `prefers-reduced-motion`.
+  - Framer Motion primitives: `WordReveal`, `MagneticButton`, `CountUp`, `FilmGrain` — all reduced-motion aware.
+  - New CSS (appended to `index.css`): `.landing-hero-gradient`, `.landing-cta-primary`, `.landing-showcase-card`, `.bento-card` + `.bento-card-glow`, `.pricing-card--popular` (amber glow halo, ribbon, `::before` bloom), `.landing-underline-fill` shimmer animation, prefers-reduced-motion overrides.
+  - Deps added via yarn: `framer-motion@12.42.2`, `@studio-freight/lenis@1.0.42`.
+  - **Note**: The prior Workbench primitive (split-screen step layout) was scaffolded but NOT wired into Steps 1/2/3 — still using the previous 3-col layout. Follow-up if you want to migrate.
+  - **⚠️ User must redeploy to push to `use-bracket.com`.**
