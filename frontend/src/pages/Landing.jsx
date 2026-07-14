@@ -800,12 +800,16 @@ const STORY = [
 function Story() {
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-story" id="story">
-      {/* Soft signal-blue wash bottom-left, matches the cinematic gradient
-         language on the rest of the page. */}
+      {/* Soft signal-blue wash — extended above the section top and below
+         the section bottom so it visually bleeds into the neighbouring
+         sections. Same look, no visible boundary. */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 bottom-0 mx-auto h-[500px] w-[900px] blur-[120px] opacity-[0.16] -z-10"
-        style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
+        className="absolute inset-x-0 mx-auto h-[900px] w-[900px] blur-[120px] opacity-[0.16] -z-10"
+        style={{
+          bottom: "-300px",
+          background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)",
+        }}
       />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
@@ -897,9 +901,11 @@ function Testimonials() {
   const track = [...TESTIMONIALS, ...TESTIMONIALS];
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-testimonials" id="testimonials">
+      {/* Signal-blue centre wash — extended vertically so it kisses both
+         the story section above and the pricing section below. */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[420px] w-[900px] blur-[120px] opacity-[0.12] -z-10"
+        className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[900px] w-[900px] blur-[120px] opacity-[0.12] -z-10"
         style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
       />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
@@ -963,11 +969,15 @@ function PricingSection() {
 
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-pricing" id="pricing">
-      {/* Amber wash behind middle card — sits on the seamless page bg. */}
+      {/* Amber wash behind middle card — extended vertically so the warm
+         glow bleeds into the testimonials above and the final CTA below. */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 top-1/3 mx-auto h-[600px] w-[900px] blur-[120px] opacity-[0.22] -z-10"
-        style={{ background: "radial-gradient(closest-side, #FFB84C, transparent 70%)" }}
+        className="absolute inset-x-0 mx-auto h-[1000px] w-[900px] blur-[120px] opacity-[0.22] -z-10"
+        style={{
+          top: "0",
+          background: "radial-gradient(closest-side, #FFB84C, transparent 70%)",
+        }}
       />
       <FilmGrain opacity={0.05} />
 
@@ -1087,10 +1097,14 @@ function PricingCard({ tier, price, symbol, popular }) {
 function FinalCTA() {
   return (
     <section className="relative py-32 md:py-40 overflow-x-clip isolate" data-testid="landing-final-cta">
+      {/* Blue-violet radial — pulled UP past the section top so it kisses
+         the pricing amber above, keeping the whole page continuous. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 -z-10 opacity-40"
+        className="absolute inset-x-0 -z-10 opacity-40 mx-auto w-[1200px]"
         style={{
+          top: "-300px",
+          bottom: "-200px",
           background: "radial-gradient(60% 40% at 50% 45%, rgba(94,106,210,0.18), transparent 70%)",
         }}
       />
