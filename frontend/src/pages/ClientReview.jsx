@@ -760,12 +760,13 @@ function ReviewedState({ doc }) {
     >
       <div className="flex items-center gap-2">
         {isAccept ? (
-          <Check size={16} className="text-signal" />
+          <Check size={16} style={{ color: "var(--accent)" }} />
         ) : (
-          <AlertTriangle size={16} className="text-danger" />
+          <AlertTriangle size={16} style={{ color: "var(--danger)" }} />
         )}
         <p
-          className={`mono-tag text-[10.5px] ${isAccept ? "text-signal" : "text-danger"}`}
+          className="mono-tag text-[10.5px]"
+          style={{ color: isAccept ? "var(--accent)" : "var(--danger)" }}
         >
           {isAccept ? "DOCUMENT ACCEPTED" : "CONCERNS DELIVERED"}
         </p>
