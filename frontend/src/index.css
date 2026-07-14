@@ -2142,8 +2142,8 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
-  opacity: 0.55;
-  transition: opacity .55s cubic-bezier(.16,1,.3,1);
+  opacity: 0.62;
+  transition: opacity .28s cubic-bezier(.16,1,.3,1);
   -webkit-mask-image:
     linear-gradient(180deg, #000 30%, transparent 90%),
     linear-gradient(270deg, #000 55%, transparent 100%);
@@ -2153,7 +2153,7 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
     linear-gradient(270deg, #000 55%, transparent 100%);
           mask-composite: intersect;
 }
-.bento-card:hover .bento-ghost { opacity: 0.85; }
+.bento-card:hover .bento-ghost { opacity: 0.95; }
 .bento-ghost-svg {
   position: absolute;
   width: 68%;
@@ -2161,18 +2161,24 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   right: -8%;
   top: 14%;
   display: block;
+  transition: transform .35s cubic-bezier(.16,1,.3,1);
+}
+.bento-card:hover .bento-ghost-svg {
+  /* Subtle push-in on hover so the ghost feels responsive. */
+  transform: translate3d(-8px, -4px, 0);
 }
 
 /* Per-variant tuning — positions each fragment where the card has room. */
-.bento-ghost--cards     { top: 42px; right: -14%; width: 78%; }
-.bento-ghost--checklist { top: 42px; right: -4%;  width: 66%; }
-.bento-ghost--risk      { top: 36px; right: -6%;  width: 70%; }
-.bento-ghost--tree      { top: 60px; right: 4%;   width: 82%; }
-.bento-ghost--bubbles   { top: 40px; right: -4%;  width: 72%; }
-.bento-ghost--timeline  { top: 34%;  right: 2%;   width: 62%; }
-.bento-ghost--signed    { top: 30px; right: -8%;  width: 66%; }
+.bento-ghost--cards     { top: 38px; right: -12%; width: 82%; }
+.bento-ghost--checklist { top: 34px; right: -2%;  width: 68%; }
+.bento-ghost--risk      { top: 32px; right: -4%;  width: 74%; }
+.bento-ghost--tree      { top: 46px; right: 2%;   width: 86%; }
+.bento-ghost--bubbles   { top: 32px; right: -4%;  width: 74%; }
+.bento-ghost--timeline  { top: 32%;  right: 2%;   width: 66%; }
+.bento-ghost--signed    { top: 22px; right: -6%;  width: 70%; }
 
-/* Micro-animations — kept slow + subtle so they feel like breathing. */
+/* Micro-animations — kept slow + subtle so they feel like breathing.
+   Speed up when the card is hovered so the ghost feels responsive. */
 @keyframes bentoGhostDrift {
   0%, 100% { transform: translate3d(0, 0, 0); }
   50%      { transform: translate3d(0, -4px, 0); }
@@ -2181,24 +2187,33 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   transform-origin: center;
   animation: bentoGhostDrift 6s ease-in-out infinite;
 }
+.bento-card:hover .bento-ghost-cards-g2 {
+  animation-duration: 1.8s;
+}
 
 @keyframes bentoGhostPulse {
   0%, 100% { transform: scale(1);   opacity: 0.9; }
-  50%      { transform: scale(1.3); opacity: 0.4; }
+  50%      { transform: scale(1.4); opacity: 0.25; }
 }
 .bento-ghost-pulse {
-  transform-origin: 118px 14px;
+  transform-origin: 150px 20px;
   animation: bentoGhostPulse 2.4s ease-in-out infinite;
+}
+.bento-card:hover .bento-ghost-pulse {
+  animation-duration: 1s;
 }
 
 @keyframes bentoGhostTyping {
-  0%, 100%  { opacity: 0.15; }
-  33%       { opacity: 0.85; }
-  66%       { opacity: 0.35; }
+  0%, 100%  { opacity: 0.20; }
+  33%       { opacity: 0.90; }
+  66%       { opacity: 0.40; }
 }
 .bento-ghost-typing circle:nth-child(1) { animation: bentoGhostTyping 1.4s ease-in-out infinite; }
 .bento-ghost-typing circle:nth-child(2) { animation: bentoGhostTyping 1.4s ease-in-out infinite .18s; }
 .bento-ghost-typing circle:nth-child(3) { animation: bentoGhostTyping 1.4s ease-in-out infinite .36s; }
+.bento-card:hover .bento-ghost-typing circle:nth-child(1) { animation-duration: .5s; }
+.bento-card:hover .bento-ghost-typing circle:nth-child(2) { animation-duration: .5s; }
+.bento-card:hover .bento-ghost-typing circle:nth-child(3) { animation-duration: .5s; }
 
 @keyframes bentoGhostProgress {
   0%   { stroke-dasharray: 0 400; }
@@ -2209,6 +2224,9 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   stroke-dasharray: 0 400;
   animation: bentoGhostProgress 3.6s cubic-bezier(.16,1,.3,1) infinite;
 }
+.bento-card:hover .bento-ghost-progress {
+  animation-duration: 1.2s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .bento-ghost-cards-g2,
@@ -2217,6 +2235,7 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   .bento-ghost-progress {
     animation: none !important;
   }
+  .bento-card:hover .bento-ghost-svg { transform: none; }
 }
 
 /* Pricing — glassmorphic */
