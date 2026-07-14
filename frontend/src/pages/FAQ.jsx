@@ -33,7 +33,7 @@ const FAQS = [
     cat: "Privacy & data",
     items: [
       { q: "Who can see my projects?", a: "Only you. Projects are tied to your account. The only exception is the public client-review URL — and only the people you share it with can open it." },
-      { q: "Do you train AI on my work?", a: "No. Your project content is never used to train any model. We send your prompt to the underlying AI provider (Claude/OpenAI) for inference, and that's it." },
+      { q: "Do you train AI on my work?", a: "No. Your project content is never used to train any model. Bracket AI runs inference on your prompt and hands the output back — nothing is retained for training." },
       { q: "Can I delete my data?", a: "Yes. Delete any project from the dashboard. To delete your full account + history, email support@use-bracket.com and we'll wipe it within 48h." },
     ],
   },

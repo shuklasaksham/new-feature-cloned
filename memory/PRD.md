@@ -458,3 +458,11 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     * `StepShell` rewritten with **Framer Motion staggered entry** — top bar → previously → step body, `ease: [0.16, 1, 0.3, 1]`, 0.08s stagger. Respects `useReducedMotion`.
     * Step chapter title scaled up (`text-[24→32px]`), body kicker larger.
   - Both fixes verified with screenshots at 1920 / 1440 / 1280 viewports.
+
+- 2026-07-14 — **Iteration 36 — Brand refresh · story section · CTA fix · AI rename**:
+  - **New logo (`/logo-icon1.png` + `/logo-mark1.png`)**: replaced the black `{B}racket` wordmark with the user-attached gradient `{ }` bracket icon (blue→violet). Cropped from the raw PNG (688×179) to a tight 162×179 mark using PIL — near-white pixels made transparent so it sits cleanly on dark surfaces. `BracketMark` component rewritten: `label={false}` → icon only; `label={true}` → icon + Poppins-semibold "Bracket" wordmark rendered in JSX (color follows current surface).
+  - **Hero image swap**: Landing hero backdrop switched from the moody circuit close-up (`photo-1518770660439-4636190af475`) to a painterly abstract wave (`photo-1618005182384-a83a8bd57fbe`). Reads as "creative chaos → structured form" — matches Bracket's core promise.
+  - **"Start building." CTA truncation fix**: `WordReveal` used `pb-[0.05em]` which sliced italic descenders + "g" tail on giant sizes. Increased to `paddingTop: 0.15em` + `paddingBottom: 0.25em`. Italic + descenders now render cleanly at 128px.
+  - **New Story section (above Pricing)**: 4-chapter grid (Origin / Mistakes / Now / Future) with color-coded accents (blue → red → green → violet), radial corner glow per card, `.liquid-glass` treatment, and Framer Motion staggered entry. Content: how Bracket started at 3am, what we did wrong (built a writing tool), where we are now (decision engine), what's next (client-side loop + memory layer).
+  - **"Claude Sonnet 4.5" → "BRACKET AI"** replaced in all user-facing surfaces: `ProjectFlow.jsx` project header, `ProjectOverview.jsx` engine badge, `FAQ.jsx` training-policy answer. Backend keeps the actual model names — this is UI-only rebranding.
+

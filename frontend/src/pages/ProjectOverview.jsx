@@ -393,7 +393,7 @@ export default function ProjectOverview() {
             <span className="mono-tag px-2 py-1 rounded" style={spStyle} data-testid="overview-status-pill">{spLabel}</span>
             {ssStyle && <span className="mono-tag px-2 py-1 rounded" style={ssStyle} data-testid="overview-share-pill">{ssLabel}</span>}
             <span className="mono-tag px-2 py-1 rounded" style={{ backgroundColor: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" }}>
-              {project.engine === "gpt" ? "GPT-5.2" : "CLAUDE SONNET 4.5"}
+              BRACKET AI
             </span>
           </div>
 

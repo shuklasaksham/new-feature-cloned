@@ -52,7 +52,13 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
   return (
     <Tag className={className}>
       {words.map((w, i) => (
-        <span key={i} className="inline-block overflow-hidden align-baseline pb-[0.05em] mr-[0.25em]">
+        // `pb`/`pt` give the clipped word room for italic ascenders + descenders
+        // ("g", "y", italic "b/d/l") so nothing gets sliced at extreme sizes.
+        <span
+          key={i}
+          className="inline-block overflow-hidden align-baseline mr-[0.25em]"
+          style={{ paddingTop: "0.15em", paddingBottom: "0.25em" }}
+        >
           <motion.span
             className="inline-block"
             custom={i + delayBase}
@@ -172,15 +178,15 @@ function Hero() {
       className="relative overflow-hidden isolate min-h-[92vh] flex items-center"
       data-testid="landing-hero"
     >
-      {/* Cinematic dark backdrop image — moody circuit close-up.
-         Reads as "system / operating system / structured logic" — matches
-         "decision OS" thematically better than space photography. */}
+      {/* Cinematic dark backdrop — moody blueprint / architectural plan.
+         Reads as "structure / framework / decision system" — matches Bracket's
+         "decision OS" positioning: turn messy input into a decided plan. */}
       <motion.div
         style={{ y: shouldReduce ? 0 : videoY }}
         className="absolute inset-0 -z-20"
       >
         <img
-          src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2600&q=85"
+          src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=2600&q=85"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
@@ -629,7 +635,99 @@ function BentoCard({ tile }) {
   );
 }
 
-// ─── SECTION 4: PRICING (glassmorphic, middle amber-glowed) ──────────────
+// ─── SECTION 4b: OUR STORY (timeline — origin → mistakes → now → future) ─
+const STORY = [
+  {
+    chapter: "01 · ORIGIN",
+    year: "Aug 2025",
+    title: "Bracket started at 3am.",
+    body:
+      "Two founders — one freelance designer, one product engineer — kept watching the same movie play out. A client pastes a chaotic brief in WhatsApp at 11pm. The designer stares at it until 3am, unsure whether to say yes, negotiate scope, or push back. The decision — not the deliverable — was the actual work. Bracket was our attempt to compress that 4-hour agony into a 60-second workflow.",
+    accent: "#2E5BFF",
+  },
+  {
+    chapter: "02 · MISTAKES",
+    year: "Oct → Dec 2025",
+    title: "We tried to be another writing tool.",
+    body:
+      "V1 shipped as a Notion-style AI wordsmith — pretty, generic, forgettable. Designers didn't need better prose; they needed a stance. We over-indexed on formatting and under-indexed on judgment. Six weeks of building the wrong thing. We killed 70% of it in one weekend and rebuilt around a single question: what would a senior designer *decide* here?",
+    accent: "#FF6B6B",
+  },
+  {
+    chapter: "03 · NOW",
+    year: "Feb 2026",
+    title: "A decision, not a document.",
+    body:
+      "Bracket now takes the messy paste, picks a side, scores its confidence, stress-tests it against the risks your client never named, and hands you the scope doc + client message drafted in your voice. Freelancers use it to lock the call before the 3am rethink. Agencies use it so juniors stop deferring every scoping question up the ladder.",
+    accent: "#4BE39B",
+  },
+  {
+    chapter: "04 · FUTURE",
+    year: "Q3 2026 →",
+    title: "The client-side loop.",
+    body:
+      "Next: a two-sided decision surface. Clients sign, reject, or counter — right inside Bracket — and every reply feeds back into the stance. Longer horizon, we're building the memory layer so Bracket remembers your voice across projects, and the studio layer so teams can share decision language. Same brand promise: better decisions, not more tools.",
+    accent: "#B7B7FF",
+  },
+];
+
+function Story() {
+  return (
+    <section className="relative py-28 md:py-36 overflow-hidden isolate" data-testid="landing-story" id="story">
+      {/* Soft signal-blue wash bottom-left, matches the cinematic gradient
+         language on the rest of the page. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 mx-auto h-[500px] w-[900px] blur-[120px] opacity-[0.16] -z-10"
+        style={{ background: "radial-gradient(closest-side, #2E5BFF, transparent 70%)" }}
+      />
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
+        <SectionHeading
+          tag="THE STORY"
+          title="Built the wrong thing. Then we listened."
+        />
+        <div className="mt-14 md:mt-20 grid gap-6 md:gap-8 md:grid-cols-2">
+          {STORY.map((s, i) => (
+            <StoryChapter key={s.chapter} chapter={s} index={i} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StoryChapter({ chapter, index }) {
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ duration: 0.8, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+      className="story-chapter liquid-glass p-8 md:p-10 relative isolate"
+      style={{ "--chapter-accent": chapter.accent }}
+      data-testid={`story-chapter-${index + 1}`}
+    >
+      {/* Corner glow — matches the accent color unique to each chapter. */}
+      <div
+        aria-hidden="true"
+        className="absolute -top-24 -right-24 h-[360px] w-[360px] rounded-full blur-[80px] opacity-[0.22] -z-10"
+        style={{ background: `radial-gradient(closest-side, ${chapter.accent}, transparent 70%)` }}
+      />
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="mono-tag" style={{ color: chapter.accent }}>{chapter.chapter}</p>
+        <p className="mono-tag text-muted text-[10px]">{chapter.year}</p>
+      </div>
+      <h3 className="mt-5 font-display font-semibold tracking-[-0.02em] leading-[1.08] text-[26px] sm:text-[30px] md:text-[34px]">
+        {chapter.title}
+      </h3>
+      <p className="mt-5 text-[14px] sm:text-[14.5px] text-[var(--text-2)] leading-relaxed">
+        {chapter.body}
+      </p>
+    </motion.article>
+  );
+}
+
+// ─── SECTION 5: PRICING (glassmorphic, middle amber-glowed) ──────────────
 function PricingSection() {
   const [currency, setCurrency] = useState("USD");
   const cur = PRICING.currencies[currency];
@@ -894,6 +992,7 @@ export default function Landing() {
       <Hero />
       <Showcase />
       <Bento />
+      <Story />
       <PricingSection />
       <FinalCTA />
     </>

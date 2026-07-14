@@ -145,7 +145,7 @@ export default function ProjectFlow() {
                 {project?.name}
               </p>
               <p className="text-[11px] text-[var(--text-3)] hidden sm:block truncate mt-1.5">
-                {project?.engine === "gpt" ? "GPT-5.2" : "Claude Sonnet 4.5"}
+                BRACKET AI
               </p>
             </div>
           </div>
