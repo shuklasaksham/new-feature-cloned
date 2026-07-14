@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowRight, Loader2, Send, X, MessageSquare, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -70,7 +71,7 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="review-modal-overlay"
       role="dialog"
@@ -271,6 +272,7 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
