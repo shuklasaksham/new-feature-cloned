@@ -26,13 +26,14 @@ import { toast } from "sonner";
 
 const STEPS = [
   // `label` is what we render while the step is TODO or ACTIVE (task-oriented).
-  // `milestone` is what we render once the step is DONE — a completed
-  // achievement verb, framing the flow as a journey.
-  { n: 1, key: "situation",  label: "Situation framing",   milestone: "Project understood",  glyph: "{ 01 }" },
-  { n: 2, key: "context",    label: "Context compression", milestone: "Signals compressed",  glyph: "{ 02 }" },
-  { n: 3, key: "decision",   label: "Decision engine",     milestone: "Decision made",       glyph: "{ 03 }" },
-  { n: 4, key: "artifacts",  label: "Artifacts",           milestone: "Artifacts drafted",   glyph: "{ 04 }" },
-  { n: 5, key: "lock",       label: "Confidence lock-in",  milestone: "Locked & signed",     glyph: "{ 05 }" },
+  // `chapter` is the consultant-framing title (Understand / Simplify / …).
+  // `milestone` is rendered once the step is DONE — a completed achievement verb.
+  // `nextUp` lists what the *next* step produces — used to reduce "what happens after?" anxiety.
+  { n: 1, key: "situation",  label: "Understand",  chapter: "Understand", milestone: "Project understood",  glyph: "{ 01 }", nextUp: ["Compressed signals", "Noise cut", "Hidden assumptions"] },
+  { n: 2, key: "context",    label: "Simplify",    chapter: "Simplify",   milestone: "Signals compressed",  glyph: "{ 02 }", nextUp: ["The call", "Alternatives", "Trade-offs", "Risks"] },
+  { n: 3, key: "decision",   label: "Strategy",    chapter: "Strategy",   milestone: "Decision made",       glyph: "{ 03 }", nextUp: ["Scope doc", "Client message", "Assumptions", "Risk flags"] },
+  { n: 4, key: "artifacts",  label: "Execution",   chapter: "Execution",  milestone: "Artifacts drafted",   glyph: "{ 04 }", nextUp: ["Locked doc", "PDF export", "Share link"] },
+  { n: 5, key: "lock",       label: "Review",      chapter: "Review",     milestone: "Locked & signed",     glyph: "{ 05 }", nextUp: [] },
 ];
 
 export default function ProjectFlow() {
@@ -180,8 +181,8 @@ export default function ProjectFlow() {
             </Link>
           </div>
         </div>
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-4 pt-1 border-b border-[var(--hairline)]">
-          <p className="mono-tag text-muted mb-3 hidden sm:block" data-testid="milestone-tracker-label">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-3 pt-1 border-b border-[var(--hairline)]">
+          <p className="mono-tag text-muted mb-2 hidden sm:block text-[10px]" data-testid="milestone-tracker-label">
             YOUR JOURNEY
           </p>
           <div className="step-pipeline" data-testid="milestone-tracker">
@@ -220,7 +221,7 @@ export default function ProjectFlow() {
       </header>
 
       <main
-        className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-10 animate-fade-up"
+        className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-5 md:py-6 animate-fade-up"
         key={currentStep}
       >
         {currentStep === 1 && (
@@ -267,26 +268,40 @@ export default function ProjectFlow() {
   );
 }
 
-function StepShell({ num, label, title, kicker, previously, nextHint, children }) {
+function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, children }) {
+  // Truncate long "previously" summaries so the rail stays a single-line-ish reminder.
+  const prevText = previously && previously.length > 180
+    ? previously.slice(0, 177).trimEnd() + "…"
+    : previously;
   return (
     <div className="page-enter">
       <div className="story-divider" data-testid={`step${num}-divider`}>
-        <span className="counter">{`{ 0${num} / 05 }`}</span>
+        <span className="counter">{`CHAPTER ${num} / 05`}</span>
         <span className="t-tag">{label}</span>
       </div>
-      {previously && (
-        <div className="mb-4 flex" data-testid={`step${num}-previously`}>
+      {prevText && (
+        <div className="mb-2 flex" data-testid={`step${num}-previously`}>
           <div className="story-rail">
             <span className="label">↩ previously</span>
-            <span>{previously}</span>
+            <span>{prevText}</span>
           </div>
         </div>
       )}
-      <h1 className="t-hero mt-2">{title}</h1>
-      {kicker && <p className="mt-4 text-muted max-w-2xl text-sm md:text-base">{kicker}</p>}
-      <div className="mt-8 md:mt-10">{children}</div>
+      <h1 className="t-hero mt-1 text-[26px] sm:text-[32px] md:text-[36px] leading-[1.1]">{title}</h1>
+      {kicker && <p className="mt-2 text-muted max-w-2xl text-[13px] md:text-sm leading-relaxed">{kicker}</p>}
+      {nextUp && nextUp.length > 0 && (
+        <div className="mt-3 inline-flex items-center gap-2 flex-wrap text-[11px] text-muted" data-testid={`step${num}-next-up`}>
+          <span className="mono-tag text-signal">NEXT →</span>
+          {nextUp.map((n, i) => (
+            <span key={i} className="inline-flex items-center gap-1">
+              <Check size={10} className="text-signal" /> {n}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="mt-4 md:mt-5">{children}</div>
       {nextHint && (
-        <div className="mt-10 flex" data-testid={`step${num}-next-hint`}>
+        <div className="mt-4 flex" data-testid={`step${num}-next-hint`}>
           <div className="story-rail is-next">
             <span className="label">next ↪</span>
             <span>{nextHint}</span>
@@ -380,6 +395,43 @@ function looksLikeGibberish(text) {
 
 function wordCount(s) {
   return (s || "").trim().split(/\s+/).filter(Boolean).length;
+}
+
+// CelebrationCard — the dopamine hit rendered right after AI extraction.
+// Bigger, prouder, more emotional than the TransformationCard: leads with
+// "✓ Chapter N complete" then shows the count of things Bracket now understands.
+function CelebrationCard({ chapter, milestone, items = [], testid }) {
+  const filtered = items.filter((it) => (it.count ?? 0) > 0);
+  if (!filtered.length) return null;
+  return (
+    <div
+      className="mt-5 card-brut p-5 sm:p-6 border-l-2 border-signal animate-fade-up relative overflow-hidden"
+      data-testid={testid || "celebration-card"}
+      style={{
+        background:
+          "linear-gradient(135deg, rgba(46, 91, 255, 0.08) 0%, var(--surface) 60%)",
+      }}
+    >
+      <div className="flex items-center gap-2 text-signal">
+        <Check size={16} strokeWidth={2.5} />
+        <p className="mono-label">{`CHAPTER ${chapter} · COMPLETE`}</p>
+      </div>
+      <h3 className="t-h2 mt-2 text-[20px] sm:text-[22px]">{milestone}</h3>
+      <p className="mt-1 text-xs text-muted">Bracket now understands:</p>
+      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {filtered.map((it, i) => (
+          <div
+            key={i}
+            className="text-center"
+            data-testid={testid ? `${testid}-${it.key || i}` : undefined}
+          >
+            <p className="font-display text-2xl sm:text-3xl text-signal tabular-nums leading-none">{it.count}</p>
+            <p className="mt-1 text-[11px] text-muted leading-tight">{it.label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // TransformationCard — celebrates the AI's work by comparing what the user
@@ -585,55 +637,49 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
   return (
     <StepShell
       num={1}
-      label="SITUATION FRAMING"
-      title="Name what's really happening."
-      kicker="Turn a messy client brief into a clear decision in under a minute. Describe the situation like you'd tell it to a friend — Bracket will mirror it back sharper."
-      nextHint={framing ? "compress this into what actually matters" : "we name it before we decide it"}
+      label="Understand"
+      title={framing ? "Here's what's actually happening." : "What did your client send?"}
+      kicker={framing ? "Sharper than the brief. Ready to compress." : "Paste anything — email, WhatsApp, notes. Bracket reads the mess."}
+      nextUp={framing ? [] : ["Reframed problem", "Clarity score", "Tensions to watch"]}
+      nextHint={framing ? "compress into what matters" : undefined}
     >
-      <div className="mb-6 flex items-center gap-2 flex-wrap" data-testid="step1-timepill">
-        <span className="mono-tag text-muted inline-flex items-center gap-1.5">
-          <Clock size={12} /> under a minute
+      <div className="mb-3 flex items-center gap-2 flex-wrap" data-testid="step1-timepill">
+        <span className="mono-tag text-muted inline-flex items-center gap-1.5 text-[10px]">
+          <Clock size={11} /> ~1 min
         </span>
         {draftSaved && !framing && (
-          <span className="mono-tag text-signal inline-flex items-center gap-1.5" data-testid="step1-draft-saved">
-            <Check size={12} /> draft saved
+          <span className="mono-tag text-signal inline-flex items-center gap-1.5 text-[10px]" data-testid="step1-draft-saved">
+            <Check size={11} /> saved
           </span>
         )}
         {isSample && (
           <>
-            <span className="mono-tag inline-flex items-center gap-1.5 px-2 py-1 border border-signal text-signal" data-testid="step1-sample-tag">
-              <Sparkles size={12} /> sample project
-            </span>
-            <span className="mono-tag text-muted inline-flex items-center gap-1.5" data-testid="step1-sample-popular-badge">
-              Most users start here
+            <span className="mono-tag inline-flex items-center gap-1.5 px-2 py-1 border border-signal text-signal text-[10px]" data-testid="step1-sample-tag">
+              <Sparkles size={11} /> sample
             </span>
           </>
         )}
       </div>
 
       {isSample && (
-        <div className="card-brut p-4 sm:p-5 mb-6 flex items-start gap-3" data-testid="step1-sample-banner">
-          <Sparkles size={16} className="mt-0.5 text-signal shrink-0" />
-          <div className="flex-1">
-            <p className="t-body">
-              You&apos;re exploring a <strong>sample project</strong>. In about 60 seconds you&apos;ll see how Bracket turns a messy brief into structured decisions.
-            </p>
-          </div>
+        <div className="card-brut p-3 mb-3 flex items-start gap-2 text-[13px]" data-testid="step1-sample-banner">
+          <Sparkles size={14} className="mt-0.5 text-signal shrink-0" />
+          <p className="t-body">Sample project — see Bracket work in ~60s.</p>
         </div>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
-        <div className="space-y-5" data-testid="step1-form">
+      <div className="grid lg:grid-cols-2 gap-5">
+        <div className="space-y-3" data-testid="step1-form">
           <Field
             label="Paste anything from your client"
             testid="step1-paste"
-            helper="Email, WhatsApp chat, meeting notes, Loom transcript, brief PDF text — whatever they sent you. Bracket will structure it for you."
+            helper="Email · WhatsApp · notes · Loom transcript · brief. Nothing to format."
           >
             <textarea
               ref={whatRef}
               className="textarea-brut"
-              rows={12}
-              placeholder="Paste the client's message, brief, chat, or your notes here. Nothing to format. Bracket reads the messiness."
+              rows={6}
+              placeholder="Paste the client's message, brief, chat, or notes."
               value={form.raw_paste || ""}
               onChange={(e) => setForm({ ...form, raw_paste: e.target.value })}
               data-testid="step1-paste-input"
@@ -641,21 +687,21 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
             {pasteGibberish && (
               <div className="mt-2 text-xs text-danger inline-flex items-center gap-1.5" data-testid="step1-paste-warning">
                 <Info size={12} />
-                That&apos;s a bit thin to extract from — paste more, or{" "}
+                Too thin —{" "}
                 <button
                   type="button"
                   onClick={trySample}
                   className="underline text-signal press"
                   data-testid="step1-inline-sample-btn"
                 >
-                  load a sample brief
+                  try a sample
                 </button>
                 .
               </div>
             )}
             {form.raw_paste && (
-              <p className="mt-2 text-xs text-muted" data-testid="step1-word-count">
-                {wordCount(form.raw_paste)} words · Bracket will extract what, who, and what&apos;s unclear.
+              <p className="mt-1.5 text-[11px] text-muted" data-testid="step1-word-count">
+                {wordCount(form.raw_paste)} words
               </p>
             )}
           </Field>
@@ -664,39 +710,39 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
             <button
               onClick={run}
               disabled={!canSubmit}
-              className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step1-submit-btn"
             >
               {loading ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" /> Framing…
+                  <Loader2 size={13} className="animate-spin" /> Framing…
                 </>
               ) : framing ? (
                 <>
-                  <RefreshCw size={14} /> Reframe again
+                  <RefreshCw size={13} /> Reframe
                 </>
               ) : (
                 <>
-                  Reframe <ArrowRight size={14} />
+                  Reframe <ArrowRight size={13} />
                 </>
               )}
             </button>
             {framing && (
               <button onClick={onDone} className="btn-ghost inline-flex items-center gap-2" data-testid="step1-continue-btn">
-                Continue to context <ArrowRight size={14} />
+                Continue <ArrowRight size={13} />
               </button>
             )}
           </div>
 
           {!framing && !loading && (
-            <div className="pt-2" data-testid="step1-sample-cta-wrap">
+            <div className="pt-1" data-testid="step1-sample-cta-wrap">
               <button
                 type="button"
                 onClick={trySample}
-                className="btn-ghost inline-flex items-center gap-2 press"
+                className="btn-ghost inline-flex items-center gap-2 press text-[12px]"
                 data-testid="step1-try-sample-btn"
               >
-                <Sparkles size={14} /> Need inspiration? Try a sample project
+                <Sparkles size={12} /> Try a sample
               </button>
             </div>
           )}
@@ -710,7 +756,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
           ) : !framing ? (
             <OutputPending
               title={"{ output · pending }"}
-              blurb="Bracket hasn't seen it yet. Paste anything on the left — or load a sample — and it'll name what's happening in about 15 seconds."
+              blurb="Paste on the left. Bracket names it in ~15s."
               loading={false}
             />
           ) : (
@@ -764,14 +810,15 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                 </OutputSection>
               </OutputCard>
 
-              <TransformationCard
-                testid="step1-transformation"
-                pasteText={project.situation_input?.raw_paste || form.raw_paste}
+              <CelebrationCard
+                testid="step1-celebration"
+                chapter={1}
+                milestone="Project understood"
                 items={[
-                  { key: "tensions",   label: "tensions named",   count: (framing.tensions || []).length },
-                  { key: "clarity",    label: "clarity score",    count: framing.clarity_score || 0 },
+                  { key: "words",    label: "words in",    count: wordCount(project.situation_input?.raw_paste || form.raw_paste) },
+                  { key: "tensions", label: "tensions",    count: (framing.tensions || []).length },
+                  { key: "clarity",  label: "clarity/100", count: framing.clarity_score || 0 },
                 ]}
-                note={`You pasted a mess. Bracket returned a reframed problem${framing.clarity_score ? `, a clarity read of ${framing.clarity_score}/100,` : ""} and ${(framing.tensions || []).length} tension${(framing.tensions || []).length === 1 ? "" : "s"} worth watching.`}
               />
 
               {isSample && (
@@ -934,61 +981,62 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   return (
     <StepShell
       num={2}
-      label="CONTEXT COMPRESSION"
-      title="You named the problem. Now strip it to bone."
-      kicker="Paste everything you have — brief, Slack dump, meeting notes, WhatsApp thread. Bracket will pull the signal out and tell you the few things that actually move the call."
+      label="Simplify"
+      title={compressed ? "Here's what actually matters." : "Simplify to the signal."}
+      kicker={compressed ? "Noise cut. Assumptions surfaced." : "Paste anything more — Slack, notes, references. Bracket keeps only what moves the call."}
       previously={project?.framing?.reframed_problem}
-      nextHint={compressed ? "pick the call · and own it" : "after this, we make a recommendation"}
+      nextUp={compressed ? [] : ["Key signals", "Noise removed", "Hidden assumptions"]}
+      nextHint={compressed ? "pick the call" : undefined}
     >
-      <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
-        <div className="space-y-5" data-testid="step2-form">
+      <div className="grid lg:grid-cols-2 gap-5">
+        <div className="space-y-3" data-testid="step2-form">
           <Field
             label="Paste anything about this project"
             testid="step2-paste"
-            helper="Requirements, constraints, references, brand rules, timeline notes, meeting takeaways — dump it all. Bracket extracts the shape."
+            helper="Requirements · constraints · references · timelines. Dump it all."
           >
             <textarea
               className="textarea-brut"
-              rows={12}
+              rows={6}
               value={form.raw_paste || ""}
               onChange={(e) => setForm({ ...form, raw_paste: e.target.value })}
-              placeholder="Paste the brief. Paste the Slack thread. Paste your kickoff notes. Nothing to format."
+              placeholder="Paste the brief. Paste the Slack thread. Paste your notes."
               data-testid="step2-paste-input"
             />
             {form.raw_paste && (
-              <p className="mt-2 text-xs text-muted" data-testid="step2-word-count">
-                {wordCount(form.raw_paste)} words · Bracket will extract requirements, constraints, and inspirations.
+              <p className="mt-1.5 text-[11px] text-muted" data-testid="step2-word-count">
+                {wordCount(form.raw_paste)} words
               </p>
             )}
           </Field>
 
           <div className="flex items-center gap-3 flex-wrap">
             <button onClick={onBack} className="btn-ghost" data-testid="step2-back-btn">
-              <ArrowLeft size={14} /> Back
+              <ArrowLeft size={13} /> Back
             </button>
             <button
               onClick={run}
               disabled={!canSubmit}
-              className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step2-submit-btn"
             >
               {loading ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" /> Compressing…
+                  <Loader2 size={13} className="animate-spin" /> Compressing…
                 </>
               ) : compressed ? (
                 <>
-                  <RefreshCw size={14} /> Recompress
+                  <RefreshCw size={13} /> Recompress
                 </>
               ) : (
                 <>
-                  Compress <ArrowRight size={14} />
+                  Compress <ArrowRight size={13} />
                 </>
               )}
             </button>
             {compressed && (
               <button onClick={onDone} className="btn-ghost" data-testid="step2-continue-btn">
-                Continue to decision <ArrowRight size={14} />
+                Continue <ArrowRight size={13} />
               </button>
             )}
           </div>
@@ -1014,7 +1062,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
           ) : !compressed ? (
             <OutputPending
               title={"{ output · pending }"}
-              blurb="Paste as much as you want. Bracket will keep what moves the needle."
+              blurb="Bracket keeps only what moves the needle."
               loading={false}
             />
           ) : (
@@ -1022,7 +1070,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             <OutputCard
               testid="step2-context-output"
               label={"{ 02 · what actually matters }"}
-              title={compressed.what_actually_matters}
+              blockquote={compressed.what_actually_matters}
               copyText={[
                 compressed.what_actually_matters,
                 (compressed.key_signals || []).length ? `KEY SIGNALS\n${(compressed.key_signals || []).map((s) => `→ ${s}`).join("\n")}` : "",
@@ -1030,13 +1078,13 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
                 (compressed.hidden_assumptions || []).length ? `HIDDEN ASSUMPTIONS\n${(compressed.hidden_assumptions || []).map((s) => `! ${s}`).join("\n")}` : "",
               ].filter(Boolean).join("\n\n")}
               onRegenerate={run}
+              progressive
+              progressiveLabels={{ summary: "Read the insight", details: "Show signals & noise" }}
               reasoning={
                 <>
                   <p>
-                    Bracket compared your inputs against the reframe from Step 01. Anything that didn&apos;t <em>change the call</em> was moved to &quot;noise removed&quot;. The signals listed are the few inputs that should actually steer Step 03.
-                  </p>
-                  <p className="mt-2 t-helper">
-                    Hidden assumptions are the things nobody asked aloud but everyone is acting on — usually where projects quietly go wrong.
+                    Anything that didn&apos;t <em>change the call</em> was moved to &quot;noise removed&quot;.
+                    Hidden assumptions are what everyone acts on but nobody said aloud.
                   </p>
                 </>
               }
@@ -1085,15 +1133,16 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               )}
             </OutputCard>
 
-            <TransformationCard
-              testid="step2-transformation"
-              pasteText={project.context_input?.raw_paste || form.raw_paste}
+            <CelebrationCard
+              testid="step2-celebration"
+              chapter={2}
+              milestone="Signals compressed"
               items={[
-                { key: "signals",     label: "key signals",        count: (compressed.key_signals || []).length },
-                { key: "noise",       label: "noise stripped",     count: (compressed.noise_removed || []).length },
-                { key: "assumptions", label: "hidden assumptions", count: (compressed.hidden_assumptions || []).length },
+                { key: "words",       label: "words in",     count: wordCount(project.context_input?.raw_paste || form.raw_paste) },
+                { key: "signals",     label: "signals kept", count: (compressed.key_signals || []).length },
+                { key: "noise",       label: "noise cut",    count: (compressed.noise_removed || []).length },
+                { key: "assumptions", label: "assumptions",  count: (compressed.hidden_assumptions || []).length },
               ]}
-              note={`Bracket kept only what moves the call. Everything else was cut.`}
             />
             </>
           )}
@@ -1143,61 +1192,62 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
   return (
     <StepShell
       num={3}
-      label="DECISION ENGINE"
-      title="We know what it is. Now call the shot."
-      kicker="Paste your thinking — what you want to optimise for, what you'd trade off, what worries you. Bracket picks a side, names the trade-offs, and tells you what could go wrong."
+      label="Strategy"
+      title={decision ? "The call is in." : "Now call the shot."}
+      kicker={decision ? "A stance, not a menu." : "What matters most, what you'd trade off, what worries you. A paragraph is plenty."}
       previously={project?.context?.what_actually_matters}
-      nextHint={decision ? "give it a paper trail" : "next: artifacts the client can sign"}
+      nextUp={decision ? [] : ["The call", "Alternatives", "Trade-offs", "Risks"]}
+      nextHint={decision ? "artifacts next" : undefined}
     >
-      <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
-        <div className="space-y-5" data-testid="step3-form">
+      <div className="grid lg:grid-cols-2 gap-5">
+        <div className="space-y-3" data-testid="step3-form">
           <Field
             label="Paste your thinking on this decision"
             testid="step3-paste"
-            helper="What matters most, what you'd trade off, what worries you, what's non-negotiable. A paragraph is plenty."
+            helper="What matters most · trade-offs · worries · non-negotiables."
           >
             <textarea
               className="textarea-brut"
-              rows={12}
+              rows={6}
               value={form.raw_paste || ""}
               onChange={(e) => setForm({ ...form, raw_paste: e.target.value })}
-              placeholder="e.g. Speed to launch over perfect polish. I'd cut scope on the About + Blog pages. Worried the founder will push back on cutting the demo video. Non-negotiable: mobile has to work on day 1."
+              placeholder="e.g. Speed over polish. Cut About + Blog pages. Worried the founder will push back on cutting the demo video."
               data-testid="step3-paste-input"
             />
             {form.raw_paste && (
-              <p className="mt-2 text-xs text-muted" data-testid="step3-word-count">
-                {wordCount(form.raw_paste)} words · Bracket will extract what you optimise for, your trade-offs, and your risks.
+              <p className="mt-1.5 text-[11px] text-muted" data-testid="step3-word-count">
+                {wordCount(form.raw_paste)} words
               </p>
             )}
           </Field>
 
           <div className="flex items-center gap-3 flex-wrap">
             <button onClick={onBack} className="btn-ghost" data-testid="step3-back-btn">
-              <ArrowLeft size={14} /> Back
+              <ArrowLeft size={13} /> Back
             </button>
             <button
               onClick={run}
               disabled={!canSubmit}
-              className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step3-submit-btn"
             >
               {loading ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" /> Deciding…
+                  <Loader2 size={13} className="animate-spin" /> Deciding…
                 </>
               ) : decision ? (
                 <>
-                  <RefreshCw size={14} /> Re-decide
+                  <RefreshCw size={13} /> Re-decide
                 </>
               ) : (
                 <>
-                  Decide <ArrowRight size={14} />
+                  Decide <ArrowRight size={13} />
                 </>
               )}
             </button>
             {decision && (
               <button onClick={onDone} className="btn-ghost" data-testid="step3-continue-btn">
-                Generate artifacts <ArrowRight size={14} />
+                Continue <ArrowRight size={13} />
               </button>
             )}
           </div>
@@ -1210,9 +1260,9 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
               phase={phase}
               testid="step3-progress"
               rows={[
-                { target: "weighing", doneLabel: "Options weighed",       activeLabel: "Weighing your trade-offs…" },
-                { target: "picking",  doneLabel: "The call picked",        activeLabel: "Picking a side, not a menu…" },
-                { target: "stress",   doneLabel: "Risks stress-tested",   activeLabel: "Stress-testing for what breaks…" },
+                { target: "weighing", doneLabel: "Options weighed",       activeLabel: "Weighing trade-offs…" },
+                { target: "picking",  doneLabel: "The call picked",        activeLabel: "Picking a side…" },
+                { target: "stress",   doneLabel: "Risks stress-tested",   activeLabel: "Stress-testing…" },
               ]}
               estimate={[
                 { n: "1", label: "recommendation" },
@@ -1223,7 +1273,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
           ) : !decision ? (
             <OutputPending
               title={"{ the call · pending }"}
-              blurb="A stance, not a menu. Bracket will name the move and the cost of it."
+              blurb="A stance, not a menu."
               loading={false}
             />
           ) : (
@@ -1329,15 +1379,16 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                 </>
               )}
 
-              <TransformationCard
-                testid="step3-transformation"
-                pasteText={project.decision_input?.raw_paste || form.raw_paste}
+              <CelebrationCard
+                testid="step3-celebration"
+                chapter={3}
+                milestone="Decision made"
                 items={[
-                  { key: "call",         label: "recommendation",  count: decision.recommendation?.title ? 1 : 0 },
-                  { key: "alternatives", label: "alternatives",    count: (decision.alternatives || []).length },
-                  { key: "risks",        label: "risks stress-tested", count: (decision.risks || []).length },
+                  { key: "call",         label: "the call",     count: decision.recommendation?.title ? 1 : 0 },
+                  { key: "confidence",   label: "confidence",   count: decision.recommendation?.confidence || 0 },
+                  { key: "alternatives", label: "alternatives", count: (decision.alternatives || []).length },
+                  { key: "risks",        label: "risks",        count: (decision.risks || []).length },
                 ]}
-                note={decision.recommendation?.confidence ? `Called with ${decision.recommendation.confidence}% confidence — not a menu, a stance.` : `A stance, not a menu.`}
               />
             </div>
           )}
@@ -1394,73 +1445,85 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
   return (
     <StepShell
       num={4}
-      label="ARTIFACTS"
-      title="The call is made. Give it a paper trail."
-      kicker="Scope, message to the client, assumptions, and risk flags — drafted from your stance, ready to send."
+      label="Execution"
+      title={artifacts ? "Ready to send." : "Give it a paper trail."}
+      kicker={artifacts ? "Scope · message · assumptions · risks." : "Scope, message, assumptions, risks — drafted from your stance."}
       previously={project?.decision?.recommendation?.title}
-      nextHint={artifacts ? "lock it in · so it survives the 3am rethink" : "next: confidence lock-in"}
+      nextUp={artifacts ? [] : ["Scope doc", "Client message", "Risk flags", "Assumptions"]}
+      nextHint={artifacts ? "lock it in" : undefined}
     >
       <div className="flex gap-3 items-center flex-wrap">
         <button onClick={onBack} className="btn-ghost" data-testid="step4-back-btn">
-          <ArrowLeft size={14} /> Back
+          <ArrowLeft size={13} /> Back
         </button>
         <button
           onClick={run}
           disabled={loading || !project?.decision?.recommendation?.title}
-          className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
+          className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
           data-testid="step4-generate-btn"
         >
           {loading ? (
             <>
-              <Loader2 size={14} className="animate-spin" /> Generating…
+              <Loader2 size={13} className="animate-spin" /> Generating…
             </>
           ) : artifacts ? (
             <>
-              <RefreshCw size={14} /> Regenerate
+              <RefreshCw size={13} /> Regenerate
             </>
           ) : (
             <>
-              Generate artifacts <ArrowRight size={14} />
+              Generate artifacts <ArrowRight size={13} />
             </>
           )}
         </button>
         {artifacts && (
           <button onClick={onDone} className="btn-ghost" data-testid="step4-continue-btn">
-            Lock this decision <ArrowRight size={14} />
+            Lock the decision <ArrowRight size={13} />
           </button>
         )}
       </div>
       <ErrorBox msg={error} />
 
       {loading ? (
-        <div className="mt-10">
+        <div className="mt-5">
           <StepProgress
             phase={phase}
             testid="step4-progress"
             rows={[
-              { target: "scope",   doneLabel: "Scope drafted",             activeLabel: "Drafting scope + deliverables…" },
-              { target: "message", doneLabel: "Client message written",    activeLabel: "Writing the message to the client…" },
-              { target: "risks",   doneLabel: "Risks + assumptions flagged", activeLabel: "Flagging assumptions & risks…" },
+              { target: "scope",   doneLabel: "Scope drafted",             activeLabel: "Drafting scope…" },
+              { target: "message", doneLabel: "Client message written",    activeLabel: "Writing the message…" },
+              { target: "risks",   doneLabel: "Risks + assumptions flagged", activeLabel: "Flagging risks…" },
             ]}
             estimate={[
               { n: "1", label: "scope doc" },
-              { n: "1", label: "client message" },
-              { n: "~5", label: "risks & assumptions" },
+              { n: "1", label: "message" },
+              { n: "~5", label: "risks" },
             ]}
           />
         </div>
       ) : !artifacts ? (
-        <div className="mt-10">
+        <div className="mt-5">
           <OutputPending
             title={"{ artifacts · pending }"}
-            blurb="Bracket is drafting scope, message, assumptions and risk flags from your stance."
+            blurb="Drafting scope, message, risks."
             loading={false}
           />
         </div>
       ) : (
-        <div className="mt-10 space-y-6" data-testid="step4-artifacts-output">
+        <div className="mt-5 space-y-5" data-testid="step4-artifacts-output">
+          <CelebrationCard
+            testid="step4-celebration"
+            chapter={4}
+            milestone="Artifacts drafted"
+            items={[
+              { key: "deliverables", label: "deliverables", count: (artifacts.scope_doc?.deliverables || []).length },
+              { key: "in-scope",     label: "in scope",     count: (artifacts.scope_doc?.in_scope || []).length },
+              { key: "risks",        label: "risks",        count: (artifacts.risk_flags || []).length },
+              { key: "assumptions",  label: "assumptions",  count: (artifacts.assumptions || []).length },
+            ]}
+          />
           {/* Always show scope + client message first — most useful outputs. */}
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-5">
             <OutputCard
               testid="artifact-SCOPE_DOC"
               label={"{ 04 · scope }"}
@@ -1654,15 +1717,16 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
   return (
     <StepShell
       num={5}
-      label="CONFIDENCE LOCK-IN"
-      title={isLocked ? "Locked. The decision survives the room." : "Lock the call. Before someone changes the brief."}
-      kicker="Lock the decision, then open the polished document — download the PDF or send your client a review link straight from there."
+      label="Review"
+      title={isLocked ? "Locked. Survives the room." : "Lock the call."}
+      kicker={isLocked ? "Ready to send. Open the doc or download PDF." : "Lock so it survives the next brief change."}
       previously={project?.decision?.recommendation?.title}
-      nextHint={isLocked ? "open the document · send the review link" : "after this: download · sign · ship"}
+      nextUp={isLocked ? [] : ["Locked doc", "PDF export", "Share link"]}
+      nextHint={isLocked ? "send · sign · ship" : undefined}
     >
       <GuestUpgradeBanner />
-      <div className="grid lg:grid-cols-3 gap-6 mt-8">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid lg:grid-cols-3 gap-5 mt-5">
+        <div className="lg:col-span-2 space-y-5">
           <OutputCard
             label={"{ 05 · the stance }"}
             title={project.decision?.recommendation?.title}
@@ -1670,21 +1734,21 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
             copyText={`THE STANCE\n${project.decision?.recommendation?.title || ""}\n\n${project.decision?.recommendation?.rationale || ""}`}
           />
 
-          <div className="card-brut p-5 sm:p-6">
+          <div className="card-brut p-4 sm:p-5">
             <p className="mono-label text-muted">{"{ what to expect }"}</p>
-            <ul className="mt-4 space-y-2.5 text-sm">
+            <ul className="mt-3 space-y-2 text-sm">
               <li className="flex gap-3">
                 <span className="font-mono text-signal shrink-0">→</span>
                 <span className="text-[var(--text)]">Client will likely push back on scope items 2 and 3.</span>
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-signal shrink-0">→</span>
-                <span className="text-[var(--text)]">The trade-off on timeline will surface at week 2.</span>
+                <span className="text-[var(--text)]">The timeline trade-off surfaces at week 2.</span>
               </li>
               <li className="flex gap-3">
                 <span className="font-mono text-signal shrink-0">→</span>
                 <span className="text-[var(--text)]">
-                  If someone asks &quot;can we reduce the price?&quot; — your message is already drafted.
+                  If they ask &quot;can we reduce the price?&quot; — your message is drafted.
                 </span>
               </li>
             </ul>
@@ -1693,21 +1757,20 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
 
         <div className="space-y-4">
           {isLocked ? (
-            <div className="card-brut p-5 sm:p-6 relative overflow-hidden step5-locked-card" data-testid="step5-locked">
+            <div className="card-brut p-4 sm:p-5 relative overflow-hidden step5-locked-card" data-testid="step5-locked">
               <div className="flex items-center gap-2">
                 <Lock size={16} className="text-signal" /> <p className="mono-tag text-signal">LOCKED</p>
               </div>
-              <h3 className="t-h1 mt-3">Confidence, captured.</h3>
-              <p className="mt-3 text-sm text-[var(--text-2)]">
-                Open the document in Bracket — download the PDF or share a review link from there.
-                Your project is also saved to your email; come back anytime with the same address.
+              <h3 className="t-h1 mt-2 text-[22px] sm:text-[24px]">Confidence, captured.</h3>
+              <p className="mt-2 text-[13px] text-[var(--text-2)]">
+                Open the doc, download PDF, or share the review link.
               </p>
               <Link
                 to={`/project/${projectId}/document`}
-                className="clay-signal px-4 py-3 t-tag press inline-flex items-center justify-center gap-2 mt-6 w-full"
+                className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center justify-center gap-2 mt-4 w-full"
                 data-testid="step5-open-document-btn"
               >
-                <FileText size={14} /> Open document
+                <FileText size={13} /> Open document
               </Link>
               <button
                 onClick={onExport}

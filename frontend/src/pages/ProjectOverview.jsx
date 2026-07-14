@@ -19,7 +19,7 @@ const STEPS = [
   {
     n: 1,
     key: "situation",
-    label: "SITUATION FRAMING",
+    label: "UNDERSTAND",
     desc: "Name what's actually happening.",
     inputKey: "situation_input",
     outputKey: "framing",
@@ -27,32 +27,32 @@ const STEPS = [
   {
     n: 2,
     key: "context",
-    label: "CONTEXT COMPRESSION",
-    desc: "Strip out the noise. Keep what moves the call.",
+    label: "SIMPLIFY",
+    desc: "Strip to the signal.",
     inputKey: "context_input",
     outputKey: "context",
   },
   {
     n: 3,
     key: "decision",
-    label: "DECISION ENGINE",
-    desc: "Pick the path. Confidence + alternatives + risks.",
+    label: "STRATEGY",
+    desc: "The call. Confidence + alternatives + risks.",
     inputKey: "decision_input",
     outputKey: "decision",
   },
   {
     n: 4,
     key: "artifacts",
-    label: "ARTIFACTS",
-    desc: "Scope doc, client message, assumptions, risks.",
+    label: "EXECUTION",
+    desc: "Scope · message · assumptions · risks.",
     inputKey: null,
     outputKey: "artifacts",
   },
   {
     n: 5,
     key: "lock",
-    label: "CONFIDENCE LOCK-IN",
-    desc: "Sign the call. Generate the document.",
+    label: "REVIEW",
+    desc: "Lock the call. Generate the doc.",
     inputKey: null,
     outputKey: null, // status === locked indicates done
   },
@@ -193,11 +193,11 @@ function StepSummary({ step, project }) {
   // what Bracket will surface here so the user understands the value before
   // starting. Turns dead "TODO" rows into small activation prompts.
   const EMPTY_TEACHING = {
-    1: "We'll re-read your paste and name what's actually happening — the reframed problem, tensions your client won't say out loud, and a clarity score.",
-    2: "We'll strip your paste down to the few signals that move the call, cut the noise, and flag the assumptions everyone is quietly acting on.",
-    3: "We'll pick a side (not a menu), stress-test it against risks your client never mentioned, and score confidence so you know when to push back.",
-    4: "We'll draft the scope doc, the client message, the assumptions, and the risk flags — all in your voice, ready to send.",
-    5: "We'll lock the call so it survives the 3am rethink, then open the polished document for review or PDF export.",
+    1: "Reframed problem, tensions, clarity score.",
+    2: "Signals kept · noise cut · hidden assumptions.",
+    3: "The call · alternatives · risks · confidence.",
+    4: "Scope · client message · assumptions · risk flags.",
+    5: "Locked doc · PDF · share link.",
   };
   const blurb = EMPTY_TEACHING[step.n];
   if (blurb) {

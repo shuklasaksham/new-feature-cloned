@@ -347,3 +347,14 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Second-project nudge (Step 5 locked)** — On `Step5` after `status === "locked"`, a full-width prominent card appears below the lock-in grid: `{ next client · ready? }` label, `Ready for your next client?` headline, an assured 3-line pitch, and a `Start a new project →` CTA linking to `/app`. Testids: `step5-second-project-nudge`, `step5-new-project-btn`.
   - Verified by `testing_agent_v3_fork` iteration_25 — 8/8 features PASS (milestone tracker, Step 1/2/3 transformation cards, rename affordances, overview empty teaching, overview REFINE rename, Step 5 nudge post-lock, paste-anything Dashboard regression).
   - **⚠️ User must redeploy to push these to production (use-bracket.com).**
+
+- 2026-07-14 — **Iteration 26 — Phase 2b: No-scroll steps, consultant chapters, dopamine cards, AI project titles** (verified via smoke — every step page now has scroll delta 0 at 1440×900):
+  - **Consultant chapters**: STEPS renamed to `Understand → Simplify → Strategy → Execution → Review`. Each step page renders `CHAPTER N / 05 · <CHAPTER>` divider. Milestone tracker shows the chapter label (or milestone verb when done).
+  - **AI-generated project title**: New `generate_project_title(raw_paste)` in `ai_engine.py` produces a 3–6-word Title-Case name via Haiku. `POST /api/projects` accepts optional `raw_paste` and overrides the heuristic. `PATCH /projects/{id}` sets `name_source="user"` so future step-1 submits don't overwrite a rename. Curl-verified titles: `B2B Analytics Marketing Site Redesign`, `Loop Coffee Brand Launch Kit`, `Treasury Management Landing Redesign`, `Gen-Z Habit Tracking iOS App`.
+  - **"NEXT →" strip** (Problem 3): every step above the CTA shows `NEXT → ✓ Reframed problem ✓ Clarity score ✓ Tensions to watch` — sets expectations before the user commits.
+  - **Big Celebration card** (Problem 5 — dopamine hit): new `CelebrationCard` component with `linear-gradient` accent tint renders after AI completes. Leads with `✓ CHAPTER N · COMPLETE`, then the milestone verb ("Signals compressed"), then a 3–4-column count strip. Replaced `TransformationCard` usage on Steps 1/2/3.
+  - **No-scroll layout** (Problem 7): compacted `StepShell` (t-hero 60px → 36px, kicker text-base → text-[13px], mt-8 → mt-4), reduced main padding (py-10 → py-6), shrunk textareas (rows=12 → rows=6), tightened header, made Step 2's OutputCard progressive so its long insight is hidden behind "Read the insight" until clicked. Truncated `previously` rail at 180 chars.
+  - **Copy cut ~30–40%** across every step: kickers, sample banners, helper text, output-pending blurbs.
+  - Verified at 1440×900: Step 1 done delta 0, Step 2 done delta 0, Step 3 done delta 0, Step 4 done delta 0. Loading states also delta 0.
+  - **⚠️ User must redeploy to push to production (use-bracket.com).**
+
