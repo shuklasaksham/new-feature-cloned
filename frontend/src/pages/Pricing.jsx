@@ -44,8 +44,8 @@ export default function Pricing() {
             transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="t-display mt-7 max-w-[900px] mx-auto"
           >
-            One-time thinking.<br />
-            <span className="landing-hero-gradient">Repeatable output.</span>
+            Choose the way<br />
+            <span className="landing-hero-gradient">you work.</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 16 }}
@@ -118,6 +118,18 @@ export default function Pricing() {
                   <div className="relative z-10 p-8 sm:p-10 flex flex-col h-full">
                     <p className="mono-tag" style={{ color: isPro ? "#FFB84C" : "var(--accent)" }}>{t.name}</p>
                     <p className="mt-1 text-[12px] text-[var(--text-3)] leading-relaxed">{t.tagline}</p>
+                    {t.bestFor && (
+                      <p
+                        className="mt-3 inline-flex self-start items-center gap-1.5 px-2 py-1 rounded-full text-[10.5px] tracking-[0.02em] uppercase font-mono"
+                        style={{
+                          background: isPro ? "rgba(255,184,76,0.10)" : "rgba(94,106,210,0.10)",
+                          color: isPro ? "#FFB84C" : "var(--accent)",
+                          border: `1px solid ${isPro ? "rgba(255,184,76,0.25)" : "rgba(94,106,210,0.25)"}`,
+                        }}
+                      >
+                        {t.bestFor}
+                      </p>
+                    )}
                     <div className="mt-6 flex items-baseline gap-1">
                       <span className="font-display font-semibold text-[52px] leading-none tracking-[-0.03em]">
                         {price === 0 ? "Free" : `${cur.symbol}${price}`}
@@ -149,7 +161,7 @@ export default function Pricing() {
           </div>
 
           <p className="mt-10 text-center text-[12px] text-[var(--text-3)]">
-            All plans include OTP login, guest projects, and unlimited pastes.
+            Every plan includes unlimited pastes, AI project understanding and secure cloud storage.
           </p>
         </div>
       </section>

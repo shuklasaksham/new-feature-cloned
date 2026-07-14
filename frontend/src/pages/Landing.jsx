@@ -914,7 +914,7 @@ function PricingSection() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 relative">
         <SectionHeading
           tag="PRICING"
-          title="One-time thinking. Repeatable output."
+          title="Choose the way you work."
           center
         />
 
@@ -955,7 +955,7 @@ function PricingSection() {
         </div>
 
         <p className="mt-10 text-center text-[12px] text-[var(--text-3)]">
-          All plans include OTP login, guest projects, and unlimited pastes.
+          Every plan includes unlimited pastes, AI project understanding and secure cloud storage.
         </p>
       </div>
     </section>
@@ -983,6 +983,18 @@ function PricingCard({ tier, price, symbol, popular }) {
       <div className="relative z-10 p-8 sm:p-10 flex flex-col h-full">
         <p className="mono-tag" style={{ color: popular ? "#FFB84C" : "var(--accent)" }}>{tier.name}</p>
         <p className="mt-1 text-[12px] text-[var(--text-3)] leading-relaxed">{tier.tagline}</p>
+        {tier.bestFor && (
+          <p
+            className="mt-3 inline-flex self-start items-center gap-1.5 px-2 py-1 rounded-full text-[10.5px] tracking-[0.02em] uppercase font-mono"
+            style={{
+              background: popular ? "rgba(255,184,76,0.10)" : "rgba(94,106,210,0.10)",
+              color: popular ? "#FFB84C" : "var(--accent)",
+              border: `1px solid ${popular ? "rgba(255,184,76,0.25)" : "rgba(94,106,210,0.25)"}`,
+            }}
+          >
+            {tier.bestFor}
+          </p>
+        )}
         <div className="mt-6 flex items-baseline gap-1">
           <span className="font-display font-semibold text-[56px] leading-none tracking-[-0.03em]">{priceLabel}</span>
           {price !== 0 && <span className="text-[12px] text-[var(--text-3)]">/ mo</span>}
