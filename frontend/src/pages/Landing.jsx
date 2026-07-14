@@ -657,6 +657,7 @@ const BENTO = [
     title: "Everything starts here.",
     hint: "Paste one client conversation. Bracket turns it into a structured project workspace.",
     icon: "LayoutDashboard",
+    ghost: "cards",
   },
   {
     span: "col-span-1 md:col-span-1",
@@ -664,6 +665,7 @@ const BENTO = [
     title: "Scope. Ready to send.",
     hint: "Deliverables, timeline and assumptions drafted automatically.",
     icon: "ListChecks",
+    ghost: "checklist",
   },
   {
     span: "col-span-1 md:col-span-1",
@@ -671,6 +673,7 @@ const BENTO = [
     title: "Risks your client never mentioned.",
     hint: "Spot hidden risks before they become expensive revisions.",
     icon: "AlertTriangle",
+    ghost: "risk",
   },
   {
     span: "col-span-1 md:col-span-1 md:row-span-2",
@@ -678,6 +681,7 @@ const BENTO = [
     title: "Decisions backed by evidence.",
     hint: "Understand trade-offs and move forward with confidence.",
     icon: "GitBranch",
+    ghost: "tree",
   },
   {
     span: "col-span-1 md:col-span-1",
@@ -685,6 +689,7 @@ const BENTO = [
     title: "The client email, in your voice.",
     hint: "Generate polished responses from everything Bracket already knows.",
     icon: "Mail",
+    ghost: "bubbles",
   },
   {
     span: "col-span-2 md:col-span-2",
@@ -692,6 +697,7 @@ const BENTO = [
     title: "From brief to project in under a minute.",
     hint: "Skip the setup. Get straight to the work.",
     icon: "Zap",
+    ghost: "timeline",
   },
   {
     span: "col-span-1 md:col-span-1",
@@ -699,6 +705,7 @@ const BENTO = [
     title: "Locked. Signed. Shipped.",
     hint: "Export polished documents and keep every decision documented.",
     icon: "Lock",
+    ghost: "signed",
   },
 ];
 
@@ -741,6 +748,10 @@ function BentoCard({ tile }) {
       className={`bento-card group ${tile.span}`}
     >
       <div className="bento-card-glow" aria-hidden="true" />
+      {/* Ghost interface fragment — abstract UI hint that lives BEHIND the
+         card content. Each variant is tuned per-card so it never encroaches
+         on the title/hint text. */}
+      {tile.ghost && <BentoGhost variant={tile.ghost} />}
       <div className="relative z-10 h-full flex flex-col justify-between p-5 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <p className="mono-tag text-signal text-[10px]">{tile.tag}</p>
@@ -758,6 +769,201 @@ function BentoCard({ tile }) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+// Ghost interface fragments — abstract, atmospheric UI hints that make each
+// bento card feel like a living preview of the product. Purely decorative
+// (aria-hidden). Positioned in the card's empty space so they never fight
+// the title/hint text. Each fragment breathes with a subtle keyframe.
+function BentoGhost({ variant }) {
+  return (
+    <div className="bento-ghost" aria-hidden="true">
+      {variant === "cards" && <GhostCards />}
+      {variant === "checklist" && <GhostChecklist />}
+      {variant === "risk" && <GhostRisk />}
+      {variant === "tree" && <GhostTree />}
+      {variant === "bubbles" && <GhostBubbles />}
+      {variant === "timeline" && <GhostTimeline />}
+      {variant === "signed" && <GhostSigned />}
+    </div>
+  );
+}
+
+// DASHBOARD (large tile) — a stack of blurred project cards drifting behind
+// the copy. Suggests "your workspace" without ever spelling it out.
+function GhostCards() {
+  return (
+    <svg viewBox="0 0 240 160" className="bento-ghost-svg bento-ghost--cards">
+      <defs>
+        <linearGradient id="ghostCardGradA" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="rgba(94,106,210,0.24)" />
+          <stop offset="100%" stopColor="rgba(94,106,210,0.02)" />
+        </linearGradient>
+      </defs>
+      <g className="bento-ghost-cards-g" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1">
+        <rect x="10"  y="40" width="150" height="70" rx="8" fill="url(#ghostCardGradA)" />
+        <rect x="10"  y="40" width="150" height="70" rx="8" />
+        <line x1="24" y1="60" x2="90"  y2="60" stroke="rgba(255,255,255,0.12)" />
+        <line x1="24" y1="72" x2="120" y2="72" stroke="rgba(255,255,255,0.06)" />
+        <line x1="24" y1="84" x2="70"  y2="84" stroke="rgba(255,255,255,0.06)" />
+        <rect x="24" y="94" width="28" height="8" rx="4" fill="rgba(94,106,210,0.14)" stroke="none" />
+      </g>
+      <g className="bento-ghost-cards-g2" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1">
+        <rect x="76"  y="14" width="150" height="60" rx="8" fill="rgba(255,255,255,0.02)" />
+        <line x1="90" y1="30" x2="150" y2="30" stroke="rgba(255,255,255,0.10)" />
+        <line x1="90" y1="42" x2="180" y2="42" stroke="rgba(255,255,255,0.05)" />
+        <line x1="90" y1="54" x2="130" y2="54" stroke="rgba(255,255,255,0.05)" />
+      </g>
+    </svg>
+  );
+}
+
+// SCOPE — three checklist rows with rotating check states.
+function GhostChecklist() {
+  return (
+    <svg viewBox="0 0 180 120" className="bento-ghost-svg bento-ghost--checklist">
+      <g fill="none" strokeWidth="1.4">
+        {[0, 1, 2].map((i) => (
+          <g key={i} transform={`translate(0, ${i * 28})`}>
+            <circle cx="14" cy="18" r="6"
+              fill={i === 0 ? "rgba(94,106,210,0.35)" : "transparent"}
+              stroke="rgba(255,255,255,0.14)" />
+            {i === 0 && (
+              <path d="M11 18 l2 2 l4 -4"
+                stroke="rgba(255,255,255,0.85)" fill="none" strokeWidth="1.6"
+                strokeLinecap="round" strokeLinejoin="round" />
+            )}
+            <line x1="28" y1="18" x2={80 + i * 22} y2="18"
+              stroke={i === 0 ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.10)"} />
+          </g>
+        ))}
+      </g>
+    </svg>
+  );
+}
+
+// RISKS — a warning triangle with pulsing notification badge.
+function GhostRisk() {
+  return (
+    <svg viewBox="0 0 180 120" className="bento-ghost-svg bento-ghost--risk">
+      <g transform="translate(90, 30)">
+        <path d="M0 -18 L18 14 L-18 14 Z"
+          fill="rgba(208,38,32,0.10)" stroke="rgba(208,38,32,0.35)" strokeWidth="1.4"
+          strokeLinejoin="round" />
+        <line x1="0" y1="-4" x2="0" y2="6" stroke="rgba(208,38,32,0.55)" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx="0" cy="10" r="1.2" fill="rgba(208,38,32,0.7)" />
+      </g>
+      <circle cx="118" cy="14" r="8" fill="rgba(208,38,32,0.20)" className="bento-ghost-pulse" />
+      <text x="118" y="17" textAnchor="middle" fontSize="8" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.6)">3</text>
+    </svg>
+  );
+}
+
+// DECISION (tall tile) — a branching decision tree.
+function GhostTree() {
+  return (
+    <svg viewBox="0 0 180 260" className="bento-ghost-svg bento-ghost--tree" preserveAspectRatio="xMidYMid meet">
+      <g fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.2">
+        {/* trunk */}
+        <line x1="90" y1="40" x2="90" y2="90" />
+        {/* branches */}
+        <path d="M90 90 Q 90 120 50 130 L 40 150" />
+        <path d="M90 90 Q 90 120 130 130 L 140 150" />
+        {/* sub-branches */}
+        <path d="M40 150 L 25 175" strokeDasharray="3 3" />
+        <path d="M40 150 L 55 175" strokeDasharray="3 3" />
+        <path d="M140 150 L 155 175" />
+      </g>
+      {/* nodes */}
+      <g>
+        <circle cx="90"  cy="40"  r="6" fill="rgba(94,106,210,0.35)" stroke="rgba(94,106,210,0.6)" />
+        <circle cx="40"  cy="150" r="5" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.20)" />
+        <circle cx="140" cy="150" r="5" fill="rgba(94,106,210,0.40)" stroke="rgba(94,106,210,0.7)" />
+        <circle cx="25"  cy="175" r="3" fill="rgba(255,255,255,0.10)" />
+        <circle cx="55"  cy="175" r="3" fill="rgba(255,255,255,0.10)" />
+        <circle cx="155" cy="175" r="3" fill="rgba(94,106,210,0.55)" />
+      </g>
+      {/* tiny confidence bars under selected node */}
+      <g transform="translate(120, 200)" opacity="0.55">
+        <rect x="0"  y="0" width="30" height="3" rx="1.5" fill="rgba(255,255,255,0.08)" />
+        <rect x="0"  y="0" width="22" height="3" rx="1.5" fill="rgba(94,106,210,0.55)" />
+      </g>
+    </svg>
+  );
+}
+
+// MESSAGE — two soft chat bubbles with a typing indicator.
+function GhostBubbles() {
+  return (
+    <svg viewBox="0 0 180 120" className="bento-ghost-svg bento-ghost--bubbles">
+      <g>
+        <rect x="10"  y="14" width="90" height="24" rx="12"
+          fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+        <line x1="22" y1="26" x2="76" y2="26" stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
+      </g>
+      <g transform="translate(70, 50)">
+        <rect x="0"  y="0" width="100" height="28" rx="14"
+          fill="rgba(94,106,210,0.10)" stroke="rgba(94,106,210,0.25)" strokeWidth="1" />
+        <line x1="12" y1="10" x2="82" y2="10" stroke="rgba(255,255,255,0.22)" strokeWidth="1" />
+        <line x1="12" y1="18" x2="60" y2="18" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      </g>
+      {/* typing dots */}
+      <g transform="translate(24, 90)" className="bento-ghost-typing">
+        <circle cx="0"  cy="0" r="2" fill="rgba(255,255,255,0.30)" />
+        <circle cx="8"  cy="0" r="2" fill="rgba(255,255,255,0.30)" />
+        <circle cx="16" cy="0" r="2" fill="rgba(255,255,255,0.30)" />
+      </g>
+    </svg>
+  );
+}
+
+// SPEED (wide tile) — a horizontal timeline with pulse markers.
+function GhostTimeline() {
+  return (
+    <svg viewBox="0 0 360 100" className="bento-ghost-svg bento-ghost--timeline" preserveAspectRatio="xMidYMid meet">
+      <g fill="none">
+        <line x1="10" y1="50" x2="350" y2="50" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+        {[30, 90, 150, 210, 270, 330].map((x, i) => (
+          <g key={i} transform={`translate(${x}, 50)`}>
+            <line y1="-6" y2="6" stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
+            <circle r={i === 5 ? 6 : 3}
+              fill={i === 5 ? "rgba(94,106,210,0.60)" : "rgba(255,255,255,0.16)"} />
+          </g>
+        ))}
+        {/* progress fill */}
+        <line x1="10" y1="50" x2="330" y2="50" stroke="rgba(94,106,210,0.45)" strokeWidth="1.4" className="bento-ghost-progress" />
+        {/* labels */}
+        <text x="30"  y="76" fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.28)" textAnchor="middle">PASTE</text>
+        <text x="150" y="76" fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.28)" textAnchor="middle">DECIDE</text>
+        <text x="270" y="76" fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.28)" textAnchor="middle">SEND</text>
+      </g>
+    </svg>
+  );
+}
+
+// LOCK — signed document outline with a check-badge stamp.
+function GhostSigned() {
+  return (
+    <svg viewBox="0 0 180 140" className="bento-ghost-svg bento-ghost--signed">
+      <g fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1">
+        <rect x="30" y="16" width="90" height="110" rx="6"
+          fill="rgba(255,255,255,0.02)" />
+        <line x1="42" y1="34" x2="108" y2="34" stroke="rgba(255,255,255,0.14)" />
+        <line x1="42" y1="46" x2="100" y2="46" />
+        <line x1="42" y1="56" x2="108" y2="56" />
+        <line x1="42" y1="66" x2="90"  y2="66" />
+        {/* signature scribble */}
+        <path d="M42 92 q6 -8 12 0 t12 0 t12 -2" stroke="rgba(94,106,210,0.55)" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="42" y1="106" x2="90" y2="106" stroke="rgba(255,255,255,0.14)" />
+      </g>
+      {/* seal / stamp */}
+      <g transform="translate(120, 96)">
+        <circle r="18" fill="rgba(94,106,210,0.10)" stroke="rgba(94,106,210,0.5)" strokeWidth="1" />
+        <path d="M-6 0 l4 4 l8 -8" stroke="rgba(94,106,210,0.85)" strokeWidth="1.6"
+          fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+    </svg>
   );
 }
 
