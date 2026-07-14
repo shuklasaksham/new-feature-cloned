@@ -2535,15 +2535,16 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGE LOADER — brand animation shown on every hard reload. The `{ }`
-   bracket icon breathes with a soft signal-blue halo, then the whole
-   overlay fades out so the app is revealed in one clean beat.
+   PAGE LOADER — brand animation shown on every hard reload.
+   The `{ }` braces stroke themselves in like a hand-drawn signature,
+   then a signal-blue underline expands from centre, then everything
+   fades out. Total budget ≈ 2.2s.
    ═══════════════════════════════════════════════════════════════════════ */
 .page-loader {
   position: fixed; inset: 0; z-index: 9999;
   background: #08090A;
   display: flex; align-items: center; justify-content: center;
-  transition: opacity 520ms cubic-bezier(.16,1,.3,1);
+  transition: opacity 550ms cubic-bezier(.16,1,.3,1);
   opacity: 1;
   overflow: hidden;
   isolation: isolate;
@@ -2556,48 +2557,79 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 /* Soft signal-blue halo behind the mark. */
 .page-loader-halo {
   position: absolute;
-  width: 520px; height: 520px;
+  width: 620px; height: 620px;
   background: radial-gradient(closest-side,
-    rgba(94, 106, 210, 0.22) 0%,
-    rgba(94, 106, 210, 0.06) 40%,
+    rgba(94, 106, 210, 0.20) 0%,
+    rgba(94, 106, 210, 0.05) 40%,
     rgba(94, 106, 210, 0) 70%);
-  filter: blur(20px);
-  animation: pageLoaderHalo 1.6s cubic-bezier(.16,1,.3,1) infinite alternate;
+  filter: blur(24px);
+  opacity: 0;
+  animation: pageLoaderHalo 1.6s cubic-bezier(.16,1,.3,1) 200ms forwards;
   z-index: -1;
 }
-
-.page-loader-inner {
-  position: relative;
-  display: inline-flex; align-items: center; justify-content: center;
-  animation: pageLoaderFloat 1.6s cubic-bezier(.16,1,.3,1) infinite alternate;
-}
-.page-loader-logo {
-  display: block;
-  width: 44px; height: auto;
-  filter: drop-shadow(0 0 24px rgba(94, 106, 210, 0.55));
-  animation: pageLoaderMark 1.6s cubic-bezier(.16,1,.3,1) infinite alternate,
-             pageLoaderEnter 720ms cubic-bezier(.16,1,.3,1);
-}
-
-@keyframes pageLoaderEnter {
-  from { opacity: 0; transform: scale(0.82); }
-  to   { opacity: 1; transform: scale(1); }
-}
-@keyframes pageLoaderMark {
-  from { opacity: 0.65; transform: scale(0.96); }
-  to   { opacity: 1;    transform: scale(1.04); }
-}
-@keyframes pageLoaderFloat {
-  from { transform: translateY(2px); }
-  to   { transform: translateY(-2px); }
-}
 @keyframes pageLoaderHalo {
-  from { opacity: 0.55; transform: scale(0.94); }
-  to   { opacity: 1;    transform: scale(1.10); }
+  0%   { opacity: 0; transform: scale(0.9); }
+  50%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.85; transform: scale(1); }
+}
+
+.page-loader-mark {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+
+.page-loader-svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 0 14px rgba(94, 106, 210, 0.55));
+}
+
+/* Each brace is a stroked SVG path. We hide it with stroke-dashoffset
+   equal to the path length, then animate it to 0 to reveal the drawing. */
+.page-loader-brace {
+  fill: none;
+  stroke: #F7F7F8;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: pageLoaderDraw 900ms cubic-bezier(.65, 0, .35, 1) forwards;
+}
+.page-loader-brace--left  { animation-delay: 120ms; }
+.page-loader-brace--right { animation-delay: 240ms; }
+
+@keyframes pageLoaderDraw {
+  from { stroke-dashoffset: 260; }
+  to   { stroke-dashoffset: 0;   }
+}
+
+/* Signal-blue underline that grows from centre after the braces land. */
+.page-loader-underline {
+  display: block;
+  width: 60px; height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(94, 106, 210, 0.9) 50%,
+    transparent 100%);
+  border-radius: 999px;
+  transform: scaleX(0);
+  transform-origin: center;
+  animation: pageLoaderUnderline 620ms cubic-bezier(.16, 1, .3, 1) 1000ms forwards;
+  filter: drop-shadow(0 0 8px rgba(94, 106, 210, 0.6));
+}
+@keyframes pageLoaderUnderline {
+  from { transform: scaleX(0);   opacity: 0; }
+  to   { transform: scaleX(1);   opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-loader-logo,
-  .page-loader-inner,
-  .page-loader-halo { animation: none; }
+  .page-loader-brace,
+  .page-loader-underline,
+  .page-loader-halo {
+    animation: none;
+    stroke-dashoffset: 0;
+    transform: none;
+    opacity: 1;
+  }
 }

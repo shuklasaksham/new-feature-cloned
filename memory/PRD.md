@@ -69,6 +69,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-02-14 — **Loader v2 — cinematic SVG stroke-draw**: replaced the pulsing PNG logo with an SVG `{ }` composed of two stroked paths. Braces stroke themselves in like a hand-drawn signature (900ms cubic-bezier ease with 120ms + 240ms offsets so the left curl leads the right), a signal-blue underline expands from centre once they land, then the overlay fades. Path `stroke-dasharray` + `stroke-dashoffset` do the reveal — no infinite-loop breathing that made the previous loader feel like a spinner. Total beat ≈ 2.2s.
 - 2026-02-14 — **Page loader animation + sticky doc sidebar**:
   - New `<PageLoader />` component mounted at the app root — full-screen dark overlay with the `{ }` bracket logo (drop-shadow signal-blue glow) breathing + floating on a soft radial halo, then a smooth 520ms ease-out fade. Runs ~900ms then fades — total budget ~1.5s. Only fires on hard reload (React remount); SPA navigation never retriggers.
   - Signoff document right-panel now truly sticky. Root cause: `.dashboard-root` had `overflow-x: hidden` which promoted it to a scroll container and confined the sticky context. Switched to `overflow-x: clip` (widely supported, doesn't create a scroll container). Sidebar now sticks 20px from the top of `.app-shell-main` as intended.
