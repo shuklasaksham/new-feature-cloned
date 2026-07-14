@@ -169,6 +169,43 @@ function CountUp({ to, suffix = "", className = "" }) {
   );
 }
 
+// Soft ambient orbs — scattered blurred spheres reminiscent of atmospheric
+// bokeh. Positioned to frame the copy without overlapping it. Each orb
+// drifts on a slow independent loop.
+function HeroOrbs() {
+  const shouldReduce = useReducedMotion();
+  const orbs = [
+    { size: 560, top: "-14%",  left: "-10%", bg: "rgba(255,255,255,0.24)", dx: 22,  dy: -14, dur: 14 },
+    { size: 180, top: "22%",   left: "12%",  bg: "rgba(255,255,255,0.16)", dx: -14, dy: 10,  dur: 11 },
+    { size: 220, top: "50%",   left: "4%",   bg: "rgba(124,213,255,0.18)", dx: 18,  dy: 8,   dur: 16 },
+    { size: 150, top: "28%",   left: "72%",  bg: "rgba(255,255,255,0.14)", dx: -10, dy: 14,  dur: 12 },
+    { size: 400, top: "30%",   left: "82%",  bg: "rgba(255,255,255,0.20)", dx: -22, dy: -10, dur: 18 },
+    { size: 560, top: "62%",   left: "90%",  bg: "rgba(255,255,255,0.22)", dx: 16,  dy: 12,  dur: 20 },
+    { size: 130, top: "72%",   left: "66%",  bg: "rgba(255,255,255,0.14)", dx: -8,  dy: -14, dur: 13 },
+  ];
+  return (
+    <div aria-hidden="true" className="absolute inset-0 -z-[5] pointer-events-none overflow-hidden">
+      {orbs.map((o, i) => (
+        <motion.div
+          key={i}
+          initial={{ x: 0, y: 0 }}
+          animate={shouldReduce ? { x: 0, y: 0 } : { x: [0, o.dx, 0], y: [0, o.dy, 0] }}
+          transition={shouldReduce ? { duration: 0 } : { duration: o.dur, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute rounded-full"
+          style={{
+            width: o.size,
+            height: o.size,
+            top: o.top,
+            left: o.left,
+            background: `radial-gradient(circle at 40% 40%, ${o.bg} 0%, rgba(255,255,255,0) 62%)`,
+            filter: "blur(28px)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // ─── HERO ────────────────────────────────────────────────────────────────
 function Hero() {
   const shouldReduce = useReducedMotion();
@@ -187,6 +224,11 @@ function Hero() {
         className="absolute inset-0 -z-10"
         style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
       />
+
+      {/* Ambient orbs — soft blurred spheres scattered across the stage.
+         Layered above the base ambient, below the copy. Subtle slow drift
+         gives the hero atmosphere without pulling attention from the type. */}
+      <HeroOrbs />
 
       <FilmGrain opacity={0.06} />
 
