@@ -23,21 +23,28 @@ class ProjectStartIn(BaseModel):
 
 
 class SituationIn(BaseModel):
-    what: str
-    who: str
-    unclear: str
+    # Legacy structured fields (kept for backwards compat + escape hatch).
+    what: str = ""
+    who: str = ""
+    unclear: str = ""
+    # New primary path: paste-anything. If present, the backend extracts
+    # what/who/unclear from it via a Haiku pass before running the main
+    # Sonnet framing call.
+    raw_paste: Optional[str] = None
 
 
 class ContextIn(BaseModel):
     requirements: str = ""
     constraints: str = ""
     inspirations: str = ""
+    raw_paste: Optional[str] = None
 
 
 class DecisionIn(BaseModel):
-    optimizing_for: str
+    optimizing_for: str = ""
     tradeoffs: str = ""
     risks: str = ""
+    raw_paste: Optional[str] = None
 
 
 class ProjectOut(BaseModel):

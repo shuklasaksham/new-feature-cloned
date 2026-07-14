@@ -297,33 +297,56 @@ function ErrorBox({ msg }) {
 }
 
 // ---- Sample project pool (for "Try Sample Project") ----
+// ---- Sample project pool (for "Try Sample Project") ----
+// Each sample is a *realistic messy paste* — a WhatsApp thread, email, or
+// notes chunk that a designer would receive from a client. Bracket's Haiku
+// extractor pulls out what/who/unclear on the backend, exactly as it would
+// for a real user's paste.
 const SAMPLE_BRIEFS = [
   {
     key: "fintech-landing",
-    what:
-      "A launch landing page for a Series-A fintech product. Founder wants launch-day traffic to convert into demo bookings within 3 weeks. Budget is ₹80,000.",
-    who:
-      "A 12-person YC-backed fintech in Bengaluru. Working directly with the co-founder Ankit — no design lead, quick decisions expected.",
-    unclear:
-      "They keep sending Stripe / Linear / Ramp screenshots and calling it 'the vibe', but the page has to explain a fairly technical treasury workflow. Also unsure whether to propose a brand refresh inside the same scope.",
+    raw_paste:
+`Hey! So we finally got the greenlight to redo our landing page. Founder here is Ankit btw.
+
+We've been sending you Stripe and Linear as references but honestly our product is way more technical - it's treasury management for startup CFOs. Also budget is 80k INR and we need it in 3 weeks max because we launch on Nov 15.
+
+One thing that has us worried - the current site converts at 0.4% and our sales team is very sensitive about anything they think might hurt demo bookings.
+
+Quick side question - should we do a full brand refresh in the same sprint or is that a separate scope? Let me know if you need anything else!
+
+- Ankit`,
   },
   {
     key: "checkout-redesign",
-    what:
-      "Redesign the mobile checkout for an e-commerce app. Drop-off between cart and payment is ~40%. Ship a v1 in 6 weeks.",
-    who:
-      "In-house team at a fashion D2C startup with 800k MAU. Reporting to the Head of Product. Engineering has 2 sprints allocated.",
-    unclear:
-      "The team is convinced it's a UI problem, but analytics suggests it's mostly form friction and payment failures. And no one has actually watched a real user check out yet.",
+    raw_paste:
+`Notes from checkout audit call — 12 Aug 2025
+
+Team: Head of Product (Deepika), 2 eng leads, 1 growth PM
+Company: Fashion D2C, 800k MAU, in-house design team of 4
+
+Problem: drop-off between cart -> payment is ~40%. Team is convinced it's a UI problem, wants a redesign. Analytics I saw actually suggests it's mostly form friction (address autocomplete broken on Android) and payment method failures (Razorpay UPI declines spiking).
+
+Timeline: ship a v1 in 6 weeks. Engineering has 2 sprints allocated. If we do research first (2 wks), that leaves 4 sprints for design + build - tight but doable.
+
+Awkward: no one on the team has actually watched a real user check out. Have proposed we do 5 sessions before touching Figma. Deepika seems open but the CEO wants a Figma prototype in "the next 2 weeks max" for the board.`,
   },
   {
     key: "coffee-brand",
-    what:
-      "Naming, logo, and packaging system for a new specialty coffee brand launching in Mumbai. Founder wants a distinct point of view against Blue Tokai and Third Wave. Budget ₹1.2L.",
-    who:
-      "Solo founder, ex-restaurant. Launching with 2 blends. Needs pouch, label, and an Instagram launch kit.",
-    unclear:
-      "The founder switches between 'premium' and 'approachable' every meeting. And she isn't sure whether the brand should sound coffee-nerdy or lifestyle-y.",
+    raw_paste:
+`meeting notes // loop coffee brand kickoff
+
+Priya (solo founder, ex-restaurant, launching 2 blends first) wants:
+- brand naming + logo
+- packaging: pouch + label
+- IG launch kit (10-15 posts)
+
+budget: 1.2L INR, timeline flexible-ish, needs to be ready before Diwali (early Nov)
+
+references she loves: Blue Tokai for the design language, Third Wave for the tone, "but different"
+
+honestly not sure what she means by that yet - she keeps flipping between wanting it to feel "premium" (matte, gold foil, coffee-nerdy) and "approachable" (playful, lifestyle, mass appeal). last meeting she said both in the same sentence.
+
+my worry: 1.2L is tight for full naming + brand + packaging + launch kit. and she has strong opinions but hasn't defined a clear customer or price point yet. i think we should nail brand strategy first before touching design.`,
   },
 ];
 
@@ -344,12 +367,16 @@ function looksLikeGibberish(text) {
   return false;
 }
 
+function wordCount(s) {
+  return (s || "").trim().split(/\s+/).filter(Boolean).length;
+}
+
 function Step1({ project, setProject, dirtyRef, onDone }) {
-  const initial = project.situation_input || { what: "", who: "", unclear: "" };
+  const initial = project.situation_input || { raw_paste: "", what: "", who: "", unclear: "" };
   const draftKey = `bracket:step1-draft:${project.id}`;
   // Hydrate from local draft if the project has no server-side input yet.
   const [form, setForm] = useState(() => {
-    if (project.situation_input) return project.situation_input;
+    if (project.situation_input) return { raw_paste: "", ...project.situation_input };
     try {
       const raw = window.localStorage.getItem(draftKey);
       if (raw) return { ...initial, ...JSON.parse(raw) };
@@ -379,7 +406,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
   // Track unsaved input so the logo-click handler can warn.
   useEffect(() => {
     if (!dirtyRef) return;
-    dirtyRef.current = !!(form.what || form.who || form.unclear) && !framing;
+    dirtyRef.current = !!form.raw_paste && !framing;
     return () => { if (dirtyRef) dirtyRef.current = false; };
   }, [form, framing, dirtyRef]);
 
@@ -388,7 +415,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     if (framing) return; // don't overwrite once we have output
     const handle = setTimeout(() => {
       try {
-        if (form.what || form.who || form.unclear) {
+        if (form.raw_paste) {
           window.localStorage.setItem(draftKey, JSON.stringify(form));
           setDraftSaved(true);
           const clear = setTimeout(() => setDraftSaved(false), 1400);
@@ -433,7 +460,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     const s = forcedKey
       ? (SAMPLE_BRIEFS.find((b) => b.key === forcedKey) || pickSample())
       : pickSample();
-    const nextForm = { what: s.what, who: s.who, unclear: s.unclear };
+    const nextForm = { raw_paste: s.raw_paste };
     setForm(nextForm);
     setIsSample(true);
     // Full magical demo: pre-fill AND auto-submit.
@@ -457,11 +484,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     navigate("/app");
   };
 
-  const pick = (field) => (s, v) => setForm({ ...form, [field]: mergeSuggestion(v, s) });
-
-  const whatGibberish = form.what && looksLikeGibberish(form.what);
-  const anyGibberish = Boolean(whatGibberish);
-  const canSubmit = !loading && form.what.trim().length >= 12 && !anyGibberish;
+  const pasteGibberish = form.raw_paste && looksLikeGibberish(form.raw_paste);
+  const canSubmit = !loading && (form.raw_paste || "").trim().length >= 20 && !pasteGibberish;
 
   return (
     <StepShell
@@ -506,88 +530,39 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
       <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
         <div className="space-y-5" data-testid="step1-form">
           <Field
-            label="What are you building?"
-            testid="step1-what"
-            helper="A short description of the project. Example: A pricing page for a B2B SaaS launching next month."
+            label="Paste anything from your client"
+            testid="step1-paste"
+            helper="Email, WhatsApp chat, meeting notes, Loom transcript, brief PDF text — whatever they sent you. Bracket will structure it for you."
           >
             <textarea
               ref={whatRef}
               className="textarea-brut"
-              rows={3}
-              placeholder="e.g. A landing page for a fintech launching in 3 weeks — needs to convert traffic into demo bookings…"
-              value={form.what}
-              onChange={(e) => setForm({ ...form, what: e.target.value })}
-              data-testid="step1-what-input"
+              rows={12}
+              placeholder="Paste the client's message, brief, chat, or your notes here. Nothing to format. Bracket reads the messiness."
+              value={form.raw_paste || ""}
+              onChange={(e) => setForm({ ...form, raw_paste: e.target.value })}
+              data-testid="step1-paste-input"
             />
-            {whatGibberish && (
-              <div className="mt-2 text-xs text-danger inline-flex items-center gap-1.5" data-testid="step1-what-warning">
+            {pasteGibberish && (
+              <div className="mt-2 text-xs text-danger inline-flex items-center gap-1.5" data-testid="step1-paste-warning">
                 <Info size={12} />
-                That&apos;s a bit short to work with — try a sentence, or{" "}
+                That&apos;s a bit thin to extract from — paste more, or{" "}
                 <button
                   type="button"
                   onClick={trySample}
                   className="underline text-signal press"
                   data-testid="step1-inline-sample-btn"
                 >
-                  load a sample project
+                  load a sample brief
                 </button>
                 .
               </div>
             )}
-            <AISuggestions
-              testid="step1-what-suggest"
-              step={1}
-              field="what"
-              value={form.what}
-              context={{ who: form.who, unclear: form.unclear }}
-              onPick={pick("what")}
-            />
-          </Field>
-
-          <Field
-            label="Who is the client (and who are you actually talking to)?"
-            testid="step1-who"
-            helper="Company or client, plus the specific person driving the decision. Example: A 20-person SaaS in Berlin. Working with the founder directly."
-          >
-            <textarea
-              className="textarea-brut"
-              rows={3}
-              placeholder="e.g. A 12-person YC-backed fintech. Working directly with the co-founder — no design lead."
-              value={form.who}
-              onChange={(e) => setForm({ ...form, who: e.target.value })}
-              data-testid="step1-who-input"
-            />
-            <AISuggestions
-              testid="step1-who-suggest"
-              step={1}
-              field="who"
-              value={form.who}
-              context={{ what: form.what, unclear: form.unclear }}
-              onPick={pick("who")}
-            />
-          </Field>
-
-          <Field
-            label="What feels unclear or off?"
-            testid="step1-unclear"
-            helper="The thing you'd normally not say in a kickoff call. Example: They keep changing scope every week, and no one has defined 'done'."
-          >
-            <textarea
-              className="textarea-brut"
-              rows={4}
-              placeholder="e.g. They send references from Stripe / Linear, but the product is fairly technical. Also unsure whether brand work is in scope."
-              value={form.unclear}
-              onChange={(e) => setForm({ ...form, unclear: e.target.value })}
-              data-testid="step1-unclear-input"
-            />
-            <AISuggestions
-              testid="step1-unclear-suggest"
-              step={1}
-              field="unclear"
-              value={form.unclear}
-              context={{ what: form.what, who: form.who }}
-              onPick={pick("unclear")}
-            />
+            {form.raw_paste && (
+              <p className="mt-2 text-xs text-muted" data-testid="step1-word-count">
+                {wordCount(form.raw_paste)} words · Bracket will extract what, who, and what&apos;s unclear.
+              </p>
+            )}
           </Field>
 
           <div className="flex items-center gap-3 flex-wrap pt-1">
@@ -640,7 +615,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
           ) : !framing ? (
             <OutputPending
               title={"{ output · pending }"}
-              blurb="Bracket hasn't seen it yet. Fill the three fields on the left — or load a sample — and it'll name what's happening in about 5 seconds."
+              blurb="Bracket hasn't seen it yet. Paste anything on the left — or load a sample — and it'll name what's happening in about 15 seconds."
               loading={false}
             />
           ) : (
@@ -669,9 +644,15 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                 }
                 source={
                   <ul className="space-y-1.5 text-sm">
-                    <li><span className="t-tag text-muted">what · </span>{form.what || project.situation_input?.what}</li>
-                    <li><span className="t-tag text-muted">who · </span>{form.who || project.situation_input?.who || "—"}</li>
-                    <li><span className="t-tag text-muted">unclear · </span>{form.unclear || project.situation_input?.unclear || "—"}</li>
+                    <li><span className="t-tag text-muted">what · </span>{project.situation_input?.what || "—"}</li>
+                    <li><span className="t-tag text-muted">who · </span>{project.situation_input?.who || "—"}</li>
+                    <li><span className="t-tag text-muted">unclear · </span>{project.situation_input?.unclear || "—"}</li>
+                    {project.situation_input?.raw_paste && (
+                      <li className="pt-2 mt-2 border-t border-[var(--hairline)]">
+                        <span className="t-tag text-muted">paste · </span>
+                        <span className="text-xs text-muted">{wordCount(project.situation_input.raw_paste)} words</span>
+                      </li>
+                    )}
                   </ul>
                 }
               >
@@ -802,8 +783,8 @@ function StepProgress({ phase, rows, estimate, testid = "step-progress" }) {
 
 
 function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
-  const initial = project.context_input || { requirements: "", constraints: "", inspirations: "" };
-  const [form, setForm] = useState(initial);
+  const initial = project.context_input || { raw_paste: "", requirements: "", constraints: "", inspirations: "" };
+  const [form, setForm] = useState({ raw_paste: "", ...initial });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState(null);
@@ -811,7 +792,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
 
   useEffect(() => {
     if (!dirtyRef) return;
-    dirtyRef.current = !!(form.requirements || form.constraints || form.inspirations) && !compressed;
+    dirtyRef.current = !!form.raw_paste && !compressed;
     return () => { if (dirtyRef) dirtyRef.current = false; };
   }, [form, compressed, dirtyRef]);
 
@@ -822,7 +803,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
     const t1 = setTimeout(() => setPhase("cutting"), 1200);
     const t2 = setTimeout(() => setPhase("naming"), 3200);
     try {
-      const { data } = await api.post(`/projects/${project.id}/context`, form);
+      const { data } = await api.post(`/projects/${project.id}/context`, { raw_paste: form.raw_paste });
       setProject(data);
       setPhase("done");
     } catch (e) {
@@ -835,69 +816,37 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
     }
   };
 
-  const pick = (field) => (s, v) => setForm({ ...form, [field]: mergeSuggestion(v, s) });
+  const canSubmit = !loading && (form.raw_paste || "").trim().length >= 20;
 
   return (
     <StepShell
       num={2}
       label="CONTEXT COMPRESSION"
       title="You named the problem. Now strip it to bone."
-      kicker="Dump what you've got. Bracket will pull the signal out and tell you the few things that actually move the call."
+      kicker="Paste everything you have — brief, Slack dump, meeting notes, WhatsApp thread. Bracket will pull the signal out and tell you the few things that actually move the call."
       previously={project?.framing?.reframed_problem}
       nextHint={compressed ? "pick the call · and own it" : "after this, we make a recommendation"}
     >
       <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
-        <div className="space-y-6" data-testid="step2-form">
-          <Field label="Requirements (from client or PM)" testid="step2-req">
+        <div className="space-y-5" data-testid="step2-form">
+          <Field
+            label="Paste anything about this project"
+            testid="step2-paste"
+            helper="Requirements, constraints, references, brand rules, timeline notes, meeting takeaways — dump it all. Bracket extracts the shape."
+          >
             <textarea
               className="textarea-brut"
-              rows={4}
-              value={form.requirements}
-              onChange={(e) => setForm({ ...form, requirements: e.target.value })}
-              placeholder="Paste the brief. Paste the Slack dump. It's fine."
+              rows={12}
+              value={form.raw_paste || ""}
+              onChange={(e) => setForm({ ...form, raw_paste: e.target.value })}
+              placeholder="Paste the brief. Paste the Slack thread. Paste your kickoff notes. Nothing to format."
+              data-testid="step2-paste-input"
             />
-            <AISuggestions
-              testid="step2-req-suggest"
-              step={2}
-              field="requirements"
-              value={form.requirements}
-              context={{ constraints: form.constraints, inspirations: form.inspirations, framing: project.framing?.reframed_problem }}
-              onPick={pick("requirements")}
-            />
-          </Field>
-          <Field label="Constraints" testid="step2-con">
-            <textarea
-              className="textarea-brut"
-              rows={3}
-              value={form.constraints}
-              onChange={(e) => setForm({ ...form, constraints: e.target.value })}
-              placeholder="Budget, timeline, brand rules, tech limits."
-            />
-            <AISuggestions
-              testid="step2-con-suggest"
-              step={2}
-              field="constraints"
-              value={form.constraints}
-              context={{ requirements: form.requirements, inspirations: form.inspirations, framing: project.framing?.reframed_problem }}
-              onPick={pick("constraints")}
-            />
-          </Field>
-          <Field label="Inspirations / references (optional)" testid="step2-insp">
-            <textarea
-              className="textarea-brut"
-              rows={2}
-              value={form.inspirations}
-              onChange={(e) => setForm({ ...form, inspirations: e.target.value })}
-              placeholder="Only what you genuinely want to pull from."
-            />
-            <AISuggestions
-              testid="step2-insp-suggest"
-              step={2}
-              field="inspirations"
-              value={form.inspirations}
-              context={{ requirements: form.requirements, constraints: form.constraints, framing: project.framing?.reframed_problem }}
-              onPick={pick("inspirations")}
-            />
+            {form.raw_paste && (
+              <p className="mt-2 text-xs text-muted" data-testid="step2-word-count">
+                {wordCount(form.raw_paste)} words · Bracket will extract requirements, constraints, and inspirations.
+              </p>
+            )}
           </Field>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -906,7 +855,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             </button>
             <button
               onClick={run}
-              disabled={loading || !form.requirements.trim()}
+              disabled={!canSubmit}
               className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step2-submit-btn"
             >
@@ -1005,8 +954,8 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
 }
 
 function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
-  const initial = project.decision_input || { optimizing_for: "", tradeoffs: "", risks: "" };
-  const [form, setForm] = useState(initial);
+  const initial = project.decision_input || { raw_paste: "", optimizing_for: "", tradeoffs: "", risks: "" };
+  const [form, setForm] = useState({ raw_paste: "", ...initial });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [phase, setPhase] = useState(null);
@@ -1015,7 +964,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
 
   useEffect(() => {
     if (!dirtyRef) return;
-    dirtyRef.current = !!(form.optimizing_for || form.tradeoffs || form.risks) && !decision;
+    dirtyRef.current = !!form.raw_paste && !decision;
     return () => { if (dirtyRef) dirtyRef.current = false; };
   }, [form, decision, dirtyRef]);
 
@@ -1026,7 +975,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
     const t1 = setTimeout(() => setPhase("picking"), 1500);
     const t2 = setTimeout(() => setPhase("stress"), 3500);
     try {
-      const { data } = await api.post(`/projects/${project.id}/decision`, form);
+      const { data } = await api.post(`/projects/${project.id}/decision`, { raw_paste: form.raw_paste });
       setProject(data);
       setPhase("done");
     } catch (e) {
@@ -1039,69 +988,37 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
     }
   };
 
-  const pick = (field) => (s, v) => setForm({ ...form, [field]: mergeSuggestion(v, s) });
+  const canSubmit = !loading && (form.raw_paste || "").trim().length >= 15;
 
   return (
     <StepShell
       num={3}
       label="DECISION ENGINE"
       title="We know what it is. Now call the shot."
-      kicker="One line of what matters most. Bracket picks a side, names the trade-offs, and tells you what could go wrong — so you can decide with eyes open."
+      kicker="Paste your thinking — what you want to optimise for, what you'd trade off, what worries you. Bracket picks a side, names the trade-offs, and tells you what could go wrong."
       previously={project?.context?.what_actually_matters}
       nextHint={decision ? "give it a paper trail" : "next: artifacts the client can sign"}
     >
       <div className="grid lg:grid-cols-2 gap-6 md:gap-8">
-        <div className="space-y-6" data-testid="step3-form">
-          <Field label="What are you optimising for?" testid="step3-opt">
+        <div className="space-y-5" data-testid="step3-form">
+          <Field
+            label="Paste your thinking on this decision"
+            testid="step3-paste"
+            helper="What matters most, what you'd trade off, what worries you, what's non-negotiable. A paragraph is plenty."
+          >
             <textarea
               className="textarea-brut"
-              rows={2}
-              value={form.optimizing_for}
-              onChange={(e) => setForm({ ...form, optimizing_for: e.target.value })}
-              placeholder="e.g. Conversion over aesthetic polish. Or speed to launch over perfection."
+              rows={12}
+              value={form.raw_paste || ""}
+              onChange={(e) => setForm({ ...form, raw_paste: e.target.value })}
+              placeholder="e.g. Speed to launch over perfect polish. I'd cut scope on the About + Blog pages. Worried the founder will push back on cutting the demo video. Non-negotiable: mobile has to work on day 1."
+              data-testid="step3-paste-input"
             />
-            <AISuggestions
-              testid="step3-opt-suggest"
-              step={3}
-              field="optimizing_for"
-              value={form.optimizing_for}
-              context={{ tradeoffs: form.tradeoffs, risks: form.risks, framing: project.framing?.reframed_problem }}
-              onPick={pick("optimizing_for")}
-            />
-          </Field>
-          <Field label="Trade-offs you already feel" testid="step3-tr">
-            <textarea
-              className="textarea-brut"
-              rows={2}
-              value={form.tradeoffs}
-              onChange={(e) => setForm({ ...form, tradeoffs: e.target.value })}
-              placeholder="What are you giving up?"
-            />
-            <AISuggestions
-              testid="step3-tr-suggest"
-              step={3}
-              field="tradeoffs"
-              value={form.tradeoffs}
-              context={{ optimizing_for: form.optimizing_for, risks: form.risks, framing: project.framing?.reframed_problem }}
-              onPick={pick("tradeoffs")}
-            />
-          </Field>
-          <Field label="Risks you suspect" testid="step3-rs">
-            <textarea
-              className="textarea-brut"
-              rows={2}
-              value={form.risks}
-              onChange={(e) => setForm({ ...form, risks: e.target.value })}
-              placeholder="Stakeholders, scope, skill gaps, timeline…"
-            />
-            <AISuggestions
-              testid="step3-rs-suggest"
-              step={3}
-              field="risks"
-              value={form.risks}
-              context={{ optimizing_for: form.optimizing_for, tradeoffs: form.tradeoffs, framing: project.framing?.reframed_problem }}
-              onPick={pick("risks")}
-            />
+            {form.raw_paste && (
+              <p className="mt-2 text-xs text-muted" data-testid="step3-word-count">
+                {wordCount(form.raw_paste)} words · Bracket will extract what you optimise for, your trade-offs, and your risks.
+              </p>
+            )}
           </Field>
 
           <div className="flex items-center gap-3 flex-wrap">
@@ -1110,7 +1027,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
             </button>
             <button
               onClick={run}
-              disabled={loading || !form.optimizing_for.trim()}
+              disabled={!canSubmit}
               className="clay-signal px-5 py-3 t-tag press inline-flex items-center justify-center gap-2 whitespace-nowrap"
               data-testid="step3-submit-btn"
             >

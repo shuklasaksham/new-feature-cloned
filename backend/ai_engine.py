@@ -156,6 +156,90 @@ async def run_field_suggestions(
         return []
 
 
+async def extract_situation_from_paste(raw_paste: str) -> dict:
+    """Given a messy client paste (WhatsApp/email/notes/brief), extract the three
+    situation-framing fields (what / who / unclear) via a fast Haiku pass.
+    Returns {"what": str, "who": str, "unclear": str}. All strings guaranteed."""
+    text = (raw_paste or "").strip()
+    if not text:
+        return {"what": "", "who": "", "unclear": ""}
+    prompt = (
+        "The user pasted a messy client conversation, email, brief, or notes. "
+        "Extract three plain-English answers a senior designer would write in a fresh notebook. "
+        "Be concise (1-3 sentences each). If the paste truly doesn't contain the info, "
+        "leave the field as an empty string.\n\n"
+        f"PASTE:\n---\n{text[:8000]}\n---\n\n"
+        "Return JSON only: "
+        '{"what": "A 1-2 sentence description of what is being built", '
+        '"who": "A 1-2 sentence description of the client / audience", '
+        '"unclear": "A 1-2 sentence honest note on what feels off or is missing"}'
+    )
+    try:
+        data = await _run_fast(prompt)
+        return {
+            "what":    str(data.get("what", "")).strip()[:500] if data.get("what") else "",
+            "who":     str(data.get("who", "")).strip()[:500] if data.get("who") else "",
+            "unclear": str(data.get("unclear", "")).strip()[:500] if data.get("unclear") else "",
+        }
+    except Exception as e:
+        logger.warning("extract_situation_from_paste failed: %s", e)
+        # Fall back to putting the whole paste in `what` so the Sonnet pass
+        # still has something to work with.
+        return {"what": text[:2000], "who": "", "unclear": ""}
+
+
+async def extract_context_from_paste(raw_paste: str) -> dict:
+    """Extract requirements / constraints / inspirations from a raw paste."""
+    text = (raw_paste or "").strip()
+    if not text:
+        return {"requirements": "", "constraints": "", "inspirations": ""}
+    prompt = (
+        "The user pasted messy project context (requirements, constraints, references). "
+        "Extract three plain-English summaries. Concise (1-3 sentences each). Empty string if missing.\n\n"
+        f"PASTE:\n---\n{text[:8000]}\n---\n\n"
+        "Return JSON only: "
+        '{"requirements": "What they need built, features, must-haves", '
+        '"constraints": "Budget, deadline, team size, technical or brand limits", '
+        '"inspirations": "References, examples, aesthetic direction, links to sites/products"}'
+    )
+    try:
+        data = await _run_fast(prompt)
+        return {
+            "requirements": str(data.get("requirements", "")).strip()[:800] if data.get("requirements") else "",
+            "constraints":  str(data.get("constraints", "")).strip()[:800] if data.get("constraints") else "",
+            "inspirations": str(data.get("inspirations", "")).strip()[:800] if data.get("inspirations") else "",
+        }
+    except Exception as e:
+        logger.warning("extract_context_from_paste failed: %s", e)
+        return {"requirements": text[:2000], "constraints": "", "inspirations": ""}
+
+
+async def extract_decision_from_paste(raw_paste: str) -> dict:
+    """Extract optimizing_for / tradeoffs / risks from a raw paste."""
+    text = (raw_paste or "").strip()
+    if not text:
+        return {"optimizing_for": "", "tradeoffs": "", "risks": ""}
+    prompt = (
+        "The user pasted their thinking about the direction to take on this project. "
+        "Extract three plain-English answers. Concise (1-3 sentences each). Empty string if missing.\n\n"
+        f"PASTE:\n---\n{text[:8000]}\n---\n\n"
+        "Return JSON only: "
+        '{"optimizing_for": "What the user wants to prioritize (speed, quality, cost, learning, etc.)", '
+        '"tradeoffs": "What they are willing to give up, and what they are NOT willing to compromise on", '
+        '"risks": "What could go wrong, what they are worried about, what feels shaky"}'
+    )
+    try:
+        data = await _run_fast(prompt)
+        return {
+            "optimizing_for": str(data.get("optimizing_for", "")).strip()[:500] if data.get("optimizing_for") else "",
+            "tradeoffs":      str(data.get("tradeoffs", "")).strip()[:500] if data.get("tradeoffs") else "",
+            "risks":          str(data.get("risks", "")).strip()[:500] if data.get("risks") else "",
+        }
+    except Exception as e:
+        logger.warning("extract_decision_from_paste failed: %s", e)
+        return {"optimizing_for": text[:2000], "tradeoffs": "", "risks": ""}
+
+
 async def run_situation_framing(inputs: dict, engine: str = "claude") -> dict:
     """Reframes the problem into crisp reality. Returns reframed_problem + clarity_score + signals."""
     prompt = f"""A designer has submitted this raw project intake. Reframe it like a senior designer would.

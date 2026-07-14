@@ -33,6 +33,9 @@ from ai_engine import (
     run_artifacts,
     run_client_pushback_suggestions,
     run_field_suggestions,
+    extract_situation_from_paste,
+    extract_context_from_paste,
+    extract_decision_from_paste,
 )
 from emailer import send_thanks_email, send_review_outcome_email
 from auth import (
@@ -1319,16 +1322,34 @@ async def get_project(project_id: str):
 async def step_situation(project_id: str, body: SituationIn):
     project = await _get_project_or_404(project_id)
     engine = project.get("engine", "claude")
+    payload = body.model_dump()
+    # Paste-anything path: extract what/who/unclear from raw_paste (Haiku),
+    # then feed extracted fields into the main Sonnet framing call.
+    if body.raw_paste:
+        try:
+            extracted = await extract_situation_from_paste(body.raw_paste)
+        except Exception as e:
+            logger.warning("situation extraction failed, falling back to raw paste as `what`: %s", e)
+            extracted = {"what": body.raw_paste[:2000], "who": "", "unclear": ""}
+        # Extracted fields win — legacy structured fields only used if paste is empty.
+        payload["what"] = extracted["what"] or payload.get("what", "")
+        payload["who"] = extracted["who"] or payload.get("who", "")
+        payload["unclear"] = extracted["unclear"] or payload.get("unclear", "")
     try:
-        framing = await run_situation_framing(body.model_dump(), engine)
+        framing = await run_situation_framing(payload, engine)
     except Exception as e:
         logger.exception("situation framing failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
+    # Store both the extracted fields AND the original paste (for the
+    # "transformation card" — needs paste word-count to reveal).
+    situation_input = {**payload}
+    if body.raw_paste:
+        situation_input["raw_paste"] = body.raw_paste
     await db.projects.update_one(
         {"id": project_id},
         {
             "$set": {
-                "situation_input": body.model_dump(),
+                "situation_input": situation_input,
                 "framing": framing,
                 "step": max(2, project.get("step", 1)),
                 "status": "in_progress",
@@ -1345,16 +1366,29 @@ async def step_context(project_id: str, body: ContextIn):
     project = await _get_project_or_404(project_id)
     if not project.get("framing"):
         raise HTTPException(status_code=400, detail="Complete Situation Framing first.")
+    payload = body.model_dump()
+    if body.raw_paste:
+        try:
+            extracted = await extract_context_from_paste(body.raw_paste)
+        except Exception as e:
+            logger.warning("context extraction failed, falling back to raw paste as `requirements`: %s", e)
+            extracted = {"requirements": body.raw_paste[:2000], "constraints": "", "inspirations": ""}
+        payload["requirements"] = extracted["requirements"] or payload.get("requirements", "")
+        payload["constraints"] = extracted["constraints"] or payload.get("constraints", "")
+        payload["inspirations"] = extracted["inspirations"] or payload.get("inspirations", "")
     try:
-        compressed = await run_context_compression(body.model_dump(), project["framing"], project.get("engine", "claude"))
+        compressed = await run_context_compression(payload, project["framing"], project.get("engine", "claude"))
     except Exception as e:
         logger.exception("context compression failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
+    context_input = {**payload}
+    if body.raw_paste:
+        context_input["raw_paste"] = body.raw_paste
     await db.projects.update_one(
         {"id": project_id},
         {
             "$set": {
-                "context_input": body.model_dump(),
+                "context_input": context_input,
                 "context": compressed,
                 "step": max(3, project.get("step", 2)),
                 "updated_at": _now_iso(),
@@ -1370,18 +1404,31 @@ async def step_decision(project_id: str, body: DecisionIn):
     project = await _get_project_or_404(project_id)
     if not project.get("context"):
         raise HTTPException(status_code=400, detail="Complete Context Compression first.")
+    payload = body.model_dump()
+    if body.raw_paste:
+        try:
+            extracted = await extract_decision_from_paste(body.raw_paste)
+        except Exception as e:
+            logger.warning("decision extraction failed, falling back to raw paste as `optimizing_for`: %s", e)
+            extracted = {"optimizing_for": body.raw_paste[:2000], "tradeoffs": "", "risks": ""}
+        payload["optimizing_for"] = extracted["optimizing_for"] or payload.get("optimizing_for", "")
+        payload["tradeoffs"] = extracted["tradeoffs"] or payload.get("tradeoffs", "")
+        payload["risks"] = extracted["risks"] or payload.get("risks", "")
     try:
         decision = await run_decision_engine(
-            body.model_dump(), project["framing"], project["context"], project.get("engine", "claude")
+            payload, project["framing"], project["context"], project.get("engine", "claude")
         )
     except Exception as e:
         logger.exception("decision engine failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
+    decision_input = {**payload}
+    if body.raw_paste:
+        decision_input["raw_paste"] = body.raw_paste
     await db.projects.update_one(
         {"id": project_id},
         {
             "$set": {
-                "decision_input": body.model_dump(),
+                "decision_input": decision_input,
                 "decision": decision,
                 "step": max(4, project.get("step", 3)),
                 "updated_at": _now_iso(),
