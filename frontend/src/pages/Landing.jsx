@@ -379,14 +379,18 @@ function Showcase() {
     target: wrapRef,
     offset: ["start start", "end end"],
   });
-  // Translate the horizontal track from 0 to -(cardCount - 1) * 100vw-ish.
-  // Because we render each card as 90vw wide with a small gutter, the total
-  // scroll distance is (cards - 1) * 90vw. We map scrollYProgress → x.
   const cards = SHOWCASE.length;
+  // Total scroll length: ~(cards-1) * 90vh horizontal traversal + a small
+  // entry buffer. Keeps the pinning tight so there's no blank space after
+  // the last card and before the next section.
+  const totalHeight = (cards - 1) * 85 + 40;
+  // Each card is 78vw + ~2vw gap; total shift is (cards-1) * 80vw.
+  // Using vw units so the transform is deterministic (framer's "%" applies
+  // to the element's own width, which is ~cards*78vw — hard to reason about).
   const x = useTransform(
     scrollYProgress,
-    [0, 1],
-    ["0%", `-${(cards - 1) * 78}%`]
+    [0.02, 0.98],
+    ["0vw", `-${(cards - 1) * 80}vw`]
   );
 
   if (shouldReduce) {
@@ -409,7 +413,7 @@ function Showcase() {
     <section
       ref={wrapRef}
       className="relative"
-      style={{ height: `${cards * 100}vh` }}
+      style={{ height: `${totalHeight}vh` }}
       data-testid="landing-showcase"
     >
       <div className="sticky top-0 h-screen overflow-hidden flex flex-col">

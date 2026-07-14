@@ -397,3 +397,15 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Verified at 1440×900: Step 1 done delta 0, all previous no-scroll invariants preserved.
   - **⚠️ Redeploy needed** to push to `use-bracket.com`.
 
+
+
+- 2026-07-14 — **Iteration 30 — Homepage polish + cascade cinematic to marketing sub-pages**:
+  - **Showcase blank-scroll fix**: switched horizontal transform from `%` (which acts on the element's own width — ~400vw for the card row, causing massive overshoot) to `vw` units: `["0vw", "-${(cards-1)*80}vw"]`. Container height trimmed from `cards*100vh` → `(cards-1)*85 + 40vh`. Result: last card ("Locked. Signed. Shipped.") stays in view until the pin releases directly into the Bento section. No more dead scroll gap.
+  - **Homepage CTAs verified**: hero primary = `Start free`, secondary = `How it works`. Left as intended.
+  - **Step cards → ghost-glass**: `.liquid-glass` and `.card-brut/.card-linear` rewritten to match the `landing-cta-ghost` treatment (translucent white 4% + hairline border 8% + `backdrop-filter: blur(10-12px) saturate(140%)`). Cascades to every step OutputCard automatically.
+  - **Cinematic cascade to marketing sub-pages**:
+    * `.hero-ambient` rewritten to a large blue-signal radial wash + faint dot grid, matching Landing's hero scrim.
+    * `.section-label` now a JetBrains-Mono pill in signal-blue with `0.14em` tracking and a blue-glow dot (was Poppins + coral).
+    * `.t-display` and `.t-hero` scaled up (`clamp(2.5rem, 6vw, 5.5rem)` / `clamp(1.9rem, 4vw, 3.25rem)`) with tighter tracking (-0.038em / -0.03em) for cinematic weight.
+    * `MarketingLayout` rewritten to inject a fixed `.marketing-ambient` (blue-signal + secondary sky wash) + `.marketing-grain` (SVG turbulence, overlay blend) on all sub-pages. Landing is excluded (renders its own hero backdrop).
+  - **⚠️ Redeploy needed** to push to `use-bracket.com`.

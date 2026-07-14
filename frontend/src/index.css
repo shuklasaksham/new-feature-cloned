@@ -160,8 +160,8 @@ body::before {
 /* ============================================================
    Type ramp — Linear-grade, restrained
    ============================================================ */
-.t-display  { font-family: "Poppins", sans-serif; font-weight: 600; font-size: clamp(2.25rem, 4vw, 3.5rem); line-height: 1.05; letter-spacing: -0.035em; color: var(--text); }
-.t-hero     { font-family: "Poppins", sans-serif; font-weight: 600; font-size: clamp(1.75rem, 3vw, 2.5rem); line-height: 1.1; letter-spacing: -0.028em; color: var(--text); }
+.t-display  { font-family: "Poppins", sans-serif; font-weight: 600; font-size: clamp(2.5rem, 6vw, 5.5rem); line-height: 1.02; letter-spacing: -0.038em; color: var(--text); }
+.t-hero     { font-family: "Poppins", sans-serif; font-weight: 600; font-size: clamp(1.9rem, 4vw, 3.25rem); line-height: 1.06; letter-spacing: -0.03em; color: var(--text); }
 .t-h1       { font-family: "Poppins", sans-serif; font-weight: 600; font-size: clamp(1.5rem, 2.2vw, 2rem); line-height: 1.15; letter-spacing: -0.022em; color: var(--text); }
 .t-h2       { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1.25rem; line-height: 1.3; letter-spacing: -0.015em; color: var(--text); }
 .t-h3       { font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; line-height: 1.4; letter-spacing: -0.01em; color: var(--text); }
@@ -311,9 +311,11 @@ body::before {
 .card-brut,
 .card-linear {
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 1px 0 rgba(0, 0, 0, 0.4),
@@ -341,22 +343,27 @@ body::before {
 }
 .card-brut-hover:hover,
 .card-linear-hover:hover {
-  border-color: var(--hairline-hover);
-  background: var(--surface-2);
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
 }
 
-/* Liquid-glass — for elevated content surfaces (no violet ambience) */
+/* Liquid-glass — matches the "How it works" ghost CTA on Landing:
+   translucent white overlay + subtle border + backdrop blur. Used for step
+   OutputCards and other elevated content surfaces. */
 .liquid-glass {
   position: relative;
-  background: var(--surface);
-  border: 1px solid var(--hairline);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 1px 0 rgba(0, 0, 0, 0.4),
     0 24px 56px -28px rgba(0, 0, 0, 0.7);
   overflow: hidden;
   transition: border-color var(--d-base) var(--ease-out),
+              background var(--d-base) var(--ease-out),
               box-shadow var(--d-base) var(--ease-out);
 }
 .liquid-glass::before {
@@ -377,7 +384,8 @@ body::before {
   z-index: 1;
 }
 .liquid-glass:hover {
-  border-color: var(--hairline-hover);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 /* Glass / sticky chrome — frosted nav bar (stronger blur) */
@@ -1035,7 +1043,8 @@ body::before {
   background-size: 28px 28px;
 }
 
-/* Hero ambient — neutral radial glow + ultra-faint dot grid */
+/* Hero ambient — cinematic blue-signal radial wash + faint dot grid.
+   Matches Landing's hero gradient scrim, cascaded to every marketing page. */
 .hero-ambient {
   position: absolute;
   inset: 0;
@@ -1046,25 +1055,25 @@ body::before {
 .hero-ambient::before {
   content: "";
   position: absolute;
-  left: 50%; top: -20%;
-  width: 900px; height: 900px;
-  transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0) 60%);
-  filter: blur(10px);
-  animation: heroPulse 6s ease-in-out infinite alternate;
+  left: 20%; top: -10%;
+  width: 1100px; height: 1100px;
+  background: radial-gradient(circle, rgba(46, 91, 255, 0.18) 0%, rgba(46, 91, 255, 0.05) 40%, rgba(46, 91, 255, 0) 70%);
+  filter: blur(30px);
+  animation: heroPulse 8s ease-in-out infinite alternate;
 }
 .hero-ambient::after {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 70%);
   -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 70%);
+  opacity: 0.7;
 }
 @keyframes heroPulse {
-  from { opacity: 0.55; transform: translateX(-50%) scale(1); }
-  to   { opacity: 0.85; transform: translateX(-50%) scale(1.08); }
+  from { opacity: 0.65; transform: scale(1); }
+  to   { opacity: 1;    transform: scale(1.06); }
 }
 
 /* Reduce motion */
@@ -1412,24 +1421,25 @@ body::before {
   background: var(--text);
 }
 
-/* Marketing section helpers */
+/* Marketing section helpers — matches Landing's cinematic mono-tag style. */
 .section-label {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 5px 12px;
+  padding: 6px 12px;
   border-radius: 9999px;
-  border: 1px solid var(--hairline);
-  background: var(--surface);
-  font-family: "Poppins", sans-serif;
-  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: -0.005em;
-  text-transform: none;
-  color: var(--text-2);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 .section-label .dot {
   width: 6px; height: 6px; border-radius: 9999px;
-  background: var(--coral);
-  box-shadow: 0 0 8px rgba(255, 122, 107, 0.45);
+  background: var(--accent);
+  box-shadow: 0 0 12px rgba(46, 91, 255, 0.6);
 }
 
 /* Bento grid (used on Landing problem section) */
@@ -1811,4 +1821,33 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   border: 1px solid rgba(46,91,255,0.25);
   border-radius: 999px;
   font-size: 11.5px;
+}
+
+/* Cinematic backdrop for non-Landing marketing pages. Blue-signal radial
+   wash near the top + a soft film grain overlay. Keeps sub-pages inside
+   the same cinematic universe as the Landing hero. */
+.marketing-ambient {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(1200px 700px at 15% -10%, rgba(46, 91, 255, 0.14), transparent 55%),
+    radial-gradient(900px 600px at 85% 20%, rgba(124, 213, 255, 0.06), transparent 60%),
+    linear-gradient(180deg, #08090A 0%, #060708 40%, #050506 100%);
+}
+.marketing-grain {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  background-image:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Consistent cinematic section spacing across marketing pages. */
+.marketing-section {
+  position: relative;
+  padding-top: clamp(80px, 12vw, 160px);
+  padding-bottom: clamp(80px, 12vw, 160px);
 }
