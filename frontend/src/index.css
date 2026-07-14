@@ -1185,16 +1185,14 @@ body::before {
 
 /* Hero ambient — cinematic blue-signal radial wash + faint dot grid.
    Matches Landing's hero gradient scrim, cascaded to every marketing page.
-   Extends 300px BELOW the hero (via `bottom: -300px`) so the blue wash
-   naturally bleeds into the neighbouring section instead of showing a
-   hard edge where the hero ends. `overflow: visible` lets the bloom
-   bleed vertically; the parent section still clips horizontally. */
+   Extends 800px BELOW the hero so the blue wash + dot grid fade slowly
+   into the neighbouring section instead of showing a hard edge. */
 .hero-ambient {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
-  bottom: -300px;
+  bottom: -800px;
   pointer-events: none;
   overflow: visible;
   z-index: 0;
@@ -1203,8 +1201,8 @@ body::before {
   content: "";
   position: absolute;
   left: 20%; top: -10%;
-  width: 1100px; height: 1100px;
-  background: radial-gradient(circle, rgba(94, 106, 210, 0.18) 0%, rgba(94, 106, 210, 0.05) 40%, rgba(94, 106, 210, 0) 70%);
+  width: 1100px; height: 1400px;
+  background: radial-gradient(closest-side, rgba(94, 106, 210, 0.18) 0%, rgba(94, 106, 210, 0.05) 40%, rgba(94, 106, 210, 0) 70%);
   filter: blur(30px);
   animation: heroPulse 8s ease-in-out infinite alternate;
 }
@@ -1214,8 +1212,8 @@ body::before {
   inset: 0;
   background-image: radial-gradient(rgba(255,255,255,0.14) 1.1px, transparent 1.1px);
   background-size: 26px 26px;
-  mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, #000 40%, transparent 85%);
-  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, #000 40%, transparent 85%);
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 30%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 30%, transparent 90%);
   opacity: 1;
 }
 @keyframes heroPulse {

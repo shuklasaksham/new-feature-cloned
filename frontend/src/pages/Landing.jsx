@@ -1236,10 +1236,11 @@ function Testimonials() {
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-testimonials" id="testimonials">
       {/* Signal-blue centre wash — extended vertically so it kisses both
-         the story section above and the pricing section below. Parallax. */}
+         the story section above and overlaps deep into the pricing amber
+         below (soft blue→amber colour blend, no visible seam). Parallax. */}
       <ParallaxGlow
         distance={40}
-        className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[900px] w-[900px] blur-[120px] opacity-[0.12] -z-10"
+        className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[1400px] w-[900px] blur-[120px] opacity-[0.14] -z-10"
         style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
       />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
@@ -1303,12 +1304,13 @@ function PricingSection() {
 
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-pricing" id="pricing">
-      {/* Amber wash behind middle card — parallax-drifts for depth. */}
+      {/* Amber wash — pulled UP past the section top so it overlaps the
+         testimonials blue for a soft colour transition (no visible seam). */}
       <ParallaxGlow
         distance={45}
-        className="absolute inset-x-0 mx-auto h-[1000px] w-[900px] blur-[120px] opacity-[0.22] -z-10"
+        className="absolute inset-x-0 mx-auto h-[1400px] w-[900px] blur-[120px] opacity-[0.22] -z-10"
         style={{
-          top: "0",
+          top: "-400px",
           background: "radial-gradient(closest-side, #FFB84C, transparent 70%)",
         }}
       />
