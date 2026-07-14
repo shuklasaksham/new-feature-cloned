@@ -1134,9 +1134,9 @@ body::before {
   display: flex;
   flex-direction: column;
   /* Same glassy translucent surface as the marketing top-nav. */
-  background: rgba(8, 9, 10, 0.85);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  background: rgba(8, 9, 10, 0.72);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
   border-right: none;
   padding: 12px 10px;
   z-index: 20;
@@ -1798,9 +1798,9 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .cinema-nav-bg {
   position: absolute; inset: 0; z-index: -2;
-  background: #08090A;
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  background: rgba(8, 9, 10, 0.72);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
 }
 .cinema-nav-border {
   position: absolute; left: 0; right: 0; bottom: 0; height: 1px; z-index: -1;
@@ -1979,9 +1979,9 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   position: sticky;
   top: 0;
   z-index: 30;
-  background: rgba(8, 9, 10, 0.85);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  background: rgba(8, 9, 10, 0.72);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
   isolation: isolate;
 }
 .flow-header::after {
