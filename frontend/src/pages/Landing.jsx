@@ -186,15 +186,15 @@ function Hero() {
       className="relative overflow-hidden isolate min-h-[92vh] flex items-center"
       data-testid="landing-hero"
     >
-      {/* Cinematic dark backdrop — moody blueprint / architectural plan.
-         Reads as "structure / framework / decision system" — matches Bracket's
-         "decision OS" positioning: turn messy input into a decided plan. */}
+      {/* Cinematic dark backdrop — Bracket's own brand illustration:
+         mess → `{ }` → structured document → checklist. Reads exactly like
+         our value prop, no metaphor decoding needed. */}
       <motion.div
         style={{ y: shouldReduce ? 0 : videoY }}
         className="absolute inset-0 -z-20"
       >
         <img
-          src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=2600&q=85"
+          src="https://customer-assets.emergentagent.com/job_design-decided/artifacts/lyyj4r0p_image%20%281%29%201.webp"
           alt=""
           aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
