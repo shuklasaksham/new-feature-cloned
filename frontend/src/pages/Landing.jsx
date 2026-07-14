@@ -175,13 +175,9 @@ function CountUp({ to, suffix = "", className = "" }) {
 function HeroOrbs() {
   const shouldReduce = useReducedMotion();
   const orbs = [
-    { size: 560, top: "-14%",  left: "-10%", bg: "rgba(255,255,255,0.24)", dx: 22,  dy: -14, dur: 14 },
-    { size: 180, top: "22%",   left: "12%",  bg: "rgba(255,255,255,0.16)", dx: -14, dy: 10,  dur: 11 },
-    { size: 220, top: "50%",   left: "4%",   bg: "rgba(124,213,255,0.18)", dx: 18,  dy: 8,   dur: 16 },
-    { size: 150, top: "28%",   left: "72%",  bg: "rgba(255,255,255,0.14)", dx: -10, dy: 14,  dur: 12 },
-    { size: 400, top: "30%",   left: "82%",  bg: "rgba(255,255,255,0.20)", dx: -22, dy: -10, dur: 18 },
-    { size: 560, top: "62%",   left: "90%",  bg: "rgba(255,255,255,0.22)", dx: 16,  dy: 12,  dur: 20 },
-    { size: 130, top: "72%",   left: "66%",  bg: "rgba(255,255,255,0.14)", dx: -8,  dy: -14, dur: 13 },
+    { size: 560, top: "-14%",  left: "-10%", bg: "rgba(255,255,255,0.10)", dx: 22,  dy: -14, dur: 14 },
+    { size: 440, top: "38%",   left: "82%",  bg: "rgba(255,255,255,0.09)", dx: -22, dy: -10, dur: 18 },
+    { size: 520, top: "66%",   left: "90%",  bg: "rgba(124,213,255,0.08)", dx: 16,  dy: 12,  dur: 20 },
   ];
   return (
     <div aria-hidden="true" className="absolute inset-0 -z-[5] pointer-events-none overflow-hidden">
