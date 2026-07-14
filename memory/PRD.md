@@ -69,6 +69,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-02-14 — **Follow-up polish**: (a) Navbar bg made fully opaque — `.cinema-nav-bg` now solid `#08090A` and Navbar.jsx animated opacity range widened to `[0.88, 1]` so hero titles no longer bleed through. (b) Login card switched to new `.card-linear--solid` variant (solid `#0E0F12`, backdrop-blur off) — dot-grid no longer visible through the sign-in panel. (c) **Every CTA in the app pinned to 40px height** — updated `.btn-primary/.btn-brut/.btn-ghost/.btn-secondary/.clay-signal/.btn-coral/.cinema-cta-pill/.landing-cta-primary/.landing-cta-primary--xl/.landing-cta-ghost/.landing-plan-cta`. Padding switched from vertical `12-22px` to explicit `height: 40px` + `padding: 0 20-22px` on each. Consistent pill geometry across marketing + app.
 - 2026-02-14 — **Visual polish batch (CTA + backgrounds + navbar)**:
   - Primary CTA color changed globally to **white pill** (`#FFFFFF` bg, `#08090A` text). Affects `.btn-primary`, `.btn-brut`, `.clay-signal`, `.cinema-cta-pill`, `.landing-cta-primary`. Consistent Apple-style white hero CTA throughout marketing + app.
   - **Go Pro CTA reverted to amber gradient** (`#FFD180 → #FFB84C`) on `.landing-plan-cta--popular` — restores the "featured tier" differentiation lost during the earlier accent-color unification.

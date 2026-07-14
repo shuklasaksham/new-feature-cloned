@@ -186,11 +186,12 @@ body::before {
 
 /* ============================================================
    Buttons — White pill primary / Dark pill secondary
+   Unified height across every CTA in the app: 40px.
    ============================================================ */
 .btn-brut,
 .btn-primary {
-  height: 38px;
-  padding: 0 18px;
+  height: 40px;
+  padding: 0 20px;
   background: var(--primary-bg);
   color: var(--primary-fg);
   border: 1px solid var(--primary-bg);
@@ -228,8 +229,8 @@ body::before {
 
 .btn-ghost,
 .btn-secondary {
-  height: 38px;
-  padding: 0 18px;
+  height: 40px;
+  padding: 0 20px;
   background: var(--secondary-bg);
   color: var(--secondary-fg);
   border: 1px solid var(--hairline-strong);
@@ -263,18 +264,18 @@ body::before {
 
 /* Button sizes — pill geometry */
 .btn-sm { height: 32px; padding: 0 14px; font-size: 12.5px; gap: 5px; }
-.btn-lg { height: 44px; padding: 0 22px; font-size: 14px; gap: 8px; }
+.btn-lg { height: 40px; padding: 0 22px; font-size: 14px; gap: 8px; }
 
 /* Coral CTA — used for "Start a new project" empty-state moments */
 .btn-coral {
-  height: 44px;
-  padding: 0 26px;
+  height: 40px;
+  padding: 0 22px;
   background: var(--coral);
   color: #FFFFFF;
   border: 1px solid var(--coral);
   border-radius: 9999px;
   font-family: "Poppins", sans-serif;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -297,7 +298,8 @@ body::before {
 .clay-dark   { background: var(--surface-3); color: var(--text); border: 1px solid var(--hairline); border-radius: 9999px; }
 .clay-signal {
   background: var(--primary-bg); color: var(--primary-fg); border: 1px solid var(--primary-bg); border-radius: 9999px;
-  height: 38px; padding: 0 18px;
+  height: 40px; padding: 0 20px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   font-family: "Poppins", sans-serif; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; text-transform: none;
   transition: background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
 }
@@ -340,6 +342,15 @@ body::before {
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
           mask-composite: exclude;
+}
+
+/* Solid variant — used for surfaces (login, admin login, dialog panels)
+   where we don't want the background dot-grid bleeding through. */
+.card-linear--solid,
+.card-brut--solid {
+  background: #0E0F12;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .card-brut-hover:hover,
 .card-linear-hover:hover {
@@ -1596,10 +1607,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 
 /* CTAs */
 .landing-cta-primary {
-  display: inline-flex; align-items: center; gap: 10px;
-  padding: 14px 22px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  height: 40px; padding: 0 22px;
   font-family: "Poppins", sans-serif;
-  font-weight: 500; font-size: 14px; letter-spacing: 0.01em;
+  font-weight: 500; font-size: 13.5px; letter-spacing: 0.01em;
   color: #08090A;
   background: #FFFFFF;
   border-radius: 999px;
@@ -1613,12 +1624,12 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   transform: translateY(-1px);
 }
 .landing-cta-primary--xl {
-  padding: 22px 34px; font-size: 15px; border-radius: 999px;
+  height: 40px; padding: 0 22px; font-size: 13.5px; border-radius: 999px;
 }
 
 .landing-cta-ghost {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 12px 18px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; padding: 0 20px;
   font-family: "Poppins", sans-serif;
   font-weight: 500; font-size: 13px; letter-spacing: 0.02em;
   color: var(--text);
@@ -1730,7 +1741,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 
 .landing-plan-cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 12px 20px;
+  height: 40px; padding: 0 20px;
   font-family: "Poppins", sans-serif; font-weight: 500; font-size: 13.5px; letter-spacing: 0.01em;
   color: var(--text);
   background: rgba(255,255,255,0.04);
@@ -1787,7 +1798,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .cinema-nav-bg {
   position: absolute; inset: 0; z-index: -2;
-  background: rgba(8, 9, 10, 0.55);
+  background: #08090A;
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
 }
@@ -1835,8 +1846,8 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 .cinema-nav-cta { align-items: center; gap: 10px; }
 
 .cinema-cta-pill {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 16px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; padding: 0 20px;
   font-family: "Poppins", sans-serif;
   font-weight: 500; font-size: 13px; letter-spacing: 0.01em;
   color: #08090A;
@@ -1851,7 +1862,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   box-shadow: 0 14px 40px rgba(255,255,255,0.16), 0 2px 8px rgba(0,0,0,0.5);
   transform: translateY(-1px);
 }
-.cinema-cta-pill--sm { padding: 6px 12px; font-size: 12px; }
+.cinema-cta-pill--sm { height: 40px; padding: 0 16px; font-size: 12px; }
 
 .cinema-nav-mobile { display: none; align-items: center; gap: 8px; }
 @media (max-width: 1023px) { .cinema-nav-mobile { display: flex; } .cinema-nav-cta { display: none; } }

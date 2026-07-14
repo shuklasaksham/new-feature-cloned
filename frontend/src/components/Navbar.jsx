@@ -19,7 +19,7 @@ export default function Navbar() {
 
   // Scroll-based solidification.
   const { scrollY } = useScroll();
-  const bgOpacity = useTransform(scrollY, [0, 80], [0.35, 0.85]);
+  const bgOpacity = useTransform(scrollY, [0, 80], [0.88, 1]);
   const borderOpacity = useTransform(scrollY, [0, 80], [0, 0.08]);
 
   // Close mobile panel on route change.

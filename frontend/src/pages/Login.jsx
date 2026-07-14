@@ -132,7 +132,7 @@ export default function Login() {
             <p className="mt-4 text-[13.5px] text-[var(--text-2)]">Six-digit code · No passwords required</p>
           </div>
 
-          <div className="card-linear p-6 mt-8" data-testid="login-card">
+          <div className="card-linear card-linear--solid p-6 mt-8" data-testid="login-card">
             {phase === "pick" && (
               <>
                 <label className="block">
