@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
@@ -14,9 +14,15 @@ import {
   ClipboardPaste,
   Pencil,
   Trash2,
+  Plus,
+  Search,
+  FolderOpen,
+  Lock,
+  CircleDot,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
+import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
 
 // Quick-start seed briefs — one click drops a realistic messy paste in the
@@ -215,24 +221,65 @@ export default function Dashboard() {
   };
 
   const shouldReduce = useReducedMotion();
-  // Cinematic staggered entry matching Landing/Login. Section → section, top down.
+  const { user } = useAuth();
+
+  // ─── Search + status filter over the projects list ─────────────────
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");   // all | draft | in_progress | locked
+
+  const stats = useMemo(() => {
+    const total = projects.length;
+    let inProgress = 0, locked = 0;
+    for (const p of projects) {
+      if (p.status === "locked") locked += 1;
+      else if ((p.step || 1) > 1) inProgress += 1;
+    }
+    return { total, inProgress, locked, draft: total - inProgress - locked };
+  }, [projects]);
+
+  const filteredProjects = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return projects.filter((p) => {
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      if (statusFilter === "all") return true;
+      if (statusFilter === "locked") return p.status === "locked";
+      if (statusFilter === "in_progress") return p.status !== "locked" && (p.step || 1) > 1;
+      if (statusFilter === "draft") return p.status !== "locked" && (p.step || 1) === 1;
+      return true;
+    });
+  }, [projects, query, statusFilter]);
+
+  // Only show the onboarding "examples + what we produce" tiles for
+  // brand-new users. Once they have a project, they've seen the goods.
+  const hasProjects = !loading && projects.length > 0;
+
+  // Cinematic staggered entry matching Landing/Login.
   const container = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: shouldReduce ? 0 : 0.08, delayChildren: 0.05 } },
+    show: { opacity: 1, transition: { staggerChildren: shouldReduce ? 0 : 0.06, delayChildren: 0.04 } },
   };
   const item = {
-    hidden: { opacity: 0, y: shouldReduce ? 0 : 16 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
+    hidden: { opacity: 0, y: shouldReduce ? 0 : 12 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+  };
+
+  const greeting = (() => {
+    const first = (user?.name || user?.email || "").split(/[ .@]/)[0];
+    const h = new Date().getHours();
+    const timeOfDay = h < 5 ? "Still up" : h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+    return first ? `${timeOfDay}, ${first[0].toUpperCase()}${first.slice(1)}.` : `${timeOfDay}.`;
+  })();
+
+  const focusComposer = () => {
+    inputRef.current?.focus();
+    inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   return (
     <div className="dashboard-root relative min-h-full" data-testid="dashboard-page">
       <Seo title="Dashboard" path="/app" noindex />
 
-      {/* Cinematic dark backdrop — same `.hero-ambient` treatment used on
-         the Landing/Login pages so the app feels like one continuous universe.
-         Dashboard variant dims the dots + blue glow for a calmer working
-         surface (users spend real time here, not just glancing). */}
+      {/* Cinematic dark backdrop — dimmer version of the marketing ambient. */}
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
       <div
         aria-hidden="true"
@@ -244,26 +291,43 @@ export default function Dashboard() {
         variants={container}
         initial="hidden"
         animate="show"
-        className="relative max-w-[1400px] w-full mx-auto px-6 sm:px-8 md:px-10 py-6 md:py-8 flex flex-col gap-6 md:gap-8"
+        className="relative max-w-[1440px] w-full mx-auto px-6 sm:px-8 md:px-10 py-6 md:py-8 flex flex-col gap-5 md:gap-6"
       >
-        {/* Hero — compact one-liner, sized to leave room for the working area below. */}
-        <motion.div variants={item} className="text-center">
-          <span className="section-label"><span className="dot" />Client Operating System</span>
-          <h1
-            className="mt-2 font-display font-semibold tracking-[-0.03em] leading-[1.05] text-[28px] sm:text-[36px] md:text-[42px] text-[var(--text)]"
-            data-testid="dashboard-hero-headline"
+        {/* ─── Header — greeting + primary CTA + stats ────────────────── */}
+        <motion.header variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <p className="mono-tag text-muted text-[10px]">DASHBOARD</p>
+            <h1 className="mt-1.5 font-display font-semibold tracking-[-0.028em] leading-[1.1] text-[26px] sm:text-[30px] text-[var(--text)]" data-testid="dashboard-greeting">
+              {greeting}
+            </h1>
+            <p className="mt-1 text-[13px] text-[var(--text-3)]">
+              {hasProjects
+                ? `You have ${stats.total} project${stats.total === 1 ? "" : "s"} · ${stats.locked} locked · ${stats.inProgress} in progress.`
+                : "Paste a client conversation and Bracket does the thinking."}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={focusComposer}
+            className="clay-signal px-4 py-2.5 t-tag press inline-flex items-center gap-2 self-start sm:self-auto"
+            data-testid="dashboard-new-project-btn"
           >
-            Paste anything your client sent you.
-          </h1>
-          <p className="mt-2 max-w-[720px] mx-auto text-[13px] sm:text-[13.5px] text-[var(--text-2)] leading-relaxed">
-            Email · WhatsApp · Meeting notes · Voice transcript · Contract. Bracket figures out the rest — scope, deliverables, timeline, risks, docs.
-          </p>
-        </motion.div>
+            <Plus size={13} /> New project
+          </button>
+        </motion.header>
 
-        {/* Hero input — glassmorphic panel, the ONE primary action. */}
-        <motion.div variants={item} className="relative" data-testid="dashboard-hero-input-wrap">
+        {/* Stat pills — only show when the user has projects. */}
+        {hasProjects && (
+          <motion.div variants={item} className="grid grid-cols-3 gap-3" data-testid="dashboard-stats">
+            <StatCard label="Total projects" value={stats.total} icon={FolderOpen} accent="var(--text-2)" />
+            <StatCard label="In progress" value={stats.inProgress} icon={CircleDot} accent="#7CD5FF" />
+            <StatCard label="Locked" value={stats.locked} icon={Lock} accent="#2E5BFF" />
+          </motion.div>
+        )}
+
+        {/* ─── Composer — always the primary path. Big paste target. ──── */}
+        <motion.section variants={item} data-testid="dashboard-composer-section">
           <div className="dashboard-paste-panel liquid-glass relative overflow-hidden">
-            {/* Subtle corner glow — dimmed vs. the earlier version. */}
             <div
               aria-hidden="true"
               className="absolute -top-20 -right-20 h-[220px] w-[220px] rounded-full blur-[80px] opacity-[0.08] pointer-events-none"
@@ -317,164 +381,205 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </motion.div>
+        </motion.section>
 
-        {/* Working area — 3-column layout uses the full horizontal width so
-           everything fits on one screen without scrolling. Collapses on
-           smaller viewports. */}
-        <motion.div
-          variants={item}
-          className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1.1fr] gap-4 md:gap-5"
-          data-testid="dashboard-working-area"
-        >
-          {/* Column 1 — Quickstarts. */}
-          <div data-testid="dashboard-quickstart-wrap">
-            <div className="flex items-baseline justify-between mb-3">
-              <p className="mono-tag text-muted text-[10px]">START FROM AN EXAMPLE</p>
-              <p className="text-[10px] text-[var(--text-3)] hidden xl:block">populates the box</p>
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              {QUICK_STARTS.map((t) => {
-                const Icon = t.icon;
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    onClick={() => applyTemplate(t)}
-                    className="dashboard-tile dashboard-tile--row group text-left"
-                    data-testid={`dashboard-quickstart-${t.key}`}
-                  >
-                    <Icon size={14} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors shrink-0 mt-0.5" />
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-medium leading-tight truncate">{t.label}</p>
-                      <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug truncate">{t.kicker}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Column 2 — What Bracket produces. */}
-          <div data-testid="dashboard-outputs-wrap">
-            <p className="mono-tag text-muted text-[10px] mb-3">BRACKET PRODUCES</p>
-            <div className="grid grid-cols-2 gap-2">
-              {AI_OUTPUTS.map((o) => {
-                const Icon = o.icon;
-                return (
-                  <div key={o.label} className="dashboard-tile dashboard-tile--output">
-                    <Icon size={14} className="text-[var(--accent)]" />
-                    <p className="mt-1.5 text-[12.5px] font-medium leading-tight">{o.label}</p>
-                    <p className="mt-0.5 text-[10.5px] text-[var(--text-3)] leading-snug">{o.hint}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Column 3 — Recent projects. Wider — this is where users act. */}
-          <div data-testid="dashboard-recent-wrap">
-            <div className="flex items-baseline justify-between mb-3">
-              <p className="mono-tag text-muted text-[10px]">
-                RECENT · {loading ? "…" : projects.length}
-              </p>
-              {!loading && projects.length > 3 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllProjects((v) => !v)}
-                  className="text-[10px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
-                  data-testid="dashboard-recent-view-all"
-                >
-                  {showAllProjects ? "Fewer ←" : `View all →`}
-                </button>
-              )}
-            </div>
-            {loading ? (
-              <div className="grid grid-cols-1 gap-2" data-testid="dashboard-loading-skeleton" aria-busy="true">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="dashboard-tile p-3">
-                    <div className="skeleton-bar h-2.5 w-24 rounded" />
-                    <div className="skeleton-bar h-3 w-1/2 rounded mt-2" />
-                  </div>
-                ))}
+        {/* ─── With projects: projects list. Without: onboarding tiles. ─ */}
+        {loading ? (
+          <motion.div variants={item} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" aria-busy="true" data-testid="dashboard-loading-skeleton">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="dashboard-tile p-4">
+                <div className="skeleton-bar h-2.5 w-24 rounded" />
+                <div className="skeleton-bar h-3 w-1/2 rounded mt-3" />
+                <div className="skeleton-bar h-2.5 w-1/3 rounded mt-2" />
               </div>
-            ) : projects.length > 0 ? (
-              <div
-                className={`grid grid-cols-1 gap-2 ${showAllProjects ? "max-h-[54vh] overflow-y-auto pr-1 dash-scroll" : ""}`}
-                data-testid="dashboard-recent-list"
-              >
-                {(showAllProjects ? projects : projects.slice(0, 3)).map((p) => {
-                  const isLocked = p.status === "locked";
-                  const stepPct = Math.round(((p.step || 1) / 5) * 100);
-                  return (
-                    <div
-                      key={p.id}
-                      className="dashboard-recent-card group relative"
-                      data-testid={`dashboard-recent-${p.id}`}
+            ))}
+          </motion.div>
+        ) : hasProjects ? (
+          <>
+            {/* Projects list header — search + filter tabs */}
+            <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3" data-testid="dashboard-projects-header">
+              <p className="mono-tag text-muted text-[10px]">YOUR PROJECTS · {filteredProjects.length}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="dashboard-search relative">
+                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none" />
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search…"
+                    className="dashboard-search-input"
+                    data-testid="dashboard-search-input"
+                  />
+                </div>
+                <div className="dashboard-filter-tabs">
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "in_progress", label: "In progress" },
+                    { key: "locked", label: "Locked" },
+                    { key: "draft", label: "Draft" },
+                  ].map((f) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setStatusFilter(f.key)}
+                      className={`dashboard-filter-tab ${statusFilter === f.key ? "active" : ""}`}
+                      data-testid={`dashboard-filter-${f.key}`}
                     >
-                      <Link to={`/project/${p.id}`} className="block p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="font-medium text-[13px] truncate flex-1 pr-14">{p.name}</p>
-                          <span
-                            className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[9.5px]"
-                            style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
-                          >
-                            {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
-                          <span>Step {p.step || 1} / 5</span>
-                          <span>·</span>
-                          <span>{formatDate(p.updated_at)}</span>
-                        </div>
-                        <div className="mt-2 h-[2px] bg-[var(--surface-2)] rounded-full overflow-hidden">
-                          <div
-                            className="h-full transition-all duration-500"
-                            style={{
-                              width: `${stepPct}%`,
-                              background: isLocked
-                                ? "linear-gradient(90deg, #2E5BFF, #7CD5FF)"
-                                : "linear-gradient(90deg, var(--text-2), var(--text-3))",
-                            }}
-                          />
-                        </div>
-                      </Link>
-                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); renameProject(p); }}
-                          className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
-                          title="Rename"
-                          aria-label="Rename project"
-                          data-testid={`dashboard-recent-rename-${p.id}`}
-                        >
-                          <Pencil size={10} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
-                          className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--danger)] transition-colors"
-                          title="Delete"
-                          aria-label="Delete project"
-                          data-testid={`dashboard-recent-delete-${p.id}`}
-                        >
-                          <Trash2 size={10} />
-                        </button>
-                      </div>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div variants={item} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" data-testid="dashboard-projects-grid">
+              {filteredProjects.length === 0 ? (
+                <div className="col-span-full dashboard-tile dashboard-tile--empty flex items-center justify-center h-[100px]">
+                  <p className="text-[12.5px] text-[var(--text-3)]">No projects match your filters.</p>
+                </div>
+              ) : (
+                filteredProjects.map((p) => (
+                  <ProjectCard
+                    key={p.id}
+                    project={p}
+                    onRename={renameProject}
+                    onDelete={deleteProject}
+                  />
+                ))
+              )}
+            </motion.div>
+          </>
+        ) : (
+          // ─── Empty state (first-time user) — teach the product. ───────
+          <>
+            <motion.div variants={item} data-testid="dashboard-quickstart-wrap">
+              <p className="mono-tag text-muted text-[10px] mb-3">
+                OR START FROM AN EXAMPLE
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {QUICK_STARTS.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => applyTemplate(t)}
+                      className="dashboard-tile group text-left"
+                      data-testid={`dashboard-quickstart-${t.key}`}
+                    >
+                      <Icon size={15} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors" />
+                      <p className="mt-3 text-[13.5px] font-medium leading-tight">{t.label}</p>
+                      <p className="mt-1 text-[11px] text-[var(--text-3)] leading-snug">{t.kicker}</p>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+
+            <motion.div variants={item} data-testid="dashboard-outputs-wrap">
+              <p className="mono-tag text-muted text-[10px] mb-3">
+                BRACKET PRODUCES
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {AI_OUTPUTS.map((o) => {
+                  const Icon = o.icon;
+                  return (
+                    <div key={o.label} className="dashboard-tile dashboard-tile--output">
+                      <Icon size={15} className="text-[var(--accent)]" />
+                      <p className="mt-2 text-[13.5px] font-medium leading-tight">{o.label}</p>
+                      <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug">{o.hint}</p>
                     </div>
                   );
                 })}
               </div>
-            ) : (
-              <div className="dashboard-tile dashboard-tile--empty flex items-center justify-center h-[120px]">
-                <p className="text-[12px] text-[var(--text-3)] text-center">
-                  Your first project<br />will show up here.
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
+            </motion.div>
+          </>
+        )}
       </motion.main>
+    </div>
+  );
+}
+
+// ─── Stat pill ──────────────────────────────────────────────────────────
+function StatCard({ label, value, icon: Icon, accent }) {
+  return (
+    <div className="dashboard-stat-card" data-testid={`dashboard-stat-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+      <div className="flex items-center justify-between">
+        <p className="mono-tag text-muted text-[10px]">{label.toUpperCase()}</p>
+        <Icon size={12} style={{ color: accent }} />
+      </div>
+      <p className="mt-2 font-display font-semibold tracking-[-0.02em] text-[28px] leading-none">{value}</p>
+    </div>
+  );
+}
+
+// ─── Project card — actions ALWAYS visible on the card, no hover trick.
+function ProjectCard({ project: p, onRename, onDelete }) {
+  const isLocked = p.status === "locked";
+  const stepPct = Math.round(((p.step || 1) / 5) * 100);
+  return (
+    <div
+      className="dashboard-project-card relative"
+      data-testid={`dashboard-recent-${p.id}`}
+    >
+      <Link to={`/project/${p.id}`} className="block p-4">
+        <div className="flex items-start justify-between gap-3">
+          <p className="font-medium text-[14px] leading-snug line-clamp-2 flex-1">{p.name}</p>
+          <span
+            className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[9.5px]"
+            style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
+          >
+            {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
+          </span>
+        </div>
+        <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
+          <span>Step {p.step || 1} / 5</span>
+          <span>·</span>
+          <span>{formatDate(p.updated_at)}</span>
+        </div>
+        <div className="mt-3 h-[3px] bg-[var(--surface-2)] rounded-full overflow-hidden">
+          <div
+            className="h-full transition-all duration-500"
+            style={{
+              width: `${stepPct}%`,
+              background: isLocked
+                ? "linear-gradient(90deg, #2E5BFF, #7CD5FF)"
+                : "linear-gradient(90deg, var(--text-2), var(--text-3))",
+            }}
+          />
+        </div>
+      </Link>
+      <div className="dashboard-project-actions" data-testid={`dashboard-project-actions-${p.id}`}>
+        <Link
+          to={`/project/${p.id}`}
+          className="dashboard-project-action"
+          title="Open project"
+          data-testid={`dashboard-open-${p.id}`}
+          aria-label="Open project"
+        >
+          <ArrowRight size={12} /> Open
+        </Link>
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRename(p); }}
+          className="dashboard-project-action dashboard-project-action--icon"
+          title="Rename"
+          aria-label="Rename project"
+          data-testid={`dashboard-recent-rename-${p.id}`}
+        >
+          <Pencil size={12} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(p); }}
+          className="dashboard-project-action dashboard-project-action--icon dashboard-project-action--danger"
+          title="Delete"
+          aria-label="Delete project"
+          data-testid={`dashboard-recent-delete-${p.id}`}
+        >
+          <Trash2 size={12} />
+        </button>
+      </div>
     </div>
   );
 }
