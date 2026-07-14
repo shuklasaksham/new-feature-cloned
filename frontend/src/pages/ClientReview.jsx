@@ -385,96 +385,113 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
   };
 
   return (
-    <div className="card-brut p-5 sm:p-6" data-testid="review-accept-form">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="mono-label">{"{ sign off }"}</p>
-          <p className="text-xs text-muted mt-1">
-            {checkedCount} / {items.length} items
-          </p>
-        </div>
-        <button onClick={toggleAll} className="mono-tag" data-testid="review-toggle-all">
-          {allChecked ? "UNCHECK ALL" : "ACCEPT ALL"}
-        </button>
-      </div>
-
-      <div className="mt-4 max-h-64 overflow-y-auto border border-ink divide-y divide-ink">
-        {items.map((it) => (
-          <label
-            key={it.key}
-            className={`flex items-start gap-3 p-3 cursor-pointer text-sm ${
-              acceptances[it.key] ? "bg-chalk" : "bg-paper hover:bg-chalk"
-            }`}
-            data-testid={`review-item-${it.key}`}
-          >
-            <input
-              type="checkbox"
-              checked={!!acceptances[it.key]}
-              onChange={() => toggle(it.key)}
-              className="mt-1 accent-signal"
-            />
-            <div className="min-w-0">
-              <p className="mono-tag text-muted">{it.group}</p>
-              <p className="mt-1 break-words">{it.label}</p>
-            </div>
-          </label>
-        ))}
-      </div>
-
-      <div className="mt-5 border-t border-ink pt-4">
-        <label className="block">
-          <span className="mono-tag text-muted flex items-center gap-2">
-            <Pen size={12} /> YOUR SIGNATURE (TYPED NAME)
-          </span>
-          <input
-            className="input-line mt-2"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Your full name"
-            data-testid="review-signature-name"
-          />
-          <span
-            className="block mt-2 font-display text-2xl text-ink italic min-h-[36px]"
-            data-testid="review-signature-preview"
-          >
-            {name || "—"}
-          </span>
-        </label>
-        <label className="block mt-3">
-          <span className="mono-tag text-muted">ROLE (OPTIONAL)</span>
-          <input
-            className="input-line mt-2"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            placeholder="e.g. CEO, Marketing Lead"
-            data-testid="review-signature-role"
-          />
-        </label>
-      </div>
-
-      {err && (
-        <p className="mt-3 text-sm text-danger" data-testid="review-accept-error">
-          {err}
+    <div className="review-accept-form" data-testid="review-accept-form">
+      <div className="mb-6">
+        <p className="mono-tag text-signal text-[10.5px]">SIGN OFF</p>
+        <h2 className="mt-1 font-display text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[var(--text)]">
+          Confirm everything looks right.
+        </h2>
+        <p className="mt-2 text-sm text-[var(--text-2)]">
+          Tick each item you agree with, sign your name, and we&apos;ll send the project owner your acceptance.
         </p>
-      )}
+      </div>
 
-      <button
-        type="button"
-        onClick={submit}
-        disabled={submitting || !allChecked || !name.trim()}
-        className="btn-brut mt-5 w-full justify-center"
-        data-testid="review-accept-submit"
-      >
-        {submitting ? "Signing…" : "Sign & send"} <ArrowRight size={14} />
-      </button>
-      <button
-        type="button"
-        onClick={onCancel}
-        className="btn-ghost mt-2 w-full justify-center"
-        data-testid="review-accept-cancel"
-      >
-        Back
-      </button>
+      <div className="review-accept-grid">
+        {/* Left — every checklist item visible, no inner scroll. */}
+        <div>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <p className="mono-tag text-muted text-[10.5px]">
+              {checkedCount} / {items.length} · ACCEPTANCE ITEMS
+            </p>
+            <button
+              onClick={toggleAll}
+              className="mono-tag text-signal hover:text-[var(--text)] transition-colors text-[10.5px]"
+              data-testid="review-toggle-all"
+              type="button"
+            >
+              {allChecked ? "UNCHECK ALL" : "ACCEPT ALL"}
+            </button>
+          </div>
+          <div className="review-accept-items">
+            {items.map((it) => (
+              <label
+                key={it.key}
+                className={`review-accept-item ${acceptances[it.key] ? "is-checked" : ""}`}
+                data-testid={`review-item-${it.key}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!acceptances[it.key]}
+                  onChange={() => toggle(it.key)}
+                  className="review-accept-checkbox"
+                />
+                <div className="min-w-0">
+                  <p className="mono-tag text-muted text-[10px]">{it.group}</p>
+                  <p className="mt-1 text-sm break-words text-[var(--text)]">{it.label}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Right — signature panel */}
+        <div className="review-accept-signature">
+          <label className="block">
+            <span className="mono-tag text-muted flex items-center gap-2 text-[10.5px]">
+              <Pen size={12} /> YOUR SIGNATURE
+            </span>
+            <input
+              className="review-accept-input mt-2"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Type your full name"
+              data-testid="review-signature-name"
+            />
+            <span
+              className="block mt-3 font-display text-[26px] italic text-[var(--text)] min-h-[36px] leading-tight"
+              data-testid="review-signature-preview"
+            >
+              {name || "—"}
+            </span>
+          </label>
+          <label className="block mt-4">
+            <span className="mono-tag text-muted text-[10.5px]">ROLE (OPTIONAL)</span>
+            <input
+              className="review-accept-input mt-2"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              placeholder="e.g. CEO, Marketing Lead"
+              data-testid="review-signature-role"
+            />
+          </label>
+
+          {err && (
+            <p className="mt-4 text-sm text-danger" data-testid="review-accept-error">
+              {err}
+            </p>
+          )}
+
+          <div className="mt-6 flex flex-col sm:flex-row-reverse gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={submitting || !allChecked || !name.trim()}
+              className="btn-primary flex-1 justify-center"
+              data-testid="review-accept-submit"
+            >
+              {submitting ? "Signing…" : "Sign & send"} <ArrowRight size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="btn-ghost sm:w-auto justify-center"
+              data-testid="review-accept-cancel"
+            >
+              Back to document
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -524,80 +541,97 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
 
   if (phase === "write") {
     return (
-      <div className="card-brut p-5 sm:p-6" data-testid="review-reject-write">
-        <div className="flex items-center gap-2">
-          <AlertTriangle size={16} className="text-danger" />
-          <p className="mono-label">{"{ raise concerns }"}</p>
+      <div className="review-accept-form" data-testid="review-reject-write">
+        <div className="mb-6">
+          <p className="mono-tag text-danger text-[10.5px] inline-flex items-center gap-2">
+            <AlertTriangle size={12} /> RAISE CONCERNS
+          </p>
+          <h2 className="mt-1 font-display text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[var(--text)]">
+            What&apos;s not working?
+          </h2>
+          <p className="mt-2 text-sm text-[var(--text-2)]">
+            Tell them what isn&apos;t working. Bracket will help shape your concern into specific suggestions
+            before it&apos;s sent.
+          </p>
         </div>
-        <p className="mt-3 text-sm text-muted">
-          Tell them what isn&apos;t working. Bracket will help shape your concern into specific suggestions
-          before it&apos;s sent.
-        </p>
         <textarea
-          rows={6}
+          rows={7}
           maxLength={4000}
-          className="textarea-brut mt-4"
+          className="review-accept-input"
+          style={{ height: "auto", padding: "12px 14px", resize: "vertical" }}
           placeholder="What's the worry? Specifics help — scope, timing, deliverables, anything."
           value={concerns}
           onChange={(e) => setConcerns(e.target.value)}
           data-testid="review-concerns"
         />
         {err && <p className="mt-2 text-sm text-danger" data-testid="review-reject-error">{err}</p>}
-        <button
-          type="button"
-          onClick={getSuggestions}
-          disabled={loading}
-          className="btn-brut mt-4 w-full justify-center"
-          data-testid="review-get-suggestions"
-        >
-          {loading ? (
-            <>
-              <Loader2 size={14} className="animate-spin" /> Thinking…
-            </>
-          ) : (
-            <>
-              See Bracket suggestions <ArrowRight size={14} />
-            </>
-          )}
-        </button>
-        <button onClick={onCancel} className="btn-ghost mt-2 w-full justify-center" data-testid="review-reject-cancel">
-          Back
-        </button>
+        <div className="mt-5 flex flex-col sm:flex-row-reverse gap-2">
+          <button
+            type="button"
+            onClick={getSuggestions}
+            disabled={loading}
+            className="btn-primary flex-1 justify-center"
+            data-testid="review-get-suggestions"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={14} className="animate-spin" /> Thinking…
+              </>
+            ) : (
+              <>
+                See Bracket suggestions <ArrowRight size={14} />
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="btn-ghost sm:w-auto justify-center"
+            data-testid="review-reject-cancel"
+          >
+            Back to document
+          </button>
+        </div>
       </div>
     );
   }
 
   // phase === suggestions
   return (
-    <div className="card-brut p-5 sm:p-6 max-h-[78vh] overflow-y-auto" data-testid="review-reject-suggestions">
-      <p className="mono-label">{"{ before you send }"}</p>
+    <div className="review-accept-form" data-testid="review-reject-suggestions">
+      <div className="mb-6">
+        <p className="mono-tag text-signal text-[10.5px]">BEFORE YOU SEND</p>
+        <h2 className="mt-1 font-display text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[var(--text)]">
+          Sharper phrasing, faster reply.
+        </h2>
+      </div>
       {suggestions?.summary && (
-        <p className="mt-3 text-sm italic text-muted">{suggestions.summary}</p>
+        <p className="text-sm italic text-[var(--text-2)]">{suggestions.summary}</p>
       )}
-      <ul className="mt-4 space-y-4">
+      <ul className="mt-5 space-y-4">
         {(suggestions?.suggestions || []).map((s, i) => (
           <li key={i} className="border-l-2 border-signal pl-4">
-            <p className="font-display text-base">{i + 1}. {s.title}</p>
-            <p className="text-xs mt-1">
-              <span className="mono-tag">SAY →</span> {s.what_to_say}
+            <p className="font-display text-base text-[var(--text)]">{i + 1}. {s.title}</p>
+            <p className="text-xs mt-1 text-[var(--text-2)]">
+              <span className="mono-tag text-signal">SAY →</span> {s.what_to_say}
             </p>
-            <p className="text-xs mt-1">
-              <span className="mono-tag">CHANGE →</span> {s.what_to_change}
+            <p className="text-xs mt-1 text-[var(--text-2)]">
+              <span className="mono-tag text-signal">CHANGE →</span> {s.what_to_change}
             </p>
           </li>
         ))}
       </ul>
       {suggestions?.watch_for && (
-        <p className="mono-tag text-danger mt-4">WATCH FOR · {suggestions.watch_for}</p>
+        <p className="mono-tag text-danger mt-5 text-[10.5px]">WATCH FOR · {suggestions.watch_for}</p>
       )}
 
-      <div className="mt-5 border-t border-ink pt-4">
+      <div className="mt-6 pt-5 border-t border-white/8">
         <label className="block">
-          <span className="mono-tag text-muted flex items-center gap-2">
-            <Pen size={12} /> YOUR SIGNATURE (TYPED NAME)
+          <span className="mono-tag text-muted flex items-center gap-2 text-[10.5px]">
+            <Pen size={12} /> YOUR SIGNATURE
           </span>
           <input
-            className="input-line mt-2"
+            className="review-accept-input mt-2"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your full name"
@@ -605,9 +639,9 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
           />
         </label>
         <label className="block mt-3">
-          <span className="mono-tag text-muted">ROLE (OPTIONAL)</span>
+          <span className="mono-tag text-muted text-[10.5px]">ROLE (OPTIONAL)</span>
           <input
-            className="input-line mt-2"
+            className="review-accept-input mt-2"
             value={role}
             onChange={(e) => setRole(e.target.value)}
             placeholder="e.g. CEO, Marketing Lead"
@@ -616,25 +650,27 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
         </label>
       </div>
 
-      {err && <p className="mt-2 text-sm text-danger" data-testid="review-reject-confirm-error">{err}</p>}
+      {err && <p className="mt-3 text-sm text-danger" data-testid="review-reject-confirm-error">{err}</p>}
 
-      <button
-        type="button"
-        onClick={confirm}
-        disabled={loading || !name.trim()}
-        className="btn-brut mt-5 w-full justify-center"
-        data-testid="review-reject-confirm"
-      >
-        {loading ? "Sending…" : "Send concerns"} <ArrowRight size={14} />
-      </button>
-      <button
-        type="button"
-        onClick={() => setPhase("write")}
-        className="btn-ghost mt-2 w-full justify-center"
-        data-testid="review-reject-back"
-      >
-        Edit my concerns
-      </button>
+      <div className="mt-6 flex flex-col sm:flex-row-reverse gap-2">
+        <button
+          type="button"
+          onClick={confirm}
+          disabled={loading || !name.trim()}
+          className="btn-primary flex-1 justify-center"
+          data-testid="review-reject-confirm"
+        >
+          {loading ? "Sending…" : "Send concerns"} <ArrowRight size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setPhase("write")}
+          className="btn-ghost sm:w-auto justify-center"
+          data-testid="review-reject-back"
+        >
+          Edit my concerns
+        </button>
+      </div>
     </div>
   );
 }

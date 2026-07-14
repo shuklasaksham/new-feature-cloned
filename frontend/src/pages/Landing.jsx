@@ -610,7 +610,7 @@ const BENTO = [
     tag: "DECISION",
     title: "Decisions backed by evidence.",
     hint: "Understand trade-offs and move forward with confidence.",
-    img: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&q=80",
+    img: "https://images.unsplash.com/photo-1523726491678-bf852e717f6a?auto=format&fit=crop&w=800&q=80",
   },
   {
     span: "col-span-1 md:col-span-1",
