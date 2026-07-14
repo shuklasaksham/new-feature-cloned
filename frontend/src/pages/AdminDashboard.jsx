@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminProjectDetailModal from "./AdminProjectDetailModal";
+import { useDialog } from "../components/Dialog";
 
 const STATUS_TAG = {
   draft:       "bg-[var(--surface-3)] text-[var(--text-3)]",
@@ -25,6 +26,7 @@ const STATUS_TAG = {
 };
 
 export default function AdminDashboard() {
+  const { confirm: confirmDialog } = useDialog();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -164,7 +166,14 @@ export default function AdminDashboard() {
   };
 
   const doPurgeGuests = async () => {
-    if (!window.confirm("Delete ALL guest users + their data across the workspace? This cannot be undone.")) return;
+    const ok = await confirmDialog({
+      title: "Purge all guest users?",
+      message: "Delete ALL guest users + their projects across the workspace. This cannot be undone.",
+      confirmLabel: "Purge guests",
+      cancelLabel: "Cancel",
+      tone: "danger",
+    });
+    if (!ok) return;
     setPurging(true);
     try {
       const { data } = await api.post("/admin/purge-guests");

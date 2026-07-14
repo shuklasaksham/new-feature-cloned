@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
+import { useDialog } from "../components/Dialog";
 
 // Quick-start seed briefs — one click drops a realistic messy paste in the
 // hero input so a curious user can watch Bracket work without typing a word.
@@ -129,6 +130,7 @@ const RECENT_STATUS_LABEL = { draft: "DRAFT", in_progress: "IN PROGRESS", locked
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { prompt: promptDialog, confirm: confirmDialog } = useDialog();
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paste, setPaste] = useState("");
@@ -190,7 +192,13 @@ export default function Dashboard() {
   // Optimistic rename — prompt, PATCH, patch local state on success. Keeps
   // the interaction snappy on the dashboard.
   const renameProject = async (p) => {
-    const nextName = window.prompt("Rename project:", p.name);
+    const nextName = await promptDialog({
+      title: "Rename project",
+      message: "Give this project a clearer name.",
+      defaultValue: p.name,
+      placeholder: "New project name",
+      confirmLabel: "Save",
+    });
     const trimmed = (nextName || "").trim();
     if (!trimmed || trimmed === p.name) return;
     try {
@@ -204,7 +212,14 @@ export default function Dashboard() {
 
   // Confirm + DELETE. Removes from local list on success.
   const deleteProject = async (p) => {
-    if (!window.confirm(`Delete "${p.name}"? This can't be undone.`)) return;
+    const ok = await confirmDialog({
+      title: `Delete "${p.name}"?`,
+      message: "This can't be undone. All associated inputs and generated outputs will be permanently removed.",
+      confirmLabel: "Delete project",
+      cancelLabel: "Keep it",
+      tone: "danger",
+    });
+    if (!ok) return;
     try {
       await api.delete(`/projects/${p.id}`);
       setProjects((list) => list.filter((x) => x.id !== p.id));

@@ -105,8 +105,7 @@ export default function ProjectFlow() {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
-      // Use alert as a last-resort; toast isn't imported here.
-      window.alert(`Couldn't download PDF — ${e.message || e}`);
+      toast.error(`Couldn't download PDF — ${e.message || e}`);
     }
   };
 

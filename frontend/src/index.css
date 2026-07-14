@@ -344,6 +344,105 @@ body::before {
           mask-composite: exclude;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Bracket dialog — replaces browser alert/confirm/prompt with a frosted
+   card that matches the login surface.
+   ═══════════════════════════════════════════════════════════════════════ */
+.bracket-dialog-overlay {
+  position: fixed; inset: 0;
+  z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(3, 4, 6, 0.66);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: bracketDialogOverlayIn 220ms cubic-bezier(.16, 1, .3, 1);
+}
+.bracket-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 28px 24px 24px;
+  border-radius: 16px;
+  animation: bracketDialogCardIn 320ms cubic-bezier(.16, 1, .3, 1);
+}
+.bracket-dialog-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px;
+  color: var(--text-3);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: color .2s ease, background .2s ease, border-color .2s ease;
+}
+.bracket-dialog-close:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.10);
+}
+.bracket-dialog-body { display: flex; flex-direction: column; gap: 14px; }
+.bracket-dialog-title {
+  font-family: "Poppins", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  padding-right: 32px;
+}
+.bracket-dialog-message {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+.bracket-dialog-input {
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text);
+  font-size: 14px;
+  transition: border-color .2s ease, background .2s ease;
+}
+.bracket-dialog-input::placeholder { color: var(--text-3); }
+.bracket-dialog-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.18);
+}
+.bracket-dialog-actions {
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+  margin-top: 6px;
+}
+
+/* Danger tone — used for destructive confirms. Renders on the primary
+   button variant when tone="danger" is passed to the dialog. */
+.btn-primary.btn-danger,
+.btn-brut.btn-danger {
+  background: var(--danger, #EF4444);
+  color: #FFFFFF;
+  border-color: var(--danger, #EF4444);
+}
+.btn-primary.btn-danger:hover:not(:disabled),
+.btn-brut.btn-danger:hover:not(:disabled) {
+  background: #DC2626;
+  border-color: #DC2626;
+}
+
+@keyframes bracketDialogOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes bracketDialogCardIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bracket-dialog-overlay, .bracket-dialog { animation: none; }
+}
+
 /* Frosted variant — glass panel matching the top-nav recipe. Used for
    surfaces that overlay the ambient dot-grid (login, admin login) where
    we want the same premium translucency the navbar has. */
@@ -706,6 +805,22 @@ body::before {
   color: #FFFFFF;
   border-color: var(--step-active);
   box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.22);
+  animation: stepActivePulse 1.8s cubic-bezier(.4, 0, .6, 1) infinite;
+}
+@keyframes stepActivePulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px rgba(94, 106, 210, 0.22),
+      0 0 0 0 rgba(94, 106, 210, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(94, 106, 210, 0.28),
+      0 0 0 10px rgba(94, 106, 210, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-node.is-active .step-num { animation: none; }
 }
 .step-node.is-active .dot { background: var(--step-active); }
 

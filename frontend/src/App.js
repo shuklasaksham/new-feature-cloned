@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
 import ScrollToTop from "./components/ScrollToTop";
 import PageLoader from "./components/PageLoader";
+import { DialogProvider } from "./components/Dialog";
 import { AuthProvider } from "./lib/AuthContext";
 
 import Landing from "./pages/Landing";
@@ -39,6 +40,7 @@ export default function App() {
     <HelmetProvider>
       <PageLoader />
       <AuthProvider>
+        <DialogProvider>
         <BrowserRouter>
         <ScrollToTop />
         <Toaster position="top-right" richColors />
@@ -79,6 +81,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+        </DialogProvider>
     </AuthProvider>
     </HelmetProvider>
   );

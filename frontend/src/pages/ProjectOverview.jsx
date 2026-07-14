@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
+import { useDialog } from "../components/Dialog";
 
 const STEPS = [
   {
@@ -194,6 +195,7 @@ function StepSummary({ step, project }) {
 export default function ProjectOverview() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { confirm: confirmDialog } = useDialog();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -222,10 +224,16 @@ export default function ProjectOverview() {
 
   const isLocked = project?.status === "locked";
 
-  const editStep = (stepN) => {
+  const editStep = async (stepN) => {
     // If locked, prompt unlock first; otherwise go straight to the step
     if (isLocked) {
-      if (!window.confirm("This project is locked. Unlock to edit?")) return;
+      const ok = await confirmDialog({
+        title: "This project is locked",
+        message: "Unlock it to edit? The client-review status will stay intact.",
+        confirmLabel: "Unlock & edit",
+        cancelLabel: "Keep locked",
+      });
+      if (!ok) return;
       unlockAndGo(stepN);
       return;
     }
