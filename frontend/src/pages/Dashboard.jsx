@@ -154,15 +154,19 @@ export default function Dashboard() {
   const wordCount = paste.trim().split(/\s+/).filter(Boolean).length;
   const canSubmit = paste.trim().length >= 20 && !submitting;
 
-  // Hand off the paste to a new project's Step 1. We stash the paste in
-  // sessionStorage keyed by project id so Step 1 can hydrate it on mount
-  // (avoids URL length limits + accidental sharing of pastes via link).
+  // Hand off the paste to a new project's Step 1. Backend uses the raw
+  // paste to generate a proper AI project title (falls back to the client
+  // heuristic if AI generation fails). We stash the paste in sessionStorage
+  // so Step 1 can auto-submit on mount.
   const structureBrief = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
       const derivedName = deriveProjectName(paste);
-      const { data } = await api.post("/projects", { project_name: derivedName });
+      const { data } = await api.post("/projects", {
+        project_name: derivedName,
+        raw_paste: paste,
+      });
       try {
         window.sessionStorage.setItem(`bracket:pending-paste:${data.id}`, paste);
       } catch (e) { /* private-mode / quota — Step 1 shows empty input, no crash */ }

@@ -156,6 +156,39 @@ async def run_field_suggestions(
         return []
 
 
+async def generate_project_title(raw_paste: str) -> str:
+    """Given a messy client paste, generate a short, human project title
+    (3-6 words, Title Case) that names the *project*, not the client's greeting.
+    Falls back to empty string on failure — caller substitutes a timestamped default."""
+    text = (raw_paste or "").strip()
+    if not text:
+        return ""
+    prompt = (
+        "You are naming a project for a freelance designer's dashboard. "
+        "The user pasted a messy client conversation (email / WhatsApp / brief / notes). "
+        "Return a short, human project title that a designer would write in their dashboard — "
+        "3 to 6 words, Title Case, no quotes, no trailing punctuation. "
+        "Name the project itself (e.g. 'Fintech Landing Redesign', 'Loop Coffee Brand Launch', "
+        "'B2B Marketing Site Refresh'), NOT the client's greeting or first sentence. "
+        "If the paste doesn't imply a clear project, return a generic but useful label "
+        "based on the domain (e.g. 'Client Brief').\n\n"
+        f"PASTE:\n---\n{text[:4000]}\n---\n\n"
+        'Return JSON only: {"title": "..."}'
+    )
+    try:
+        data = await _run_fast(prompt)
+        title = str(data.get("title", "")).strip()
+        # Strip surrounding quotes / trailing punctuation defensively
+        title = title.strip("\"'").rstrip(".,;:")
+        # Enforce sane length
+        if len(title) > 80:
+            title = title[:77].rstrip() + "…"
+        return title
+    except Exception as e:
+        logger.warning("generate_project_title failed: %s", e)
+        return ""
+
+
 async def extract_situation_from_paste(raw_paste: str) -> dict:
     """Given a messy client paste (WhatsApp/email/notes/brief), extract the three
     situation-framing fields (what / who / unclear) via a fast Haiku pass.

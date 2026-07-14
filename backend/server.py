@@ -36,6 +36,7 @@ from ai_engine import (
     extract_situation_from_paste,
     extract_context_from_paste,
     extract_decision_from_paste,
+    generate_project_title,
 )
 from emailer import send_thanks_email, send_review_outcome_email
 from auth import (
@@ -1117,6 +1118,10 @@ async def admin_analytics(request: Request):
 class CreateProjectIn(_BM):
     project_name: str = _Fd(min_length=1, max_length=120)
     engine: str = "claude"
+    # Optional: when the client provides the raw paste at creation time,
+    # backend generates a proper AI title from it and overrides `project_name`
+    # (which is a heuristic derivation from the first ~6 words of the paste).
+    raw_paste: str = _Fd(default="", max_length=20000)
 
 
 @api.post("/projects", response_model=ProjectOut)
@@ -1124,10 +1129,23 @@ async def create_project(body: CreateProjectIn, request: Request):
     """Auth required. Owner is whoever is signed in."""
     user = await current_user(request, db)
     pname = body.project_name.strip()
+    name_source = "heuristic"
+    # If the client sent the raw paste, ask Haiku to name the project.
+    # Falls back silently to `project_name` if generation fails.
+    raw_paste = (body.raw_paste or "").strip()
+    if raw_paste and len(raw_paste) >= 20:
+        try:
+            ai_title = await generate_project_title(raw_paste)
+            if ai_title and len(ai_title) >= 3:
+                pname = ai_title[:120]
+                name_source = "ai"
+        except Exception as e:
+            logger.warning("project title generation failed: %s", e)
     now = _now_iso()
     doc = {
         "id": _uuid(),
         "name": pname,
+        "name_source": name_source,
         "creator_name": user.get("name", ""),
         "creator_email": user["email"],
         "owner_user_id": user["user_id"],
@@ -1233,7 +1251,7 @@ async def rename_project(project_id: str, body: RenameProjectIn, request: Reques
     p = await _get_owned_project_or_404(project_id, request)
     await db.projects.update_one(
         {"id": p["id"]},
-        {"$set": {"name": body.name.strip(), "updated_at": _now_iso()}},
+        {"$set": {"name": body.name.strip(), "name_source": "user", "updated_at": _now_iso()}},
     )
     return await _get_project_or_404(project_id)
 
@@ -1345,17 +1363,27 @@ async def step_situation(project_id: str, body: SituationIn):
     situation_input = {**payload}
     if body.raw_paste:
         situation_input["raw_paste"] = body.raw_paste
+    # If the project title was never set by the user (heuristic derivation
+    # from the client heuristic OR a stale name from an older create flow),
+    # re-generate it now from the paste. Skip if user has renamed it.
+    update_fields = {
+        "situation_input": situation_input,
+        "framing": framing,
+        "step": max(2, project.get("step", 1)),
+        "status": "in_progress",
+        "updated_at": _now_iso(),
+    }
+    if body.raw_paste and project.get("name_source", "heuristic") != "user":
+        try:
+            ai_title = await generate_project_title(body.raw_paste)
+            if ai_title and len(ai_title) >= 3:
+                update_fields["name"] = ai_title[:120]
+                update_fields["name_source"] = "ai"
+        except Exception as e:
+            logger.warning("situation-step title regen failed: %s", e)
     await db.projects.update_one(
         {"id": project_id},
-        {
-            "$set": {
-                "situation_input": situation_input,
-                "framing": framing,
-                "step": max(2, project.get("step", 1)),
-                "status": "in_progress",
-                "updated_at": _now_iso(),
-            }
-        },
+        {"$set": update_fields},
     )
     return await _get_project_or_404(project_id)
 
