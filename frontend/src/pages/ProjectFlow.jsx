@@ -385,33 +385,50 @@ function CelebrationChips({ items = [], milestone }) {
   );
 }
 
-function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, ask, children }) {
+function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, ask, celebration, children }) {
   // Truncate long "previously" summaries so the rail stays a single-line-ish reminder.
-  const prevText = previously && previously.length > 180
-    ? previously.slice(0, 177).trimEnd() + "…"
+  const prevText = previously && previously.length > 160
+    ? previously.slice(0, 157).trimEnd() + "…"
     : previously;
   return (
     <div className="page-enter">
-      <div className="story-divider" data-testid={`step${num}-divider`}>
-        <span className="counter">{`CHAPTER ${num} / 05`}</span>
-        <span className="t-tag">{label}</span>
+      {/* Workbench top bar — chapter meta on the left, celebration chip on the right when done. */}
+      <div className="workbench-topbar" data-testid={`step${num}-topbar`}>
+        <div className="flex items-center gap-4 min-w-0 flex-1">
+          <span className="workbench-num" aria-hidden="true">{`0${num}`}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="mono-tag text-muted text-[10px]" data-testid={`step${num}-chapter-tag`}>CHAPTER {num} / 05 · {label}</p>
+              {ask && !celebration && (
+                <p className="mono-tag text-signal inline-flex items-center gap-1.5 text-[10px]" data-testid={`step${num}-ask`}>
+                  <Sparkles size={11} /> BRACKET ASKS
+                </p>
+              )}
+            </div>
+            <h1 className="mt-1 font-display font-semibold tracking-[-0.02em] leading-[1.12] text-[22px] sm:text-[24px] md:text-[26px]">{title}</h1>
+          </div>
+        </div>
+        {celebration && (
+          <div className="workbench-celebration animate-fade-up shrink-0" data-testid={`step${num}-celebration-topbar`}>
+            {celebration}
+          </div>
+        )}
       </div>
+
+      {kicker && !celebration && (
+        <p className="mt-2 text-muted text-[13px] leading-relaxed max-w-3xl">{kicker}</p>
+      )}
+
       {prevText && (
-        <div className="mb-2 flex" data-testid={`step${num}-previously`}>
+        <div className="mt-2 flex" data-testid={`step${num}-previously`}>
           <div className="story-rail">
             <span className="label">↩ previously</span>
             <span>{prevText}</span>
           </div>
         </div>
       )}
-      {ask && (
-        <p className="mono-tag text-signal mt-2 mb-1 inline-flex items-center gap-1.5" data-testid={`step${num}-ask`}>
-          <Sparkles size={11} /> BRACKET ASKS
-        </p>
-      )}
-      <h1 className="t-hero mt-1 text-[26px] sm:text-[32px] md:text-[36px] leading-[1.1]">{title}</h1>
-      {kicker && <p className="mt-2 text-muted max-w-2xl text-[13px] md:text-sm leading-relaxed">{kicker}</p>}
-      {nextUp && nextUp.length > 0 && (
+
+      {nextUp && nextUp.length > 0 && !celebration && (
         <div className="mt-3 inline-flex items-center gap-2 flex-wrap text-[11px] text-muted" data-testid={`step${num}-next-up`}>
           <span className="mono-tag text-signal">NEXT →</span>
           {nextUp.map((n, i) => (
@@ -421,6 +438,7 @@ function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, as
           ))}
         </div>
       )}
+
       <div className="mt-4 md:mt-5">{children}</div>
     </div>
   );
@@ -771,7 +789,16 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
       title={framing ? "Here's what's actually happening." : "What did your client send?"}
       kicker={framing ? "Sharper than the brief. Ready to compress." : "Paste anything — email, WhatsApp, notes. Bracket reads the mess."}
       nextUp={framing ? [] : ["Reframed problem", "Clarity score", "Tensions to watch"]}
-      nextHint={framing ? "compress into what matters" : undefined}
+      celebration={framing ? (
+        <CelebrationChips
+          milestone="Project understood"
+          items={[
+            { key: "words",    label: "words",       count: wordCount(project.situation_input?.raw_paste || form.raw_paste) },
+            { key: "tensions", label: "tensions",    count: (framing.tensions || []).length },
+            { key: "clarity",  label: "clarity/100", count: framing.clarity_score || 0 },
+          ]}
+        />
+      ) : null}
     >
       <div className="mb-3 flex items-center gap-2 flex-wrap" data-testid="step1-timepill">
         <span className="mono-tag text-muted inline-flex items-center gap-1.5 text-[10px]">
@@ -799,7 +826,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
       )}
 
       <div className={framing ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
-        <div className={framing ? "space-y-3 lg:col-span-4" : "space-y-3"} data-testid="step1-form">
+        <div className={framing ? "space-y-3 lg:col-span-5" : "space-y-3"} data-testid="step1-form">
           <Field
             label="Paste anything from your client"
             testid="step1-paste"
@@ -882,7 +909,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
 
         </div>
 
-        <div className={framing ? "lg:col-span-5" : ""}>
+        <div className={framing ? "lg:col-span-7" : ""}>
           {loading ? (
             <Step1Progress phase={phase} />
           ) : !framing ? (
@@ -937,38 +964,23 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               </OutputCard>
           )}
         </div>
-
-        {framing && (
-          <div className="lg:col-span-3 space-y-4">
-            <CelebrationCard
-              testid="step1-celebration"
-              chapter={1}
-              milestone="Project understood"
-              items={[
-                { key: "words",    label: "words in",    count: wordCount(project.situation_input?.raw_paste || form.raw_paste) },
-                { key: "tensions", label: "tensions",    count: (framing.tensions || []).length },
-                { key: "clarity",  label: "clarity/100", count: framing.clarity_score || 0 },
-              ]}
-            />
-
-            {isSample && (
-              <div className="card-brut p-4 flex items-start gap-3" data-testid="step1-sample-done-banner">
-                <Wand2 size={14} className="mt-0.5 text-signal shrink-0" />
-                <div className="flex-1">
-                  <p className="t-body text-[13px]">Ready for <strong>your own</strong> project?</p>
-                  <button
-                    onClick={clearSample}
-                    className="clay-signal px-3 py-2 t-tag press inline-flex items-center gap-1.5 whitespace-nowrap mt-2 text-[11px]"
-                    data-testid="step1-analyze-own-btn"
-                  >
-                    Start yours <ArrowRight size={12} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {framing && isSample && (
+        <div className="mt-4 card-brut p-4 flex items-start gap-3 max-w-2xl" data-testid="step1-sample-done-banner">
+          <Wand2 size={14} className="mt-0.5 text-signal shrink-0" />
+          <div className="flex-1 flex items-center justify-between gap-3 flex-wrap">
+            <p className="t-body text-[13px]">Ready for <strong>your own</strong> project?</p>
+            <button
+              onClick={clearSample}
+              className="clay-signal px-3 py-2 t-tag press inline-flex items-center gap-1.5 whitespace-nowrap text-[11px]"
+              data-testid="step1-analyze-own-btn"
+            >
+              Start yours <ArrowRight size={12} />
+            </button>
+          </div>
+        </div>
+      )}
     </StepShell>
   );
 }
@@ -1115,10 +1127,20 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
       kicker={compressed ? "Noise cut. Assumptions surfaced." : "Anything more — Slack, notes, references. Bracket keeps only what moves the call."}
       previously={project?.framing?.reframed_problem}
       nextUp={compressed ? [] : ["Key signals", "Noise removed", "Hidden assumptions"]}
-      nextHint={compressed ? "pick the call" : undefined}
+      celebration={compressed ? (
+        <CelebrationChips
+          milestone="Signals compressed"
+          items={[
+            { key: "words",       label: "words",       count: wordCount(project.context_input?.raw_paste || form.raw_paste) },
+            { key: "signals",     label: "signals",     count: (compressed.key_signals || []).length },
+            { key: "noise",       label: "noise cut",   count: (compressed.noise_removed || []).length },
+            { key: "assumptions", label: "assumptions", count: (compressed.hidden_assumptions || []).length },
+          ]}
+        />
+      ) : null}
     >
       <div className={compressed ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
-        <div className={compressed ? "space-y-3 lg:col-span-4" : "space-y-3"} data-testid="step2-form">
+        <div className={compressed ? "space-y-3 lg:col-span-5" : "space-y-3"} data-testid="step2-form">
           <Field
             label="Paste anything about this project"
             testid="step2-paste"
@@ -1174,7 +1196,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
 
         </div>
 
-        <div className={compressed ? "lg:col-span-5" : ""}>
+        <div className={compressed ? "lg:col-span-7" : ""}>
           {loading ? (
             <StepProgress
               phase={phase}
@@ -1265,22 +1287,6 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             </OutputCard>
           )}
         </div>
-
-        {compressed && (
-          <div className="lg:col-span-3">
-            <CelebrationCard
-              testid="step2-celebration"
-              chapter={2}
-              milestone="Signals compressed"
-              items={[
-                { key: "words",       label: "words in",     count: wordCount(project.context_input?.raw_paste || form.raw_paste) },
-                { key: "signals",     label: "signals kept", count: (compressed.key_signals || []).length },
-                { key: "noise",       label: "noise cut",    count: (compressed.noise_removed || []).length },
-                { key: "assumptions", label: "assumptions",  count: (compressed.hidden_assumptions || []).length },
-              ]}
-            />
-          </div>
-        )}
       </div>
     </StepShell>
   );
@@ -1332,10 +1338,19 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
       kicker={decision ? "A stance, not a menu." : "What matters most, what you'd trade off, what worries you. A paragraph is plenty."}
       previously={project?.context?.what_actually_matters}
       nextUp={decision ? [] : ["The call", "Alternatives", "Trade-offs", "Risks"]}
-      nextHint={decision ? "artifacts next" : undefined}
+      celebration={decision ? (
+        <CelebrationChips
+          milestone="Decision made"
+          items={[
+            { key: "confidence",   label: "confidence",   count: decision.recommendation?.confidence || 0 },
+            { key: "alternatives", label: "alternatives", count: (decision.alternatives || []).length },
+            { key: "risks",        label: "risks",        count: (decision.risks || []).length },
+          ]}
+        />
+      ) : null}
     >
       <div className={decision ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
-        <div className={decision ? "space-y-3 lg:col-span-4" : "space-y-3"} data-testid="step3-form">
+        <div className={decision ? "space-y-3 lg:col-span-5" : "space-y-3"} data-testid="step3-form">
           <Field
             label="Paste your thinking on this decision"
             testid="step3-paste"
@@ -1391,7 +1406,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
 
         </div>
 
-        <div className={decision ? "lg:col-span-5" : ""}>
+        <div className={decision ? "lg:col-span-7" : ""}>
           {loading ? (
             <StepProgress
               phase={phase}
@@ -1518,22 +1533,6 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
             </div>
           )}
         </div>
-
-        {decision && (
-          <div className="lg:col-span-3">
-            <CelebrationCard
-              testid="step3-celebration"
-              chapter={3}
-              milestone="Decision made"
-              items={[
-                { key: "call",         label: "the call",     count: decision.recommendation?.title ? 1 : 0 },
-                { key: "confidence",   label: "confidence",   count: decision.recommendation?.confidence || 0 },
-                { key: "alternatives", label: "alternatives", count: (decision.alternatives || []).length },
-                { key: "risks",        label: "risks",        count: (decision.risks || []).length },
-              ]}
-            />
-          </div>
-        )}
       </div>
     </StepShell>
   );
@@ -1591,7 +1590,16 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
       kicker={artifacts ? "Scope · message · assumptions · risks." : "Scope, message, assumptions, risks — drafted from your stance."}
       previously={project?.decision?.recommendation?.title}
       nextUp={artifacts ? [] : ["Scope doc", "Client message", "Risk flags", "Assumptions"]}
-      nextHint={artifacts ? "lock it in" : undefined}
+      celebration={artifacts ? (
+        <CelebrationChips
+          milestone="Artifacts drafted"
+          items={[
+            { key: "deliverables", label: "deliverables", count: (artifacts.scope_doc?.deliverables || []).length },
+            { key: "in-scope",     label: "in scope",     count: (artifacts.scope_doc?.in_scope || []).length },
+            { key: "risks",        label: "risks",        count: (artifacts.risk_flags || []).length },
+          ]}
+        />
+      ) : null}
     >
       <div className="flex gap-3 items-center flex-wrap">
         <button onClick={onBack} className="btn-ghost" data-testid="step4-back-btn">
@@ -1653,9 +1661,8 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
           />
         </div>
       ) : (
-        <div className="mt-4 grid lg:grid-cols-12 gap-5" data-testid="step4-artifacts-output">
-          {/* Scope + client message stacked on the left (2 cols on wide) */}
-          <div className="lg:col-span-9 space-y-5 output-card--scrollable pr-1">
+        <div className="mt-4" data-testid="step4-artifacts-output">
+          <div className="space-y-5 output-card--scrollable pr-1">
             <div className="grid md:grid-cols-2 gap-5">
               <OutputCard
                 testid="artifact-SCOPE_DOC"
@@ -1727,20 +1734,6 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
               </OutputCard>
             </div>
           )}
-          </div>
-
-          <div className="lg:col-span-3">
-            <CelebrationCard
-              testid="step4-celebration"
-              chapter={4}
-              milestone="Artifacts drafted"
-              items={[
-                { key: "deliverables", label: "deliverables", count: (artifacts.scope_doc?.deliverables || []).length },
-                { key: "in-scope",     label: "in scope",     count: (artifacts.scope_doc?.in_scope || []).length },
-                { key: "risks",        label: "risks",        count: (artifacts.risk_flags || []).length },
-                { key: "assumptions",  label: "assumptions",  count: (artifacts.assumptions || []).length },
-              ]}
-            />
           </div>
         </div>
       )}

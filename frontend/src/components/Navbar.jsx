@@ -1,98 +1,148 @@
-import React, { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
+import { Menu, X, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import BracketMark from "./BracketMark";
 import { NAV_LINKS } from "../lib/constants";
 import { useAuth } from "../lib/AuthContext";
 
+// Cinematic Navbar — matches Landing design language.
+// - Glass panel, hairline border, subtle backdrop-blur
+// - Solidifies on scroll (0 → 20px pulls in bg + border)
+// - Animated underline on active + hover
+// - Magnetic-ish CTA button (uses gradient white pill from Landing)
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const location = useLocation();
   const logoHref = user ? "/app" : "/";
 
+  // Scroll-based solidification.
+  const { scrollY } = useScroll();
+  const bgOpacity = useTransform(scrollY, [0, 80], [0.35, 0.85]);
+  const borderOpacity = useTransform(scrollY, [0, 80], [0, 0.08]);
+
+  // Close mobile panel on route change.
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
   return (
-    <header className="marketing-header" data-testid="site-navbar">
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center justify-between gap-3">
+    <motion.header
+      className="cinema-nav"
+      data-testid="site-navbar"
+      style={{
+        // The panel background & border animate their opacity on scroll.
+        // Using CSS custom props so styling stays in index.css.
+        "--nav-bg-a": bgOpacity,
+        "--nav-border-a": borderOpacity,
+      }}
+    >
+      <motion.div
+        aria-hidden="true"
+        className="cinema-nav-bg"
+        style={{ opacity: bgOpacity }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="cinema-nav-border"
+        style={{ opacity: borderOpacity }}
+      />
+      <div className="cinema-nav-inner">
         {/* Brand */}
-        <Link to={logoHref} className="flex items-center gap-2 shrink-0 group" data-testid="nav-logo-link">
+        <Link to={logoHref} className="cinema-nav-brand group" data-testid="nav-logo-link">
           <BracketMark size={26} label={true} />
         </Link>
 
         {/* Center nav */}
-        <nav className="hidden lg:flex items-center gap-1">
+        <nav className="cinema-nav-links" aria-label="Primary">
           {NAV_LINKS.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
-              className={({ isActive }) => `marketing-nav-link ${isActive ? "is-active" : ""}`}
+              className={({ isActive }) => `cinema-nav-link ${isActive ? "is-active" : ""}`}
               data-testid={`nav-link-${l.to.replace("/", "")}`}
             >
-              {l.label}
+              <span>{l.label}</span>
+              <span className="cinema-nav-underline" aria-hidden="true" />
             </NavLink>
           ))}
         </nav>
 
-        {/* Right CTAs */}
-        <div className="hidden lg:flex items-center gap-2">
+        {/* Right CTAs (desktop) */}
+        <div className="cinema-nav-cta hidden lg:flex">
           {user ? (
-            <Link to="/app" className="btn-primary" data-testid="nav-app-btn">Open app</Link>
+            <Link to="/app" className="cinema-cta-pill" data-testid="nav-app-btn">
+              <span>Open app</span> <ArrowRight size={12} />
+            </Link>
           ) : (
             <>
-              <Link to="/login" className="marketing-nav-link" data-testid="nav-login-link">Log in</Link>
-              <Link to="/app" className="btn-primary" data-testid="nav-start-btn">Start a project</Link>
+              <Link to="/login" className="cinema-nav-link" data-testid="nav-login-link">
+                <span>Log in</span>
+                <span className="cinema-nav-underline" aria-hidden="true" />
+              </Link>
+              <Link to="/app" className="cinema-cta-pill" data-testid="nav-start-btn">
+                <span>Start a project</span> <ArrowRight size={12} />
+              </Link>
             </>
           )}
         </div>
 
         {/* Mobile */}
-        <div className="flex items-center gap-2 lg:hidden">
-          {user ? (
-            <Link to="/app" className="btn-primary btn-sm" data-testid="nav-mobile-app">App</Link>
-          ) : (
-            <Link to="/app" className="btn-primary btn-sm" data-testid="nav-mobile-start-cta">Start</Link>
-          )}
+        <div className="cinema-nav-mobile lg:hidden">
+          <Link to="/app" className="cinema-cta-pill cinema-cta-pill--sm" data-testid="nav-mobile-start-cta">
+            {user ? "App" : "Start"}
+          </Link>
           <button
-            className="icon-tile"
+            type="button"
+            className="cinema-icon-tile"
             onClick={() => setOpen((o) => !o)}
             data-testid="nav-mobile-toggle"
             aria-label="Menu"
+            aria-expanded={open}
           >
             {open ? <X size={14} /> : <Menu size={14} />}
           </button>
         </div>
       </div>
 
-      {open && (
-        <div className="lg:hidden border-t border-[var(--hairline)] bg-[var(--bg)]" data-testid="nav-mobile-panel">
-          <div className="px-5 sm:px-6 py-5 flex flex-col gap-1">
-            {NAV_LINKS.map((l) => (
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="cinema-nav-panel lg:hidden"
+            data-testid="nav-mobile-panel"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="cinema-nav-panel-inner">
+              {NAV_LINKS.map((l) => (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  className="cinema-nav-mobile-link"
+                  data-testid={`nav-mobile-link-${l.to.replace("/", "")}`}
+                >
+                  {l.label}
+                </Link>
+              ))}
+              <div className="cinema-nav-divider" />
+              {!user && (
+                <Link to="/login" className="cinema-nav-mobile-link" data-testid="nav-mobile-login">
+                  Log in
+                </Link>
+              )}
               <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setOpen(false)}
-                className="marketing-nav-link"
-                data-testid={`nav-mobile-link-${l.to.replace("/", "")}`}
+                to="/app"
+                className="cinema-cta-pill mt-2 justify-center"
+                data-testid="nav-mobile-start-btn"
               >
-                {l.label}
+                <span>{user ? "Open app" : "Start a project"}</span>
+                <ArrowRight size={12} />
               </Link>
-            ))}
-            <div className="h-px bg-[var(--hairline)] my-2" />
-            {!user && (
-              <Link to="/login" onClick={() => setOpen(false)} className="marketing-nav-link" data-testid="nav-mobile-login">
-                Log in
-              </Link>
-            )}
-            <Link
-              to="/app"
-              onClick={() => setOpen(false)}
-              className="btn-primary justify-center mt-2"
-              data-testid="nav-mobile-start-btn"
-            >
-              {user ? "Open app" : "Start a project"}
-            </Link>
-          </div>
-        </div>
-      )}
-    </header>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
   );
 }

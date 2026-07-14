@@ -1663,3 +1663,152 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   .bento-card:hover { transform: none; }
   .pricing-card--popular { transform: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CINEMATIC NAVBAR — matches Landing language across all marketing pages.
+   ═══════════════════════════════════════════════════════════════════════ */
+.cinema-nav {
+  position: sticky; top: 0; z-index: 100;
+  height: 64px; width: 100%;
+  isolation: isolate;
+}
+.cinema-nav-bg {
+  position: absolute; inset: 0; z-index: -2;
+  background: rgba(8, 9, 10, 0.85);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+.cinema-nav-border {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 1px; z-index: -1;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.16) 50%, transparent 100%);
+}
+.cinema-nav-inner {
+  max-width: 1200px; margin: 0 auto; padding: 0 20px;
+  height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+@media (min-width: 640px) { .cinema-nav-inner { padding: 0 24px; } }
+@media (min-width: 768px) { .cinema-nav-inner { padding: 0 32px; } }
+
+.cinema-nav-brand { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cinema-nav-brand svg, .cinema-nav-brand img { transition: transform .35s cubic-bezier(.16,1,.3,1); }
+.cinema-nav-brand:hover svg, .cinema-nav-brand:hover img { transform: rotate(-4deg) scale(1.04); }
+
+.cinema-nav-links {
+  display: none; align-items: center; gap: 6px;
+}
+@media (min-width: 1024px) { .cinema-nav-links { display: flex; } }
+
+.cinema-nav-link {
+  position: relative;
+  display: inline-flex; align-items: center;
+  padding: 8px 14px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 400; font-size: 13.5px; letter-spacing: -0.005em;
+  color: var(--text-2);
+  border-radius: 8px;
+  transition: color .25s ease;
+}
+.cinema-nav-link:hover { color: var(--text); }
+.cinema-nav-link.is-active { color: var(--text); }
+.cinema-nav-underline {
+  position: absolute; left: 14px; right: 14px; bottom: 4px; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+  transform: scaleX(0); transform-origin: center;
+  transition: transform .35s cubic-bezier(.16,1,.3,1);
+}
+.cinema-nav-link:hover .cinema-nav-underline,
+.cinema-nav-link.is-active .cinema-nav-underline { transform: scaleX(1); }
+
+.cinema-nav-cta { align-items: center; gap: 10px; }
+
+.cinema-cta-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 500; font-size: 13px; letter-spacing: 0.01em;
+  color: #0A0B0D;
+  background: linear-gradient(180deg, #FFFFFF 0%, #E5E7EA 100%);
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.6);
+  box-shadow: 0 8px 24px rgba(46,91,255,0.20), 0 1px 4px rgba(0,0,0,0.4);
+  transition: box-shadow .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1);
+}
+.cinema-cta-pill:hover { box-shadow: 0 14px 40px rgba(46,91,255,0.36), 0 2px 8px rgba(0,0,0,0.5); transform: translateY(-1px); }
+.cinema-cta-pill--sm { padding: 6px 12px; font-size: 12px; }
+
+.cinema-nav-mobile { display: none; align-items: center; gap: 8px; }
+@media (max-width: 1023px) { .cinema-nav-mobile { display: flex; } .cinema-nav-cta { display: none; } }
+
+.cinema-icon-tile {
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-2);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  transition: background .25s ease, color .25s ease;
+}
+.cinema-icon-tile:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
+.cinema-nav-panel {
+  position: absolute; top: 64px; left: 0; right: 0;
+  background: rgba(8, 9, 10, 0.94);
+  backdrop-filter: blur(22px) saturate(150%);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.cinema-nav-panel-inner {
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.cinema-nav-mobile-link {
+  padding: 12px 14px;
+  font-family: "Poppins", sans-serif;
+  font-weight: 400; font-size: 14px;
+  color: var(--text-2);
+  border-radius: 8px;
+  transition: background .25s ease, color .25s ease;
+}
+.cinema-nav-mobile-link:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+.cinema-nav-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 8px 0; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   WORKBENCH — split-screen step layout language, applied via StepShell.
+   Chapter meta lives in a horizontal top bar; celebration chips slide in
+   from the right once the AI has run (dopamine hit without full-card real
+   estate). Matches Landing/Navbar cinematic language.
+   ═══════════════════════════════════════════════════════════════════════ */
+.workbench-topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+  position: relative;
+  isolation: isolate;
+}
+.workbench-topbar::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; z-index: -1;
+  background: radial-gradient(120% 100% at 0% 0%, rgba(46,91,255,0.10), transparent 60%);
+  pointer-events: none;
+}
+.workbench-num {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 32px; font-weight: 500; letter-spacing: -0.03em;
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(135deg, var(--accent) 0%, #7CD5FF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: 0.9;
+  min-width: 44px;
+}
+.workbench-celebration {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 8px;
+  background: linear-gradient(180deg, rgba(46,91,255,0.14) 0%, rgba(46,91,255,0.06) 100%);
+  border: 1px solid rgba(46,91,255,0.25);
+  border-radius: 999px;
+  font-size: 11.5px;
+}

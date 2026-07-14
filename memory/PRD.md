@@ -384,3 +384,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Deps added via yarn: `framer-motion@12.42.2`, `@studio-freight/lenis@1.0.42`.
   - **Note**: The prior Workbench primitive (split-screen step layout) was scaffolded but NOT wired into Steps 1/2/3 — still using the previous 3-col layout. Follow-up if you want to migrate.
   - **⚠️ User must redeploy to push to `use-bracket.com`.**
+
+- 2026-07-14 — **Iteration 29 — Cinematic Navbar + Workbench top-bar step layout**:
+  - **Cinematic Navbar rewrite (`components/Navbar.jsx`)**: Framer-Motion-driven scroll solidification (bg opacity 0.35 → 0.85 over 0–80px scroll, border 0 → 0.08). Animated gradient underline on hover + active. Glass panel with `backdrop-filter: blur(22px) saturate(150%)`. Gradient white pill CTA with blue-signal box-shadow bloom. Mobile drawer uses AnimatePresence for smooth enter/exit. Auto-closes on route change. Matches Landing design language across the entire marketing site (all pages inheriting `MarketingLayout` get the new nav).
+  - **Workbench top-bar step layout (`StepShell` rewrite)**: 
+    * Top bar: gradient `01/02/03/04/05` numeral (blue → sky gradient), CHAPTER breadcrumb, `BRACKET ASKS` pill on the left, title inline below.
+    * Once AI completes, **celebration chips replace ASKS in the top bar** — the dopamine hit lives in the persistent header now (`✓ Project understood · 128 words · 5 tensions · 42 clarity/100`).
+    * `CelebrationCard` in the right column deleted from Steps 1/2/3/4 — celebration moved to top bar.
+    * Grid re-proportioned once done: `form (col-5) | output (col-7)` (was `4/5/3` with the celebration col).
+    * Step 4 artifacts full-width; sample banner on Step 1 moved to below the grid.
+  - New CSS classes: `.cinema-nav*` (nav), `.workbench-topbar`, `.workbench-num` (gradient numeral), `.workbench-celebration` (blue pill).
+  - Verified at 1440×900: Step 1 done delta 0, all previous no-scroll invariants preserved.
+  - **⚠️ Redeploy needed** to push to `use-bracket.com`.
+
