@@ -1533,12 +1533,12 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 
 /* Showcase cards — parallax rail */
 .landing-showcase-card {
-  border-radius: 24px;
+  border-radius: 20px;
   background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid rgba(255,255,255,0.06);
   backdrop-filter: blur(14px);
-  min-height: 480px;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  min-height: 360px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
 }
 .landing-showcase-static { background: linear-gradient(180deg, #08090A 0%, #050506 100%); }
 

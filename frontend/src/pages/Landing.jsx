@@ -377,17 +377,12 @@ function Showcase() {
     offset: ["start start", "end end"],
   });
   const cards = SHOWCASE.length;
-  // Total scroll length: ~(cards-1) * 90vh horizontal traversal + a small
-  // entry buffer. Keeps the pinning tight so there's no blank space after
-  // the last card and before the next section.
-  const totalHeight = (cards - 1) * 85 + 40;
-  // Each card is 78vw + ~2vw gap; total shift is (cards-1) * 80vw.
-  // Using vw units so the transform is deterministic (framer's "%" applies
-  // to the element's own width, which is ~cards*78vw — hard to reason about).
+  const totalHeight = (cards - 1) * 70 + 40;
+  // Each card is now 55vw wide + gap; total shift is (cards-1) * 58vw.
   const x = useTransform(
     scrollYProgress,
     [0.02, 0.98],
-    ["0vw", `-${(cards - 1) * 80}vw`]
+    ["0vw", `-${(cards - 1) * 58}vw`]
   );
 
   if (shouldReduce) {
@@ -426,7 +421,7 @@ function Showcase() {
             className="flex gap-8 pl-[5vw] will-change-transform"
           >
             {SHOWCASE.map((c) => (
-              <div key={c.tag} className="shrink-0 w-[78vw] max-w-[900px]">
+              <div key={c.tag} className="shrink-0 w-[86vw] sm:w-[55vw] max-w-[620px]">
                 <ShowcaseCard card={c} />
               </div>
             ))}
@@ -452,20 +447,20 @@ function ShowcaseCard({ card }) {
         className="absolute -top-24 -right-24 h-[420px] w-[420px] rounded-full blur-[80px] opacity-[0.28]"
         style={{ background: `radial-gradient(closest-side, ${card.accent}, transparent 70%)` }}
       />
-      <div className="relative z-10 p-8 sm:p-12 md:p-16">
+      <div className="relative z-10 p-7 sm:p-9 md:p-11">
         <div className="flex items-center gap-3">
           <span
-            className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg"
             style={{ background: `${card.accent}22`, color: card.accent }}
           >
-            <Icon size={18} />
+            <Icon size={16} />
           </span>
           <p className="mono-tag" style={{ color: card.accent }}>{card.tag}</p>
         </div>
-        <h3 className="mt-6 font-display font-semibold tracking-[-0.02em] leading-[1.05] text-[32px] sm:text-[44px] md:text-[54px]">
+        <h3 className="mt-5 font-display font-semibold tracking-[-0.02em] leading-[1.05] text-[24px] sm:text-[30px] md:text-[36px]">
           {card.title}
         </h3>
-        <p className="mt-6 max-w-[540px] text-[15px] sm:text-base text-[var(--text-2)] leading-relaxed">
+        <p className="mt-4 max-w-[440px] text-[13.5px] sm:text-sm text-[var(--text-2)] leading-relaxed">
           {card.body}
         </p>
       </div>
@@ -484,13 +479,55 @@ function ShowcaseCard({ card }) {
 //   (4,   3  ) LOCK
 //   (1-2, 3  ) SPEED      · wide horizontal tile fills the previous gap
 const BENTO = [
-  { span: "col-span-2 md:row-span-2",              tag: "DASHBOARD", title: "Client OS on one screen.",         hint: "Paste anything. Every project starts here." },
-  { span: "col-span-1 md:col-span-1",              tag: "SCOPE",     title: "Scope, drafted.",                  hint: "In / out / deliverables / timeline." },
-  { span: "col-span-1 md:col-span-1",              tag: "RISKS",     title: "Risks your client never said.",    hint: "Bracket stress-tests every call." },
-  { span: "col-span-1 md:col-span-1 md:row-span-2", tag: "DECISION",  title: "A call, with confidence.",         hint: "Not a menu — a stance." },
-  { span: "col-span-1 md:col-span-1",              tag: "MESSAGE",   title: "The client email, in your voice.", hint: "Copy-paste ready." },
-  { span: "col-span-2 md:col-span-2",              tag: "SPEED",     title: "Under a minute. Every project.",   hint: "From messy paste → client-ready package." },
-  { span: "col-span-1 md:col-span-1",              tag: "LOCK",      title: "Locked. Signed. Shipped.",         hint: "Survives the 3am rethink." },
+  {
+    span: "col-span-2 md:row-span-2",
+    tag: "DASHBOARD",
+    title: "Client OS on one screen.",
+    hint: "Paste anything. Every project starts here.",
+    img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
+  },
+  {
+    span: "col-span-1 md:col-span-1",
+    tag: "SCOPE",
+    title: "Scope, drafted.",
+    hint: "In / out / deliverables / timeline.",
+    img: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    span: "col-span-1 md:col-span-1",
+    tag: "RISKS",
+    title: "Risks your client never said.",
+    hint: "Bracket stress-tests every call.",
+    img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    span: "col-span-1 md:col-span-1 md:row-span-2",
+    tag: "DECISION",
+    title: "A call, with confidence.",
+    hint: "Not a menu — a stance.",
+    img: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    span: "col-span-1 md:col-span-1",
+    tag: "MESSAGE",
+    title: "The client email, in your voice.",
+    hint: "Copy-paste ready.",
+    img: "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?auto=format&fit=crop&w=800&q=80",
+  },
+  {
+    span: "col-span-2 md:col-span-2",
+    tag: "SPEED",
+    title: "Under a minute. Every project.",
+    hint: "From messy paste → client-ready package.",
+    img: "https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&w=1200&q=80",
+  },
+  {
+    span: "col-span-1 md:col-span-1",
+    tag: "LOCK",
+    title: "Locked. Signed. Shipped.",
+    hint: "Survives the 3am rethink.",
+    img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
+  },
 ];
 
 function Bento() {
@@ -518,8 +555,29 @@ function BentoCard({ tile }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      className={`bento-card ${tile.span}`}
+      className={`bento-card group ${tile.span}`}
     >
+      {/* Stock image with dark gradient scrim so text stays readable. */}
+      {tile.img && (
+        <>
+          <img
+            src={tile.img}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover opacity-40 group-hover:opacity-55 transition-opacity duration-500"
+          />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(180deg, rgba(8,9,10,0.4) 0%, rgba(8,9,10,0.75) 55%, rgba(8,9,10,0.95) 100%)",
+            }}
+          />
+        </>
+      )}
       <div className="bento-card-glow" aria-hidden="true" />
       <div className="relative z-10 h-full flex flex-col justify-between p-5 sm:p-6">
         <p className="mono-tag text-signal text-[10px]">{tile.tag}</p>

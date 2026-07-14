@@ -422,3 +422,12 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     * `grid-flow-dense` added as safety net.
   - Total page height dropped from 8228 → 7608px.
   - **⚠️ Redeploy needed** to push to `use-bracket.com`.
+
+- 2026-07-14 — **Iteration 32 — Flow reduction · Bento imagery · sub-page cinematic pass**:
+  - **Flow section cards shrunk**: width `78vw → 55vw` (max 620px), padding `p-16 → p-11`, title `text-[54px] → text-[36px]`, min-height `480px → 360px`, container height `(cards-1)*85+40 → (cards-1)*70+40`. Denser, less "screen-consuming" pinning.
+  - **Bento stock images per tile**: every card now has a curated Unsplash photo behind it with a `linear-gradient(rgba(8,9,10,0.4)→rgba(8,9,10,0.95))` scrim so text stays readable. Images: DASHBOARD (analytics), SCOPE (notebook), RISKS (mountain-drama), DECISION (space/decisive), MESSAGE (email), SPEED (motion-blur lights), LOCK (padlock/tech). Opacity 0.40→0.55 on hover.
+  - **HowItWorks fully cinematic**: Framer fade-up staggers on 3-layer cards + 5-step rows. Big gradient `01/02/03` and `001/002/003` numerals (blue→sky background-clip text). Radial glow on hover per card. Section headings use signal-blue mono-tag pills.
+  - **Pricing rebuilt with landing-style glassmorphic cards**: PRO card amber-glowed with `Most popular` ribbon, `::before` bloom halo, gold gradient CTA. USD/INR toggle uses `.landing-currency-toggle`. Amber radial wash behind the pricing row. `landing-hero-gradient` on the H1 highlight word.
+  - **CaseStudies rebuilt**: Big gradient `01/02` case numerals. Before/After cards are now glass with color-coded borders (danger red border for BEFORE with red glow, blue-signal border for AFTER with blue glow). Italic gradient-quote treatment with big display-italic type. Motion fade-up staggers.
+  - **⚠️ Redeploy needed** to push to `use-bracket.com`.
+

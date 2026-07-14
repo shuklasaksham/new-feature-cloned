@@ -1,8 +1,18 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, X } from "lucide-react";
+import { motion } from "framer-motion";
 import { CASE_STUDIES } from "../lib/constants";
 import Seo from "../components/Seo";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 26 },
+  show: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.06, duration: 0.75, ease: [0.16, 1, 0.3, 1] },
+  }),
+};
 
 export default function CaseStudies() {
   return (
@@ -12,73 +22,161 @@ export default function CaseStudies() {
         description="Real projects, real scopes, real client messages. See exactly how Bracket helped freelancers turn a vague brief into a locked-in decision."
         path="/case-studies"
       />
+
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-16 md:pb-20 text-center">
-          <span className="section-label"><span className="dot" />Case studies</span>
-          <h1 className="t-display mt-7 max-w-[820px] mx-auto">
-            Chaos → <span className="text-[var(--text-2)]">clarity</span>.
-          </h1>
-          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto">
-            Five products you already know. The thing they share: the breakthrough wasn&apos;t the feature set — it was the decision they dared to make.
-          </p>
+        <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-20">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="section-label"
+          >
+            <span className="dot" />Case studies
+          </motion.span>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="t-display mt-6 max-w-[900px]"
+          >
+            Chaos <span className="landing-hero-gradient">→ clarity</span>.
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.35 }}
+            className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px]"
+          >
+            Five products you already know. The thing they share: the breakthrough
+            wasn&apos;t the feature set — it was the decision they dared to make.
+          </motion.p>
         </div>
       </section>
 
       {CASE_STUDIES.map((cs, idx) => (
-        <section key={cs.slug} className="border-t border-[var(--hairline)]">
-          <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-20 md:py-28">
-            <div className="flex items-baseline justify-between gap-4 flex-wrap">
-              <div>
-                <p className="t-meta">CASE {String(idx + 1).padStart(2, "0")} / {String(CASE_STUDIES.length).padStart(2, "0")}</p>
-                <h2 className="t-hero mt-3">{cs.brand}</h2>
-                <p className="t-meta mt-2 normal-case tracking-normal text-[12px] text-[var(--text-3)]">{cs.category}</p>
+        <section key={cs.slug} className="relative">
+          <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-20 md:py-28">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="flex items-baseline gap-6 flex-wrap"
+            >
+              <span
+                className="font-display font-semibold text-[56px] leading-none tracking-[-0.03em]"
+                style={{
+                  color: "transparent",
+                  backgroundImage: "linear-gradient(135deg, #2E5BFF 0%, #7CD5FF 100%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                }}
+              >
+                {String(idx + 1).padStart(2, "0")}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="mono-tag text-signal">CASE / {String(CASE_STUDIES.length).padStart(2, "0")}</p>
+                <h2 className="t-hero mt-2">{cs.brand}</h2>
+                <p className="mt-1 text-[12.5px] text-[var(--text-3)]">{cs.category}</p>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="mt-12 grid md:grid-cols-2 gap-3">
-              <div className="card-linear p-6">
-                <span className="status-pill status-pill--danger">Before</span>
-                <ul className="mt-5 space-y-2.5">
+            <div className="mt-12 grid md:grid-cols-2 gap-4">
+              <motion.div
+                custom={0}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-60px" }}
+                className="card-linear p-7 relative overflow-hidden"
+                style={{ borderColor: "rgba(239, 87, 87, 0.20)" }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute -top-16 -right-16 h-40 w-40 rounded-full blur-[50px] opacity-40"
+                  style={{ background: "radial-gradient(closest-side, rgba(239,87,87,0.35), transparent)" }}
+                />
+                <p className="mono-tag" style={{ color: "#EF5757" }}>BEFORE</p>
+                <ul className="mt-6 space-y-3">
                   {cs.before.map((b, i) => (
-                    <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text-2)]">
-                      <X size={13} className="mt-0.5 text-[var(--danger)] shrink-0" />
+                    <li key={i} className="flex gap-3 text-[13.5px] leading-[1.65] text-[var(--text-2)]">
+                      <X size={13} className="mt-0.5 shrink-0" style={{ color: "#EF5757" }} />
                       <span>{b}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
-              <div className="card-linear p-6 border-[var(--hairline-strong)] bg-[var(--surface-2)]">
-                <span className="status-pill status-pill--active">After</span>
-                <ul className="mt-5 space-y-2.5">
+              </motion.div>
+              <motion.div
+                custom={1}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-60px" }}
+                className="card-linear p-7 relative overflow-hidden"
+                style={{ borderColor: "rgba(46, 91, 255, 0.25)" }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute -top-16 -right-16 h-40 w-40 rounded-full blur-[50px] opacity-50"
+                  style={{ background: "radial-gradient(closest-side, rgba(46,91,255,0.4), transparent)" }}
+                />
+                <p className="mono-tag text-signal">AFTER</p>
+                <ul className="mt-6 space-y-3">
                   {cs.after.map((b, i) => (
-                    <li key={i} className="flex gap-3 text-[13px] leading-[1.65] text-[var(--text)]">
-                      <Check size={13} className="mt-0.5 text-[var(--text-2)] shrink-0" />
+                    <li key={i} className="flex gap-3 text-[13.5px] leading-[1.65] text-[var(--text)]">
+                      <Check size={13} className="mt-0.5 text-signal shrink-0" />
                       <span>{b}</span>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             </div>
 
-            <blockquote className="mt-12 max-w-3xl t-h1 text-[var(--text)]">
-              <span className="text-[var(--text-2)]">&ldquo;</span>{cs.quote}<span className="text-[var(--text-2)]">&rdquo;</span>
-            </blockquote>
+            <motion.blockquote
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-14 max-w-3xl"
+            >
+              <p className="font-display font-semibold italic text-[24px] sm:text-[30px] md:text-[36px] leading-[1.2] tracking-[-0.02em] text-[var(--text)]">
+                <span className="landing-hero-gradient">&ldquo;</span>
+                {cs.quote}
+                <span className="landing-hero-gradient">&rdquo;</span>
+              </p>
+            </motion.blockquote>
           </div>
         </section>
       ))}
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden border-t border-[var(--hairline)]">
+      <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
-          <span className="section-label"><span className="dot" />Your move</span>
-          <h2 className="t-display mt-7">
-            Your <span className="text-[var(--text-2)]">turn</span>.
-          </h2>
-          <div className="mt-9">
-            <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-36 text-center">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="section-label mx-auto"
+          >
+            <span className="dot" />Your move
+          </motion.span>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            className="t-display mt-7"
+          >
+            Your <span className="landing-hero-gradient">turn</span>.
+          </motion.h2>
+          <div className="mt-10">
+            <Link to="/app" className="landing-cta-primary" data-testid="case-studies-final-cta">
+              <span>Start a project</span> <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>

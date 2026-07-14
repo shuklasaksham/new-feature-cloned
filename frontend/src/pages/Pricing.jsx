@@ -1,8 +1,18 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check } from "lucide-react";
+import { motion } from "framer-motion";
 import { PRICING } from "../lib/constants";
 import Seo from "../components/Seo";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  show: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.06, duration: 0.75, ease: [0.16, 1, 0.3, 1] },
+  }),
+};
 
 export default function Pricing() {
   const [currency, setCurrency] = useState("INR");
@@ -15,52 +25,56 @@ export default function Pricing() {
         description="Flat, transparent pricing for Bracket. Free early access with generous limits. Pro plan for freelancers and small studios who need unlimited decisions."
         path="/pricing"
       />
+
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-12 md:pb-16 text-center">
-          <span className="section-label"><span className="dot" />Pricing · early access</span>
-          <h1 className="t-display mt-7 max-w-[820px] mx-auto">
-            Free <span className="text-[var(--text-2)]">for now</span>.
-          </h1>
-          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto">
-            Bracket is free to use during early access — no account, no card, no time limit. Paid tiers will arrive when the product graduates from early access; below is the shape they&apos;ll take.
-          </p>
-          <div className="mt-9 inline-flex items-center justify-center gap-3">
-            <Link to="/app" className="btn-primary btn-lg" data-testid="pricing-hero-start-cta">
-              Start a project <ArrowRight size={14} />
-            </Link>
-          </div>
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-20 text-center">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="section-label mx-auto"
+          >
+            <span className="dot" />Pricing · early access
+          </motion.span>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="t-display mt-7 max-w-[900px] mx-auto"
+          >
+            One-time thinking.<br />
+            <span className="landing-hero-gradient">Repeatable output.</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.35 }}
+            className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto"
+          >
+            Free during early access — no card, no time limit. Paid tiers arrive
+            when the product graduates. Below is the shape they&apos;ll take.
+          </motion.p>
         </div>
       </section>
 
-      {/* TIERS */}
-      <section className="border-t border-[var(--hairline)]">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20">
-          {/* Early access banner */}
-          <div
-            className="card-linear p-5 sm:p-6 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-[var(--hairline-strong)] bg-[var(--surface-2)]"
-            data-testid="pricing-early-access-banner"
-          >
-            <div>
-              <span className="status-pill status-pill--active">Free during early access</span>
-              <p className="mt-3 text-[14px] text-[var(--text)]">
-                Every feature in every tier is unlocked. No card. No upsell. Use it.
-              </p>
-            </div>
-            <Link to="/app" className="btn-primary" data-testid="pricing-banner-start-cta">
-              Start a project →
-            </Link>
-          </div>
-
-          {/* Currency toggle */}
-          <div className="flex justify-end mb-6">
-            <div className="inline-flex items-center rounded-full p-1 border border-[var(--hairline)] bg-[var(--surface)]" data-testid="pricing-currency-toggle">
+      {/* CURRENCY + TIERS */}
+      <section className="relative pb-24 md:pb-32">
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-24 mx-auto h-[500px] w-[800px] blur-[120px] opacity-[0.18] pointer-events-none"
+          style={{ background: "radial-gradient(closest-side, #FFB84C, transparent 70%)" }}
+        />
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 relative">
+          <div className="flex justify-center">
+            <div className="landing-currency-toggle" role="group" aria-label="Currency">
               {Object.keys(PRICING.currencies).map((c) => (
                 <button
                   key={c}
+                  type="button"
                   onClick={() => setCurrency(c)}
-                  className={`px-3.5 py-1 text-[12px] font-medium rounded-full transition-all ${currency === c ? "bg-[var(--surface-3)] text-[var(--text)]" : "text-[var(--text-3)] hover:text-[var(--text)]"}`}
+                  className={currency === c ? "is-active" : ""}
                   data-testid={`currency-toggle-${c}`}
                 >
                   {c}
@@ -69,54 +83,72 @@ export default function Pricing() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-3">
-            {PRICING.tiers.map((t) => {
+          <div className="mt-14 grid md:grid-cols-3 gap-6 items-stretch">
+            {PRICING.tiers.map((t, i) => {
               const isPro = t.id === "pro";
               const price = cur[t.id];
               return (
-                <div
+                <motion.div
                   key={t.id}
-                  className={`p-7 rounded-[12px] relative ${isPro ? "border border-[var(--hairline-strong)] bg-[var(--surface-2)]" : "card-linear card-linear-hover"}`}
+                  custom={i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="show"
+                  viewport={{ once: true, margin: "-60px" }}
+                  whileHover={isPro ? { y: -8 } : { y: -4 }}
+                  transition={{ duration: 0.4 }}
+                  className={`pricing-card ${isPro ? "pricing-card--popular" : ""}`}
                   data-testid={`pricing-tier-${t.id}`}
-                  style={isPro ? { boxShadow: "0 24px 64px -24px rgba(0,0,0,0.6)" } : undefined}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="t-meta">{t.name}</span>
-                    {t.badge && <span className="status-pill status-pill--active">Popular</span>}
+                  {isPro && (
+                    <div className="pricing-ribbon"><span>Most popular</span></div>
+                  )}
+                  <div className="pricing-card-glow" aria-hidden="true" />
+                  <div className="relative z-10 p-8 sm:p-10 flex flex-col h-full">
+                    <p className="mono-tag" style={{ color: isPro ? "#FFB84C" : "var(--accent)" }}>{t.name}</p>
+                    <p className="mt-1 text-[12px] text-[var(--text-3)] leading-relaxed">{t.tagline}</p>
+                    <div className="mt-6 flex items-baseline gap-1">
+                      <span className="font-display font-semibold text-[52px] leading-none tracking-[-0.03em]">
+                        {price === 0 ? "Free" : `${cur.symbol}${price}`}
+                      </span>
+                      {price !== 0 && <span className="text-[12px] text-[var(--text-3)]">/ mo</span>}
+                    </div>
+                    <ul className="mt-8 space-y-3 flex-1">
+                      {t.features.map((f, j) => (
+                        <li key={j} className="flex items-start gap-3 text-[13.5px] text-[var(--text-2)]">
+                          <span className="mt-[3px] inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
+                                style={{ background: isPro ? "rgba(255,184,76,0.15)" : "rgba(46,91,255,0.15)" }}>
+                            <Check size={9} style={{ color: isPro ? "#FFB84C" : "var(--accent)" }} />
+                          </span>
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      to="/app"
+                      className={`mt-10 landing-plan-cta ${isPro ? "landing-plan-cta--popular" : ""}`}
+                      data-testid={`pricing-cta-${t.id}`}
+                    >
+                      <span>{t.cta}</span> <ArrowRight size={14} />
+                    </Link>
                   </div>
-                  <p className="mt-3 text-[13px] text-[var(--text-2)]">{t.tagline}</p>
-                  <div className="mt-7 flex items-baseline gap-1.5">
-                    <span className="font-semibold text-[44px] tracking-[-0.03em] leading-none">{cur.symbol}{price}</span>
-                    <span className="t-meta">{t.id === "free" ? "/ forever" : "/ month"}</span>
-                  </div>
-                  <ul className="mt-7 space-y-2.5 min-h-[140px]">
-                    {t.features.map((f, i) => (
-                      <li key={i} className="flex gap-2.5 text-[13px] leading-[1.55]">
-                        <Check size={13} className="mt-1 shrink-0 text-[var(--text-2)]" />
-                        <span className="text-[var(--text)]">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    to="/app"
-                    className={`mt-6 w-full justify-center ${isPro ? "btn-primary" : "btn-ghost"}`}
-                    data-testid={`pricing-cta-${t.id}`}
-                  >
-                    {t.cta} <ArrowRight size={14} />
-                  </Link>
-                </div>
+                </motion.div>
               );
             })}
           </div>
+
+          <p className="mt-10 text-center text-[12px] text-[var(--text-3)]">
+            All plans include OTP login, guest projects, and unlimited pastes.
+          </p>
         </div>
       </section>
 
       {/* FAQ */}
-      <section className="border-t border-[var(--hairline)]">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-20 md:py-28 grid md:grid-cols-2 gap-10 md:gap-12">
+      <section className="relative">
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-20 md:py-28 grid md:grid-cols-2 gap-10 md:gap-16">
           <div>
             <span className="section-label"><span className="dot" />Honest answers</span>
-            <h2 className="t-hero mt-5 max-w-md">
+            <h2 className="t-hero mt-6 max-w-md">
               Questions you were going to ask anyway.
             </h2>
           </div>
@@ -127,22 +159,40 @@ export default function Pricing() {
               ["Do you offer student pricing?", "Email us with your .edu / college ID. We give it quietly."],
               ["What's in Studio but not Pro?", "Team roles, shared decision systems, and client-facing outputs. If you're solo, Pro is the move."],
             ].map(([q, a], i) => (
-              <div key={i} className="card-linear card-linear-hover p-5">
-                <p className="t-h3">{q}</p>
+              <motion.div
+                key={i}
+                custom={i}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-40px" }}
+                className="card-linear card-linear-hover p-6"
+              >
+                <p className="font-display font-semibold text-[15.5px] tracking-[-0.01em]">{q}</p>
                 <p className="mt-2 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{a}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden border-t border-[var(--hairline)]">
+      <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
-          <h2 className="t-display">Decisions, <span className="text-[var(--text-2)]">priced fairly</span>.</h2>
-          <div className="mt-9">
-            <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>
+        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-36 text-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            className="t-display"
+          >
+            Decisions, <span className="landing-hero-gradient">priced fairly</span>.
+          </motion.h2>
+          <div className="mt-10">
+            <Link to="/app" className="landing-cta-primary" data-testid="pricing-final-cta">
+              <span>Start a project</span> <ArrowRight size={16} />
+            </Link>
           </div>
         </div>
       </section>
