@@ -7,6 +7,7 @@ import MarketingLayout from "./components/MarketingLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
 import ScrollToTop from "./components/ScrollToTop";
+import PageLoader from "./components/PageLoader";
 import { AuthProvider } from "./lib/AuthContext";
 
 import Landing from "./pages/Landing";
@@ -36,6 +37,7 @@ import "./App.css";
 export default function App() {
   return (
     <HelmetProvider>
+      <PageLoader />
       <AuthProvider>
         <BrowserRouter>
         <ScrollToTop />

@@ -2061,7 +2061,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
    ═══════════════════════════════════════════════════════════════════════ */
 .dashboard-root {
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Paste box — glassmorphic panel, blue signal corner glow. */
@@ -2339,8 +2339,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .doc-sidebar {
   position: sticky;
+  position: -webkit-sticky;
   top: 20px;
   align-self: start;
+  z-index: 5;
 }
 
 /* Glass document body — matches the dashboard/steps card language. */
@@ -2529,4 +2531,73 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   mask-image: radial-gradient(ellipse 100% 90% at 50% 40%, #000 45%, transparent 90%);
   -webkit-mask-image: radial-gradient(ellipse 100% 90% at 50% 40%, #000 45%, transparent 90%);
   opacity: 0.9;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PAGE LOADER — brand animation shown on every hard reload. The `{ }`
+   bracket icon breathes with a soft signal-blue halo, then the whole
+   overlay fades out so the app is revealed in one clean beat.
+   ═══════════════════════════════════════════════════════════════════════ */
+.page-loader {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #08090A;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 520ms cubic-bezier(.16,1,.3,1);
+  opacity: 1;
+  overflow: hidden;
+  isolation: isolate;
+}
+.page-loader.is-fading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Soft signal-blue halo behind the mark. */
+.page-loader-halo {
+  position: absolute;
+  width: 520px; height: 520px;
+  background: radial-gradient(closest-side,
+    rgba(94, 106, 210, 0.22) 0%,
+    rgba(94, 106, 210, 0.06) 40%,
+    rgba(94, 106, 210, 0) 70%);
+  filter: blur(20px);
+  animation: pageLoaderHalo 1.6s cubic-bezier(.16,1,.3,1) infinite alternate;
+  z-index: -1;
+}
+
+.page-loader-inner {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  animation: pageLoaderFloat 1.6s cubic-bezier(.16,1,.3,1) infinite alternate;
+}
+.page-loader-logo {
+  display: block;
+  width: 44px; height: auto;
+  filter: drop-shadow(0 0 24px rgba(94, 106, 210, 0.55));
+  animation: pageLoaderMark 1.6s cubic-bezier(.16,1,.3,1) infinite alternate,
+             pageLoaderEnter 720ms cubic-bezier(.16,1,.3,1);
+}
+
+@keyframes pageLoaderEnter {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pageLoaderMark {
+  from { opacity: 0.65; transform: scale(0.96); }
+  to   { opacity: 1;    transform: scale(1.04); }
+}
+@keyframes pageLoaderFloat {
+  from { transform: translateY(2px); }
+  to   { transform: translateY(-2px); }
+}
+@keyframes pageLoaderHalo {
+  from { opacity: 0.55; transform: scale(0.94); }
+  to   { opacity: 1;    transform: scale(1.10); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-loader-logo,
+  .page-loader-inner,
+  .page-loader-halo { animation: none; }
 }
