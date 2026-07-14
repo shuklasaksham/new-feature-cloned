@@ -589,50 +589,50 @@ const BENTO = [
   {
     span: "col-span-2 md:row-span-2",
     tag: "DASHBOARD",
-    title: "Client OS on one screen.",
-    hint: "Paste anything. Every project starts here.",
+    title: "Everything starts here.",
+    hint: "Paste one client conversation. Bracket turns it into a structured project workspace.",
     img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "SCOPE",
-    title: "Scope, drafted.",
-    hint: "In / out / deliverables / timeline.",
+    title: "Scope. Ready to send.",
+    hint: "Deliverables, timeline and assumptions drafted automatically.",
     img: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "RISKS",
-    title: "Risks your client never said.",
-    hint: "Bracket stress-tests every call.",
+    title: "Risks your client never mentioned.",
+    hint: "Spot hidden risks before they become expensive revisions.",
     img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
   },
   {
     span: "col-span-1 md:col-span-1 md:row-span-2",
     tag: "DECISION",
-    title: "A call, with confidence.",
-    hint: "Not a menu — a stance.",
+    title: "Decisions backed by evidence.",
+    hint: "Understand trade-offs and move forward with confidence.",
     img: "https://images.unsplash.com/photo-1502134249126-9f3755a50d78?auto=format&fit=crop&w=800&q=80",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "MESSAGE",
     title: "The client email, in your voice.",
-    hint: "Copy-paste ready.",
+    hint: "Generate polished responses from everything Bracket already knows.",
     img: "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?auto=format&fit=crop&w=800&q=80",
   },
   {
     span: "col-span-2 md:col-span-2",
     tag: "SPEED",
-    title: "Under a minute. Every project.",
-    hint: "From messy paste → client-ready package.",
+    title: "From brief to project in under a minute.",
+    hint: "Skip the setup. Get straight to the work.",
     img: "https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&w=1200&q=80",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "LOCK",
     title: "Locked. Signed. Shipped.",
-    hint: "Survives the 3am rethink.",
+    hint: "Export polished documents and keep every decision documented.",
     img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
   },
 ];
@@ -643,7 +643,7 @@ function Bento() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="WHAT'S INSIDE"
-          title="Every screen designed to reduce hesitation."
+          title="Everything you need before you hit send."
         />
         <div className="mt-14 grid grid-cols-2 md:grid-cols-4 grid-flow-dense auto-rows-[190px] md:auto-rows-[220px] gap-4">
           {BENTO.map((b, i) => (
