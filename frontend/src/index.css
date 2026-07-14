@@ -1923,6 +1923,22 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   flex: 1;
 }
 .review-accept-form > .mb-6 { flex-shrink: 0; }
+
+/* Reject flow (single-column form) — must scroll naturally within the modal
+   panel, otherwise the concerns textarea, the AI suggestions list, and the
+   signature block can overflow beyond the viewport on shorter screens. */
+.review-reject-form {
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+  flex: 1;
+  padding-right: 4px;
+}
+.review-reject-form::-webkit-scrollbar { width: 6px; }
+.review-reject-form::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
 .review-accept-grid {
   display: grid; gap: 24px;
   grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);

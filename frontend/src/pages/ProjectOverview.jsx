@@ -9,12 +9,12 @@ import {
   Loader2,
   Unlock,
   AlertCircle,
-  MessageSquare,
-  Send,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useDialog } from "../components/Dialog";
+import ClientReviewModal from "../components/ClientReviewModal";
 
 const STEPS = [
   {
@@ -203,8 +203,7 @@ export default function ProjectOverview() {
   const [renaming, setRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [savingRename, setSavingRename] = useState(false);
-  const [reply, setReply] = useState("");
-  const [sendingReply, setSendingReply] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   const load = async () => {
     try {
@@ -221,6 +220,48 @@ export default function ProjectOverview() {
   useEffect(() => {
     load();
   }, [id]);
+
+  // ─── Real-time sync ──────────────────────────────────────────────────
+  // Poll the project every 6s while the client hasn't finished with the
+  // sign-off (i.e. before "accepted" is reached). This lets the owner see
+  // an acceptance / raised concern land the moment it happens, without
+  // manually refreshing. Silent — we swap state only if something changed.
+  useEffect(() => {
+    if (!project) return;
+    const terminal = project.share_status === "accepted";
+    const notShared = !project.share_status || project.share_status === "none";
+    if (terminal || notShared) return; // nothing to poll for
+    const timer = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/projects/${id}`);
+        setProject((cur) => {
+          if (!cur) return data;
+          // Cheap change detection — status shifted or a new review/reply arrived
+          if (
+            cur.share_status !== data.share_status ||
+            (cur.share_review?.submitted_at || "") !== (data.share_review?.submitted_at || "") ||
+            (cur.owner_replies?.length || 0) !== (data.owner_replies?.length || 0)
+          ) {
+            if (
+              cur.share_status !== data.share_status &&
+              (data.share_status === "accepted" || data.share_status === "rejected")
+            ) {
+              toast.success(
+                data.share_status === "accepted"
+                  ? "Your client accepted the sign-off."
+                  : "Your client raised concerns.",
+              );
+            }
+            return data;
+          }
+          return cur;
+        });
+      } catch {
+        /* silent — polling shouldn't spam errors */
+      }
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [id, project?.share_status]);
 
   const isLocked = project?.status === "locked";
 
@@ -269,22 +310,6 @@ export default function ProjectOverview() {
       toast.error(formatApiError(e));
     } finally {
       setSavingRename(false);
-    }
-  };
-
-  const sendReply = async () => {
-    const text = reply.trim();
-    if (text.length < 4) return toast.error("Write a bit more.");
-    setSendingReply(true);
-    try {
-      const { data } = await api.post(`/projects/${id}/reply`, { text });
-      setProject(data);
-      setReply("");
-      toast.success("Reply sent. Client can re-review.");
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setSendingReply(false);
     }
   };
 
@@ -434,105 +459,68 @@ export default function ProjectOverview() {
           </div>
         </div>
 
-        {/* Client review summary — only if shared */}
+        {/* Client review summary — a compact card, every action & detail
+            lives inside the ClientReviewModal so nothing spills into the
+            page and forces the owner to scroll. */}
         {project.share_status && project.share_status !== "none" && (
           <section
-            className="mt-10 card-brut p-5 sm:p-6"
+            className="mt-10 card-linear card-linear--solid p-5 sm:p-6"
             data-testid="overview-client-review"
           >
-            <p className="mono-label">{"{ client review }"}</p>
-            <h2 className="font-display text-2xl sm:text-3xl uppercase mt-3">
-              {project.share_status === "accepted" && <>Client <span className="text-signal">accepted</span> the call.</>}
-              {project.share_status === "rejected" && <>Client <span className="text-danger">raised concerns</span>.</>}
-              {project.share_status === "awaiting_reply" && <>You replied. <span className="text-signal">Awaiting client.</span></>}
-              {project.share_status === "sent" && <>Sent to client. <span className="text-muted">Awaiting review.</span></>}
-            </h2>
-
-            {project.share_review?.type === "reject" && (
-              <div className="mt-5 space-y-4">
-                <div>
-                  <p className="mono-tag text-muted">CONCERNS RAISED</p>
-                  <p className="mt-2 whitespace-pre-wrap">{project.share_review.concerns}</p>
-                  {project.share_review.signature_name && (
-                    <p className="mono-tag text-muted mt-2">
-                      — {project.share_review.signature_name}
-                      {project.share_review.role ? `, ${project.share_review.role}` : ""}
-                    </p>
-                  )}
-                </div>
-                {project.share_review.ai_suggestions?.suggestions?.length > 0 && (
-                  <div>
-                    <p className="mono-tag text-signal">BRACKET SUGGESTS</p>
-                    <ul className="mt-2 space-y-2">
-                      {project.share_review.ai_suggestions.suggestions.map((s, i) => (
-                        <li key={i} className="border-l-2 border-signal pl-3">
-                          <p className="font-display text-base">{s.title || s.suggestion}</p>
-                          {s.detail && <p className="text-sm text-muted mt-1">{s.detail}</p>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="min-w-0">
+                <p className="mono-label">{"{ client review }"}</p>
+                <h2 className="font-display font-semibold tracking-[-0.02em] text-[20px] sm:text-[24px] mt-2 leading-[1.15] text-[var(--text)]">
+                  {project.share_status === "accepted" && <>Client <span className="text-signal">accepted</span> the call.</>}
+                  {project.share_status === "rejected" && <>Client <span className="text-danger">raised concerns</span>.</>}
+                  {project.share_status === "awaiting_reply" && <>You replied. <span className="text-signal">Awaiting client.</span></>}
+                  {project.share_status === "sent" && <>Sent to client. <span className="text-muted">Awaiting review.</span></>}
+                </h2>
+                {(project.share_status === "rejected" || project.share_status === "awaiting_reply") && (
+                  <p className="mt-2 text-sm text-[var(--text-2)]">
+                    {(project.share_review?.concerns || "").slice(0, 140)}
+                    {(project.share_review?.concerns || "").length > 140 ? "…" : ""}
+                  </p>
                 )}
-
-                {/* Owner reply thread */}
-                {project.owner_replies?.length > 0 && (
-                  <div>
-                    <p className="mono-tag text-muted">YOUR REPLIES</p>
-                    <ul className="mt-2 space-y-3">
-                      {project.owner_replies.map((r, i) => (
-                        <li key={i} className="card-brut p-3">
-                          <p className="mono-tag text-muted">
-                            {r.from_name} · {(r.sent_at || "").slice(0, 10)}
-                          </p>
-                          <p className="mt-1 whitespace-pre-wrap text-sm">{r.text}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Reply composer — only if not yet awaiting reply */}
-                {project.share_status === "rejected" && (
-                  <div className="border-t border-ink/20 pt-4">
-                    <p className="mono-tag text-muted flex items-center gap-2">
-                      <MessageSquare size={11}/> REPLY TO THE CLIENT
-                    </p>
-                    <textarea
-                      className="textarea-brut mt-2"
-                      rows={4}
-                      value={reply}
-                      onChange={(e) => setReply(e.target.value)}
-                      placeholder="Acknowledge the concern. Pick a suggestion (or counter). Tell them what's next."
-                      data-testid="overview-reply-input"
-                    />
-                    <button
-                      onClick={sendReply}
-                      disabled={sendingReply || reply.trim().length < 4}
-                      className="btn-brut mt-3"
-                      data-testid="overview-reply-submit"
-                    >
-                      {sendingReply ? <><Loader2 size={12} className="animate-spin"/> Sending…</> : <><Send size={12}/> Send reply</>}
-                    </button>
-                  </div>
+                {project.share_status === "accepted" && project.share_review?.signature_name && (
+                  <p className="mt-2 text-sm text-[var(--text-2)]">
+                    Signed by <span className="text-[var(--text)]">{project.share_review.signature_name}</span>
+                    {project.share_review.role ? `, ${project.share_review.role}` : ""}
+                    {" · "}
+                    <span className="mono-tag text-signal text-[10.5px]">
+                      {project.share_review.accepted_count}/{project.share_review.total_items} SECTIONS SIGNED
+                    </span>
+                  </p>
                 )}
               </div>
-            )}
 
-            {project.share_review?.type === "accept" && (
-              <div className="mt-5">
-                <p className="text-sm">
-                  Accepted by{" "}
-                  <span className="font-display">{project.share_review.signature_name}</span>
-                  {project.share_review.role ? `, ${project.share_review.role}` : ""}
-                  {" · "}
-                  <span className="mono-tag text-signal">
-                    {project.share_review.accepted_count}/{project.share_review.total_items} SECTIONS SIGNED
-                  </span>
-                </p>
-              </div>
-            )}
+              {(project.share_status === "rejected" ||
+                project.share_status === "awaiting_reply" ||
+                project.share_status === "accepted") && (
+                <button
+                  type="button"
+                  onClick={() => setReviewModalOpen(true)}
+                  className="btn-primary shrink-0 self-start md:self-auto"
+                  data-testid="overview-view-review-cta"
+                >
+                  <Eye size={14} />{" "}
+                  {project.share_status === "accepted"
+                    ? "View acceptance"
+                    : project.share_status === "awaiting_reply"
+                    ? "View thread"
+                    : "View concerns & reply"}
+                </button>
+              )}
+            </div>
           </section>
         )}
+
+        <ClientReviewModal
+          open={reviewModalOpen}
+          onClose={() => setReviewModalOpen(false)}
+          project={project}
+          setProject={setProject}
+        />
 
         {/* Step grid — cards, one per milestone; fits on one screen. */}
         <section data-testid="overview-steps">

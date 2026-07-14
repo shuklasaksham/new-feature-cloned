@@ -571,7 +571,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
 
   if (phase === "write") {
     return (
-      <div className="review-accept-form" data-testid="review-reject-write">
+      <div className="review-reject-form" data-testid="review-reject-write">
         <div className="mb-6">
           <p className="mono-tag text-danger text-[10.5px] inline-flex items-center gap-2">
             <AlertTriangle size={12} /> RAISE CONCERNS
@@ -628,7 +628,7 @@ function RejectFlow({ doc, token, onDone, onCancel }) {
 
   // phase === suggestions
   return (
-    <div className="review-accept-form" data-testid="review-reject-suggestions">
+    <div className="review-reject-form" data-testid="review-reject-suggestions">
       <div className="mb-6">
         <p className="mono-tag text-signal text-[10.5px]">BEFORE YOU SEND</p>
         <h2 className="mt-1 font-display text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] text-[var(--text)]">

@@ -6,14 +6,15 @@ import {
   Check,
   Copy,
   Download,
+  Eye,
   Link as LinkIcon,
   Loader2,
-  Send,
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import BracketMark from "../components/BracketMark";
 import { api, API_BASE, formatApiError } from "../lib/api";
+import ClientReviewModal from "../components/ClientReviewModal";
 
 // Inline-style severity palette (Tailwind text classes get overridden by
 // `.mono-tag`'s hardcoded color, so use inline styles for guaranteed contrast).
@@ -31,6 +32,7 @@ export default function ProjectDocument() {
   const [error, setError] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -44,6 +46,46 @@ export default function ProjectDocument() {
       }
     })();
   }, [id]);
+
+  // ─── Real-time sync ──────────────────────────────────────────────────
+  // Owner needs to see when the client accepts / raises concerns without
+  // having to refresh the page. Poll every 6s until we hit a terminal
+  // ("accepted") state. Silent — no error toasts on transient failures.
+  useEffect(() => {
+    if (!project) return;
+    const terminal = project.share_status === "accepted";
+    const notShared = !project.share_status || project.share_status === "none";
+    if (terminal || notShared) return;
+    const timer = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/projects/${id}`);
+        setProject((cur) => {
+          if (!cur) return data;
+          if (
+            cur.share_status !== data.share_status ||
+            (cur.share_review?.submitted_at || "") !== (data.share_review?.submitted_at || "") ||
+            (cur.owner_replies?.length || 0) !== (data.owner_replies?.length || 0)
+          ) {
+            if (
+              cur.share_status !== data.share_status &&
+              (data.share_status === "accepted" || data.share_status === "rejected")
+            ) {
+              toast.success(
+                data.share_status === "accepted"
+                  ? "Your client accepted the sign-off."
+                  : "Your client raised concerns.",
+              );
+            }
+            return data;
+          }
+          return cur;
+        });
+      } catch {
+        /* silent */
+      }
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [id, project?.share_status]);
 
   const shareUrl = useMemo(() => {
     if (!project?.share_token) return "";
@@ -282,21 +324,15 @@ export default function ProjectDocument() {
               <p className="mono-tag text-muted text-[10px]">CLIENT REVIEW</p>
             </div>
 
-            {project.share_status === "accepted" && (
-              <AcceptedBadge review={project.share_review} />
-            )}
-            {project.share_status === "rejected" && (
-              <RejectedBadge
-                review={project.share_review}
+            {/* Compact status summary — every detail (concerns, suggestions,
+                replies, composer) lives inside <ClientReviewModal /> so the
+                sidebar never becomes a scroll-monster. */}
+            {(project.share_status === "accepted" ||
+              project.share_status === "rejected" ||
+              project.share_status === "awaiting_reply") && (
+              <ReviewSummary
                 project={project}
-                setProject={setProject}
-              />
-            )}
-            {project.share_status === "awaiting_reply" && (
-              <RejectedBadge
-                review={project.share_review}
-                project={project}
-                setProject={setProject}
+                onOpen={() => setReviewModalOpen(true)}
               />
             )}
 
@@ -347,6 +383,13 @@ export default function ProjectDocument() {
         </aside>
         </div>
       </div>
+
+      <ClientReviewModal
+        open={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        project={project}
+        setProject={setProject}
+      />
     </div>
   );
 }
@@ -354,6 +397,68 @@ export default function ProjectDocument() {
 // ---- Layout helpers ----
 function DocDivider() {
   return <div className="my-6 h-px" style={{ background: "rgba(255,255,255,0.08)" }} />;
+}
+
+// Compact review summary that lives inside the sidebar card. Every action
+// (viewing concerns, replying) opens the ClientReviewModal instead of
+// spilling content into the sidebar and forcing it to scroll.
+function ReviewSummary({ project, onOpen }) {
+  const status = project.share_status;
+  const review = project.share_review || {};
+  const isAccept = status === "accepted";
+  const isReject = status === "rejected";
+  const awaitingReply = status === "awaiting_reply";
+
+  const tone = isAccept ? "signal" : isReject ? "danger" : "muted";
+  const label = isAccept
+    ? "ACCEPTED"
+    : isReject
+    ? "CONCERNS RAISED"
+    : "REPLY SENT · AWAITING CLIENT";
+  const headline = isAccept
+    ? "Signed off. You’re clear to ship."
+    : isReject
+    ? "Client flagged something."
+    : "Waiting on the client’s next move.";
+  const cta = isAccept
+    ? "View acceptance"
+    : awaitingReply
+    ? "View thread"
+    : "View & reply";
+
+  return (
+    <div
+      className={`mt-4 border-l-4 pl-4 py-1 ${
+        isAccept ? "border-signal" : isReject ? "border-danger" : "border-signal"
+      }`}
+      data-testid="doc-review-summary"
+    >
+      <p className={`mono-tag ${tone === "signal" ? "text-signal" : tone === "danger" ? "text-danger" : "text-muted"}`}>
+        {label}
+      </p>
+      <p className="mt-2 text-sm text-[var(--text)]">{headline}</p>
+      {isAccept && (
+        <p className="text-xs text-muted mt-1">
+          {review.accepted_count}/{review.total_items} items · signed by{" "}
+          {review.signature_name || "your client"}
+        </p>
+      )}
+      {(isReject || awaitingReply) && review.concerns && (
+        <p className="text-xs text-muted mt-2 line-clamp-2">
+          “{review.concerns.slice(0, 120)}
+          {review.concerns.length > 120 ? "…" : ""}”
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={onOpen}
+        className="clay-signal px-4 py-2 t-tag press inline-flex items-center justify-center gap-2 w-full mt-4"
+        data-testid="doc-review-open-modal"
+      >
+        <Eye size={14} /> {cta}
+      </button>
+    </div>
+  );
 }
 
 function DocSection({ num, label, children }) {
@@ -412,144 +517,6 @@ function Row({ label, value }) {
     <div className="flex items-center justify-between gap-3">
       <span className="mono-tag text-muted">{label}</span>
       <span className="mono-tag">{value}</span>
-    </div>
-  );
-}
-
-function AcceptedBadge({ review }) {
-  return (
-    <div className="mt-4 border-l-4 border-signal pl-4 py-1" data-testid="doc-accepted-badge">
-      <p className="mono-tag text-signal">ACCEPTED</p>
-      <p className="mt-2 text-sm">
-        Signed by <strong>{review?.signature_name}</strong>
-        {review?.role ? `, ${review.role}` : ""}
-      </p>
-      <p className="text-xs text-muted mt-1">
-        {review?.accepted_count}/{review?.total_items} items confirmed ·{" "}
-        {review?.submitted_at ? new Date(review.submitted_at).toLocaleString() : ""}
-      </p>
-    </div>
-  );
-}
-
-function RejectedBadge({ review, project, setProject }) {
-  const [replyText, setReplyText] = useState("");
-  const [sending, setSending] = useState(false);
-  const replies = project?.owner_replies || [];
-  const awaitingReply = project?.share_status === "awaiting_reply";
-  const usableSuggestions = review?.ai_suggestions?.suggestions || [];
-
-  const applySuggestion = (s) => {
-    const draft = (s.what_to_say || s.what_to_change || "").trim();
-    if (draft) setReplyText(draft);
-  };
-
-  const send = async () => {
-    if (replyText.trim().length < 4) {
-      toast.error("Write a reply first — even one line is fine.");
-      return;
-    }
-    setSending(true);
-    try {
-      const { data } = await api.post(`/projects/${project.id}/reply`, { text: replyText.trim() });
-      setProject(data);
-      setReplyText("");
-      toast.success("Reply sent. Your client can re-review the same link.");
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div className="mt-4 border-l-4 border-danger pl-4 py-1" data-testid="doc-rejected-badge">
-      <p className="mono-tag text-danger">CONCERNS RAISED</p>
-      <p className="mt-2 text-sm whitespace-pre-wrap">{review?.concerns}</p>
-      {usableSuggestions.length > 0 && (
-        <div className="mt-4 border border-ink p-3 bg-paper">
-          <p className="mono-tag text-signal">BRACKET SUGGESTIONS</p>
-          {review.ai_suggestions.summary && (
-            <p className="text-xs text-muted mt-2 italic">{review.ai_suggestions.summary}</p>
-          )}
-          <ul className="mt-3 space-y-3">
-            {usableSuggestions.map((s, i) => (
-              <li key={i} data-testid={`doc-suggestion-${i}`}>
-                <p className="font-semibold text-sm">{i + 1}. {s.title}</p>
-                <p className="text-xs mt-1"><span className="mono-tag">SAY →</span> {s.what_to_say}</p>
-                <p className="text-xs mt-1"><span className="mono-tag">CHANGE →</span> {s.what_to_change}</p>
-                <button
-                  type="button"
-                  onClick={() => applySuggestion(s)}
-                  className="mt-2 mono-tag text-signal hover:text-ink"
-                  data-testid={`doc-use-suggestion-${i}`}
-                >
-                  USE THIS DRAFT →
-                </button>
-              </li>
-            ))}
-          </ul>
-          {review.ai_suggestions.watch_for && (
-            <p className="mono-tag text-danger mt-3">WATCH FOR · {review.ai_suggestions.watch_for}</p>
-          )}
-        </div>
-      )}
-      <p className="text-xs text-muted mt-3">
-        Signed by {review?.signature_name}
-        {review?.submitted_at ? ` · ${new Date(review.submitted_at).toLocaleString()}` : ""}
-      </p>
-
-      {/* Thread of replies the owner has already sent. */}
-      {replies.length > 0 && (
-        <div className="mt-5 border-t border-ink pt-4 space-y-3" data-testid="doc-owner-replies">
-          <p className="mono-tag text-signal">YOUR REPLIES</p>
-          {replies.map((r, i) => (
-            <div key={i} className="border-l-2 border-signal pl-3">
-              <p className="text-xs text-muted">
-                {r.from_name} · {new Date(r.sent_at).toLocaleString()}
-              </p>
-              <p className="text-sm mt-1 whitespace-pre-wrap">{r.text}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Compose box — only when not yet replied OR when we want to send another. */}
-      {!awaitingReply && (
-        <div className="mt-5 border-t border-ink pt-4" data-testid="doc-owner-reply-form">
-          <p className="mono-label">{"{ reply to your client }"}</p>
-          <textarea
-            rows={4}
-            className="textarea-brut mt-3"
-            placeholder="Write your reply (or click 'use this draft' above)."
-            value={replyText}
-            onChange={(ev) => setReplyText(ev.target.value)}
-            maxLength={4000}
-            data-testid="doc-owner-reply-text"
-          />
-          <button
-            type="button"
-            onClick={send}
-            disabled={sending || replyText.trim().length < 4}
-            className="btn-brut mt-3 w-full justify-center"
-            data-testid="doc-owner-reply-submit"
-          >
-            {sending ? "Sending…" : "Send reply to client"} <ArrowRight size={14} />
-          </button>
-          <p className="mono-tag text-muted mt-3">
-            THE SAME REVIEW LINK BOUNCES BACK TO YOUR CLIENT FOR ANOTHER LOOK.
-          </p>
-        </div>
-      )}
-
-      {awaitingReply && (
-        <div className="mt-5 border-t border-ink pt-4">
-          <p className="mono-tag text-signal" data-testid="doc-awaiting-reply">REPLY SENT · AWAITING CLIENT</p>
-          <p className="text-sm text-muted mt-2">
-            Client can now reopen the same link and respond to your reply.
-          </p>
-        </div>
-      )}
     </div>
   );
 }
