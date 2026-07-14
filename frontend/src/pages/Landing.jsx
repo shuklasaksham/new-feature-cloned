@@ -1033,11 +1033,15 @@ function FinalCTA() {
           transition={{ duration: 0.7 }}
           className="mono-tag text-signal inline-flex items-center gap-2"
         >
-          <Zap size={12} /> READY?
+          <Zap size={12} /> YOUR NEXT CLIENT STARTS HERE
         </motion.p>
 
         <h2 className="mt-6 font-display font-semibold italic tracking-[-0.02em] leading-[1.05] text-[36px] sm:text-[48px] md:text-[60px] lg:text-[72px] text-[var(--text)]">
-          <WordReveal text="Start building." tag="span" />
+          <WordReveal text="Paste the mess." tag="span" />
+          <br />
+          <span className="landing-hero-gradient">
+            <WordReveal text="We'll handle the rest." tag="span" delayBase={2} />
+          </span>
         </h2>
 
         {/* Animated gradient underline */}
@@ -1057,10 +1061,10 @@ function FinalCTA() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, delay: 0.6 }}
-          className="mt-10 max-w-[540px] mx-auto text-[15px] sm:text-base text-[var(--text-2)] leading-relaxed"
+          className="mt-10 max-w-[600px] mx-auto text-[15px] sm:text-base text-[var(--text-2)] leading-relaxed"
         >
-          One paste. One minute. A whole client-ready package.
-          No credit card. No formatting. No onboarding wizard.
+          Paste one email, WhatsApp chat or meeting note. Bracket turns it into scope,
+          deliverables, risks, decisions and client-ready documentation — in under a minute.
         </motion.p>
 
         <motion.div
@@ -1081,7 +1085,7 @@ function FinalCTA() {
         </motion.div>
 
         <p className="mt-6 text-[11px] text-[var(--text-3)] mono-tag">
-          FREE FOREVER · NO CARD · NO FORMATTING
+          FREE DURING EARLY ACCESS · NO CREDIT CARD · UNDER 60 SECONDS
         </p>
       </div>
     </section>
