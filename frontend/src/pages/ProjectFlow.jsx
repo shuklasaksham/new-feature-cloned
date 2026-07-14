@@ -221,7 +221,7 @@ export default function ProjectFlow() {
       </header>
 
       <main
-        className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-5 md:py-6 animate-fade-up"
+        className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-8 py-4 md:py-5 animate-fade-up"
         key={currentStep}
       >
         {currentStep === 1 && (
@@ -268,7 +268,7 @@ export default function ProjectFlow() {
   );
 }
 
-function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, children }) {
+function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, ask, children }) {
   // Truncate long "previously" summaries so the rail stays a single-line-ish reminder.
   const prevText = previously && previously.length > 180
     ? previously.slice(0, 177).trimEnd() + "…"
@@ -286,6 +286,11 @@ function StepShell({ num, label, title, kicker, previously, nextHint, nextUp, ch
             <span>{prevText}</span>
           </div>
         </div>
+      )}
+      {ask && (
+        <p className="mono-tag text-signal mt-2 mb-1 inline-flex items-center gap-1.5" data-testid={`step${num}-ask`}>
+          <Sparkles size={11} /> BRACKET ASKS
+        </p>
       )}
       <h1 className="t-hero mt-1 text-[26px] sm:text-[32px] md:text-[36px] leading-[1.1]">{title}</h1>
       {kicker && <p className="mt-2 text-muted max-w-2xl text-[13px] md:text-sm leading-relaxed">{kicker}</p>}
@@ -638,6 +643,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     <StepShell
       num={1}
       label="Understand"
+      ask={!framing}
       title={framing ? "Here's what's actually happening." : "What did your client send?"}
       kicker={framing ? "Sharper than the brief. Ready to compress." : "Paste anything — email, WhatsApp, notes. Bracket reads the mess."}
       nextUp={framing ? [] : ["Reframed problem", "Clarity score", "Tensions to watch"]}
@@ -668,8 +674,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-2 gap-5">
-        <div className="space-y-3" data-testid="step1-form">
+      <div className={framing ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
+        <div className={framing ? "space-y-3 lg:col-span-4" : "space-y-3"} data-testid="step1-form">
           <Field
             label="Paste anything from your client"
             testid="step1-paste"
@@ -750,7 +756,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
           <ErrorBox msg={error} />
         </div>
 
-        <div>
+        <div className={framing ? "lg:col-span-5" : ""}>
           {loading ? (
             <Step1Progress phase={phase} />
           ) : !framing ? (
@@ -760,8 +766,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               loading={false}
             />
           ) : (
-            <>
-              <OutputCard
+            <OutputCard
                 testid="step1-framing-output"
                 label={"{ 01 · reframed }"}
                 badge={<ClarityPill score={framing.clarity_score} label={framing.clarity_label} />}
@@ -774,11 +779,11 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                 reasoning={
                   <>
                     <p>
-                      Bracket re-read what you wrote and looked for the gap between <em>what you said</em> and <em>what the project actually is</em>. The reframed problem is the version of the brief your future self would have written if they&apos;d started with all the context.
+                      Bracket re-read your paste for the gap between <em>what you said</em> and <em>what the project actually is</em>.
                     </p>
                     {framing.clarity_label && (
                       <p className="mt-2 t-helper">
-                        <span className="t-tag">clarity ·</span> {framing.clarity_label.toLowerCase()} ({framing.clarity_score}/100). Higher means the situation is well-defined; lower means there are still unknowns to surface.
+                        <span className="t-tag">clarity ·</span> {framing.clarity_label.toLowerCase()} ({framing.clarity_score}/100).
                       </p>
                     )}
                   </>
@@ -788,12 +793,6 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                     <li><span className="t-tag text-muted">what · </span>{project.situation_input?.what || "—"}</li>
                     <li><span className="t-tag text-muted">who · </span>{project.situation_input?.who || "—"}</li>
                     <li><span className="t-tag text-muted">unclear · </span>{project.situation_input?.unclear || "—"}</li>
-                    {project.situation_input?.raw_paste && (
-                      <li className="pt-2 mt-2 border-t border-[var(--hairline)]">
-                        <span className="t-tag text-muted">paste · </span>
-                        <span className="text-xs text-muted">{wordCount(project.situation_input.raw_paste)} words</span>
-                      </li>
-                    )}
                   </ul>
                 }
               >
@@ -803,43 +802,45 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
                   ) : (
                     <EmptyModuleHint
                       testid="step1-tensions-empty"
-                      title="No tensions surfaced yet"
-                      blurb="Bracket didn't spot a hidden contradiction in your paste. That's rare — usually there's at least one. Paste more context (Slack thread, the actual brief PDF text) and challenge Bracket again to double-check."
+                      title="No tensions surfaced"
+                      blurb="Paste more context and challenge Bracket again."
                     />
                   )}
                 </OutputSection>
               </OutputCard>
-
-              <CelebrationCard
-                testid="step1-celebration"
-                chapter={1}
-                milestone="Project understood"
-                items={[
-                  { key: "words",    label: "words in",    count: wordCount(project.situation_input?.raw_paste || form.raw_paste) },
-                  { key: "tensions", label: "tensions",    count: (framing.tensions || []).length },
-                  { key: "clarity",  label: "clarity/100", count: framing.clarity_score || 0 },
-                ]}
-              />
-
-              {isSample && (
-                <div className="card-brut mt-5 p-4 sm:p-5 flex items-start gap-3" data-testid="step1-sample-done-banner">
-                  <Wand2 size={16} className="mt-0.5 text-signal shrink-0" />
-                  <div className="flex-1">
-                    <p className="t-body">Ready to analyze <strong>your own</strong> project?</p>
-                    <p className="text-xs text-muted mt-1">Bracket only takes about a minute of your input.</p>
-                  </div>
-                  <button
-                    onClick={clearSample}
-                    className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-1.5 whitespace-nowrap"
-                    data-testid="step1-analyze-own-btn"
-                  >
-                    Start yours <ArrowRight size={14} />
-                  </button>
-                </div>
-              )}
-            </>
           )}
         </div>
+
+        {framing && (
+          <div className="lg:col-span-3 space-y-4">
+            <CelebrationCard
+              testid="step1-celebration"
+              chapter={1}
+              milestone="Project understood"
+              items={[
+                { key: "words",    label: "words in",    count: wordCount(project.situation_input?.raw_paste || form.raw_paste) },
+                { key: "tensions", label: "tensions",    count: (framing.tensions || []).length },
+                { key: "clarity",  label: "clarity/100", count: framing.clarity_score || 0 },
+              ]}
+            />
+
+            {isSample && (
+              <div className="card-brut p-4 flex items-start gap-3" data-testid="step1-sample-done-banner">
+                <Wand2 size={14} className="mt-0.5 text-signal shrink-0" />
+                <div className="flex-1">
+                  <p className="t-body text-[13px]">Ready for <strong>your own</strong> project?</p>
+                  <button
+                    onClick={clearSample}
+                    className="clay-signal px-3 py-2 t-tag press inline-flex items-center gap-1.5 whitespace-nowrap mt-2 text-[11px]"
+                    data-testid="step1-analyze-own-btn"
+                  >
+                    Start yours <ArrowRight size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </StepShell>
   );
@@ -982,14 +983,15 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
     <StepShell
       num={2}
       label="Simplify"
-      title={compressed ? "Here's what actually matters." : "Simplify to the signal."}
-      kicker={compressed ? "Noise cut. Assumptions surfaced." : "Paste anything more — Slack, notes, references. Bracket keeps only what moves the call."}
+      ask={!compressed}
+      title={compressed ? "Here's what actually matters." : "What else should Bracket see?"}
+      kicker={compressed ? "Noise cut. Assumptions surfaced." : "Anything more — Slack, notes, references. Bracket keeps only what moves the call."}
       previously={project?.framing?.reframed_problem}
       nextUp={compressed ? [] : ["Key signals", "Noise removed", "Hidden assumptions"]}
       nextHint={compressed ? "pick the call" : undefined}
     >
-      <div className="grid lg:grid-cols-2 gap-5">
-        <div className="space-y-3" data-testid="step2-form">
+      <div className={compressed ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
+        <div className={compressed ? "space-y-3 lg:col-span-4" : "space-y-3"} data-testid="step2-form">
           <Field
             label="Paste anything about this project"
             testid="step2-paste"
@@ -1043,20 +1045,20 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
           <ErrorBox msg={error} />
         </div>
 
-        <div>
+        <div className={compressed ? "lg:col-span-5" : ""}>
           {loading ? (
             <StepProgress
               phase={phase}
               testid="step2-progress"
               rows={[
-                { target: "reading", doneLabel: "Requirements read",     activeLabel: "Reading everything you pasted…" },
+                { target: "reading", doneLabel: "Requirements read",     activeLabel: "Reading everything…" },
                 { target: "cutting", doneLabel: "Noise cut",              activeLabel: "Cutting what doesn't move the call…" },
-                { target: "naming",  doneLabel: "The one thing named",   activeLabel: "Naming what actually matters…" },
+                { target: "naming",  doneLabel: "The one thing named",   activeLabel: "Naming what matters…" },
               ]}
               estimate={[
-                { n: "~5", label: "signals kept" },
-                { n: "~4", label: "hidden assumptions" },
-                { n: "1", label: "core insight" },
+                { n: "~5", label: "signals" },
+                { n: "~4", label: "assumptions" },
+                { n: "1", label: "insight" },
               ]}
             />
           ) : !compressed ? (
@@ -1066,7 +1068,6 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               loading={false}
             />
           ) : (
-            <>
             <OutputCard
               testid="step2-context-output"
               label={"{ 02 · what actually matters }"}
@@ -1132,7 +1133,11 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
                 </OutputSection>
               )}
             </OutputCard>
+          )}
+        </div>
 
+        {compressed && (
+          <div className="lg:col-span-3">
             <CelebrationCard
               testid="step2-celebration"
               chapter={2}
@@ -1144,9 +1149,8 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
                 { key: "assumptions", label: "assumptions",  count: (compressed.hidden_assumptions || []).length },
               ]}
             />
-            </>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </StepShell>
   );
@@ -1193,14 +1197,15 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
     <StepShell
       num={3}
       label="Strategy"
-      title={decision ? "The call is in." : "Now call the shot."}
+      ask={!decision}
+      title={decision ? "The call is in." : "What's your read?"}
       kicker={decision ? "A stance, not a menu." : "What matters most, what you'd trade off, what worries you. A paragraph is plenty."}
       previously={project?.context?.what_actually_matters}
       nextUp={decision ? [] : ["The call", "Alternatives", "Trade-offs", "Risks"]}
       nextHint={decision ? "artifacts next" : undefined}
     >
-      <div className="grid lg:grid-cols-2 gap-5">
-        <div className="space-y-3" data-testid="step3-form">
+      <div className={decision ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
+        <div className={decision ? "space-y-3 lg:col-span-4" : "space-y-3"} data-testid="step3-form">
           <Field
             label="Paste your thinking on this decision"
             testid="step3-paste"
@@ -1254,7 +1259,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
           <ErrorBox msg={error} />
         </div>
 
-        <div>
+        <div className={decision ? "lg:col-span-5" : ""}>
           {loading ? (
             <StepProgress
               phase={phase}
@@ -1378,21 +1383,25 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
                   )}
                 </>
               )}
-
-              <CelebrationCard
-                testid="step3-celebration"
-                chapter={3}
-                milestone="Decision made"
-                items={[
-                  { key: "call",         label: "the call",     count: decision.recommendation?.title ? 1 : 0 },
-                  { key: "confidence",   label: "confidence",   count: decision.recommendation?.confidence || 0 },
-                  { key: "alternatives", label: "alternatives", count: (decision.alternatives || []).length },
-                  { key: "risks",        label: "risks",        count: (decision.risks || []).length },
-                ]}
-              />
             </div>
           )}
         </div>
+
+        {decision && (
+          <div className="lg:col-span-3">
+            <CelebrationCard
+              testid="step3-celebration"
+              chapter={3}
+              milestone="Decision made"
+              items={[
+                { key: "call",         label: "the call",     count: decision.recommendation?.title ? 1 : 0 },
+                { key: "confidence",   label: "confidence",   count: decision.recommendation?.confidence || 0 },
+                { key: "alternatives", label: "alternatives", count: (decision.alternatives || []).length },
+                { key: "risks",        label: "risks",        count: (decision.risks || []).length },
+              ]}
+            />
+          </div>
+        )}
       </div>
     </StepShell>
   );
@@ -1510,78 +1519,68 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
           />
         </div>
       ) : (
-        <div className="mt-5 space-y-5" data-testid="step4-artifacts-output">
-          <CelebrationCard
-            testid="step4-celebration"
-            chapter={4}
-            milestone="Artifacts drafted"
-            items={[
-              { key: "deliverables", label: "deliverables", count: (artifacts.scope_doc?.deliverables || []).length },
-              { key: "in-scope",     label: "in scope",     count: (artifacts.scope_doc?.in_scope || []).length },
-              { key: "risks",        label: "risks",        count: (artifacts.risk_flags || []).length },
-              { key: "assumptions",  label: "assumptions",  count: (artifacts.assumptions || []).length },
-            ]}
-          />
-          {/* Always show scope + client message first — most useful outputs. */}
-          <div className="grid md:grid-cols-2 gap-5">
-            <OutputCard
-              testid="artifact-SCOPE_DOC"
-              label={"{ 04 · scope }"}
-              badge={<span className="mono-tag text-signal">DRAFT</span>}
-              title={artifacts.scope_doc?.title || "Scope"}
-            >
-              <BlockList label="IN SCOPE" items={artifacts.scope_doc?.in_scope} />
-              <BlockList label="OUT OF SCOPE" items={artifacts.scope_doc?.out_of_scope} muted />
-              <BlockList label="DELIVERABLES" items={artifacts.scope_doc?.deliverables} />
-              {artifacts.scope_doc?.timeline_note && (
-                <div className="mt-4 border-t border-[var(--hairline)] pt-4">
-                  <p className="mono-tag text-muted">TIMELINE</p>
-                  <p className="mt-1 text-sm">{artifacts.scope_doc.timeline_note}</p>
-                </div>
-              )}
-            </OutputCard>
-
-            <OutputCard
-              testid="artifact-CLIENT_MESSAGE"
-              label={"{ 04 · client message }"}
-              badge={<span className="mono-tag text-signal">DRAFT</span>}
-              title="Client message"
-            >
-              <div className="whitespace-pre-wrap leading-relaxed text-sm">
-                {artifacts.client_message}
-              </div>
-              <CopyButton text={artifacts.client_message} />
-            </OutputCard>
-          </div>
-
-          {/* Progressive reveal: assumptions + risk flags are secondary. */}
-          {!revealMore && (
-            <button
-              type="button"
-              onClick={() => setRevealMore(true)}
-              className="disc-btn"
-              data-testid="step4-reveal-more"
-            >
-              <span className="chev">↓</span> Show assumptions & risk flags
-            </button>
-          )}
-
-          {revealMore && (
-            <div className="grid md:grid-cols-2 gap-6 animate-fade-up">
+        <div className="mt-4 grid lg:grid-cols-12 gap-5" data-testid="step4-artifacts-output">
+          {/* Scope + client message stacked on the left (2 cols on wide) */}
+          <div className="lg:col-span-9 space-y-5">
+            <div className="grid md:grid-cols-2 gap-5">
               <OutputCard
-                testid="artifact-ASSUMPTIONS"
-                label={"{ 04 · assumptions }"}
+                testid="artifact-SCOPE_DOC"
+                label={"{ 04 · scope }"}
                 badge={<span className="mono-tag text-signal">DRAFT</span>}
-                title="Assumptions"
+                title={artifacts.scope_doc?.title || "Scope"}
               >
-                <OutputList items={artifacts.assumptions || []} variant="numbered" />
+                <BlockList label="IN SCOPE" items={artifacts.scope_doc?.in_scope} />
+                <BlockList label="OUT OF SCOPE" items={artifacts.scope_doc?.out_of_scope} muted />
+                <BlockList label="DELIVERABLES" items={artifacts.scope_doc?.deliverables} />
+                {artifacts.scope_doc?.timeline_note && (
+                  <div className="mt-4 border-t border-[var(--hairline)] pt-4">
+                    <p className="mono-tag text-muted">TIMELINE</p>
+                    <p className="mt-1 text-sm">{artifacts.scope_doc.timeline_note}</p>
+                  </div>
+                )}
               </OutputCard>
 
               <OutputCard
-                testid="artifact-RISK_FLAGS"
-                label={"{ 04 · risk flags }"}
+                testid="artifact-CLIENT_MESSAGE"
+                label={"{ 04 · client message }"}
                 badge={<span className="mono-tag text-signal">DRAFT</span>}
-                title="Risk flags"
+                title="Client message"
+              >
+                <div className="whitespace-pre-wrap leading-relaxed text-sm">
+                  {artifacts.client_message}
+                </div>
+                <CopyButton text={artifacts.client_message} />
+              </OutputCard>
+            </div>
+
+            {/* Progressive reveal: assumptions + risk flags are secondary. */}
+            {!revealMore && (
+              <button
+                type="button"
+                onClick={() => setRevealMore(true)}
+                className="disc-btn"
+                data-testid="step4-reveal-more"
+              >
+                <span className="chev">↓</span> Show assumptions & risk flags
+              </button>
+            )}
+
+            {revealMore && (
+              <div className="grid md:grid-cols-2 gap-5 animate-fade-up">
+                <OutputCard
+                  testid="artifact-ASSUMPTIONS"
+                  label={"{ 04 · assumptions }"}
+                  badge={<span className="mono-tag text-signal">DRAFT</span>}
+                  title="Assumptions"
+                >
+                  <OutputList items={artifacts.assumptions || []} variant="numbered" />
+                </OutputCard>
+
+                <OutputCard
+                  testid="artifact-RISK_FLAGS"
+                  label={"{ 04 · risk flags }"}
+                  badge={<span className="mono-tag text-signal">DRAFT</span>}
+                  title="Risk flags"
               >
                 <OutputList
                   items={(artifacts.risk_flags || []).map((r) => ({
@@ -1594,6 +1593,21 @@ function Step4({ project, setProject, dirtyRef, onDone, onBack }) {
               </OutputCard>
             </div>
           )}
+          </div>
+
+          <div className="lg:col-span-3">
+            <CelebrationCard
+              testid="step4-celebration"
+              chapter={4}
+              milestone="Artifacts drafted"
+              items={[
+                { key: "deliverables", label: "deliverables", count: (artifacts.scope_doc?.deliverables || []).length },
+                { key: "in-scope",     label: "in scope",     count: (artifacts.scope_doc?.in_scope || []).length },
+                { key: "risks",        label: "risks",        count: (artifacts.risk_flags || []).length },
+                { key: "assumptions",  label: "assumptions",  count: (artifacts.assumptions || []).length },
+              ]}
+            />
+          </div>
         </div>
       )}
     </StepShell>

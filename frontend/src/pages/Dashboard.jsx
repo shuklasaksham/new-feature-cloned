@@ -194,11 +194,11 @@ export default function Dashboard() {
             className="mt-3 font-display font-semibold tracking-[-0.03em] leading-[1.05] text-[30px] sm:text-[38px] md:text-[44px]"
             data-testid="dashboard-hero-headline"
           >
-            Turn messy client conversations<br className="hidden sm:block" /> into client-ready projects.
+            Paste anything your client sent you.
           </h1>
-          <p className="mt-3 max-w-[620px] mx-auto text-[13px] sm:text-sm text-[var(--text-2)] leading-relaxed">
-            Paste an email, WhatsApp chat, meeting notes, or a brief. Bracket generates scope,
-            deliverables, timelines, risks, and documentation — the whole client-ready package.
+          <p className="mt-3 max-w-[640px] mx-auto text-[13px] sm:text-sm text-[var(--text-2)] leading-relaxed">
+            Email · WhatsApp · Meeting notes · Voice transcript · Contract. We&apos;ll figure out the rest —
+            scope, deliverables, timeline, risks, docs. The whole client-ready package.
           </p>
         </div>
 

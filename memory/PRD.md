@@ -358,3 +358,14 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Verified at 1440×900: Step 1 done delta 0, Step 2 done delta 0, Step 3 done delta 0, Step 4 done delta 0. Loading states also delta 0.
   - **⚠️ User must redeploy to push to production (use-bracket.com).**
 
+
+
+- 2026-07-14 — **Iteration 27 — P1: Wide 3-col step layout, "Bracket asks" conversational tone, Dashboard hero pivot** (verified via smoke):
+  - **Wide 3-col step layout (kills scrolling on all step pages)**: `main` container widened from `max-w-[1100px]` → `max-w-[1440px]`. Steps 1/2/3 switch from 2-col to a 12-col grid when AI output exists: `form (col-4) | OutputCard (col-5) | CelebrationCard (col-3)`. Step 4 uses `artifacts grid (col-9) | Celebration (col-3)`. Fills horizontal space, eliminates vertical stacking. Verified: Step 1/2/3 done all delta 0 at 1440×900.
+  - **Conversational AI feel (Problem 4)** — new `ask` prop on `StepShell` renders a `⁺ BRACKET ASKS` mono-tag prefix above the title when the step hasn't been generated yet. Titles rewritten as questions:
+    * Step 1: `What did your client send?`
+    * Step 2: `What else should Bracket see?`
+    * Step 3: `What's your read?`
+    Post-output titles remain declarative (`Here's what's actually happening.` / `Here's what actually matters.` / `The call is in.`).
+  - **Dashboard hero copy pivot (Problem 1)**: headline changed to `Paste anything your client sent you.` — one direct sentence, no question. Subtitle: `Email · WhatsApp · Meeting notes · Voice transcript · Contract. We'll figure out the rest — scope, deliverables, timeline, risks, docs. The whole client-ready package.`
+  - **⚠️ User must redeploy to push to production (use-bracket.com).**
