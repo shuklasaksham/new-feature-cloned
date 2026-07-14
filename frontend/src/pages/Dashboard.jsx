@@ -230,57 +230,48 @@ export default function Dashboard() {
       <Seo title="Dashboard" path="/app" noindex />
 
       {/* Cinematic dark backdrop — same `.hero-ambient` treatment used on
-         the Landing/Login pages so the app feels like one continuous universe. */}
-      <div aria-hidden="true" className="hero-ambient" />
+         the Landing/Login pages so the app feels like one continuous universe.
+         Dashboard variant dims the dots + blue glow for a calmer working
+         surface (users spend real time here, not just glancing). */}
+      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
         style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
-      />
-      {/* One faint ambient orb top-left, matching the Landing hero style. */}
-      <div
-        aria-hidden="true"
-        className="absolute -z-[5] pointer-events-none rounded-full"
-        style={{
-          width: 620, height: 620, top: "-18%", left: "-10%",
-          background: "radial-gradient(circle at 45% 45%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 55%)",
-          filter: "blur(70px)",
-        }}
       />
 
       <motion.main
         variants={container}
         initial="hidden"
         animate="show"
-        className="relative max-w-[1120px] w-full mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14"
+        className="relative max-w-[1400px] w-full mx-auto px-6 sm:px-8 md:px-10 py-6 md:py-8 flex flex-col gap-6 md:gap-8"
       >
-        {/* Hero — big cinematic headline with gradient accent, matches Landing type language. */}
+        {/* Hero — compact one-liner, sized to leave room for the working area below. */}
         <motion.div variants={item} className="text-center">
           <span className="section-label"><span className="dot" />Client Operating System</span>
           <h1
-            className="mt-4 font-display font-semibold tracking-[-0.03em] leading-[1.05] text-[34px] sm:text-[46px] md:text-[56px] text-[var(--text)]"
+            className="mt-2 font-display font-semibold tracking-[-0.03em] leading-[1.05] text-[28px] sm:text-[36px] md:text-[42px] text-[var(--text)]"
             data-testid="dashboard-hero-headline"
           >
             Paste anything your client sent you.
           </h1>
-          <p className="mt-4 max-w-[640px] mx-auto text-[13.5px] sm:text-[14.5px] text-[var(--text-2)] leading-relaxed">
-            Email · WhatsApp · Meeting notes · Voice transcript · Contract. Bracket figures out the rest —
-            scope, deliverables, timeline, risks, docs. The whole client-ready package.
+          <p className="mt-2 max-w-[720px] mx-auto text-[13px] sm:text-[13.5px] text-[var(--text-2)] leading-relaxed">
+            Email · WhatsApp · Meeting notes · Voice transcript · Contract. Bracket figures out the rest — scope, deliverables, timeline, risks, docs.
           </p>
         </motion.div>
 
         {/* Hero input — glassmorphic panel, the ONE primary action. */}
-        <motion.div variants={item} className="mt-8 md:mt-10 relative" data-testid="dashboard-hero-input-wrap">
+        <motion.div variants={item} className="relative" data-testid="dashboard-hero-input-wrap">
           <div className="dashboard-paste-panel liquid-glass relative overflow-hidden">
-            {/* Corner glow — subtle blue signal, ties it to the brand palette. */}
+            {/* Subtle corner glow — dimmed vs. the earlier version. */}
             <div
               aria-hidden="true"
-              className="absolute -top-24 -right-24 h-[280px] w-[280px] rounded-full blur-[80px] opacity-[0.16] pointer-events-none"
+              className="absolute -top-20 -right-20 h-[220px] w-[220px] rounded-full blur-[80px] opacity-[0.08] pointer-events-none"
               style={{ background: "radial-gradient(closest-side, #2E5BFF, transparent 70%)" }}
             />
             <textarea
               ref={inputRef}
-              rows={4}
+              rows={3}
               value={paste}
               onChange={(e) => setPaste(e.target.value)}
               onKeyDown={(e) => {
@@ -328,151 +319,161 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Quick-start briefs — glass tiles, matches Landing bento aesthetic. */}
-        <motion.div variants={item} className="mt-10 md:mt-14" data-testid="dashboard-quickstart-wrap">
-          <div className="flex items-baseline justify-between mb-4">
-            <p className="mono-tag text-muted text-[10px]">
-              OR START FROM AN EXAMPLE
-            </p>
-            <p className="text-[11px] text-[var(--text-3)] hidden sm:block">1-click populates the box</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {QUICK_STARTS.map((t) => {
-              const Icon = t.icon;
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => applyTemplate(t)}
-                  className="dashboard-tile group text-left"
-                  data-testid={`dashboard-quickstart-${t.key}`}
-                >
-                  <Icon size={15} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors" />
-                  <p className="mt-3 text-[13.5px] font-medium leading-tight">{t.label}</p>
-                  <p className="mt-1 text-[11px] text-[var(--text-3)] leading-snug">{t.kicker}</p>
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* AI output preview — sets expectation of what Bracket produces. */}
-        <motion.div variants={item} className="mt-10 md:mt-14" data-testid="dashboard-outputs-wrap">
-          <p className="mono-tag text-muted text-[10px] mb-4">
-            BRACKET PRODUCES
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {AI_OUTPUTS.map((o) => {
-              const Icon = o.icon;
-              return (
-                <div key={o.label} className="dashboard-tile dashboard-tile--output">
-                  <Icon size={15} className="text-[var(--accent)]" />
-                  <p className="mt-2 text-[13.5px] font-medium leading-tight">{o.label}</p>
-                  <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug">{o.hint}</p>
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Recent projects — glass rail, cinematic status pills. */}
-        {loading ? (
-          <motion.div
-            variants={item}
-            className="mt-10 md:mt-14 grid sm:grid-cols-2 gap-3"
-            data-testid="dashboard-loading-skeleton"
-            aria-busy="true"
-          >
-            {[0, 1].map((i) => (
-              <div key={i} className="dashboard-tile p-4">
-                <div className="skeleton-bar h-2.5 w-24 rounded" />
-                <div className="skeleton-bar h-3 w-1/2 rounded mt-2" />
-                <div className="skeleton-bar h-2.5 w-1/3 rounded mt-2" />
-              </div>
-            ))}
-          </motion.div>
-        ) : projects.length > 0 ? (
-          <motion.div variants={item} className="mt-10 md:mt-14" data-testid="dashboard-recent-wrap">
-            <div className="flex items-baseline justify-between mb-4">
-              <p className="mono-tag text-muted text-[10px]">
-                RECENT · {projects.length}
-              </p>
-              {projects.length > 2 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllProjects((v) => !v)}
-                  className="text-[11px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
-                  data-testid="dashboard-recent-view-all"
-                >
-                  {showAllProjects ? "Show fewer ←" : `View all ${projects.length} →`}
-                </button>
-              )}
+        {/* Working area — 3-column layout uses the full horizontal width so
+           everything fits on one screen without scrolling. Collapses on
+           smaller viewports. */}
+        <motion.div
+          variants={item}
+          className="grid grid-cols-1 lg:grid-cols-[1fr_1fr_1.1fr] gap-4 md:gap-5"
+          data-testid="dashboard-working-area"
+        >
+          {/* Column 1 — Quickstarts. */}
+          <div data-testid="dashboard-quickstart-wrap">
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="mono-tag text-muted text-[10px]">START FROM AN EXAMPLE</p>
+              <p className="text-[10px] text-[var(--text-3)] hidden xl:block">populates the box</p>
             </div>
-            <div className={`grid sm:grid-cols-2 gap-3 ${showAllProjects ? "max-h-[50vh] overflow-y-auto pr-1 dash-scroll" : ""}`} data-testid="dashboard-recent-list">
-              {(showAllProjects ? projects : projects.slice(0, 2)).map((p) => {
-                const isLocked = p.status === "locked";
-                const stepPct = Math.round(((p.step || 1) / 5) * 100);
+            <div className="grid grid-cols-1 gap-2">
+              {QUICK_STARTS.map((t) => {
+                const Icon = t.icon;
                 return (
-                  <div
-                    key={p.id}
-                    className="dashboard-recent-card group relative"
-                    data-testid={`dashboard-recent-${p.id}`}
+                  <button
+                    key={t.key}
+                    type="button"
+                    onClick={() => applyTemplate(t)}
+                    className="dashboard-tile dashboard-tile--row group text-left"
+                    data-testid={`dashboard-quickstart-${t.key}`}
                   >
-                    <Link to={`/project/${p.id}`} className="block p-4 sm:p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="font-medium text-[14px] truncate flex-1 pr-16">{p.name}</p>
-                        <span
-                          className="mono-tag px-2 py-0.5 rounded shrink-0 text-[10px]"
-                          style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
-                        >
-                          {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2 text-[11.5px] text-[var(--text-3)]">
-                        <span>Step {p.step || 1} / 5</span>
-                        <span>·</span>
-                        <span>{formatDate(p.updated_at)}</span>
-                      </div>
-                      <div className="mt-3 h-[3px] bg-[var(--surface-2)] rounded-full overflow-hidden">
-                        <div
-                          className="h-full transition-all duration-500"
-                          style={{
-                            width: `${stepPct}%`,
-                            background: isLocked
-                              ? "linear-gradient(90deg, #2E5BFF, #7CD5FF)"
-                              : "linear-gradient(90deg, var(--text-2), var(--text-3))",
-                          }}
-                        />
-                      </div>
-                    </Link>
-                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); renameProject(p); }}
-                        className="p-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
-                        title="Rename"
-                        aria-label="Rename project"
-                        data-testid={`dashboard-recent-rename-${p.id}`}
-                      >
-                        <Pencil size={12} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
-                        className="p-1.5 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--danger)] transition-colors"
-                        title="Delete"
-                        aria-label="Delete project"
-                        data-testid={`dashboard-recent-delete-${p.id}`}
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                    <Icon size={14} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium leading-tight truncate">{t.label}</p>
+                      <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug truncate">{t.kicker}</p>
                     </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Column 2 — What Bracket produces. */}
+          <div data-testid="dashboard-outputs-wrap">
+            <p className="mono-tag text-muted text-[10px] mb-3">BRACKET PRODUCES</p>
+            <div className="grid grid-cols-2 gap-2">
+              {AI_OUTPUTS.map((o) => {
+                const Icon = o.icon;
+                return (
+                  <div key={o.label} className="dashboard-tile dashboard-tile--output">
+                    <Icon size={14} className="text-[var(--accent)]" />
+                    <p className="mt-1.5 text-[12.5px] font-medium leading-tight">{o.label}</p>
+                    <p className="mt-0.5 text-[10.5px] text-[var(--text-3)] leading-snug">{o.hint}</p>
                   </div>
                 );
               })}
             </div>
-          </motion.div>
-        ) : null}
+          </div>
+
+          {/* Column 3 — Recent projects. Wider — this is where users act. */}
+          <div data-testid="dashboard-recent-wrap">
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="mono-tag text-muted text-[10px]">
+                RECENT · {loading ? "…" : projects.length}
+              </p>
+              {!loading && projects.length > 3 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllProjects((v) => !v)}
+                  className="text-[10px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+                  data-testid="dashboard-recent-view-all"
+                >
+                  {showAllProjects ? "Fewer ←" : `View all →`}
+                </button>
+              )}
+            </div>
+            {loading ? (
+              <div className="grid grid-cols-1 gap-2" data-testid="dashboard-loading-skeleton" aria-busy="true">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="dashboard-tile p-3">
+                    <div className="skeleton-bar h-2.5 w-24 rounded" />
+                    <div className="skeleton-bar h-3 w-1/2 rounded mt-2" />
+                  </div>
+                ))}
+              </div>
+            ) : projects.length > 0 ? (
+              <div
+                className={`grid grid-cols-1 gap-2 ${showAllProjects ? "max-h-[54vh] overflow-y-auto pr-1 dash-scroll" : ""}`}
+                data-testid="dashboard-recent-list"
+              >
+                {(showAllProjects ? projects : projects.slice(0, 3)).map((p) => {
+                  const isLocked = p.status === "locked";
+                  const stepPct = Math.round(((p.step || 1) / 5) * 100);
+                  return (
+                    <div
+                      key={p.id}
+                      className="dashboard-recent-card group relative"
+                      data-testid={`dashboard-recent-${p.id}`}
+                    >
+                      <Link to={`/project/${p.id}`} className="block p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-medium text-[13px] truncate flex-1 pr-14">{p.name}</p>
+                          <span
+                            className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[9.5px]"
+                            style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
+                          >
+                            {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
+                          <span>Step {p.step || 1} / 5</span>
+                          <span>·</span>
+                          <span>{formatDate(p.updated_at)}</span>
+                        </div>
+                        <div className="mt-2 h-[2px] bg-[var(--surface-2)] rounded-full overflow-hidden">
+                          <div
+                            className="h-full transition-all duration-500"
+                            style={{
+                              width: `${stepPct}%`,
+                              background: isLocked
+                                ? "linear-gradient(90deg, #2E5BFF, #7CD5FF)"
+                                : "linear-gradient(90deg, var(--text-2), var(--text-3))",
+                            }}
+                          />
+                        </div>
+                      </Link>
+                      <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); renameProject(p); }}
+                          className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--text)] transition-colors"
+                          title="Rename"
+                          aria-label="Rename project"
+                          data-testid={`dashboard-recent-rename-${p.id}`}
+                        >
+                          <Pencil size={10} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteProject(p); }}
+                          className="p-1 rounded hover:bg-[var(--surface-2)] text-[var(--text-3)] hover:text-[var(--danger)] transition-colors"
+                          title="Delete"
+                          aria-label="Delete project"
+                          data-testid={`dashboard-recent-delete-${p.id}`}
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="dashboard-tile dashboard-tile--empty flex items-center justify-center h-[120px]">
+                <p className="text-[12px] text-[var(--text-3)] text-center">
+                  Your first project<br />will show up here.
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.div>
       </motion.main>
     </div>
   );

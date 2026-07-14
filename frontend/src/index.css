@@ -2006,3 +2006,38 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   border-color: rgba(46, 91, 255, 0.34);
 }
 .dashboard-recent-card a { color: inherit; }
+
+/* Dashboard-only tile variant — horizontal row with icon + text. Used for
+   the quickstart column so each tile fits in one narrow line. */
+.dashboard-tile--row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px 14px;
+}
+.dashboard-tile--output {
+  padding: 12px 14px 14px 14px;
+  min-height: 78px;
+}
+.dashboard-tile--empty {
+  cursor: default;
+  padding: 20px;
+}
+
+/* Dashboard variant of `.hero-ambient` — dimmer dots + weaker blue glow so
+   the working surface reads calm. Overrides the base rules from the top of
+   this file. Users spend real time on the dashboard; the marketing hero can
+   be louder. */
+.hero-ambient--dashboard {
+  background:
+    radial-gradient(600px 400px at 12% 0%, rgba(46, 91, 255, 0.06), transparent 60%),
+    radial-gradient(500px 380px at 88% 100%, rgba(124, 213, 255, 0.03), transparent 65%);
+}
+.hero-ambient--dashboard::after {
+  background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 30px 30px;
+  mask-image: radial-gradient(ellipse 100% 90% at 50% 40%, #000 45%, transparent 90%);
+  -webkit-mask-image: radial-gradient(ellipse 100% 90% at 50% 40%, #000 45%, transparent 90%);
+  opacity: 0.9;
+}
