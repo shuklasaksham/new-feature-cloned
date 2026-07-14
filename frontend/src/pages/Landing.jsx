@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  ArrowLeft,
   ArrowRight,
   ArrowUpRight,
   Sparkles,
@@ -372,97 +373,111 @@ const SHOWCASE = [
 ];
 
 function Showcase() {
-  const shouldReduce = useReducedMotion();
-  const wrapRef = useRef(null);
   const stripRef = useRef(null);
-  // Measured horizontal distance the strip must travel (in px). We compute
-  // it from actual rendered widths — the max-w cap on cards on large screens
-  // makes fixed vw math wildly incorrect and creates the "blank end" bug.
-  const [travel, setTravel] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
 
+  // Sync the active dot with whichever card is currently centered in the strip.
   useEffect(() => {
-    if (shouldReduce) return;
-    const measure = () => {
-      const strip = stripRef.current;
-      if (!strip) return;
-      // scrollWidth includes the last card's width and its right edge —
-      // even with pl padding, the visible right edge = scrollWidth.
-      const stripWidth = strip.scrollWidth;
-      const vw = window.innerWidth;
-      // How far to translate so the last card's right edge lines up
-      // with the viewport's right edge. Add a small breathing gutter (40px).
-      const distance = Math.max(0, stripWidth - vw + 40);
-      setTravel(distance);
+    const strip = stripRef.current;
+    if (!strip) return;
+    const onScroll = () => {
+      const cards = strip.querySelectorAll("[data-showcase-card]");
+      if (!cards.length) return;
+      const stripRect = strip.getBoundingClientRect();
+      const centerX = stripRect.left + stripRect.width / 2;
+      let best = 0;
+      let bestDist = Infinity;
+      cards.forEach((el, i) => {
+        const r = el.getBoundingClientRect();
+        const c = r.left + r.width / 2;
+        const d = Math.abs(c - centerX);
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      setActiveIndex(best);
     };
-    measure();
-    const ro = new ResizeObserver(measure);
-    if (stripRef.current) ro.observe(stripRef.current);
-    window.addEventListener("resize", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [shouldReduce]);
+    strip.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => strip.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const { scrollYProgress } = useScroll({
-    target: wrapRef,
-    offset: ["start start", "end end"],
-  });
-  // Container height in vh — proportional to horizontal travel. 1vw of travel
-  // ≈ 0.85vh of scroll depth, plus 1 viewport so the section pins for the
-  // full duration. Falls back to a reasonable default before measurement.
-  const travelVw = travel > 0 ? (travel / window.innerWidth) * 100 : 200;
-  const totalHeight = Math.max(180, Math.round(travelVw * 0.85 + 100));
+  const scrollToIndex = (i) => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    const cards = strip.querySelectorAll("[data-showcase-card]");
+    const target = cards[Math.max(0, Math.min(cards.length - 1, i))];
+    if (!target) return;
+    const stripRect = strip.getBoundingClientRect();
+    const cardRect = target.getBoundingClientRect();
+    const delta =
+      cardRect.left - stripRect.left - (stripRect.width - cardRect.width) / 2;
+    strip.scrollBy({ left: delta, behavior: "smooth" });
+  };
 
-  const x = useTransform(
-    scrollYProgress,
-    [0.02, 0.98],
-    [0, -travel]
-  );
-
-  if (shouldReduce) {
-    return (
-      <section className="landing-showcase-static" data-testid="landing-showcase-static">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-24 md:py-32">
-          <SectionHeading
-            tag="THE FLOW"
-            title="From mess to decision, in five chapters."
-          />
-          <div className="mt-14 grid md:grid-cols-2 gap-6">
-            {SHOWCASE.map((c) => <ShowcaseCard key={c.tag} card={c} />)}
-          </div>
-        </div>
-      </section>
-    );
-  }
+  const canPrev = activeIndex > 0;
+  const canNext = activeIndex < SHOWCASE.length - 1;
 
   return (
-    <section
-      ref={wrapRef}
-      className="relative"
-      style={{ height: `${totalHeight}vh` }}
-      data-testid="landing-showcase"
-    >
-      <div className="sticky top-0 h-screen overflow-hidden flex flex-col">
-        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 pt-20 md:pt-28 w-full">
+    <section className="relative py-24 md:py-32" data-testid="landing-showcase">
+      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
+        <div className="flex items-end justify-between gap-6 flex-wrap">
           <SectionHeading
             tag="THE FLOW"
             title="From mess to decision, in five chapters."
           />
+          {/* Carousel controls (desktop) */}
+          <div className="hidden md:flex items-center gap-2 shrink-0" data-testid="showcase-controls">
+            <button
+              type="button"
+              onClick={() => scrollToIndex(activeIndex - 1)}
+              disabled={!canPrev}
+              aria-label="Previous card"
+              data-testid="showcase-prev"
+              className="showcase-nav-btn"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToIndex(activeIndex + 1)}
+              disabled={!canNext}
+              aria-label="Next card"
+              data-testid="showcase-next"
+              className="showcase-nav-btn"
+            >
+              <ArrowRight size={16} />
+            </button>
+          </div>
         </div>
-        <div className="relative flex-1 flex items-center overflow-hidden">
-          <motion.div
-            ref={stripRef}
-            style={{ x }}
-            className="flex gap-8 pl-[5vw] pr-[5vw] will-change-transform"
+      </div>
+
+      <div
+        ref={stripRef}
+        className="showcase-carousel mt-14 flex gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
+        data-testid="showcase-strip"
+      >
+        {SHOWCASE.map((c) => (
+          <div
+            key={c.tag}
+            data-showcase-card
+            className="shrink-0 snap-center w-[86vw] sm:w-[62vw] md:w-[55vw] max-w-[620px]"
           >
-            {SHOWCASE.map((c) => (
-              <div key={c.tag} className="shrink-0 w-[86vw] sm:w-[55vw] max-w-[620px]">
-                <ShowcaseCard card={c} />
-              </div>
-            ))}
-          </motion.div>
-        </div>
+            <ShowcaseCard card={c} />
+          </div>
+        ))}
+      </div>
+
+      {/* Dot pagination */}
+      <div className="mt-6 flex justify-center gap-2" data-testid="showcase-dots">
+        {SHOWCASE.map((c, i) => (
+          <button
+            key={c.tag}
+            type="button"
+            onClick={() => scrollToIndex(i)}
+            aria-label={`Go to ${c.tag}`}
+            data-testid={`showcase-dot-${i}`}
+            className={`showcase-dot ${i === activeIndex ? "is-active" : ""}`}
+          />
+        ))}
       </div>
     </section>
   );

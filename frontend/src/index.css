@@ -1652,6 +1652,42 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .landing-showcase-static { background: linear-gradient(180deg, #08090A 0%, #050506 100%); }
 
+/* Carousel — hide native scrollbar but keep scroll interactivity */
+.showcase-carousel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.showcase-carousel::-webkit-scrollbar { display: none; }
+
+.showcase-nav-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; width: 40px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--text);
+  transition: background .25s ease, border-color .25s ease, transform .2s ease, opacity .25s ease;
+}
+.showcase-nav-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.16);
+}
+.showcase-nav-btn:active:not(:disabled) { transform: scale(0.96); }
+.showcase-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.showcase-dot {
+  width: 24px; height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.14);
+  transition: background .25s ease, width .3s ease;
+  cursor: pointer;
+}
+.showcase-dot:hover { background: rgba(255,255,255,0.22); }
+.showcase-dot.is-active {
+  background: var(--accent);
+  width: 36px;
+}
+
 /* Bento */
 .bento-card {
   position: relative;
