@@ -1677,9 +1677,9 @@ async def export_markdown(project_id: str):
 # --- PDF EXPORT -----------------------------------------------------------
 # Brand accent RGB for the new #5E6AD2 (Linear-inspired violet-blue).
 _ACCENT = (94, 106, 210)
-_MUTED = (128, 128, 138)
-_INK = (18, 20, 26)
-_INK_2 = (55, 60, 70)
+_MUTED = (85, 90, 100)
+_INK = (0, 0, 0)
+_INK_2 = (25, 25, 28)
 
 
 class _BracketPDF(FPDF):
@@ -1924,7 +1924,7 @@ def _pdf_for(project: dict) -> bytes:
         rec = decision.get("recommendation") or {}
         H("Decision")
         p.set_font("Helvetica", "B", 13)
-        p.set_text_color(10, 10, 10)
+        p.set_text_color(*_INK)
         _reset_x()
         try:
             p.multi_cell(0, 7, _pdf_text(rec.get("title") or ""))
@@ -1934,7 +1934,15 @@ def _pdf_for(project: dict) -> bytes:
             p.ln(7)
         p.set_font("Helvetica", "I", 10)
         p.set_text_color(*_ACCENT)
-        p.cell(0, 5, _pdf_text(f"Confidence: {rec.get('confidence', 0)}%"), ln=1)
+        # multi_cell instead of cell — cell(0, …) at width 0 hard-truncates
+        # long text (e.g. "Confidence: 100%") on some page geometries.
+        _reset_x()
+        try:
+            p.multi_cell(0, 5, _pdf_text(f"Confidence: {rec.get('confidence', 0)}%"))
+        except Exception as exc:
+            logger.warning(f"pdf confidence line failed: {exc}")
+            _reset_x()
+            p.ln(5)
         p.ln(1)
         P(rec.get("rationale") or "")
 
@@ -1942,12 +1950,12 @@ def _pdf_for(project: dict) -> bytes:
             SH("Alternatives")
             p.set_font("Helvetica", "", 11)
             for alt in decision["alternatives"]:
-                p.set_text_color(10, 10, 10)
+                p.set_text_color(*_INK)
                 p.set_font("Helvetica", "B", 11)
                 _reset_x()
                 p.cell(0, 6, _pdf_text("- " + (alt.get("title") or "")), ln=1)
                 p.set_font("Helvetica", "", 10)
-                p.set_text_color(80, 80, 80)
+                p.set_text_color(*_INK_2)
                 if alt.get("when_to_choose"):
                     _safe_multi_cell(0, 5, "   When: " + alt["when_to_choose"])
                 if alt.get("cost"):

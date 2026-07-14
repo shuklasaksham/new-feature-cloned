@@ -49,7 +49,7 @@ export default function Navbar() {
       <div className="cinema-nav-inner">
         {/* Brand */}
         <Link to={logoHref} className="cinema-nav-brand group" data-testid="nav-logo-link">
-          <BracketMark size={40} label={true} />
+          <BracketMark size={30} label={true} />
         </Link>
 
         {/* Center nav */}

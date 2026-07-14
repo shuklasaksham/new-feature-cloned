@@ -60,7 +60,7 @@ export default function ClaimProjects() {
       <header className="border-b border-ink">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center">
           <Link to="/" className="flex items-center" aria-label="Bracket home">
-            <BracketMark size={40} />
+            <BracketMark size={30} />
           </Link>
         </div>
       </header>

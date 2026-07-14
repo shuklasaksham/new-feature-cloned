@@ -11,6 +11,10 @@ import {
   Compass,
   AlertTriangle,
   Zap,
+  LayoutDashboard,
+  GitBranch,
+  Mail,
+  Lock,
 } from "lucide-react";
 import {
   motion,
@@ -589,51 +593,61 @@ const BENTO = [
     tag: "DASHBOARD",
     title: "Everything starts here.",
     hint: "Paste one client conversation. Bracket turns it into a structured project workspace.",
-    img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1200&q=80",
+    icon: "LayoutDashboard",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "SCOPE",
     title: "Scope. Ready to send.",
     hint: "Deliverables, timeline and assumptions drafted automatically.",
-    img: "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80",
+    icon: "ListChecks",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "RISKS",
     title: "Risks your client never mentioned.",
     hint: "Spot hidden risks before they become expensive revisions.",
-    img: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80",
+    icon: "AlertTriangle",
   },
   {
     span: "col-span-1 md:col-span-1 md:row-span-2",
     tag: "DECISION",
     title: "Decisions backed by evidence.",
     hint: "Understand trade-offs and move forward with confidence.",
-    img: "https://images.unsplash.com/photo-1523726491678-bf852e717f6a?auto=format&fit=crop&w=800&q=80",
+    icon: "GitBranch",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "MESSAGE",
     title: "The client email, in your voice.",
     hint: "Generate polished responses from everything Bracket already knows.",
-    img: "https://images.unsplash.com/photo-1596526131083-e8c633c948d2?auto=format&fit=crop&w=800&q=80",
+    icon: "Mail",
   },
   {
     span: "col-span-2 md:col-span-2",
     tag: "SPEED",
     title: "From brief to project in under a minute.",
     hint: "Skip the setup. Get straight to the work.",
-    img: "https://images.unsplash.com/photo-1541746972996-4e0b0f43e02a?auto=format&fit=crop&w=1200&q=80",
+    icon: "Zap",
   },
   {
     span: "col-span-1 md:col-span-1",
     tag: "LOCK",
     title: "Locked. Signed. Shipped.",
     hint: "Export polished documents and keep every decision documented.",
-    img: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80",
+    icon: "Lock",
   },
 ];
+
+const BENTO_ICON_MAP = {
+  LayoutDashboard,
+  ListChecks,
+  AlertTriangle,
+  GitBranch,
+  Mail,
+  Zap,
+  Lock,
+};
 
 function Bento() {
   return (
@@ -654,6 +668,7 @@ function Bento() {
 }
 
 function BentoCard({ tile }) {
+  const Icon = tile.icon ? BENTO_ICON_MAP[tile.icon] : null;
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -662,31 +677,16 @@ function BentoCard({ tile }) {
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       className={`bento-card group ${tile.span}`}
     >
-      {/* Stock image with dark gradient scrim so text stays readable.
-         Zooms in on hover for that "peek into the product" feel. */}
-      {tile.img && (
-        <>
-          <img
-            src={tile.img}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            decoding="async"
-            className="absolute inset-0 h-full w-full object-cover opacity-40 group-hover:opacity-70 scale-100 group-hover:scale-110 transition-[opacity,transform] duration-[700ms] ease-out"
-          />
-          <div
-            aria-hidden="true"
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(8,9,10,0.4) 0%, rgba(8,9,10,0.75) 55%, rgba(8,9,10,0.95) 100%)",
-            }}
-          />
-        </>
-      )}
       <div className="bento-card-glow" aria-hidden="true" />
       <div className="relative z-10 h-full flex flex-col justify-between p-5 sm:p-6">
-        <p className="mono-tag text-signal text-[10px]">{tile.tag}</p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="mono-tag text-signal text-[10px]">{tile.tag}</p>
+          {Icon && (
+            <span className="bento-card-icon" aria-hidden="true">
+              <Icon size={18} strokeWidth={1.6} />
+            </span>
+          )}
+        </div>
         <div>
           <h4 className="font-display font-semibold tracking-[-0.02em] text-[18px] sm:text-[22px] leading-[1.15]">
             {tile.title}

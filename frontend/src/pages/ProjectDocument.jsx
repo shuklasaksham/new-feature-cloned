@@ -561,10 +561,6 @@ function ShareLinkPanel({ url }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
-  const subject = encodeURIComponent("Review the project document");
-  const body = encodeURIComponent(
-    `Hi,\n\nReview the project sign-off here:\n${url}\n\nClick through to accept each item and sign, or send back concerns.\n\nThanks.`
-  );
   return (
     <div className="mt-3">
       <p className="mono-tag text-signal">REVIEW LINK READY</p>
@@ -578,13 +574,6 @@ function ShareLinkPanel({ url }) {
           {copied ? <Check size={12} /> : <Copy size={12} />}
         </button>
       </div>
-      <a
-        href={`mailto:?subject=${subject}&body=${body}`}
-        className="btn-brut mt-3 w-full justify-center"
-        data-testid="doc-share-email-btn"
-      >
-        <Send size={14} /> Send via email
-      </a>
       <p className="mono-tag text-muted mt-3">
         ANYONE WITH THE LINK CAN REVIEW. THEY DON&apos;T NEED AN ACCOUNT.
       </p>
