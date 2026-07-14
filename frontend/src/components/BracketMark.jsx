@@ -16,7 +16,7 @@ export default function BracketMark({
   variant = "chalk",
   className = "",
 }) {
-  const iconAspect = 162 / 179; // width / height of the cropped `{ }` mark
+  const iconAspect = 688 / 179; // width / height of the attached PNG (as-is)
   const iconWidth = Math.round(size * iconAspect);
   return (
     <img
