@@ -221,12 +221,6 @@ function Hero() {
          the Login page (blue-signal radial wash + subtle dot grid). Keeps
          the whole app in one visual universe, without a photo backdrop. */}
       <div aria-hidden="true" className="hero-ambient" />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10"
-        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
-      />
-
       {/* Ambient orbs — soft blurred spheres scattered across the stage.
          Layered above the base ambient, below the copy. Subtle slow drift
          gives the hero atmosphere without pulling attention from the type. */}
@@ -1031,7 +1025,6 @@ function PricingCard({ tier, price, symbol, popular }) {
 function FinalCTA() {
   return (
     <section className="relative py-32 md:py-40 overflow-hidden isolate" data-testid="landing-final-cta">
-      <div className="absolute inset-0 -z-20" style={{ background: "linear-gradient(180deg, #08090A 0%, #050506 50%, #030304 100%)" }} />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10 opacity-40"
@@ -1189,13 +1182,18 @@ export default function Landing() {
         description="Bracket is the decision OS for freelance designers. Turn messy client conversations into scoped, decisioned, client-ready projects in under a minute."
         path="/"
       />
-      <Hero />
-      <Showcase />
-      <Bento />
-      <Story />
-      <Testimonials />
-      <PricingSection />
-      <FinalCTA />
+      {/* Single seamless page background — soft, near-black vertical gradient
+          that flows the whole scroll. Per-section backgrounds only add subtle
+          radial washes on top of this base, so no more abrupt cuts. */}
+      <div className="landing-page-bg" data-testid="landing-page-root">
+        <Hero />
+        <Showcase />
+        <Bento />
+        <Story />
+        <Testimonials />
+        <PricingSection />
+        <FinalCTA />
+      </div>
     </>
   );
 }

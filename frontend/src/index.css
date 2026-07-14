@@ -1652,6 +1652,22 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .landing-showcase-static { background: linear-gradient(180deg, #08090A 0%, #050506 100%); }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Landing page — seamless full-page background gradient. One continuous
+   dark wash from top to bottom so scrolling never feels like a section
+   change. Per-section radial/orb effects sit on top of this base.
+   ═══════════════════════════════════════════════════════════════════════ */
+.landing-page-bg {
+  background: linear-gradient(
+    180deg,
+    #08090A 0%,
+    #07080A 22%,
+    #06070A 46%,
+    #060709 70%,
+    #050506 100%
+  );
+}
+
 /* Carousel — hide native scrollbar but keep scroll interactivity */
 .showcase-carousel-wrap {
   position: relative;
