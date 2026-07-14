@@ -376,7 +376,7 @@ function Showcase() {
   const stripRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Sync the active dot with whichever card is currently centered in the strip.
+  // Sync the active state with whichever card is currently centered in the strip.
   useEffect(() => {
     const strip = stripRef.current;
     if (!strip) return;
@@ -400,6 +400,62 @@ function Showcase() {
     return () => strip.removeEventListener("scroll", onScroll);
   }, []);
 
+  // Pointer drag-to-scroll — matches touch-drag UX for mouse users.
+  useEffect(() => {
+    const strip = stripRef.current;
+    if (!strip) return;
+    let isDown = false;
+    let startX = 0;
+    let startScroll = 0;
+    let moved = false;
+
+    const onPointerDown = (e) => {
+      // Ignore drags starting on the arrow buttons.
+      if (e.target.closest(".showcase-nav-btn")) return;
+      isDown = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = strip.scrollLeft;
+      strip.classList.add("is-dragging");
+      strip.setPointerCapture?.(e.pointerId);
+    };
+    const onPointerMove = (e) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > 4) moved = true;
+      strip.scrollLeft = startScroll - dx;
+    };
+    const endDrag = (e) => {
+      if (!isDown) return;
+      isDown = false;
+      strip.classList.remove("is-dragging");
+      strip.releasePointerCapture?.(e.pointerId);
+    };
+    // Suppress accidental link clicks that happen right after a drag.
+    const onClickCapture = (e) => {
+      if (moved) {
+        e.preventDefault();
+        e.stopPropagation();
+        moved = false;
+      }
+    };
+
+    strip.addEventListener("pointerdown", onPointerDown);
+    strip.addEventListener("pointermove", onPointerMove);
+    strip.addEventListener("pointerup", endDrag);
+    strip.addEventListener("pointercancel", endDrag);
+    strip.addEventListener("pointerleave", endDrag);
+    strip.addEventListener("click", onClickCapture, true);
+    return () => {
+      strip.removeEventListener("pointerdown", onPointerDown);
+      strip.removeEventListener("pointermove", onPointerMove);
+      strip.removeEventListener("pointerup", endDrag);
+      strip.removeEventListener("pointercancel", endDrag);
+      strip.removeEventListener("pointerleave", endDrag);
+      strip.removeEventListener("click", onClickCapture, true);
+    };
+  }, []);
+
   const scrollToIndex = (i) => {
     const strip = stripRef.current;
     if (!strip) return;
@@ -419,65 +475,50 @@ function Showcase() {
   return (
     <section className="relative py-24 md:py-32" data-testid="landing-showcase">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
-        <div className="flex items-end justify-between gap-6 flex-wrap">
-          <SectionHeading
-            tag="THE FLOW"
-            title="From mess to decision, in five chapters."
-          />
-          {/* Carousel controls (desktop) */}
-          <div className="hidden md:flex items-center gap-2 shrink-0" data-testid="showcase-controls">
-            <button
-              type="button"
-              onClick={() => scrollToIndex(activeIndex - 1)}
-              disabled={!canPrev}
-              aria-label="Previous card"
-              data-testid="showcase-prev"
-              className="showcase-nav-btn"
+        <SectionHeading
+          tag="THE FLOW"
+          title="From mess to decision, in five chapters."
+        />
+      </div>
+
+      <div className="showcase-carousel-wrap mt-14">
+        <div
+          ref={stripRef}
+          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
+          data-testid="showcase-strip"
+        >
+          {SHOWCASE.map((c) => (
+            <div
+              key={c.tag}
+              data-showcase-card
+              className="shrink-0 snap-center w-[86vw] sm:w-[62vw] md:w-[55vw] max-w-[620px]"
             >
-              <ArrowLeft size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToIndex(activeIndex + 1)}
-              disabled={!canNext}
-              aria-label="Next card"
-              data-testid="showcase-next"
-              className="showcase-nav-btn"
-            >
-              <ArrowRight size={16} />
-            </button>
-          </div>
+              <ShowcaseCard card={c} />
+            </div>
+          ))}
         </div>
-      </div>
 
-      <div
-        ref={stripRef}
-        className="showcase-carousel mt-14 flex gap-6 md:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
-        data-testid="showcase-strip"
-      >
-        {SHOWCASE.map((c) => (
-          <div
-            key={c.tag}
-            data-showcase-card
-            className="shrink-0 snap-center w-[86vw] sm:w-[62vw] md:w-[55vw] max-w-[620px]"
-          >
-            <ShowcaseCard card={c} />
-          </div>
-        ))}
-      </div>
-
-      {/* Dot pagination */}
-      <div className="mt-6 flex justify-center gap-2" data-testid="showcase-dots">
-        {SHOWCASE.map((c, i) => (
-          <button
-            key={c.tag}
-            type="button"
-            onClick={() => scrollToIndex(i)}
-            aria-label={`Go to ${c.tag}`}
-            data-testid={`showcase-dot-${i}`}
-            className={`showcase-dot ${i === activeIndex ? "is-active" : ""}`}
-          />
-        ))}
+        {/* Side arrows — overlay controls */}
+        <button
+          type="button"
+          onClick={() => scrollToIndex(activeIndex - 1)}
+          disabled={!canPrev}
+          aria-label="Previous card"
+          data-testid="showcase-prev"
+          className="showcase-nav-btn showcase-nav-btn--side showcase-nav-btn--left"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollToIndex(activeIndex + 1)}
+          disabled={!canNext}
+          aria-label="Next card"
+          data-testid="showcase-next"
+          className="showcase-nav-btn showcase-nav-btn--side showcase-nav-btn--right"
+        >
+          <ArrowRight size={18} />
+        </button>
       </div>
     </section>
   );
@@ -977,7 +1018,7 @@ function FinalCTA() {
           <Zap size={12} /> READY?
         </motion.p>
 
-        <h2 className="mt-6 font-display font-semibold italic tracking-[-0.03em] leading-[1.05] text-[52px] sm:text-[80px] md:text-[104px] lg:text-[128px] text-[var(--text)]">
+        <h2 className="mt-6 font-display font-semibold italic tracking-[-0.02em] leading-[1.05] text-[36px] sm:text-[48px] md:text-[60px] lg:text-[72px] text-[var(--text)]">
           <WordReveal text="Start building." tag="span" />
         </h2>
 
