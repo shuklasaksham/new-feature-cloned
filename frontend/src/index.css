@@ -344,13 +344,14 @@ body::before {
           mask-composite: exclude;
 }
 
-/* Solid variant — used for surfaces (login, admin login, dialog panels)
-   where we don't want the background dot-grid bleeding through. */
+/* Frosted variant — glass panel matching the top-nav recipe. Used for
+   surfaces that overlay the ambient dot-grid (login, admin login) where
+   we want the same premium translucency the navbar has. */
 .card-linear--solid,
 .card-brut--solid {
-  background: #0E0F12;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: rgba(8, 9, 10, 0.72);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
 }
 .card-brut-hover:hover,
 .card-linear-hover:hover {
