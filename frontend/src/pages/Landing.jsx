@@ -590,7 +590,7 @@ function Showcase() {
       <div className="showcase-carousel-wrap mt-14">
         <div
           ref={stripRef}
-          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto pb-4 px-[max(20px,calc((100vw-1200px)/2+20px))] md:px-[max(40px,calc((100vw-1200px)/2+40px))]"
+          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto pb-4 pl-5 sm:pl-6 md:pl-10 pr-[max(20px,calc((100vw-1200px)/2+40px))]"
           data-testid="showcase-strip"
         >
           {SHOWCASE.map((c) => (
@@ -808,20 +808,34 @@ function BentoCard({ tile }) {
   );
 }
 
-// Ghost interface fragments — abstract, atmospheric UI hints that make each
-// bento card feel like a living preview of the product. Purely decorative
-// (aria-hidden). Positioned in the card's empty space so they never fight
-// the title/hint text. Each fragment breathes with a subtle keyframe.
+// Ghost interface fragments — real Bracket product screenshots layered
+// inside each bento card. Dark-tinted + masked so they read as atmosphere
+// rather than screenshots, matching the calm/minimal card aesthetic.
 function BentoGhost({ variant }) {
+  // Cards showing an actual product view use a real screenshot; the more
+  // abstract concepts (risks, decision-tree, message) stay as tight SVGs.
+  const shot = {
+    cards: "/bento/dashboard.jpg",       // DASHBOARD
+    checklist: "/bento/overview.jpg",    // SCOPE — 5-milestone board
+    timeline: "/bento/flow.jpg",         // SPEED — the actual 5-step flow
+    signed: "/bento/document.jpg",       // LOCK — locked sign-off view
+  }[variant];
   return (
     <div className="bento-ghost" aria-hidden="true">
-      {variant === "cards" && <GhostCards />}
-      {variant === "checklist" && <GhostChecklist />}
-      {variant === "risk" && <GhostRisk />}
-      {variant === "tree" && <GhostTree />}
-      {variant === "bubbles" && <GhostBubbles />}
-      {variant === "timeline" && <GhostTimeline />}
-      {variant === "signed" && <GhostSigned />}
+      {shot ? (
+        <img
+          src={shot}
+          alt=""
+          loading="lazy"
+          className={`bento-ghost-shot bento-ghost--${variant}`}
+        />
+      ) : (
+        <>
+          {variant === "risk" && <GhostRisk />}
+          {variant === "tree" && <GhostTree />}
+          {variant === "bubbles" && <GhostBubbles />}
+        </>
+      )}
     </div>
   );
 }

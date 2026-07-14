@@ -1764,16 +1764,19 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .landing-cta-ghost:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.14); }
 
-/* Showcase cards — parallax rail */
+/* Showcase cards — parallax rail. Cards are meant to feel like they
+   float ON the page ambient (no dark box container). Very subtle
+   glass tint + soft signal-blue inner highlight instead of the heavy
+   drop shadow that used to make them look like solid black bricks. */
 .landing-showcase-card {
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.01) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.015) 0%, rgba(255,255,255,0.005) 100%);
   border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(6px);
   min-height: 360px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
 }
-.landing-showcase-static { background: linear-gradient(180deg, #08090A 0%, #050506 100%); }
+.landing-showcase-static { background: transparent; }
 
 /* Bento card icon — subtle rounded square with the accent-tinted icon,
    sits in the top-right of each tile. */
@@ -2167,6 +2170,36 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   /* Subtle push-in on hover so the ghost feels responsive. */
   transform: translate3d(-8px, -4px, 0);
 }
+
+/* Real product screenshot ghost — tinted, subtly cropped so the card
+   looks like it's peeking into the actual Bracket UI. */
+.bento-ghost-shot {
+  position: absolute;
+  right: -22%;
+  bottom: -18%;
+  width: 106%;
+  height: auto;
+  max-height: 118%;
+  object-fit: cover;
+  object-position: top left;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.55);
+  filter: brightness(.85) saturate(.95) contrast(1.05);
+  opacity: 0.72;
+  transform: rotate(-2deg);
+  transition: transform .45s cubic-bezier(.16,1,.3,1), opacity .35s ease, filter .35s ease;
+}
+.bento-card:hover .bento-ghost-shot {
+  transform: rotate(-1deg) translate3d(-10px, -8px, 0) scale(1.02);
+  opacity: 0.92;
+  filter: brightness(.95) saturate(1) contrast(1.05);
+}
+/* Per-variant framing so each screenshot lands where the card has room. */
+.bento-ghost-shot.bento-ghost--cards     { right: -18%; bottom: -14%; width: 102%; }
+.bento-ghost-shot.bento-ghost--checklist { right: -30%; bottom: -22%; width: 118%; }
+.bento-ghost-shot.bento-ghost--timeline  { right: -6%;  bottom: -20%; width: 84%;  }
+.bento-ghost-shot.bento-ghost--signed    { right: -26%; bottom: -18%; width: 116%; }
 
 /* Per-variant tuning — positions each fragment where the card has room. */
 .bento-ghost--cards     { top: 38px; right: -12%; width: 82%; }
@@ -2792,6 +2825,140 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 .dashboard-project-card:hover {
   transform: translateY(-2px);
   border-color: rgba(94, 106, 210, 0.32);
+}
+.dashboard-project-card.is-selected {
+  border-color: rgba(94, 106, 210, 0.55);
+  background: linear-gradient(180deg, rgba(94,106,210,0.10) 0%, rgba(94,106,210,0.02) 100%);
+  box-shadow: 0 0 0 1px rgba(94, 106, 210, 0.35) inset;
+}
+/* Selection checkbox — hidden by default, appears on card hover OR
+   whenever the dashboard is already in selection mode. */
+.dashboard-project-checkbox {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(20, 20, 24, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text-2);
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity .22s ease, transform .22s ease, color .22s ease, background .22s ease;
+  cursor: pointer;
+}
+.dashboard-project-card:hover .dashboard-project-checkbox,
+.dashboard-project-card.is-selection-active .dashboard-project-checkbox,
+.dashboard-project-card.is-selected .dashboard-project-checkbox {
+  opacity: 1;
+  transform: translateY(0);
+}
+.dashboard-project-checkbox:hover {
+  background: rgba(94, 106, 210, 0.14);
+  border-color: rgba(94, 106, 210, 0.45);
+  color: var(--text);
+}
+.dashboard-project-card.is-selected .dashboard-project-checkbox {
+  background: rgba(94, 106, 210, 0.30);
+  border-color: rgba(94, 106, 210, 0.7);
+  color: #ffffff;
+}
+/* Shift the card title right when the checkbox is visible so they don't collide. */
+.dashboard-project-card:hover > a > .flex .flex-1,
+.dashboard-project-card.is-selection-active > a > .flex .flex-1,
+.dashboard-project-card.is-selected > a > .flex .flex-1 {
+  padding-left: 26px;
+}
+
+/* Selection action bar — appears above the projects grid when any row
+   is ticked. Sticky-ish feel, matches the frosted-glass language. */
+.dashboard-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(94, 106, 210, 0.09);
+  border: 1px solid rgba(94, 106, 210, 0.30);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  color: var(--text);
+  font-size: 12.5px;
+  animation: dashSelBarIn .32s cubic-bezier(.16,1,.3,1);
+}
+@keyframes dashSelBarIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dashboard-selection-toggle,
+.dashboard-selection-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background .18s ease, color .18s ease;
+}
+.dashboard-selection-toggle:hover,
+.dashboard-selection-link:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.dashboard-selection-link {
+  color: var(--text-3);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dashboard-selection-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(208, 38, 32, 0.16);
+  border: 1px solid rgba(208, 38, 32, 0.4);
+  color: #ff9a94;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+.dashboard-selection-danger:hover:not(:disabled) {
+  background: rgba(208, 38, 32, 0.28);
+  color: #ffffff;
+  border-color: rgba(208, 38, 32, 0.6);
+}
+.dashboard-selection-danger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.dashboard-selection-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+.dashboard-selection-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
 }
 .dashboard-project-actions {
   display: flex;

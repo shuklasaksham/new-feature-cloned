@@ -1607,6 +1607,24 @@ async def delete_project(project_id: str, request: Request):
     return {"ok": True}
 
 
+class BulkDeleteIn(BaseModel):
+    ids: List[str] = Field(default_factory=list, max_length=200)
+
+
+@api.post("/projects/bulk-delete")
+async def bulk_delete_projects(body: BulkDeleteIn, request: Request):
+    """Delete multiple projects the current user owns. Silently skips ids
+    the user doesn't own — no info leak. Returns the count actually removed."""
+    user = await current_user(request, db)
+    if not body.ids:
+        return {"deleted": 0}
+    result = await db.projects.delete_many({
+        "id": {"$in": body.ids},
+        "owner_user_id": user["user_id"],
+    })
+    return {"deleted": int(result.deleted_count)}
+
+
 @api.post("/projects/{project_id}/unlock")
 async def unlock_project(project_id: str, request: Request):
     p = await _get_owned_project_or_404(project_id, request)

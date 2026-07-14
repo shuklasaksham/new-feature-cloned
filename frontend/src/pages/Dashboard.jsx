@@ -14,12 +14,15 @@ import {
   ClipboardPaste,
   Paperclip,
   Pencil,
+  Square,
+  CheckSquare,
   Trash2,
   Plus,
   Search,
   FolderOpen,
   Lock,
   CircleDot,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -140,6 +143,44 @@ export default function Dashboard() {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
+  // ─── Multi-select bulk-delete ─────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+  const selectAllVisible = (visibleProjects) => {
+    setSelectedIds(new Set(visibleProjects.map((p) => p.id)));
+  };
+  const bulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    const ok = await confirmDialog({
+      title: ids.length === 1 ? "Delete 1 project?" : `Delete ${ids.length} projects?`,
+      message: "This can't be undone. All associated inputs and generated outputs will be permanently removed.",
+      confirmLabel: `Delete ${ids.length}`,
+      cancelLabel: "Keep them",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setBulkDeleting(true);
+    try {
+      const { data } = await api.post("/projects/bulk-delete", { ids });
+      setProjects((list) => list.filter((p) => !selectedIds.has(p.id)));
+      clearSelection();
+      toast.success(`Deleted ${data.deleted} project${data.deleted === 1 ? "" : "s"}.`);
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -543,14 +584,87 @@ export default function Dashboard() {
                   <p className="text-[12.5px] text-[var(--text-3)]">No projects match your filters.</p>
                 </div>
               ) : (
-                filteredProjects.map((p) => (
-                  <ProjectCard
-                    key={p.id}
-                    project={p}
-                    onRename={renameProject}
-                    onDelete={deleteProject}
-                  />
-                ))
+                <>
+                  {/* Selection bar — only appears when at least one project
+                     is ticked. Sticks to the top of the grid, offers select-all
+                     and a single bulk-delete action. */}
+                  {selectedIds.size > 0 && (
+                    <div
+                      className="col-span-full dashboard-selection-bar"
+                      data-testid="dashboard-selection-bar"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          className="dashboard-selection-toggle"
+                          onClick={() => {
+                            if (selectedIds.size === filteredProjects.length) {
+                              clearSelection();
+                            } else {
+                              selectAllVisible(filteredProjects);
+                            }
+                          }}
+                          data-testid="dashboard-selection-toggle-all"
+                          aria-label={selectedIds.size === filteredProjects.length ? "Clear selection" : "Select all"}
+                        >
+                          {selectedIds.size === filteredProjects.length ? (
+                            <CheckSquare size={14} />
+                          ) : (
+                            <Square size={14} />
+                          )}
+                          <span>
+                            {selectedIds.size === filteredProjects.length
+                              ? "All selected"
+                              : `${selectedIds.size} selected`}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          className="dashboard-selection-link"
+                          onClick={() => selectAllVisible(filteredProjects)}
+                          data-testid="dashboard-selection-select-all"
+                        >
+                          Select all ({filteredProjects.length})
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={bulkDelete}
+                          disabled={bulkDeleting}
+                          className="dashboard-selection-danger"
+                          data-testid="dashboard-selection-bulk-delete"
+                        >
+                          {bulkDeleting ? (
+                            <><Loader2 size={12} className="animate-spin" /> Deleting…</>
+                          ) : (
+                            <><Trash2 size={12} /> Delete {selectedIds.size}</>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={clearSelection}
+                          className="dashboard-selection-ghost"
+                          data-testid="dashboard-selection-clear"
+                          aria-label="Cancel selection"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {filteredProjects.map((p) => (
+                    <ProjectCard
+                      key={p.id}
+                      project={p}
+                      onRename={renameProject}
+                      onDelete={deleteProject}
+                      selected={selectedIds.has(p.id)}
+                      selectionActive={selectedIds.size > 0}
+                      onToggleSelect={() => toggleSelect(p.id)}
+                    />
+                  ))}
+                </>
               )}
             </motion.div>
           </>
@@ -629,14 +743,27 @@ function StatCard({ label, value, icon: Icon, accent }) {
 }
 
 // ─── Project card — actions ALWAYS visible on the card, no hover trick.
-function ProjectCard({ project: p, onRename, onDelete }) {
+function ProjectCard({ project: p, onRename, onDelete, selected, selectionActive, onToggleSelect }) {
   const isLocked = p.status === "locked";
   const stepPct = Math.round(((p.step || 1) / 5) * 100);
   return (
     <div
-      className="dashboard-project-card relative"
+      className={`dashboard-project-card relative ${selected ? "is-selected" : ""} ${selectionActive ? "is-selection-active" : ""}`}
       data-testid={`dashboard-recent-${p.id}`}
     >
+      {/* Selection checkbox — always visible on hover, always visible once
+         selection mode is active (any card ticked). Clicking the checkbox
+         toggles selection without navigating. */}
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleSelect?.(); }}
+        className="dashboard-project-checkbox"
+        aria-label={selected ? "Unselect project" : "Select project"}
+        aria-pressed={selected}
+        data-testid={`dashboard-recent-select-${p.id}`}
+      >
+        {selected ? <CheckSquare size={14} /> : <Square size={14} />}
+      </button>
       <Link to={`/project/${p.id}`} className="block p-4">
         <div className="flex items-start justify-between gap-3">
           <p className="font-medium text-[14px] leading-snug line-clamp-2 flex-1">{p.name}</p>
