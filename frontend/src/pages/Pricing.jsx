@@ -56,6 +56,17 @@ export default function Pricing() {
             Free during early access — no card, no time limit. Paid tiers arrive
             when the product graduates. Below is the shape they&apos;ll take.
           </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.55 }}
+            className="mt-6 flex justify-center"
+          >
+            <span className="pricing-early-access-banner" data-testid="pricing-page-early-access-banner">
+              <span className="pricing-early-access-dot" aria-hidden="true" />
+              <span><strong>Everything below is free while Bracket is in early access.</strong> You&apos;ll get 30 days&apos; notice before we start charging.</span>
+            </span>
+          </motion.div>
         </div>
       </section>
 

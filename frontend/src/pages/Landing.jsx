@@ -281,6 +281,10 @@ function Hero() {
             <span>How it works</span>
             <ArrowUpRight size={14} />
           </Link>
+          <p className="hero-early-access-pill" data-testid="hero-early-access-pill">
+            <span className="hero-early-access-dot" aria-hidden="true" />
+            Free during early access — no card needed
+          </p>
         </motion.div>
 
         {/* Live metrics micro-strip */}
@@ -862,8 +866,21 @@ function PricingSection() {
           center
         />
 
+        {/* Early-access banner — announces free until v1.0 without dictating
+           when that is. Sits above the currency toggle so it's the first
+           thing pricing-curious visitors read. */}
+        <div className="mt-6 flex justify-center">
+          <div className="pricing-early-access-banner" data-testid="pricing-early-access-banner">
+            <span className="pricing-early-access-dot" aria-hidden="true" />
+            <span>
+              <strong>Bracket is in early access — everything below is free while we ship v1.</strong>{" "}
+              You&apos;ll get a heads-up 30 days before we start charging.
+            </span>
+          </div>
+        </div>
+
         {/* Currency toggle */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-6 flex justify-center">
           <div className="landing-currency-toggle" role="group" aria-label="Currency">
             {["USD", "INR"].map((c) => (
               <button

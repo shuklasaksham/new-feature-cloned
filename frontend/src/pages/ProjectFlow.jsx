@@ -2099,7 +2099,9 @@ function OutputCard({
   scrollable = false,
 }) {
   const [copied, setCopied] = useState(false);
-  const [revealSummary, setRevealSummary] = useState(!progressive);
+  // Auto-show the primary output as soon as AI processing completes.
+  // (Previously required the user to click "Read summary" first — bad UX.)
+  const [revealSummary, setRevealSummary] = useState(true);
   const [revealDetails, setRevealDetails] = useState(!progressive);
   const doCopy = async () => {
     try {

@@ -530,45 +530,43 @@ export default function ProjectOverview() {
           </section>
         )}
 
-        {/* Step grid */}
+        {/* Step grid — cards, one per milestone; fits on one screen. */}
         <section className="mt-10" data-testid="overview-steps">
           <p className="mono-label">{"{ your journey · five milestones }"}</p>
-          <ul className="mt-4 card-brut overflow-hidden divide-y divide-ink/10">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" data-testid="overview-steps-grid">
             {STEPS.map((step) => {
               const done =
                 (step.outputKey && !!project[step.outputKey]) ||
                 (step.n === 5 && project.status === "locked");
               const current = !done && currentStep === step.n;
               return (
-                <li
+                <div
                   key={step.n}
-                  className="p-5 sm:p-6 hover:bg-[var(--surface-2)] transition-colors duration-150 flex flex-col sm:flex-row sm:items-start gap-4"
+                  className={`overview-step-card ${current ? "is-current" : ""} ${done ? "is-done" : ""}`}
                   data-testid={`overview-step-${step.n}`}
                 >
-                  <div className="shrink-0 w-16 text-signal font-display text-3xl">
-                    {String(step.n).padStart(2, "0")}
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="overview-step-num" aria-hidden="true">{String(step.n).padStart(2, "0")}</span>
+                    <StepStatus done={done} current={current} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-display text-xl sm:text-2xl uppercase">{step.label}</p>
-                      <StepStatus done={done} current={current} />
-                    </div>
-                    <p className="mono-tag text-muted mt-1">{step.desc}</p>
+                  <p className="mt-3 font-display font-semibold tracking-[-0.012em] text-[15px] leading-tight">
+                    {step.label}
+                  </p>
+                  <p className="mt-1 text-[11.5px] text-[var(--text-3)] leading-snug">{step.desc}</p>
+                  <div className="mt-2.5 min-h-[36px]">
                     <StepSummary step={step} project={project} />
                   </div>
-                  <div className="shrink-0 self-stretch sm:self-center">
-                    <button
-                      onClick={() => editStep(step.n)}
-                      className="btn-ghost"
-                      data-testid={`overview-edit-${step.n}`}
-                    >
-                      <Pencil size={12}/> {done ? "REFINE" : current ? "CONTINUE" : "START"}
-                    </button>
-                  </div>
-                </li>
+                  <button
+                    onClick={() => editStep(step.n)}
+                    className="overview-step-btn mt-3"
+                    data-testid={`overview-edit-${step.n}`}
+                  >
+                    <Pencil size={11} /> {done ? "Refine" : current ? "Continue" : "Start"}
+                  </button>
+                </div>
               );
             })}
-          </ul>
+          </div>
         </section>
 
         {/* Hint when locked */}

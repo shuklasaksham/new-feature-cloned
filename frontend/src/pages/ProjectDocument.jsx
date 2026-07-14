@@ -124,9 +124,9 @@ export default function ProjectDocument() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-6 md:py-8 grid lg:grid-cols-12 gap-6 md:gap-8">
         {/* DOCUMENT BODY */}
         <article className="lg:col-span-8 bg-chalk border border-ink shadow-brut">
-          <div className="px-6 md:px-12 py-8 md:py-14">
+          <div className="doc-container">
             <p className="mono-label">{"{ sign-off document }"}</p>
-            <h1 className="font-display text-3xl sm:text-5xl md:text-6xl uppercase mt-3 leading-[0.95]">
+            <h1 className="doc-h1 font-display uppercase mt-3">
               {project.name}
             </h1>
             <p className="mono-tag text-muted mt-3">
@@ -137,10 +137,10 @@ export default function ProjectDocument() {
             <DocDivider />
 
             <DocSection num="01" label="THE STANCE">
-              <h2 className="font-display text-2xl sm:text-3xl uppercase">
+              <h2 className="font-display text-xl sm:text-2xl uppercase">
                 {project.decision?.recommendation?.title}
               </h2>
-              <p className="mt-3 text-base leading-relaxed">
+              <p className="mt-2 text-[13.5px] leading-relaxed">
                 {project.decision?.recommendation?.rationale}
               </p>
               {project.decision?.recommendation?.confidence != null && (
@@ -152,33 +152,32 @@ export default function ProjectDocument() {
 
             {project.framing?.reframed_problem && (
               <DocSection num="02" label="THE PROBLEM, REFRAMED">
-                <p className="text-base leading-relaxed">{project.framing.reframed_problem}</p>
+                <p className="text-[13.5px] leading-relaxed">{project.framing.reframed_problem}</p>
               </DocSection>
             )}
 
             <DocSection num="03" label="SCOPE">
-              <h3 className="font-display text-xl mt-1">
+              <h3 className="font-display text-lg mt-1">
                 {project.artifacts.scope_doc?.title}
               </h3>
-              <DocList title="IN SCOPE" items={project.artifacts.scope_doc?.in_scope} accent="signal" />
-              <DocList
-                title="OUT OF SCOPE"
-                items={project.artifacts.scope_doc?.out_of_scope}
-                accent="muted"
-                strike
-              />
-              <DocList title="DELIVERABLES" items={project.artifacts.scope_doc?.deliverables} accent="ink" />
+              {/* Multi-column scope — In / Out / Deliverables side-by-side
+                  so the whole scope is legible without vertical scrolling. */}
+              <div className="doc-scope-grid mt-4">
+                <DocList title="IN SCOPE" items={project.artifacts.scope_doc?.in_scope} accent="signal" />
+                <DocList title="OUT OF SCOPE" items={project.artifacts.scope_doc?.out_of_scope} accent="muted" strike />
+                <DocList title="DELIVERABLES" items={project.artifacts.scope_doc?.deliverables} accent="ink" />
+              </div>
               {project.artifacts.scope_doc?.timeline_note && (
-                <div className="mt-5 border-l-2 border-ink pl-4">
+                <div className="mt-4 border-l-2 border-ink pl-4">
                   <p className="mono-tag text-muted">TIMELINE NOTE</p>
-                  <p className="text-sm mt-1">{project.artifacts.scope_doc.timeline_note}</p>
+                  <p className="text-[13px] mt-1">{project.artifacts.scope_doc.timeline_note}</p>
                 </div>
               )}
             </DocSection>
 
             {project.artifacts.client_message && (
               <DocSection num="04" label="MESSAGE TO THE CLIENT">
-                <div className="border-l-2 border-signal pl-5 whitespace-pre-wrap text-base leading-relaxed">
+                <div className="border-l-2 border-signal pl-4 whitespace-pre-wrap text-[13.5px] leading-relaxed">
                   {project.artifacts.client_message}
                 </div>
               </DocSection>
@@ -186,10 +185,10 @@ export default function ProjectDocument() {
 
             {project.artifacts.assumptions?.length > 0 && (
               <DocSection num="05" label="ASSUMPTIONS">
-                <ul className="space-y-3">
+                <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
                   {project.artifacts.assumptions.map((a, i) => (
-                    <li key={i} className="flex gap-3 text-sm sm:text-base">
-                      <span className="font-mono text-signal mt-1">{String(i + 1).padStart(2, "0")}</span>
+                    <li key={i} className="flex gap-2 text-[13px]">
+                      <span className="font-mono text-signal mt-0.5 text-[12px]">{String(i + 1).padStart(2, "0")}</span>
                       <span>{a}</span>
                     </li>
                   ))}
@@ -199,18 +198,18 @@ export default function ProjectDocument() {
 
             {project.artifacts.risk_flags?.length > 0 && (
               <DocSection num="06" label="RISK FLAGS">
-                <ul className="space-y-4">
+                <ul className="grid sm:grid-cols-2 gap-3">
                   {project.artifacts.risk_flags.map((r, i) => (
-                    <li key={i} className="flex gap-4 items-start">
+                    <li key={i} className="flex gap-3 items-start">
                       <span
-                        className="mono-tag px-2 py-1 shrink-0 rounded"
+                        className="mono-tag px-1.5 py-0.5 shrink-0 rounded text-[10px]"
                         style={SEVERITY_STYLE[r.severity] || SEVERITY_STYLE.LOW}
                       >
                         {r.severity}
                       </span>
                       <div>
-                        <p className="font-semibold text-sm sm:text-base">{r.flag}</p>
-                        <p className="text-sm text-muted mt-1">{r.why}</p>
+                        <p className="font-semibold text-[13px]">{r.flag}</p>
+                        <p className="text-[12px] text-muted mt-0.5">{r.why}</p>
                       </div>
                     </li>
                   ))}
@@ -225,8 +224,8 @@ export default function ProjectDocument() {
           </div>
         </article>
 
-        {/* SIDEBAR */}
-        <aside className="lg:col-span-4 space-y-4">
+        {/* SIDEBAR — sticky so actions stay visible while user scans doc. */}
+        <aside className="lg:col-span-4 space-y-4 doc-sidebar">
           <Link
             to={`/project/${project.id}`}
             className="btn-ghost w-full justify-center"
