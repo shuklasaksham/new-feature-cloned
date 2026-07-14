@@ -20,7 +20,6 @@ import {
   Wand2,
   X,
 } from "lucide-react";
-import BracketMark from "../components/BracketMark";
 import { api, formatApiError, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import { toast } from "sonner";
@@ -131,21 +130,20 @@ export default function ProjectFlow() {
       <div className="flow-ambient" aria-hidden="true" />
       <div className="flow-grain" aria-hidden="true" />
       <div className="flow-root">
-      <header className="sticky top-0 z-30 glass">
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-4 sm:gap-6 min-w-0">
-            <a href="/app" onClick={handleLogoClick} className="shrink-0 cursor-pointer" data-testid="flow-logo-link">
-              <BracketMark label={false} size={22} variant="chalk" />
+      <header className="flow-header sticky top-0 z-30">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-10 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+            <a href="/app" onClick={handleLogoClick} className="shrink-0 cursor-pointer" data-testid="flow-logo-link" aria-label="Bracket">
+              <img src="/logo-icon1.png" alt="" width={20} height={24} style={{ display: "block" }} />
             </a>
+            <span className="flow-header-divider" aria-hidden="true" />
             <div className="min-w-0 flex-1">
+              <p className="mono-tag text-muted text-[10px]">PROJECT</p>
               <p
-                className="font-semibold text-[15px] tracking-[-0.012em] leading-none truncate"
+                className="font-semibold text-[14px] tracking-[-0.012em] leading-tight truncate mt-0.5"
                 data-testid="flow-project-name"
               >
                 {project?.name}
-              </p>
-              <p className="text-[11px] text-[var(--text-3)] hidden sm:block truncate mt-1.5">
-                BRACKET AI
               </p>
             </div>
           </div>
@@ -158,7 +156,7 @@ export default function ProjectFlow() {
             {project?.artifacts && (
               <Link
                 to={`/project/${project.id}/document`}
-                className="btn-secondary btn-sm"
+                className="flow-header-action"
                 data-testid="flow-document-link"
                 title="Document"
                 aria-label="Document"
@@ -168,7 +166,7 @@ export default function ProjectFlow() {
             )}
             <Link
               to={`/project/${id}`}
-              className="btn-secondary btn-sm"
+              className="flow-header-action"
               data-testid="flow-overview-link"
               title="Overview"
               aria-label="Overview"
@@ -177,7 +175,7 @@ export default function ProjectFlow() {
             </Link>
             <Link
               to="/app"
-              className="btn-secondary btn-sm"
+              className="flow-header-action"
               data-testid="flow-new-project-btn"
               title="All projects"
               aria-label="All projects"
@@ -186,7 +184,7 @@ export default function ProjectFlow() {
             </Link>
           </div>
         </div>
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-6 md:px-10 pb-3 pt-1 border-b border-[var(--hairline)]">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-6 md:px-10 pb-3 pt-1">
           <p className="mono-tag text-muted mb-2 hidden sm:block text-[10px]" data-testid="milestone-tracker-label">
             YOUR JOURNEY
           </p>
