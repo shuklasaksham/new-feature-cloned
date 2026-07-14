@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Seo from "../components/Seo";
 
 const FAQS = [
@@ -47,18 +48,28 @@ function FaqItem({ q, a }) {
         className="w-full text-left p-5 flex items-center justify-between gap-4"
         aria-expanded={open}
       >
-        <span className="t-h3">{q}</span>
+        <span className="font-display font-semibold text-[15.5px] tracking-[-0.01em]">{q}</span>
         <ChevronDown
           size={16}
           className="text-[var(--text-3)] shrink-0 transition-transform"
           style={{ transform: open ? "rotate(180deg)" : "rotate(0)" }}
         />
       </button>
-      {open && (
-        <div className="px-5 pb-5 -mt-1">
-          <p className="text-[14px] leading-[1.65] text-[var(--text-2)]">{a}</p>
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="px-5 pb-5 -mt-1">
+              <p className="text-[13.5px] leading-[1.65] text-[var(--text-2)]">{a}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -74,51 +85,90 @@ export default function FAQ() {
       {/* HERO */}
       <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 pt-20 md:pt-28 pb-12 md:pb-16 text-center">
-          <span className="section-label"><span className="dot" />FAQ</span>
-          <h1 className="t-display mt-7">
-            Questions, <span style={{ color: "var(--coral)" }}>answered</span>.
-          </h1>
-          <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[560px] mx-auto">
+        <div className="relative max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-12 md:pb-20 text-center">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="section-label mx-auto"
+          >
+            <span className="dot" />FAQ
+          </motion.span>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="t-display mt-7"
+          >
+            Questions, <span className="landing-hero-gradient">answered</span>.
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.35 }}
+            className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[560px] mx-auto"
+          >
             Everything we get asked, grouped by what you came for. Still stuck? Email <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a>.
-          </p>
+          </motion.p>
         </div>
       </section>
 
       {/* CATEGORIES */}
-      <section className="border-t border-[var(--hairline)]">
-        <div className="max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20 space-y-12">
+      <section>
+        <div className="max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20 space-y-14">
           {FAQS.map((g, i) => (
-            <div key={g.cat} data-testid={`faq-cat-${g.cat.toLowerCase().split(" ")[0]}`}>
-              <div className="flex items-baseline gap-3 mb-5">
+            <motion.div
+              key={g.cat}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-60px" }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              data-testid={`faq-cat-${g.cat.toLowerCase().split(" ")[0]}`}
+            >
+              <div className="flex items-baseline gap-4 mb-6">
                 <span
-                  className="font-semibold text-[15px] tabular-nums"
-                  style={{ color: ["#22C55E", "#F59E0B", "#FF7A6B", "#2E5BFF"][i % 4] }}
+                  className="font-display font-semibold text-[42px] leading-none tracking-[-0.03em] tabular-nums"
+                  style={{
+                    color: "transparent",
+                    backgroundImage: "linear-gradient(135deg, #2E5BFF 0%, #7CD5FF 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                  }}
                 >
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h2 className="t-h1">{g.cat}</h2>
+                <h2 className="t-hero">{g.cat}</h2>
               </div>
               <div className="space-y-2.5">
                 {g.items.map((it) => (
                   <FaqItem key={it.q} q={it.q} a={it.a} />
                 ))}
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden border-t border-[var(--hairline)]">
+      <section className="relative overflow-hidden">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-24 md:py-32 text-center">
-          <h2 className="t-display">Still curious?</h2>
+        <div className="relative max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-28 md:py-36 text-center">
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            className="t-display"
+          >
+            Still <span className="landing-hero-gradient">curious?</span>
+          </motion.h2>
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[480px] mx-auto">
             The best way to understand Bracket is to use it. Start a project — it&apos;s free.
           </p>
-          <div className="mt-9">
-            <Link to="/app" className="btn-primary btn-lg">Start a project <ArrowRight size={14} /></Link>
+          <div className="mt-10">
+            <Link to="/app" className="landing-cta-primary" data-testid="faq-final-cta">
+              <span>Start a project</span> <ArrowRight size={14} />
+            </Link>
           </div>
         </div>
       </section>

@@ -125,11 +125,11 @@ export default function Login() {
         <div className="w-full max-w-[420px] relative page-enter">
           <div className="text-center">
             <span className="section-label"><span className="dot" />Sign in or join</span>
-            <h1 className="t-hero mt-6">
+            <h1 className="mt-6 font-display font-semibold tracking-[-0.03em] leading-[1.02] text-[36px] sm:text-[42px]">
               One door.<br />
-              <span className="text-[var(--text-2)]">Email</span>, then in.
+              <span className="landing-hero-gradient">Email, then in.</span>
             </h1>
-            <p className="mt-3 text-[14px] text-[var(--text-2)]">Six-digit code · No passwords required</p>
+            <p className="mt-4 text-[13.5px] text-[var(--text-2)]">Six-digit code · No passwords required</p>
           </div>
 
           <div className="card-linear p-6 mt-8" data-testid="login-card">

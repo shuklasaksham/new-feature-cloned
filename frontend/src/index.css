@@ -1000,7 +1000,20 @@ body::before {
 .ai-shimmer { background: linear-gradient(90deg, rgba(46, 91, 255, 0.0) 0%, rgba(46, 91, 255, 0.18) 50%, rgba(46, 91, 255, 0.0) 100%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 
 /* OutputCard wrap */
-.output-card-wrap { position: relative; }
+.output-card-wrap {
+  position: relative;
+}
+.output-card-wrap::after {
+  content: "";
+  position: absolute;
+  left: 24px; right: 24px; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(46, 91, 255, 0.55) 25%, rgba(124, 213, 255, 0.35) 60%, transparent 100%);
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: 999px;
+}
 .output-actions { display: inline-flex; gap: 6px; }
 
 /* Pricing-page utility marquee + blueprint bg */

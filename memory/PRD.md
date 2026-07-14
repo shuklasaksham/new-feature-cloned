@@ -437,3 +437,11 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Bento zoom-in hover**: image now scales `1.0 → 1.10` on hover with `transition-[opacity,transform] duration-[700ms]`, opacity bump `0.40 → 0.70`. `overflow: hidden` on `.bento-card` clips the zoom to the card edge — that clean "peek into the product" feel. Text stays fully readable throughout.
   - **⚠️ Redeploy needed** to push to `use-bracket.com`.
 
+
+- 2026-07-14 — **Iteration 34 — Cinematic cascade: FAQ, UseCases, Login, Step OutputCards**:
+  - **FAQ page rewritten**: cinematic hero (`Questions, answered.` with gradient "answered"), `01/02/03/04` gradient numerals per category, Framer AnimatePresence accordion (chevron rotate + smooth height ease), ghost-glass FaqItem cards, radial hero-ambient wash + final CTA band with gradient headline.
+  - **UseCases page rewritten**: cinematic hero (`For the people who take the call.`), gradient `01–05` numeral per row, tri-column card layout (identity | Pain+Win | In practice italic quote), radial signal-blue glow accent per row, motion fade-up staggers.
+  - **Login enhanced**: `One door. / Email, then in.` headline with gradient tint on "Email, then in." (blue → sky). Custom display type sizing. Ghost-glass form card via updated `.card-linear`.
+  - **Step OutputCards** get a **gradient signal-blue top highlight** (`::after` pseudo, 90deg linear gradient hairline from transparent → signal-blue → sky → transparent), reinforcing the cinematic language at the individual card level.
+  - **⚠️ Redeploy needed** to push to `use-bracket.com`.
+
