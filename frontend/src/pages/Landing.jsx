@@ -740,45 +740,38 @@ function StoryChapter({ chapter, index }) {
 const TESTIMONIALS = [
   {
     quote:
-      "I used to spend 4am hours second-guessing a scope. Bracket picks the call, tells me why, and hands me the client message. I don't argue with it anymore.",
-    name: "Ankita Rao",
-    role: "Independent designer · Bengaluru",
+      "Bracket turns unstructured client discussions into a clear project scope. Less ambiguity, better communication, more confidence.",
+    name: "Kshitij Sahu",
+    role: "Experience Designer",
     accent: "#2E5BFF",
   },
   {
     quote:
-      "The 'challenge this' button is genuinely the killer feature. It's not agreeing with me for the sake of it — it's arguing back. That's the difference.",
-    name: "Marcus Fields",
-    role: "Freelance product designer · Berlin",
+      "Bracket has changed how our design team collaborates. Everything stays organized, reviews are faster, and our workflow is noticeably smoother.",
+    name: "Tanay Vyas",
+    role: "Founder",
     accent: "#7CD5FF",
   },
   {
     quote:
-      "Sent a Bracket-drafted scope doc to a client who's usually 20 rounds of nitpicks. Signed in a day. I've never had that happen without a phone call first.",
-    name: "Priya Ganesan",
-    role: "Brand studio of 3 · Mumbai",
+      "Bracket organizes project requirements in one place — teams avoid the mistakes unclear communication creates.",
+    name: "Karthick D",
+    role: "QA Expert",
     accent: "#4BE39B",
   },
   {
     quote:
-      "Our juniors used to defer every ambiguous scoping question up to me. With Bracket in the loop, they ship a decisioned brief and I sign off in 5 minutes.",
-    name: "Devon Lakhani",
-    role: "Design agency lead · Toronto",
+      "I scoped a ₹1 lakh clothing order with a 14-day deadline. Clear agreement, transparent timelines, delivered on time.",
+    name: "Yash Kamdar",
+    role: "Manager",
     accent: "#FFB84C",
   },
   {
     quote:
-      "Feels like a senior designer looking over my shoulder. Not passive-aggressive — actually helpful. Bought Pro after the first paste.",
-    name: "Yuki Tanaka",
-    role: "UI freelancer · Osaka",
+      "I use Bracket for every new project. It clarifies the brief and helps me set a realistic timeline with confidence.",
+    name: "Abhinav Sharma",
+    role: "Motion Designer",
     accent: "#B7B7FF",
-  },
-  {
-    quote:
-      "The risk-flagging saved me from a fixed-price contract that would've bled me for 6 weeks. Bracket named the risk before I did. Priced it in.",
-    name: "Sam Okoye",
-    role: "Product design consultant · Lagos",
-    accent: "#FF6B9D",
   },
 ];
 
