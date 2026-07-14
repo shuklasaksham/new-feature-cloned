@@ -85,8 +85,9 @@ export default function ClientReview() {
 
   return (
     <div className="dashboard-root relative min-h-screen" data-testid="client-review-page">
-      {/* Cinematic dark backdrop — same recipe as the logged-in dashboard. */}
-      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+      {/* Cinematic dark backdrop — same recipe as the logged-in dashboard,
+          but slightly stronger so the ambient breathes around the paper doc. */}
+      <div aria-hidden="true" className="hero-ambient" />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"

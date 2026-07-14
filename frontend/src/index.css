@@ -1795,34 +1795,32 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Paper card — the doc itself stays light so it reads like a formal
-   document, but embedded in the dark shell. */
+/* Doc card — dark glass surface, matching the dashboard card language.
+   No more paper/parchment; the document lives inside the same visual
+   universe as the app. */
 .review-doc-card {
-  background: #F7F5EF;
-  color: #1B1D23;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     0 24px 80px -20px rgba(0, 0, 0, 0.6),
-    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   overflow: hidden;
 }
-/* Force dark ink for all text inside the paper doc, overriding the
-   global dark-theme variables that would otherwise render as white. */
-.review-doc-card,
-.review-doc-card h1,
-.review-doc-card h2,
-.review-doc-card h3,
-.review-doc-card p,
-.review-doc-card li,
-.review-doc-card span:not(.mono-tag):not([style*="background"]) { color: #1B1D23; }
 .review-doc-card .mono-tag,
-.review-doc-card .mono-label,
-.review-doc-card .text-muted { color: #6B6D75; }
+.review-doc-card .mono-label { color: var(--text-3); }
+.review-doc-card .text-muted { color: var(--text-2); }
 .review-doc-card .text-signal { color: var(--accent); }
-.review-doc-card .bg-ink { background: #1B1D23; color: #F7F5EF; }
-.review-doc-card .border-ink { border-color: rgba(27, 29, 35, 0.16); }
-.review-doc-card .bg-ink\/30 { background: rgba(27, 29, 35, 0.16); }
+.review-doc-card .bg-ink {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-radius: 4px;
+}
+.review-doc-card .border-ink { border-color: rgba(255, 255, 255, 0.10); }
+.review-doc-card .bg-ink\/30 { background: rgba(255, 255, 255, 0.06); }
 .review-doc-card .border-signal { border-color: var(--accent); }
 
 /* Sticky bottom action bar. */
