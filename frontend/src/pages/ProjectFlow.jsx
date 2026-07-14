@@ -578,7 +578,7 @@ function CelebrationCard({ chapter, milestone, items = [], testid }) {
       data-testid={testid || "celebration-card"}
       style={{
         background:
-          "linear-gradient(135deg, rgba(46, 91, 255, 0.08) 0%, var(--surface) 60%)",
+          "linear-gradient(135deg, rgba(94, 106, 210, 0.08) 0%, var(--surface) 60%)",
       }}
     >
       <div className="flex items-center gap-2 text-signal">
@@ -1983,8 +1983,8 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
           data-testid="step5-second-project-nudge"
           style={{
             background:
-              "linear-gradient(135deg, rgba(46, 91, 255, 0.10) 0%, var(--surface) 60%)",
-            borderColor: "rgba(46, 91, 255, 0.25)",
+              "linear-gradient(135deg, rgba(94, 106, 210, 0.10) 0%, var(--surface) 60%)",
+            borderColor: "rgba(94, 106, 210, 0.25)",
           }}
         >
           <p className="mono-label text-signal">{"{ next client · ready? }"}</p>

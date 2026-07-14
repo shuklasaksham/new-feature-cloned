@@ -64,7 +64,7 @@ const STEPS = [
 const STATUS_STYLE = {
   draft:       { backgroundColor: "transparent", color: "var(--text-2)", border: "1px solid var(--hairline)" },
   in_progress: { backgroundColor: "var(--surface-2)", color: "var(--text)",  border: "1px solid var(--hairline)" },
-  locked:      { backgroundColor: "#2E5BFF", color: "#FFFFFF", border: "1px solid #2E5BFF" },
+  locked:      { backgroundColor: "#5E6AD2", color: "#FFFFFF", border: "1px solid #5E6AD2" },
 };
 const STATUS_LABEL = { draft: "DRAFT", in_progress: "IN PROGRESS", locked: "LOCKED" };
 
@@ -86,7 +86,7 @@ function StepStatus({ done, current }) {
     return (
       <span
         className="mono-tag px-2 py-1 inline-flex items-center gap-1.5 rounded"
-        style={{ backgroundColor: "#2E5BFF", color: "#FFFFFF", border: "1px solid #2E5BFF" }}
+        style={{ backgroundColor: "#5E6AD2", color: "#FFFFFF", border: "1px solid #5E6AD2" }}
       >
         <Check size={11} /> <span style={{ color: "inherit" }}>DONE</span>
       </span>
@@ -113,67 +113,52 @@ function StepStatus({ done, current }) {
 }
 
 function StepSummary({ step, project }) {
-  // Step 1: situation -> framing.reframed_problem
-  if (step.n === 1 && project.framing) {
+  // Step 1: reframed problem summary (single line-clamped snippet)
+  if (step.n === 1 && project.framing?.reframed_problem) {
     return (
-      <div className="mt-3 text-sm space-y-2">
-        {project.situation_input?.what && (
-          <p className="text-muted">
-            <span className="mono-tag text-muted">WHAT:</span> {project.situation_input.what}
-          </p>
-        )}
-        {project.framing.reframed_problem && (
-          <p className="border-l-2 border-signal pl-3 italic">
-            &quot;{project.framing.reframed_problem}&quot;
-          </p>
-        )}
-      </div>
+      <p className="text-[11.5px] text-[var(--text-3)] leading-snug line-clamp-3">
+        {project.framing.reframed_problem}
+      </p>
     );
   }
-  // Step 2: context.what_actually_matters
-  if (step.n === 2 && project.context) {
+  // Step 2: what actually matters
+  if (step.n === 2 && project.context?.what_actually_matters) {
     return (
-      <div className="mt-3 text-sm space-y-2">
-        {project.context.what_actually_matters && (
-          <p className="border-l-2 border-signal pl-3 italic">
-            &quot;{project.context.what_actually_matters}&quot;
-          </p>
-        )}
-        {project.context.key_signals?.length > 0 && (
-          <p className="mono-tag text-muted">
-            {project.context.key_signals.length} KEY SIGNAL{project.context.key_signals.length === 1 ? "" : "S"}
-            {project.context.noise_removed?.length ? ` · ${project.context.noise_removed.length} NOISE STRIPPED` : ""}
-          </p>
-        )}
-      </div>
+      <p className="text-[11.5px] text-[var(--text-3)] leading-snug line-clamp-3">
+        {project.context.what_actually_matters}
+      </p>
     );
   }
-  // Step 3: decision.recommendation.title + confidence
+  // Step 3: decision title + confidence
   if (step.n === 3 && project.decision) {
     const rec = project.decision.recommendation || {};
     return (
-      <div className="mt-3 text-sm space-y-2">
+      <div>
         {rec.title && (
-          <p className="font-display text-xl">
+          <p className="text-[12px] font-medium text-[var(--text)] leading-tight line-clamp-2">
             {rec.title}
-            <span className="mono-tag text-signal ml-2">{rec.confidence || 0}%</span>
           </p>
         )}
-        {rec.rationale && <p className="text-muted line-clamp-2">{rec.rationale}</p>}
+        {rec.confidence != null && (
+          <p className="mono-tag text-signal mt-1 text-[10px]">CONF {rec.confidence}%</p>
+        )}
       </div>
     );
   }
-  // Step 4: artifacts summary
+  // Step 4: artifacts summary (counts only)
   if (step.n === 4 && project.artifacts) {
     const a = project.artifacts;
     const scope = a.scope_doc || {};
     return (
-      <div className="mt-3 text-sm space-y-1">
-        {scope.title && <p className="font-display text-lg">{scope.title}</p>}
-        <p className="mono-tag text-muted">
-          {(scope.in_scope?.length || 0)} IN · {(scope.out_of_scope?.length || 0)} OUT
-          {scope.deliverables?.length ? ` · ${scope.deliverables.length} DELIVERABLES` : ""}
-          {a.risk_flags?.length ? ` · ${a.risk_flags.length} RISK${a.risk_flags.length === 1 ? "" : "S"}` : ""}
+      <div>
+        {scope.title && (
+          <p className="text-[12px] font-medium text-[var(--text)] leading-tight line-clamp-2">
+            {scope.title}
+          </p>
+        )}
+        <p className="mono-tag text-muted mt-1 text-[10px]">
+          {(scope.in_scope?.length || 0)} in · {(scope.out_of_scope?.length || 0)} out
+          {scope.deliverables?.length ? ` · ${scope.deliverables.length} deliv.` : ""}
         </p>
       </div>
     );
@@ -182,16 +167,12 @@ function StepSummary({ step, project }) {
   if (step.n === 5 && project.status === "locked") {
     const when = (project.locked_at || "").slice(0, 10);
     return (
-      <div className="mt-3 text-sm">
-        <p className="mono-tag text-signal inline-flex items-center gap-2">
-          <Lock size={11} /> LOCKED {when && `· ${when}`}
-        </p>
-      </div>
+      <p className="mono-tag text-signal inline-flex items-center gap-1.5 text-[10px]">
+        <Lock size={10} /> Locked {when && `· ${when}`}
+      </p>
     );
   }
-  // Empty-state teaching: for steps that haven't produced output yet, explain
-  // what Bracket will surface here so the user understands the value before
-  // starting. Turns dead "TODO" rows into small activation prompts.
+  // Empty-state teaching — 1 line only.
   const EMPTY_TEACHING = {
     1: "Reframed problem, tensions, clarity score.",
     2: "Signals kept · noise cut · hidden assumptions.",
@@ -202,9 +183,9 @@ function StepSummary({ step, project }) {
   const blurb = EMPTY_TEACHING[step.n];
   if (blurb) {
     return (
-      <div className="mt-3 text-sm" data-testid={`overview-empty-teaching-${step.n}`}>
-        <p className="text-muted leading-relaxed">{blurb}</p>
-      </div>
+      <p className="text-[11.5px] text-[var(--text-3)] leading-snug line-clamp-2" data-testid={`overview-empty-teaching-${step.n}`}>
+        {blurb}
+      </p>
     );
   }
   return null;
@@ -328,81 +309,95 @@ export default function ProjectOverview() {
   const currentStep = project.step || 1;
 
   return (
-    <div className="min-h-screen" data-testid="overview-page">
-      <main className="max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-8 md:py-12 page-enter">
-        {/* Top breadcrumb */}
-        <Link to="/app" className="mono-tag text-muted hover:text-ink inline-flex items-center gap-2" data-testid="overview-back">
+    <div className="dashboard-root relative min-h-full" data-testid="overview-page">
+      {/* Same cinematic backdrop as Dashboard — one visual universe. */}
+      <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
+
+      <main className="relative max-w-[1200px] mx-auto px-6 sm:px-8 md:px-10 py-6 md:py-8 flex flex-col gap-5 md:gap-6 page-enter">
+        {/* Breadcrumb */}
+        <Link
+          to="/app"
+          className="mono-tag text-muted hover:text-[var(--text)] inline-flex items-center gap-1.5 text-[10px] w-fit"
+          data-testid="overview-back"
+        >
           ← BACK TO DASHBOARD
         </Link>
 
-        {/* Title + status */}
-        <div className="mt-4 flex flex-col gap-3">
-          <p className="mono-label">{"{ project · overview }"}</p>
-          {renaming ? (
-            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-              <input
-                className="input-line flex-1 font-display text-3xl sm:text-4xl uppercase"
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") saveRename();
-                  if (e.key === "Escape") { setRenaming(false); setRenameValue(project.name); }
-                }}
-                maxLength={120}
-                data-testid="overview-rename-input"
-                autoFocus
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={saveRename}
-                  disabled={savingRename}
-                  className="btn-brut"
-                  data-testid="overview-rename-save"
+        {/* Header row — title + status pills + primary action */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="mono-tag text-muted text-[10px]">PROJECT · OVERVIEW</p>
+            {renaming ? (
+              <div className="mt-2 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                <input
+                  className="dashboard-search-input flex-1 font-display text-[22px] tracking-[-0.02em]"
+                  style={{ height: 40, minWidth: 0 }}
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveRename();
+                    if (e.key === "Escape") { setRenaming(false); setRenameValue(project.name); }
+                  }}
+                  maxLength={120}
+                  data-testid="overview-rename-input"
+                  autoFocus
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveRename}
+                    disabled={savingRename}
+                    className="flow-header-action"
+                    data-testid="overview-rename-save"
+                  >
+                    {savingRename ? <Loader2 size={12} className="animate-spin"/> : <Check size={12}/>} Save
+                  </button>
+                  <button
+                    onClick={() => { setRenaming(false); setRenameValue(project.name); }}
+                    className="flow-header-action"
+                    data-testid="overview-rename-cancel"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3">
+                <h1
+                  className="mt-1.5 font-display font-semibold tracking-[-0.028em] leading-[1.1] text-[26px] sm:text-[30px] text-[var(--text)] flex-1 min-w-0 break-words"
+                  data-testid="overview-project-name"
                 >
-                  {savingRename ? <Loader2 size={12} className="animate-spin"/> : <Check size={12}/>} SAVE
-                </button>
+                  {project.name}
+                </h1>
                 <button
-                  onClick={() => { setRenaming(false); setRenameValue(project.name); }}
-                  className="btn-ghost"
-                  data-testid="overview-rename-cancel"
+                  onClick={() => setRenaming(true)}
+                  className="flow-header-action shrink-0"
+                  data-testid="overview-rename"
+                  aria-label="Rename project"
                 >
-                  CANCEL
+                  <Pencil size={11} /> <span className="hidden sm:inline">Rename</span>
                 </button>
               </div>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2 items-center">
+              <span className="mono-tag px-2 py-0.5 rounded text-[10px]" style={spStyle} data-testid="overview-status-pill">{spLabel}</span>
+              {ssStyle && <span className="mono-tag px-2 py-0.5 rounded text-[10px]" style={ssStyle} data-testid="overview-share-pill">{ssLabel}</span>}
+              <span className="mono-tag px-2 py-0.5 rounded text-[10px]" style={{ backgroundColor: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" }}>
+                BRACKET AI
+              </span>
             </div>
-          ) : (
-            <div className="flex items-start justify-between gap-3">
-              <h1
-                className="font-display text-4xl sm:text-5xl md:text-6xl uppercase leading-[0.95] flex-1 min-w-0 break-words"
-                data-testid="overview-project-name"
-              >
-                {project.name}
-              </h1>
-              <button
-                onClick={() => setRenaming(true)}
-                className="btn-ghost shrink-0 mono-tag"
-                data-testid="overview-rename"
-                aria-label="Rename project"
-              >
-                <Pencil size={12} /> RENAME
-              </button>
-            </div>
-          )}
-
-          <div className="flex flex-wrap gap-2">
-            <span className="mono-tag px-2 py-1 rounded" style={spStyle} data-testid="overview-status-pill">{spLabel}</span>
-            {ssStyle && <span className="mono-tag px-2 py-1 rounded" style={ssStyle} data-testid="overview-share-pill">{ssLabel}</span>}
-            <span className="mono-tag px-2 py-1 rounded" style={{ backgroundColor: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" }}>
-              BRACKET AI
-            </span>
           </div>
 
           {/* Quick actions */}
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-2 shrink-0">
             {!isLocked && (
               <button
                 onClick={() => navigate(`/project/${id}/flow?step=${currentStep}`)}
-                className="btn-brut"
+                className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-2"
                 data-testid="overview-resume"
               >
                 {currentStep > 1 ? "Resume" : "Start step 1"} <ArrowRight size={14}/>
@@ -411,20 +406,20 @@ export default function ProjectOverview() {
             {project.artifacts && (
               <Link
                 to={`/project/${id}/document`}
-                className="btn-ghost mono-tag"
+                className="flow-header-action"
                 data-testid="overview-document-link"
               >
-                <FileText size={12} /> OPEN DOCUMENT
+                <FileText size={12} /> Document
               </Link>
             )}
             {isLocked && (
               <button
                 onClick={() => unlockAndGo(currentStep)}
                 disabled={unlocking}
-                className="btn-ghost mono-tag"
+                className="flow-header-action"
                 data-testid="overview-unlock"
               >
-                {unlocking ? <Loader2 size={12} className="animate-spin"/> : <Unlock size={12}/>} UNLOCK TO EDIT
+                {unlocking ? <Loader2 size={12} className="animate-spin"/> : <Unlock size={12}/>} Unlock to edit
               </button>
             )}
           </div>
@@ -531,9 +526,9 @@ export default function ProjectOverview() {
         )}
 
         {/* Step grid — cards, one per milestone; fits on one screen. */}
-        <section className="mt-10" data-testid="overview-steps">
-          <p className="mono-label">{"{ your journey · five milestones }"}</p>
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" data-testid="overview-steps-grid">
+        <section data-testid="overview-steps">
+          <p className="mono-tag text-muted text-[10px] mb-3">YOUR JOURNEY · FIVE MILESTONES</p>
+          <div className="mt-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3" data-testid="overview-steps-grid">
             {STEPS.map((step) => {
               const done =
                 (step.outputKey && !!project[step.outputKey]) ||
@@ -553,7 +548,7 @@ export default function ProjectOverview() {
                     {step.label}
                   </p>
                   <p className="mt-1 text-[11.5px] text-[var(--text-3)] leading-snug">{step.desc}</p>
-                  <div className="mt-2.5 min-h-[36px]">
+                  <div className="mt-2.5 flex-1 min-h-0 overflow-hidden">
                     <StepSummary step={step} project={project} />
                   </div>
                   <button

@@ -27,10 +27,10 @@
   --text-4:  #52525B;
 
   /* Accent — used ONLY on icons, dots, charts, decorative elements. Never on text. */
-  --accent:       #2E5BFF;
+  --accent:       #5E6AD2;
   --accent-2:     #1E4AEB;
-  --accent-soft:  rgba(46, 91, 255, 0.10);
-  --accent-glow:  rgba(46, 91, 255, 0.20);
+  --accent-soft:  rgba(94, 106, 210, 0.10);
+  --accent-glow:  rgba(94, 106, 210, 0.20);
 
   /* Semantic (icons + dots only) */
   --success:        #22C55E;
@@ -489,14 +489,14 @@ body::before {
 .guest-upgrade {
   border-color: var(--accent);
   background:
-    linear-gradient(180deg, rgba(46, 91, 255, 0.06) 0%, transparent 60%),
+    linear-gradient(180deg, rgba(94, 106, 210, 0.06) 0%, transparent 60%),
     var(--surface);
-  box-shadow: 0 12px 40px -20px rgba(46, 91, 255, 0.35);
+  box-shadow: 0 12px 40px -20px rgba(94, 106, 210, 0.35);
 }
 .guest-upgrade::before {
   content: "";
   position: absolute; inset: 0;
-  background: radial-gradient(circle at 100% 0%, rgba(46, 91, 255, 0.10), transparent 60%);
+  background: radial-gradient(circle at 100% 0%, rgba(94, 106, 210, 0.10), transparent 60%);
   pointer-events: none;
 }
 
@@ -620,7 +620,7 @@ body::before {
 .status-dot.is-risk::before  { background: var(--danger);  box-shadow: 0 0 0 3px rgba(255, 92, 92, 0.18); }
 .status-dot.is-track::before { background: var(--success); box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.18); }
 .status-dot.is-wait::before  { background: var(--warning); box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18); }
-.status-dot.is-live::before  { background: var(--accent);  box-shadow: 0 0 0 3px rgba(46, 91, 255, 0.18); }
+.status-dot.is-live::before  { background: var(--accent);  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.18); }
 
 /* ============================================================
    Step pipeline — clean numbered stepper
@@ -791,7 +791,7 @@ body::before {
   cursor: pointer;
   transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
 }
-.disc-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(46, 91, 255, 0.06); transform: translateY(-1px); }
+.disc-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(94, 106, 210, 0.06); transform: translateY(-1px); }
 .disc-btn:active { transform: translateY(0); }
 .disc-btn .chev { display: inline-block; color: var(--accent); font-weight: 600; }
 
@@ -815,7 +815,7 @@ body::before {
   border-color: var(--accent);
   transform: translateY(-3px);
   background: var(--surface-2);
-  box-shadow: 0 12px 32px -18px rgba(46, 91, 255, 0.35);
+  box-shadow: 0 12px 32px -18px rgba(94, 106, 210, 0.35);
 }
 .sample-card:active { transform: translateY(-1px); }
 
@@ -829,11 +829,11 @@ body::before {
   border-radius: 16px;
   padding: 6px;
   transition: border-color var(--d-fast) var(--ease-out), box-shadow var(--d-med) var(--ease-out);
-  box-shadow: 0 20px 60px -30px rgba(46, 91, 255, 0.20);
+  box-shadow: 0 20px 60px -30px rgba(94, 106, 210, 0.20);
 }
 .hero-input:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 20px 80px -30px rgba(46, 91, 255, 0.55), 0 0 0 4px rgba(46, 91, 255, 0.08);
+  box-shadow: 0 20px 80px -30px rgba(94, 106, 210, 0.55), 0 0 0 4px rgba(94, 106, 210, 0.08);
 }
 .hero-input-textarea {
   width: 100%;
@@ -957,7 +957,7 @@ body::before {
 /* Pastel tints — Linear-dark accent surfaces */
 .tint-sky    { background: rgba(56, 189, 248, 0.06); color: var(--text); border: 1px solid rgba(56, 189, 248, 0.18); border-radius: 10px; }
 .tint-lime   { background: rgba(132, 204, 22, 0.06); color: var(--text); border: 1px solid rgba(132, 204, 22, 0.18); border-radius: 10px; }
-.tint-lilac  { background: rgba(46, 91, 255, 0.08); color: var(--text); border: 1px solid rgba(46, 91, 255, 0.22); border-radius: 10px; }
+.tint-lilac  { background: rgba(94, 106, 210, 0.08); color: var(--text); border: 1px solid rgba(94, 106, 210, 0.22); border-radius: 10px; }
 .tint-peach  { background: rgba(251, 146, 60, 0.06); color: var(--text); border: 1px solid rgba(251, 146, 60, 0.18); border-radius: 10px; }
 
 /* ============================================================
@@ -997,7 +997,7 @@ body::before {
 .skeleton-line { height: 10px; background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 4px; }
 .skeleton-bar { background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; border-radius: 4px; }
 @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.ai-shimmer { background: linear-gradient(90deg, rgba(46, 91, 255, 0.0) 0%, rgba(46, 91, 255, 0.18) 50%, rgba(46, 91, 255, 0.0) 100%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
+.ai-shimmer { background: linear-gradient(90deg, rgba(94, 106, 210, 0.0) 0%, rgba(94, 106, 210, 0.18) 50%, rgba(94, 106, 210, 0.0) 100%); background-size: 200% 100%; animation: shimmer 1.6s linear infinite; }
 
 /* OutputCard wrap */
 .output-card-wrap {
@@ -1008,7 +1008,7 @@ body::before {
   position: absolute;
   left: 24px; right: 24px; top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(46, 91, 255, 0.55) 25%, rgba(124, 213, 255, 0.35) 60%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(94, 106, 210, 0.55) 25%, rgba(124, 213, 255, 0.35) 60%, transparent 100%);
   opacity: 0.85;
   pointer-events: none;
   z-index: 2;
@@ -1070,7 +1070,7 @@ body::before {
   position: absolute;
   left: 20%; top: -10%;
   width: 1100px; height: 1100px;
-  background: radial-gradient(circle, rgba(46, 91, 255, 0.18) 0%, rgba(46, 91, 255, 0.05) 40%, rgba(46, 91, 255, 0) 70%);
+  background: radial-gradient(circle, rgba(94, 106, 210, 0.18) 0%, rgba(94, 106, 210, 0.05) 40%, rgba(94, 106, 210, 0) 70%);
   filter: blur(30px);
   animation: heroPulse 8s ease-in-out infinite alternate;
 }
@@ -1524,7 +1524,7 @@ body::before {
 .section-label .dot {
   width: 6px; height: 6px; border-radius: 9999px;
   background: var(--accent);
-  box-shadow: 0 0 12px rgba(46, 91, 255, 0.6);
+  box-shadow: 0 0 12px rgba(94, 106, 210, 0.6);
 }
 
 /* Bento grid (used on Landing problem section) */
@@ -1587,7 +1587,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   line-height: 1.15;
   padding-top: 0.05em;
   padding-bottom: 0.1em;
-  background: linear-gradient(90deg, #2E5BFF 0%, #7CD5FF 45%, #B7B7FF 100%);
+  background: linear-gradient(90deg, #5E6AD2 0%, #7CD5FF 45%, #B7B7FF 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -1604,10 +1604,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   background: linear-gradient(180deg, #FFFFFF 0%, #E5E7EA 100%);
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 0 12px 40px rgba(46,91,255,0.25), 0 2px 8px rgba(0,0,0,0.4);
+  box-shadow: 0 12px 40px rgba(94,106,210,0.25), 0 2px 8px rgba(0,0,0,0.4);
   transition: box-shadow .35s cubic-bezier(.16,1,.3,1);
 }
-.landing-cta-primary:hover { box-shadow: 0 22px 60px rgba(46,91,255,0.42), 0 4px 14px rgba(0,0,0,0.5); }
+.landing-cta-primary:hover { box-shadow: 0 22px 60px rgba(94,106,210,0.42), 0 4px 14px rgba(0,0,0,0.5); }
 .landing-cta-primary--xl {
   padding: 22px 34px; font-size: 15px; border-radius: 999px;
 }
@@ -1646,10 +1646,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   border: 1px solid rgba(255,255,255,0.06);
   transition: transform .5s cubic-bezier(.16,1,.3,1), border-color .3s ease;
 }
-.bento-card:hover { transform: translateY(-4px); border-color: rgba(46,91,255,0.4); }
+.bento-card:hover { transform: translateY(-4px); border-color: rgba(94,106,210,0.4); }
 .bento-card-glow {
   position: absolute; inset: -30% -30% auto auto; width: 260px; height: 260px;
-  background: radial-gradient(closest-side, rgba(46,91,255,0.55), transparent 70%);
+  background: radial-gradient(closest-side, rgba(94,106,210,0.55), transparent 70%);
   opacity: 0; filter: blur(40px);
   transition: opacity .5s ease;
   pointer-events: none;
@@ -1686,7 +1686,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 .pricing-card:hover { border-color: rgba(255,255,255,0.15); }
 .pricing-card-glow {
   position: absolute; inset: -40% -40% auto auto; width: 380px; height: 380px;
-  background: radial-gradient(closest-side, rgba(46,91,255,0.35), transparent 70%);
+  background: radial-gradient(closest-side, rgba(94,106,210,0.35), transparent 70%);
   filter: blur(50px); opacity: 0;
   transition: opacity .5s ease; pointer-events: none;
 }
@@ -1752,7 +1752,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .landing-underline-fill {
   position: absolute; inset: 0;
-  background: linear-gradient(90deg, #2E5BFF 0%, #7CD5FF 50%, #FFB84C 100%);
+  background: linear-gradient(90deg, #5E6AD2 0%, #7CD5FF 50%, #FFB84C 100%);
   background-size: 200% 100%;
   animation: landing-underline-shimmer 4s linear infinite;
   border-radius: 4px;
@@ -1795,8 +1795,8 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 @media (min-width: 768px) { .cinema-nav-inner { padding: 0 32px; } }
 
 .cinema-nav-brand { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.cinema-nav-brand svg, .cinema-nav-brand img { transition: transform .35s cubic-bezier(.16,1,.3,1); }
-.cinema-nav-brand:hover svg, .cinema-nav-brand:hover img { transform: rotate(-4deg) scale(1.04); }
+/* No hover transform on the wordmark — the previous rotate+scale broke the
+   crisp geometry of the `{ }` PNG at small sizes. */
 
 .cinema-nav-links {
   display: none; align-items: center; gap: 6px;
@@ -1835,10 +1835,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   background: linear-gradient(180deg, #FFFFFF 0%, #E5E7EA 100%);
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 0 8px 24px rgba(46,91,255,0.20), 0 1px 4px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 24px rgba(94,106,210,0.20), 0 1px 4px rgba(0,0,0,0.4);
   transition: box-shadow .35s cubic-bezier(.16,1,.3,1), transform .35s cubic-bezier(.16,1,.3,1);
 }
-.cinema-cta-pill:hover { box-shadow: 0 14px 40px rgba(46,91,255,0.36), 0 2px 8px rgba(0,0,0,0.5); transform: translateY(-1px); }
+.cinema-cta-pill:hover { box-shadow: 0 14px 40px rgba(94,106,210,0.36), 0 2px 8px rgba(0,0,0,0.5); transform: translateY(-1px); }
 .cinema-cta-pill--sm { padding: 6px 12px; font-size: 12px; }
 
 .cinema-nav-mobile { display: none; align-items: center; gap: 8px; }
@@ -1901,7 +1901,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 .workbench-topbar::before {
   content: ""; position: absolute; inset: 0; border-radius: inherit; z-index: -1;
   background:
-    radial-gradient(140% 120% at 0% 0%, rgba(46,91,255,0.16), transparent 55%),
+    radial-gradient(140% 120% at 0% 0%, rgba(94,106,210,0.16), transparent 55%),
     radial-gradient(80% 80% at 100% 100%, rgba(124,213,255,0.06), transparent 60%);
   pointer-events: none;
 }
@@ -1915,16 +1915,16 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   background-clip: text;
   opacity: 0.95;
   min-width: 56px;
-  text-shadow: 0 0 40px rgba(46,91,255,0.28);
+  text-shadow: 0 0 40px rgba(94,106,210,0.28);
 }
 .workbench-celebration {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 14px 8px 10px;
-  background: linear-gradient(180deg, rgba(46,91,255,0.18) 0%, rgba(46,91,255,0.06) 100%);
-  border: 1px solid rgba(46,91,255,0.32);
+  background: linear-gradient(180deg, rgba(94,106,210,0.18) 0%, rgba(94,106,210,0.06) 100%);
+  border: 1px solid rgba(94,106,210,0.32);
   border-radius: 999px;
   font-size: 11.5px;
-  box-shadow: 0 8px 24px -12px rgba(46,91,255,0.5);
+  box-shadow: 0 8px 24px -12px rgba(94,106,210,0.5);
 }
 
 /* Flow page ambient — cinematic backdrop for ProjectFlow, matching the
@@ -1935,7 +1935,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(1000px 600px at 12% -10%, rgba(46, 91, 255, 0.07), transparent 60%),
+    radial-gradient(1000px 600px at 12% -10%, rgba(94, 106, 210, 0.07), transparent 60%),
     radial-gradient(800px 500px at 88% 100%, rgba(124, 213, 255, 0.03), transparent 65%),
     linear-gradient(180deg, #08090A 0%, #060708 50%, #050506 100%);
 }
@@ -1991,7 +1991,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 .flow-header-action:hover {
   color: var(--text);
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(46, 91, 255, 0.3);
+  border-color: rgba(94, 106, 210, 0.3);
 }
 
 /* Cinematic backdrop for non-Landing marketing pages. Blue-signal radial
@@ -2002,7 +2002,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(1200px 700px at 15% -10%, rgba(46, 91, 255, 0.14), transparent 55%),
+    radial-gradient(1200px 700px at 15% -10%, rgba(94, 106, 210, 0.14), transparent 55%),
     radial-gradient(900px 600px at 85% 20%, rgba(124, 213, 255, 0.06), transparent 60%),
     linear-gradient(180deg, #08090A 0%, #060708 40%, #050506 100%);
 }
@@ -2048,10 +2048,10 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   transition: transform 0.35s ease, border-color 0.35s ease;
 }
 .dashboard-paste-panel:focus-within {
-  border-color: rgba(46, 91, 255, 0.4);
+  border-color: rgba(94, 106, 210, 0.4);
   box-shadow:
-    0 0 0 1px rgba(46, 91, 255, 0.28) inset,
-    0 30px 80px -32px rgba(46, 91, 255, 0.35),
+    0 0 0 1px rgba(94, 106, 210, 0.28) inset,
+    0 30px 80px -32px rgba(94, 106, 210, 0.35),
     0 12px 40px -12px rgba(0, 0, 0, 0.55);
 }
 .dashboard-paste-textarea {
@@ -2099,7 +2099,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .dashboard-tile:hover {
   transform: translateY(-2px);
-  border-color: rgba(46, 91, 255, 0.32);
+  border-color: rgba(94, 106, 210, 0.32);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%);
 }
@@ -2118,7 +2118,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .dashboard-recent-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(46, 91, 255, 0.34);
+  border-color: rgba(94, 106, 210, 0.34);
 }
 .dashboard-recent-card a { color: inherit; }
 
@@ -2149,7 +2149,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 .dashboard-search-input:focus {
-  border-color: rgba(46, 91, 255, 0.36);
+  border-color: rgba(94, 106, 210, 0.36);
   background: rgba(255, 255, 255, 0.04);
 }
 .dashboard-search-input::placeholder {
@@ -2180,7 +2180,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .dashboard-filter-tab.active {
   color: var(--text);
-  background: rgba(46, 91, 255, 0.12);
+  background: rgba(94, 106, 210, 0.12);
 }
 
 /* ─── Project card — glass, action bar always visible under the card ─ */
@@ -2196,7 +2196,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .dashboard-project-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(46, 91, 255, 0.32);
+  border-color: rgba(94, 106, 210, 0.32);
 }
 .dashboard-project-actions {
   display: flex;
@@ -2221,8 +2221,8 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .dashboard-project-action:hover {
   color: var(--text);
-  border-color: rgba(46, 91, 255, 0.4);
-  background: rgba(46, 91, 255, 0.08);
+  border-color: rgba(94, 106, 210, 0.4);
+  background: rgba(94, 106, 210, 0.08);
 }
 .dashboard-project-action--icon {
   padding: 5px 7px;
@@ -2245,18 +2245,20 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   transition: transform .35s ease, border-color .35s ease, background .35s ease;
   display: flex;
   flex-direction: column;
-  min-height: 200px;
+  min-height: 180px;
+  max-height: 260px;
+  overflow: hidden;
 }
 .overview-step-card.is-current {
-  border-color: rgba(46, 91, 255, 0.4);
-  background: linear-gradient(180deg, rgba(46, 91, 255, 0.08) 0%, rgba(46, 91, 255, 0.015) 100%);
+  border-color: rgba(94, 106, 210, 0.4);
+  background: linear-gradient(180deg, rgba(94, 106, 210, 0.08) 0%, rgba(94, 106, 210, 0.015) 100%);
 }
 .overview-step-card.is-done {
   border-color: rgba(255, 255, 255, 0.10);
 }
 .overview-step-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(46, 91, 255, 0.34);
+  border-color: rgba(94, 106, 210, 0.34);
 }
 .overview-step-num {
   font-family: "JetBrains Mono", monospace;
@@ -2286,8 +2288,8 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .overview-step-btn:hover {
   color: var(--text);
-  border-color: rgba(46, 91, 255, 0.36);
-  background: rgba(46, 91, 255, 0.08);
+  border-color: rgba(94, 106, 210, 0.36);
+  background: rgba(94, 106, 210, 0.08);
 }
 
 /* ─── Sign-off document — tighter layout so it reads in one glance ── */
@@ -2388,7 +2390,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .example-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(46, 91, 255, 0.28);
+  border-color: rgba(94, 106, 210, 0.28);
   background: linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.014) 100%);
 }
 .example-card-icon {
@@ -2404,7 +2406,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   transition: background 0.35s ease, color 0.35s ease;
 }
 .example-card:hover .example-card-icon {
-  background: rgba(46, 91, 255, 0.10);
+  background: rgba(94, 106, 210, 0.10);
   color: var(--accent);
 }
 .example-card-arrow {
@@ -2423,7 +2425,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 }
 .example-card:hover .example-card-arrow {
   transform: translate(2px, -2px);
-  background: rgba(46, 91, 255, 0.14);
+  background: rgba(94, 106, 210, 0.14);
   color: var(--accent);
 }
 
@@ -2480,7 +2482,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
    be louder. */
 .hero-ambient--dashboard {
   background:
-    radial-gradient(600px 400px at 12% 0%, rgba(46, 91, 255, 0.06), transparent 60%),
+    radial-gradient(600px 400px at 12% 0%, rgba(94, 106, 210, 0.06), transparent 60%),
     radial-gradient(500px 380px at 88% 100%, rgba(124, 213, 255, 0.03), transparent 65%);
 }
 .hero-ambient--dashboard::after {

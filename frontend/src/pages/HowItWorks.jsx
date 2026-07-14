@@ -92,13 +92,13 @@ export default function HowItWorks() {
                 <div
                   aria-hidden="true"
                   className="absolute -top-16 -right-16 h-40 w-40 rounded-full blur-[50px] opacity-0 group-hover:opacity-60 transition-opacity duration-500"
-                  style={{ background: "radial-gradient(closest-side, rgba(46,91,255,0.4), transparent)" }}
+                  style={{ background: "radial-gradient(closest-side, rgba(94,106,210,0.4), transparent)" }}
                 />
                 <p
                   className="font-display font-semibold text-[38px] leading-none tracking-[-0.03em] tabular-nums"
                   style={{
                     color: "transparent",
-                    backgroundImage: "linear-gradient(135deg, #2E5BFF 0%, #7CD5FF 100%)",
+                    backgroundImage: "linear-gradient(135deg, #5E6AD2 0%, #7CD5FF 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                   }}
@@ -161,7 +161,7 @@ export default function HowItWorks() {
                     className="font-display font-semibold text-[42px] leading-none tracking-[-0.03em]"
                     style={{
                       color: "transparent",
-                      backgroundImage: "linear-gradient(135deg, #2E5BFF 0%, #7CD5FF 100%)",
+                      backgroundImage: "linear-gradient(135deg, #5E6AD2 0%, #7CD5FF 100%)",
                       WebkitBackgroundClip: "text",
                       backgroundClip: "text",
                     }}

@@ -601,7 +601,7 @@ function ReviewedState({ doc }) {
       className="card-brut p-5 sm:p-6"
       style={
         isAccept
-          ? { backgroundColor: "#2E5BFF", color: "#FFFFFF", borderColor: "#2E5BFF" }
+          ? { backgroundColor: "#5E6AD2", color: "#FFFFFF", borderColor: "#5E6AD2" }
           : { backgroundColor: "#F3F4F6", color: "#0A0A0C", borderColor: "#F3F4F6" }
       }
       data-testid="review-done-state"

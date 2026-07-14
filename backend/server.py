@@ -1675,60 +1675,105 @@ async def export_markdown(project_id: str):
 
 
 # --- PDF EXPORT -----------------------------------------------------------
+# Brand accent RGB for the new #5E6AD2 (Linear-inspired violet-blue).
+_ACCENT = (94, 106, 210)
+_MUTED = (128, 128, 138)
+_INK = (18, 20, 26)
+_INK_2 = (55, 60, 70)
+
+
 class _BracketPDF(FPDF):
     def header(self):
-        # Brand strip at top.
-        self.set_fill_color(10, 10, 10)
-        self.rect(0, 0, self.w, 14, "F")
-        self.set_xy(12, 4)
-        self.set_text_color(244, 244, 240)
-        self.set_font("Helvetica", "B", 9)
-        self.cell(0, 6, "BRACKET / DECISIONS FOR DESIGNERS", ln=0)
-        self.set_text_color(0, 51, 255)
-        self.set_x(self.w - 50)
-        self.cell(38, 6, "{ DECIDED }", ln=0, align="R")
-        self.set_text_color(10, 10, 10)
-        self.set_y(22)
+        # Thin brand strip — no dark bar, just a subtle accent line.
+        self.set_draw_color(*_ACCENT)
+        self.set_line_width(0.6)
+        self.line(16, 12, 40, 12)
+        self.set_xy(16, 14)
+        self.set_text_color(*_MUTED)
+        self.set_font("Helvetica", "B", 8)
+        self.cell(0, 4, "BRACKET  ·  DECISION DOCUMENT", ln=0)
+        self.set_text_color(*_INK)
+        self.set_y(24)
 
     def footer(self):
         self.set_y(-14)
+        self.set_draw_color(220, 222, 228)
+        self.set_line_width(0.2)
+        self.line(16, self.get_y() - 2, self.w - 16, self.get_y() - 2)
         self.set_font("Helvetica", "", 8)
-        self.set_text_color(120, 120, 120)
-        self.cell(0, 6, f"Page {self.page_no()} / {{nb}}   ·   use-bracket.com", align="C")
+        self.set_text_color(*_MUTED)
+        self.cell(0, 5, f"use-bracket.com  ·  page {self.page_no()} of {{nb}}", align="C")
 
 
 def _pdf_text(s: str) -> str:
-    """fpdf's core fonts are latin-1; convert any non-latin chars so we never crash."""
+    """fpdf's core fonts are latin-1; substitute common unicode punctuation
+    with ASCII equivalents so em-dashes/ellipses/curly-quotes don't become
+    "?" glyphs in the exported PDF."""
     if not s:
         return ""
-    return str(s).encode("latin-1", "replace").decode("latin-1")
+    s = str(s)
+    # Common unicode → ASCII substitutions.
+    replacements = {
+        "—": "-",   # em dash
+        "–": "-",   # en dash
+        "…": "...", # ellipsis
+        "\u2018": "'", "\u2019": "'",  # curly single
+        "\u201c": '"', "\u201d": '"',  # curly double
+        "•": "*",
+        "→": "->",
+        "←": "<-",
+        "·": "-",   # middle dot
+        "₹": "Rs.",
+    }
+    for k, v in replacements.items():
+        s = s.replace(k, v)
+    return s.encode("latin-1", "replace").decode("latin-1")
 
 
 def _pdf_for(project: dict) -> bytes:
     p = _BracketPDF(orientation="P", unit="mm", format="A4")
     p.alias_nb_pages()
-    p.set_auto_page_break(auto=True, margin=18)
-    p.set_margins(left=16, top=22, right=16)
+    p.set_auto_page_break(auto=True, margin=20)
+    p.set_margins(left=20, top=28, right=20)
     p.add_page()
 
-    # Title block — long names get wrapped safely.
-    p.set_font("Helvetica", "B", 28)
-    p.set_text_color(10, 10, 10)
+    # ─── Cover-style title block ────────────────────────────────────────
+    # Small tag above the title.
+    p.set_font("Helvetica", "B", 8)
+    p.set_text_color(*_ACCENT)
+    p.cell(0, 5, "SIGN-OFF DOCUMENT", ln=1)
+    p.ln(2)
+
+    # Big title.
+    p.set_font("Helvetica", "B", 24)
+    p.set_text_color(*_INK)
     try:
-        p.multi_cell(0, 11, _pdf_text(project.get("name") or "Bracket project"))
+        p.multi_cell(0, 10, _pdf_text(project.get("name") or "Bracket project"))
     except Exception as exc:
         logger.warning(f"pdf title failed: {exc}")
         p.set_x(p.l_margin)
-        p.cell(0, 11, _pdf_text((project.get("name") or "Bracket project")[:60]), ln=1)
+        p.cell(0, 10, _pdf_text((project.get("name") or "Bracket project")[:60]), ln=1)
 
+    # Meta line under title.
     p.set_font("Helvetica", "", 10)
-    p.set_text_color(110, 110, 110)
+    p.set_text_color(*_MUTED)
+    p.set_x(p.l_margin)
     by = project.get("creator_name") or ""
     when = (project.get("locked_at") or project.get("updated_at") or "")[:10]
-    meta = f"By {by}  ·  {when}" if by else when
-    if meta:
-        p.cell(0, 5, _pdf_text(meta), ln=1)
-    p.ln(4)
+    meta_parts = []
+    if by:
+        meta_parts.append(f"Prepared by {by}")
+    if when:
+        meta_parts.append(when)
+    if meta_parts:
+        p.cell(0, 5, _pdf_text("  ·  ".join(meta_parts)), ln=1)
+
+    # Accent divider under title.
+    p.ln(5)
+    p.set_draw_color(*_ACCENT)
+    p.set_line_width(0.4)
+    p.line(20, p.get_y(), 60, p.get_y())
+    p.ln(8)
 
     def _reset_x():
         # fpdf2's cell(..., ln=1) doesn't always pull X back to the LEFT margin
@@ -1760,46 +1805,62 @@ def _pdf_for(project: dict) -> bytes:
                 p.ln(height)
 
     def H(s: str):
-        p.set_font("Helvetica", "B", 14)
-        p.set_text_color(10, 10, 10)
-        p.set_fill_color(244, 244, 240)
+        # Section heading — big, bold, accent tag above, no gray fill bar.
+        p.ln(4)
+        p.set_font("Helvetica", "B", 8)
+        p.set_text_color(*_ACCENT)
         _reset_x()
-        p.cell(0, 9, "  " + _pdf_text(s), ln=1, fill=True)
-        p.ln(2)
+        p.cell(0, 4, _pdf_text("§ " + s.upper()), ln=1)
+        p.ln(1)
+        # Faint hairline under the section tag.
+        p.set_draw_color(230, 232, 238)
+        p.set_line_width(0.15)
+        p.line(20, p.get_y(), p.w - 20, p.get_y())
+        p.ln(4)
+        p.set_font("Helvetica", "B", 14)
+        p.set_text_color(*_INK)
 
-    def SH(s: str, color=(0, 51, 255)):
-        p.set_font("Helvetica", "B", 9)
+    def SH(s: str, color=_ACCENT):
+        p.ln(2)
+        p.set_font("Helvetica", "B", 8)
         p.set_text_color(*color)
         _reset_x()
         p.cell(0, 5, _pdf_text(s.upper()), ln=1)
-        p.set_text_color(10, 10, 10)
+        p.set_text_color(*_INK)
 
     def P(s: str):
         if not s:
             return
-        p.set_font("Helvetica", "", 11)
-        p.set_text_color(40, 40, 40)
-        _safe_multi_cell(0, 6, s)
+        p.set_font("Helvetica", "", 10.5)
+        p.set_text_color(*_INK_2)
+        _safe_multi_cell(0, 5.5, s)
         p.ln(1)
 
-    def L(items, bullet="-", muted=False):
+    def L(items, bullet="·", muted=False):
         if not items:
             return
-        p.set_font("Helvetica", "", 11)
+        p.set_font("Helvetica", "", 10.5)
         for it in items:
             txt = it if isinstance(it, str) else (it.get("text") or str(it))
-            p.set_text_color(120, 120, 120) if muted else p.set_text_color(40, 40, 40)
+            if muted:
+                p.set_text_color(*_MUTED)
+            else:
+                p.set_text_color(*_INK_2)
             _reset_x()
-            p.set_x(20)
-            p.cell(5, 6, _pdf_text(bullet), ln=0)
+            p.set_x(24)
+            p.set_font("Helvetica", "B", 10.5)
+            p.set_text_color(*_ACCENT) if not muted else p.set_text_color(*_MUTED)
+            p.cell(4, 5.5, _pdf_text(bullet), ln=0)
+            p.set_font("Helvetica", "", 10.5)
+            p.set_text_color(*_MUTED) if muted else p.set_text_color(*_INK_2)
             try:
-                p.multi_cell(0, 6, _pdf_text(txt))
+                p.multi_cell(0, 5.5, _pdf_text(txt))
             except Exception as exc:
                 logger.warning(f"pdf list-item failed: {exc}")
                 _reset_x()
-                p.set_x(20)
-                p.cell(5, 6, _pdf_text(bullet), ln=0)
-                _safe_multi_cell(0, 6, txt)
+                p.set_x(24)
+                p.cell(4, 5.5, _pdf_text(bullet), ln=0)
+                _safe_multi_cell(0, 5.5, txt)
         p.ln(1)
 
     framing = project.get("framing") or {}
@@ -1819,13 +1880,13 @@ def _pdf_for(project: dict) -> bytes:
         H("What actually matters")
         P(ctx.get("what_actually_matters") or "")
         if ctx.get("key_signals"):
-            SH("Key signals", color=(0, 51, 255))
+            SH("Key signals", color=_ACCENT)
             L(ctx["key_signals"], bullet="->")
         if ctx.get("noise_removed"):
-            SH("Noise removed", color=(120, 120, 120))
+            SH("Noise removed", color=_MUTED)
             L(ctx["noise_removed"], bullet="x", muted=True)
         if ctx.get("hidden_assumptions"):
-            SH("Hidden assumptions", color=(208, 38, 32))
+            SH("Hidden assumptions", color=(230, 74, 74))
             L(ctx["hidden_assumptions"], bullet="!")
         p.ln(2)
 
@@ -1843,7 +1904,7 @@ def _pdf_for(project: dict) -> bytes:
             _reset_x()
             p.ln(7)
         p.set_font("Helvetica", "I", 10)
-        p.set_text_color(0, 51, 255)
+        p.set_text_color(*_ACCENT)
         p.cell(0, 5, _pdf_text(f"Confidence: {rec.get('confidence', 0)}%"), ln=1)
         p.ln(1)
         P(rec.get("rationale") or "")
@@ -1869,10 +1930,10 @@ def _pdf_for(project: dict) -> bytes:
             L(decision["tradeoffs"], bullet="->")
 
         if decision.get("risks"):
-            SH("Risks", color=(208, 38, 32))
+            SH("Risks", color=(230, 74, 74))
             p.set_font("Helvetica", "", 11)
             for r in decision["risks"]:
-                p.set_text_color(208, 38, 32)
+                p.set_text_color(230, 74, 74)
                 p.set_font("Helvetica", "B", 10)
                 _reset_x()
                 p.cell(0, 6, _pdf_text(f"[{r.get('severity', 'LOW')}] {r.get('risk', '')}"), ln=1)
@@ -1892,7 +1953,7 @@ def _pdf_for(project: dict) -> bytes:
                 SH("In scope")
                 L(scope["in_scope"])
             if scope.get("out_of_scope"):
-                SH("Out of scope", color=(120, 120, 120))
+                SH("Out of scope", color=_MUTED)
                 L(scope["out_of_scope"], muted=True)
             if scope.get("deliverables"):
                 SH("Deliverables")
@@ -1914,7 +1975,7 @@ def _pdf_for(project: dict) -> bytes:
             H("Risk flags")
             p.set_font("Helvetica", "", 11)
             for r in artifacts["risk_flags"]:
-                p.set_text_color(208, 38, 32)
+                p.set_text_color(230, 74, 74)
                 p.set_font("Helvetica", "B", 10)
                 _reset_x()
                 p.cell(0, 6, _pdf_text(f"[{r.get('severity','LOW')}] {r.get('flag','')}"), ln=1)
@@ -1926,7 +1987,7 @@ def _pdf_for(project: dict) -> bytes:
 
     # Footer line
     p.ln(6)
-    p.set_draw_color(10, 10, 10)
+    p.set_draw_color(220, 222, 228)
     p.line(16, p.get_y(), p.w - 16, p.get_y())
     p.ln(3)
     p.set_font("Helvetica", "I", 9)

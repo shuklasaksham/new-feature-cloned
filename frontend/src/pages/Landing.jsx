@@ -353,7 +353,7 @@ const SHOWCASE = [
     title: "Paste anything. Bracket reads it.",
     body:
       "Emails, WhatsApp threads, Loom transcripts, unformatted PDFs. Bracket parses raw client mess into a reframed problem, a clarity score, and the tensions no one said out loud.",
-    accent: "#2E5BFF",
+    accent: "#5E6AD2",
     icon: Compass,
   },
   {
@@ -656,7 +656,7 @@ const STORY = [
     title: "Bracket started at 3am.",
     body:
       "Two founders — one freelance designer, one product engineer — kept watching the same movie play out. A client pastes a chaotic brief in WhatsApp at 11pm. The designer stares at it until 3am, unsure whether to say yes, negotiate scope, or push back. The decision — not the deliverable — was the actual work. Bracket was our attempt to compress that 4-hour agony into a 60-second workflow.",
-    accent: "#2E5BFF",
+    accent: "#5E6AD2",
   },
   {
     chapter: "02 · MISTAKES",
@@ -692,7 +692,7 @@ function Story() {
       <div
         aria-hidden="true"
         className="absolute inset-x-0 bottom-0 mx-auto h-[500px] w-[900px] blur-[120px] opacity-[0.16] -z-10"
-        style={{ background: "radial-gradient(closest-side, #2E5BFF, transparent 70%)" }}
+        style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
       />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
@@ -747,7 +747,7 @@ const TESTIMONIALS = [
       "Bracket turns unstructured client discussions into a clear project scope. Less ambiguity, better communication, more confidence.",
     name: "Kshitij Sahu",
     role: "Experience Designer",
-    accent: "#2E5BFF",
+    accent: "#5E6AD2",
   },
   {
     quote:
@@ -787,7 +787,7 @@ function Testimonials() {
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[420px] w-[900px] blur-[120px] opacity-[0.12] -z-10"
-        style={{ background: "radial-gradient(closest-side, #2E5BFF, transparent 70%)" }}
+        style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
       />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
@@ -939,7 +939,7 @@ function PricingCard({ tier, price, symbol, popular }) {
           {tier.features.map((f, i) => (
             <li key={i} className="flex items-start gap-3 text-[13.5px] text-[var(--text-2)]">
               <span className="mt-[3px] inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
-                    style={{ background: popular ? "rgba(255,184,76,0.15)" : "rgba(46,91,255,0.15)" }}>
+                    style={{ background: popular ? "rgba(255,184,76,0.15)" : "rgba(94,106,210,0.15)" }}>
                 <span className="text-[10px]" style={{ color: popular ? "#FFB84C" : "var(--accent)" }}>✓</span>
               </span>
               <span>{f}</span>
@@ -968,7 +968,7 @@ function FinalCTA() {
         aria-hidden="true"
         className="absolute inset-0 -z-10 opacity-40"
         style={{
-          background: "radial-gradient(60% 40% at 50% 45%, rgba(46,91,255,0.18), transparent 70%)",
+          background: "radial-gradient(60% 40% at 50% 45%, rgba(94,106,210,0.18), transparent 70%)",
         }}
       />
       <FilmGrain opacity={0.08} />

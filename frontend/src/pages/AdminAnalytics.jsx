@@ -24,7 +24,7 @@ import { api, formatApiError } from "../lib/api";
 // ---- palette (dark aesthetic, matches reference image) --------------------
 // Palette aligned with site tokens (see index.css)
 const COLORS = {
-  accent: "#2E5BFF",       // --accent (blue)
+  accent: "#5E6AD2",       // --accent (blue)
   accent2: "#4E7FFF",      // scatter cluster 2 (lighter blue tint)
   accent3: "#F97316",      // scatter cluster 3 (orange)
   positive: "#22C55E",
@@ -36,7 +36,7 @@ const COLORS = {
   cardBg: "#0E0F12",      // --surface
   cardBorder: "rgba(255, 255, 255, 0.07)", // --hairline
 };
-const PIE_COLORS = ["#2E5BFF", "#4E7FFF", "#22C55E", "#F97316", "#EF4444", "#06B6D4"];
+const PIE_COLORS = ["#5E6AD2", "#4E7FFF", "#22C55E", "#F97316", "#EF4444", "#06B6D4"];
 
 // ---- helpers --------------------------------------------------------------
 const shortDate = (iso) => {
@@ -171,7 +171,7 @@ function Heatmap({ data }) {
     const t = Math.min(1, v / maxVal);
     // signal blue with alpha ramp
     const alpha = 0.18 + t * 0.82;
-    return `rgba(46, 91, 255, ${alpha.toFixed(3)})`;
+    return `rgba(94, 106, 210, ${alpha.toFixed(3)})`;
   };
 
   return (

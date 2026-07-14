@@ -130,7 +130,7 @@ export default function FAQ() {
                   className="font-display font-semibold text-[42px] leading-none tracking-[-0.03em] tabular-nums"
                   style={{
                     color: "transparent",
-                    backgroundImage: "linear-gradient(135deg, #2E5BFF 0%, #7CD5FF 100%)",
+                    backgroundImage: "linear-gradient(135deg, #5E6AD2 0%, #7CD5FF 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                   }}

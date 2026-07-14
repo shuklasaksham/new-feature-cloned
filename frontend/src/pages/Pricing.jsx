@@ -128,7 +128,7 @@ export default function Pricing() {
                       {t.features.map((f, j) => (
                         <li key={j} className="flex items-start gap-3 text-[13.5px] text-[var(--text-2)]">
                           <span className="mt-[3px] inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
-                                style={{ background: isPro ? "rgba(255,184,76,0.15)" : "rgba(46,91,255,0.15)" }}>
+                                style={{ background: isPro ? "rgba(255,184,76,0.15)" : "rgba(94,106,210,0.15)" }}>
                             <Check size={9} style={{ color: isPro ? "#FFB84C" : "var(--accent)" }} />
                           </span>
                           <span>{f}</span>

@@ -123,7 +123,7 @@ const AI_OUTPUTS = [
 const RECENT_STATUS_STYLE = {
   draft:       { backgroundColor: "transparent",         color: "var(--text-2)", border: "1px solid var(--hairline)" },
   in_progress: { backgroundColor: "var(--surface-2)",    color: "var(--text)",   border: "1px solid var(--hairline)" },
-  locked:      { backgroundColor: "#2E5BFF",             color: "#FFFFFF",       border: "1px solid #2E5BFF" },
+  locked:      { backgroundColor: "#5E6AD2",             color: "#FFFFFF",       border: "1px solid #5E6AD2" },
 };
 const RECENT_STATUS_LABEL = { draft: "DRAFT", in_progress: "IN PROGRESS", locked: "LOCKED" };
 
@@ -321,7 +321,7 @@ export default function Dashboard() {
           <motion.div variants={item} className="grid grid-cols-3 gap-3" data-testid="dashboard-stats">
             <StatCard label="Total projects" value={stats.total} icon={FolderOpen} accent="var(--text-2)" />
             <StatCard label="In progress" value={stats.inProgress} icon={CircleDot} accent="#7CD5FF" />
-            <StatCard label="Locked" value={stats.locked} icon={Lock} accent="#2E5BFF" />
+            <StatCard label="Locked" value={stats.locked} icon={Lock} accent="#5E6AD2" />
           </motion.div>
         )}
 
@@ -331,7 +331,7 @@ export default function Dashboard() {
             <div
               aria-hidden="true"
               className="absolute -top-20 -right-20 h-[220px] w-[220px] rounded-full blur-[80px] opacity-[0.08] pointer-events-none"
-              style={{ background: "radial-gradient(closest-side, #2E5BFF, transparent 70%)" }}
+              style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
             />
             <textarea
               ref={inputRef}
@@ -553,7 +553,7 @@ function ProjectCard({ project: p, onRename, onDelete }) {
             style={{
               width: `${stepPct}%`,
               background: isLocked
-                ? "linear-gradient(90deg, #2E5BFF, #7CD5FF)"
+                ? "linear-gradient(90deg, #5E6AD2, #7CD5FF)"
                 : "linear-gradient(90deg, var(--text-2), var(--text-3))",
             }}
           />
