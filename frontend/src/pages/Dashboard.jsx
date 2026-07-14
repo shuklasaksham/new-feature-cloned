@@ -125,12 +125,20 @@ const AI_OUTPUTS = [
   { icon: ScrollText,   label: "Client-ready docs", hint: "sign-off + PDF" },
 ];
 
-const RECENT_STATUS_STYLE = {
-  draft:       { backgroundColor: "transparent",         color: "var(--text-2)", border: "1px solid var(--hairline)" },
-  in_progress: { backgroundColor: "var(--surface-2)",    color: "var(--text)",   border: "1px solid var(--hairline)" },
-  locked:      { backgroundColor: "#5E6AD2",             color: "#FFFFFF",       border: "1px solid #5E6AD2" },
+const STAGE_STYLE = {
+  in_progress: { backgroundColor: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--hairline)" },
+  locked:      { backgroundColor: "#5E6AD2", color: "#FFFFFF", border: "1px solid #5E6AD2" },
+  concerns:    { backgroundColor: "#EF4444", color: "#FFFFFF", border: "1px solid #EF4444" },
+  accepted:    { backgroundColor: "#22C55E", color: "#0A0A0C", border: "1px solid #22C55E" },
 };
-const RECENT_STATUS_LABEL = { draft: "DRAFT", in_progress: "IN PROGRESS", locked: "LOCKED" };
+// Stage precedence: client review outcome > locked > in progress.
+function projectStage(p) {
+  if (p.share_status === "accepted") return { key: "accepted", label: "ACCEPTED" };
+  if (p.share_status === "rejected" || p.share_status === "awaiting_reply")
+    return { key: "concerns", label: "HAVE CONCERNS" };
+  if (p.status === "locked") return { key: "locked", label: "LOCKED" };
+  return { key: "in_progress", label: "IN PROGRESS" };
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -746,6 +754,7 @@ function StatCard({ label, value, icon: Icon, accent }) {
 function ProjectCard({ project: p, onRename, onDelete, selected, selectionActive, onToggleSelect }) {
   const isLocked = p.status === "locked";
   const stepPct = Math.round(((p.step || 1) / 5) * 100);
+  const stage = projectStage(p);
   return (
     <div
       className={`dashboard-project-card relative ${selected ? "is-selected" : ""} ${selectionActive ? "is-selection-active" : ""}`}
@@ -769,9 +778,10 @@ function ProjectCard({ project: p, onRename, onDelete, selected, selectionActive
           <p className="font-medium text-[14px] leading-snug line-clamp-2 flex-1">{p.name}</p>
           <span
             className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[9.5px]"
-            style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
+            style={STAGE_STYLE[stage.key]}
+            data-testid={`dashboard-stage-${p.id}`}
           >
-            {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
+            {stage.label}
           </span>
         </div>
         <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--text-3)]">

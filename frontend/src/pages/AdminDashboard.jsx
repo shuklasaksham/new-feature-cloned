@@ -188,7 +188,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="relative min-h-full" data-testid="admin-dashboard-page">
+    <div className="relative min-h-full overflow-clip" data-testid="admin-dashboard-page">
       {/* Cinematic dashboard backdrop — unified with /app. */}
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
       <div

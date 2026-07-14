@@ -52,7 +52,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="relative min-h-full" data-testid="settings-page">
+    <div className="relative min-h-full overflow-clip" data-testid="settings-page">
       {/* Cinematic dashboard backdrop — unified with /app. */}
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
       <div

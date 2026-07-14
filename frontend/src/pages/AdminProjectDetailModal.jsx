@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Loader2, X as XIcon, ExternalLink } from "lucide-react";
 import { api, formatApiError } from "../lib/api";
-import { Section, LabeledBlock, isEmpty } from "./adminDetailBits";
+import { LabeledBlock, isEmpty } from "./adminDetailBits";
 
 export default function AdminProjectDetailModal({ projectId, onClose }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState("meta");
 
   useEffect(() => {
     let cancelled = false;
@@ -38,25 +39,37 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
   const p = data?.project;
   const owner = data?.owner;
 
+  const tabs = useMemo(() => {
+    const t = [{ key: "meta", label: "META" }];
+    if (!p) return t;
+    if (!isEmpty(p.situation_input) || !isEmpty(p.framing)) t.push({ key: "s1", label: "1 · SITUATION" });
+    if (!isEmpty(p.context_input) || !isEmpty(p.context)) t.push({ key: "s2", label: "2 · CONTEXT" });
+    if (!isEmpty(p.decision_input) || !isEmpty(p.decision)) t.push({ key: "s3", label: "3 · DECISION" });
+    if (!isEmpty(p.artifacts)) t.push({ key: "s4", label: "4 · ARTIFACTS" });
+    if (!isEmpty(p.share_review) || !isEmpty(p.owner_replies)) t.push({ key: "s5", label: "5 · CLIENT REVIEW" });
+    if (!isEmpty(p.feedback)) t.push({ key: "fb", label: "FEEDBACK" });
+    return t;
+  }, [p]);
+
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-start sm:items-center justify-center px-4 py-6 overflow-y-auto"
+      className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
       onClick={onClose}
       data-testid="admin-project-detail-modal"
     >
       <div
-        className="card-brut w-full max-w-4xl my-auto"
+        className="card-brut w-full max-w-[1320px] max-h-[calc(100dvh-32px)] flex flex-col"
         onClick={(e) => e.stopPropagation()}
         style={{ color: "var(--text)" }}
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-[var(--hairline)] rounded-t-[12px]" style={{ background: "rgba(14, 15, 18, 0.95)", backdropFilter: "blur(8px)" }}>
+        <header className="flex items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-[var(--hairline)] shrink-0">
           <div className="min-w-0 flex-1">
             <span className="section-label"><span className="dot" />Project detail</span>
-            <h2 className="font-display text-xl sm:text-2xl truncate mt-2" style={{ letterSpacing: "-0.02em" }}>
+            <h2 className="font-display text-lg sm:text-xl truncate mt-1.5" style={{ letterSpacing: "-0.02em" }}>
               {p?.name || (loading ? "…" : "Untitled")}
             </h2>
             {p && (
-              <p className="text-[12px] mt-1 truncate" style={{ color: "var(--text-3)" }}>
+              <p className="text-[12px] mt-0.5 truncate" style={{ color: "var(--text-3)" }}>
                 <span style={{ color: p.status === "locked" ? "var(--accent)" : "var(--text-2)" }}>
                   {(p.status || "").toUpperCase()}
                 </span>
@@ -91,7 +104,29 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
           </div>
         </header>
 
-        <div className="px-5 sm:px-7 py-6 space-y-5" data-testid="admin-project-detail-body">
+        {/* Section tabs — one section at a time so each fits without scroll. */}
+        {p && !loading && tabs.length > 1 && (
+          <nav className="flex items-center gap-1 px-5 sm:px-7 pt-3 flex-wrap shrink-0" data-testid="admin-project-detail-tabs">
+            {tabs.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className="px-3 py-1.5 rounded text-[10.5px] tracking-wider transition-colors"
+                style={
+                  tab === t.key
+                    ? { background: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--hairline)" }
+                    : { color: "var(--text-3)", border: "1px solid transparent" }
+                }
+                data-testid={`admin-project-detail-tab-${t.key}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        <div className="px-5 sm:px-7 py-4 flex-1 min-h-0 overflow-y-auto" data-testid="admin-project-detail-body">
           {loading && (
             <div className="flex items-center gap-2 mono-tag text-chalk/60">
               <Loader2 size={13} className="animate-spin" /> Loading project…
@@ -105,55 +140,52 @@ export default function AdminProjectDetailModal({ projectId, onClose }) {
 
           {p && !loading && (
             <>
-              <Section title="Meta" subtitle="Identifiers, timestamps, ownership">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {tab === "meta" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <LabeledBlock label="Project ID" value={p.id} />
                   <LabeledBlock label="Engine" value={p.engine} />
+                  <LabeledBlock label="Share status" value={p.share_status} />
                   <LabeledBlock label="Created" value={p.created_at} />
                   <LabeledBlock label="Updated" value={p.updated_at} />
                   <LabeledBlock label="Locked at" value={p.locked_at} />
                   <LabeledBlock label="Owner user id" value={p.owner_user_id} />
                   <LabeledBlock label="Owner email" value={owner?.email || p.creator_email} />
                   <LabeledBlock label="Owner name" value={owner?.name || p.creator_name} />
-                  <LabeledBlock label="Share status" value={p.share_status} />
                 </div>
-              </Section>
-
-              {(!isEmpty(p.situation_input) || !isEmpty(p.framing)) && (
-                <Section title="Step 1 · Situation" subtitle="Reframe the problem">
+              )}
+              {tab === "s1" && (
+                <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-x-8 gap-y-4">
                   <LabeledBlock label="INPUT" value={p.situation_input} />
                   <LabeledBlock label="AI OUTPUT" value={p.framing} />
-                </Section>
+                </div>
               )}
-              {(!isEmpty(p.context_input) || !isEmpty(p.context)) && (
-                <Section title="Step 2 · Context" subtitle="Compress signals from noise">
+              {tab === "s2" && (
+                <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-x-8 gap-y-4">
                   <LabeledBlock label="INPUT" value={p.context_input} />
                   <LabeledBlock label="AI OUTPUT" value={p.context} />
-                </Section>
+                </div>
               )}
-              {(!isEmpty(p.decision_input) || !isEmpty(p.decision)) && (
-                <Section title="Step 3 · Decision" subtitle="Make the call">
+              {tab === "s3" && (
+                <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-x-8 gap-y-4">
                   <LabeledBlock label="INPUT" value={p.decision_input} />
                   <LabeledBlock label="AI OUTPUT" value={p.decision} />
-                </Section>
+                </div>
               )}
-              {!isEmpty(p.artifacts) && (
-                <Section title="Step 4 · Artifacts" subtitle="Scope + client message + risks">
+              {tab === "s4" && (
+                <div className="admin-detail-cols">
                   <LabeledBlock label="AI OUTPUT" value={p.artifacts} />
-                </Section>
+                </div>
               )}
-
-              {(!isEmpty(p.share_review) || !isEmpty(p.owner_replies)) && (
-                <Section title="Step 5 · Client review" subtitle="Share outcome + owner replies">
+              {tab === "s5" && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <LabeledBlock label="Share review" value={p.share_review} />
                   <LabeledBlock label="Owner replies" value={p.owner_replies} />
-                </Section>
+                </div>
               )}
-
-              {!isEmpty(p.feedback) && (
-                <Section title="Feedback" subtitle="Post-lock thumbs / comments">
+              {tab === "fb" && (
+                <div className="admin-detail-cols">
                   <LabeledBlock label="Feedback" value={p.feedback} />
-                </Section>
+                </div>
               )}
             </>
           )}

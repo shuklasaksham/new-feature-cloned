@@ -1930,6 +1930,12 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
      safety net for browsers that don't yet support `align-items: safe`. */
   margin: auto;
 }
+/* Wide variant — used by the client sign-off checklist so every acceptance
+   item fits on screen without inner scroll (items flow into CSS columns). */
+.review-modal-panel--wide {
+  max-width: min(1360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 24px);
+}
 .review-modal-panel .bracket-dialog-close {
   font-family: "Poppins", sans-serif;
   font-size: 20px;
@@ -1989,42 +1995,65 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   }
 }
 .crm-col { min-width: 0; }
-.review-accept-grid {
-  display: grid; gap: 24px;
-  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-  align-items: stretch;
-  min-height: 0;
-  flex: 1;
-  overflow: hidden;
-}
-.review-accept-grid > * {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-@media (max-width: 900px) {
-  .review-accept-grid { grid-template-columns: 1fr; gap: 20px; }
-}
-
+/* Acceptance checklist — CSS multi-column flow so all items are visible at
+   once on desktop (no inner scroll); scroll remains only as a safety net. */
 .review-accept-items {
-  display: flex; flex-direction: column; gap: 6px;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 12px;
-  padding: 6px;
+  padding: 8px;
   background: rgba(255,255,255,0.02);
   overflow-y: auto;
   min-height: 0;
   flex: 1;
+  column-gap: 8px;
 }
+@media (min-width: 760px)  { .review-accept-items { columns: 2; } }
+@media (min-width: 1150px) { .review-accept-items { columns: 3; } }
+@media (min-width: 1500px) { .review-accept-items { columns: 4; } }
 .review-accept-items::-webkit-scrollbar { width: 6px; }
 .review-accept-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
 .review-accept-item {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 10px 12px;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
+  break-inside: avoid;
+  margin-bottom: 6px;
   transition: background .2s ease, border-color .2s ease;
 }
+
+/* Signature strip below the checklist — one horizontal row on desktop. */
+.review-accept-footer {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(200px, 1.15fr) minmax(150px, 0.8fr) minmax(200px, 1.05fr) auto;
+  gap: 16px;
+  align-items: end;
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  .review-accept-footer { grid-template-columns: 1fr; gap: 12px; }
+}
+
+/* Reject-suggestions phase — suggestions left, signature right, so the
+   whole flow fits vertically without scrolling. */
+.review-suggest-cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  min-height: 0;
+}
+@media (min-width: 900px) {
+  .review-suggest-cols {
+    grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+    gap: 22px;
+    align-items: start;
+  }
+}
+
+/* Admin project detail — flow long single-block content into 2 columns. */
+.admin-detail-cols { column-gap: 28px; }
+@media (min-width: 1024px) { .admin-detail-cols { columns: 2; } }
 .review-accept-item:hover { background: rgba(255, 255, 255, 0.04); }
 .review-accept-item.is-checked { background: rgba(94, 106, 210, 0.08); }
 .review-accept-checkbox {

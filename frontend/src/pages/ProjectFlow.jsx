@@ -166,7 +166,7 @@ export default function ProjectFlow() {
   };
 
   return (
-    <div className="min-h-screen relative" data-testid="project-flow-page">
+    <div className="min-h-screen relative overflow-clip" data-testid="project-flow-page">
       {/* Cinematic dashboard backdrop — unified with /app so post-login pages share the same visual language. */}
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
       <div

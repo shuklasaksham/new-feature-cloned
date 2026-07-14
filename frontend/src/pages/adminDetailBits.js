@@ -63,14 +63,14 @@ function renderRow(r, i) {
   if (r.kind === "label") {
     return React.createElement(
       "div",
-      { key: i, className: "text-[11px] uppercase tracking-wider pt-2 first:pt-0", style: { ...pad, color: "var(--text-3)" } },
+      { key: i, className: "text-[10.5px] uppercase tracking-wider pt-1.5 first:pt-0", style: { ...pad, color: "var(--text-3)" } },
       r.text,
     );
   }
   if (r.kind === "bullet") {
     return React.createElement(
       "div",
-      { key: i, className: "flex gap-2 text-[13px]", style: pad },
+      { key: i, className: "flex gap-2 text-[12.5px]", style: pad },
       React.createElement("span", { className: "shrink-0", style: { color: "var(--text-4, #52525B)" } }, "·"),
       React.createElement(
         "span",
@@ -88,7 +88,7 @@ function renderRow(r, i) {
   }
   return React.createElement(
     "div",
-    { key: i, className: "whitespace-pre-wrap break-words text-[13px]", style: pad },
+    { key: i, className: "whitespace-pre-wrap break-words text-[12.5px]", style: pad },
     r.text,
   );
 }
@@ -116,36 +116,5 @@ export function LabeledBlock(props) {
       props.label,
     ),
     React.createElement(FlatValue, { value: props.value }),
-  );
-}
-
-export function Section(props) {
-  return React.createElement(
-    "section",
-    {
-      className: "rounded-md p-4 sm:p-5",
-      style: { border: "1px solid var(--hairline)", background: "var(--surface-2)" },
-      "data-testid": props.testid,
-    },
-    React.createElement(
-      "header",
-      { className: "mb-3" },
-      React.createElement(
-        "h3",
-        { className: "font-display text-[15px]", style: { color: "var(--text)", letterSpacing: "-0.01em" } },
-        props.title,
-      ),
-      props.subtitle &&
-        React.createElement(
-          "p",
-          { className: "text-[11px] uppercase tracking-wider mt-0.5", style: { color: "var(--text-3)" } },
-          props.subtitle,
-        ),
-    ),
-    React.createElement(
-      "div",
-      { className: "space-y-3" },
-      props.children,
-    ),
   );
 }
