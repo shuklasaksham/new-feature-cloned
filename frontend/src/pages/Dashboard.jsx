@@ -453,9 +453,10 @@ export default function Dashboard() {
           // ─── Empty state (first-time user) — teach the product. ───────
           <>
             <motion.div variants={item} data-testid="dashboard-quickstart-wrap">
-              <p className="mono-tag text-muted text-[10px] mb-3">
-                OR START FROM AN EXAMPLE
-              </p>
+              <div className="flex items-baseline justify-between mb-3">
+                <p className="mono-tag text-muted text-[10px]">START FROM AN EXAMPLE</p>
+                <p className="text-[10.5px] text-[var(--text-3)]">1-click populates the box</p>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 {QUICK_STARTS.map((t) => {
                   const Icon = t.icon;
@@ -464,10 +465,15 @@ export default function Dashboard() {
                       key={t.key}
                       type="button"
                       onClick={() => applyTemplate(t)}
-                      className="dashboard-tile group text-left"
+                      className="example-card group text-left"
                       data-testid={`dashboard-quickstart-${t.key}`}
                     >
-                      <Icon size={15} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors" />
+                      <span className="example-card-arrow" aria-hidden="true">
+                        <ArrowRight size={11} />
+                      </span>
+                      <span className="example-card-icon">
+                        <Icon size={16} />
+                      </span>
                       <p className="mt-3 text-[13.5px] font-medium leading-tight">{t.label}</p>
                       <p className="mt-1 text-[11px] text-[var(--text-3)] leading-snug">{t.kicker}</p>
                     </button>
@@ -477,17 +483,21 @@ export default function Dashboard() {
             </motion.div>
 
             <motion.div variants={item} data-testid="dashboard-outputs-wrap">
-              <p className="mono-tag text-muted text-[10px] mb-3">
-                BRACKET PRODUCES
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <div className="flex items-baseline justify-between mb-3">
+                <p className="mono-tag text-muted text-[10px]">WHAT BRACKET PRODUCES</p>
+                <p className="text-[10.5px] text-[var(--text-3)]">the full client-ready package</p>
+              </div>
+              <div className="produces-manifest">
                 {AI_OUTPUTS.map((o) => {
                   const Icon = o.icon;
                   return (
-                    <div key={o.label} className="dashboard-tile dashboard-tile--output">
-                      <Icon size={15} className="text-[var(--accent)]" />
-                      <p className="mt-2 text-[13.5px] font-medium leading-tight">{o.label}</p>
-                      <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug">{o.hint}</p>
+                    <div key={o.label} className="produces-manifest-row">
+                      <span className="produces-manifest-check" aria-hidden="true">
+                        <Check size={11} />
+                      </span>
+                      <Icon size={13} className="text-[var(--text-3)] shrink-0" />
+                      <p className="text-[12.5px] font-medium text-[var(--text)]">{o.label}</p>
+                      <p className="text-[11px] text-[var(--text-3)] hidden md:block truncate">{o.hint}</p>
                     </div>
                   );
                 })}
