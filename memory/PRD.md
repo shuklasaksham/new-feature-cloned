@@ -409,3 +409,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     * `.t-display` and `.t-hero` scaled up (`clamp(2.5rem, 6vw, 5.5rem)` / `clamp(1.9rem, 4vw, 3.25rem)`) with tighter tracking (-0.038em / -0.03em) for cinematic weight.
     * `MarketingLayout` rewritten to inject a fixed `.marketing-ambient` (blue-signal + secondary sky wash) + `.marketing-grain` (SVG turbulence, overlay blend) on all sub-pages. Landing is excluded (renders its own hero backdrop).
   - **⚠️ Redeploy needed** to push to `use-bracket.com`.
+
+
+- 2026-07-14 — **Iteration 31 — Hero image swap, "Start building" scale, bento masonry balance**:
+  - **Hero backdrop swapped**: replaced pixabay video (`849620443_large.mp4`) with an Unsplash "Earth from space at night" stock image (`photo-1451187580459-43490279c0fa`). Cinematic, on-brand for a decision OS ("scale + possibility"). Parallax `y` motion preserved.
+  - **"Start building." size**: dropped from `text-[64→176px]` to `text-[52→128px]`. Now fits in a single line even on 1440 viewports without truncation. Hero headline `Paste the mess. / Ship the decision.` scaled down (44→112 → 42→96).
+  - **Bento masonry rebuild**: 4-col × 3-row grid, **12 cells filled with 7 tiles, zero gaps**:
+    * Dashboard (2×2) top-left
+    * Scope · Risks top-right (1×1 each)
+    * Dashboard cont · Decision (1×2) · Message middle
+    * NEW **Speed** (2×1) wide tile bottom-left · Decision cont · Lock bottom-right
+    * `grid-flow-dense` added as safety net.
+  - Total page height dropped from 8228 → 7608px.
+  - **⚠️ Redeploy needed** to push to `use-bracket.com`.

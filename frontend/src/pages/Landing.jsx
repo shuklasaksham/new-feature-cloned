@@ -172,22 +172,19 @@ function Hero() {
       className="relative overflow-hidden isolate min-h-[92vh] flex items-center"
       data-testid="landing-hero"
     >
-      {/* Looping muted background video */}
+      {/* Cinematic dark backdrop image (Unsplash — swappable) */}
       <motion.div
         style={{ y: shouldReduce ? 0 : videoY }}
         className="absolute inset-0 -z-20"
       >
-        <video
+        <img
+          src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2600&q=85"
+          alt=""
+          aria-hidden="true"
           className="absolute inset-0 h-full w-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=2400&q=80"
-        >
-          {/* Swappable placeholder — designer-friendly abstract loop */}
-          <source src="https://cdn.pixabay.com/video/2023/07/27/173259-849620443_large.mp4" type="video/mp4" />
-        </video>
+          loading="eager"
+          decoding="async"
+        />
       </motion.div>
 
       {/* Gradient scrim */}
@@ -226,7 +223,7 @@ function Hero() {
           The decision OS for freelancers
         </motion.div>
 
-        <h1 className="mt-6 font-display font-semibold tracking-[-0.035em] leading-[0.98] text-[44px] sm:text-[68px] md:text-[92px] lg:text-[112px] text-[var(--text)]">
+        <h1 className="mt-6 font-display font-semibold tracking-[-0.032em] leading-[0.98] text-[42px] sm:text-[64px] md:text-[82px] lg:text-[96px] text-[var(--text)]">
           <WordReveal text="Paste the mess." tag="span" />
           <br />
           <span className="landing-hero-gradient">
@@ -477,13 +474,23 @@ function ShowcaseCard({ card }) {
 }
 
 // ─── SECTION 3: BENTO GRID ───────────────────────────────────────────────
+// Bento — 4 columns × 3 rows = 12 cells, no gaps.
+// Layout (col:row):
+//   (1-2, 1-2) DASHBOARD  · big feature tile
+//   (3,   1  ) SCOPE
+//   (4,   1  ) RISKS
+//   (3,   2-3) DECISION   · tall
+//   (4,   2  ) MESSAGE
+//   (4,   3  ) LOCK
+//   (1-2, 3  ) SPEED      · wide horizontal tile fills the previous gap
 const BENTO = [
-  { span: "col-span-2 row-span-2", tag: "DASHBOARD",  title: "Client OS on one screen.",         hint: "Paste anything. Every project starts here." },
-  { span: "col-span-1 row-span-1", tag: "SCOPE",       title: "Scope, drafted.",                   hint: "In / out / deliverables / timeline." },
-  { span: "col-span-1 row-span-1", tag: "RISKS",       title: "Risks your client never said.",   hint: "Bracket stress-tests every call." },
-  { span: "col-span-1 row-span-2", tag: "DECISION",    title: "A call, with confidence.",         hint: "Not a menu — a stance." },
-  { span: "col-span-1 row-span-1", tag: "MESSAGE",     title: "The client email, in your voice.", hint: "Copy-paste ready." },
-  { span: "col-span-1 row-span-1", tag: "LOCK",        title: "Locked. Signed. Shipped.",         hint: "Survives the 3am rethink." },
+  { span: "col-span-2 md:row-span-2",              tag: "DASHBOARD", title: "Client OS on one screen.",         hint: "Paste anything. Every project starts here." },
+  { span: "col-span-1 md:col-span-1",              tag: "SCOPE",     title: "Scope, drafted.",                  hint: "In / out / deliverables / timeline." },
+  { span: "col-span-1 md:col-span-1",              tag: "RISKS",     title: "Risks your client never said.",    hint: "Bracket stress-tests every call." },
+  { span: "col-span-1 md:col-span-1 md:row-span-2", tag: "DECISION",  title: "A call, with confidence.",         hint: "Not a menu — a stance." },
+  { span: "col-span-1 md:col-span-1",              tag: "MESSAGE",   title: "The client email, in your voice.", hint: "Copy-paste ready." },
+  { span: "col-span-2 md:col-span-2",              tag: "SPEED",     title: "Under a minute. Every project.",   hint: "From messy paste → client-ready package." },
+  { span: "col-span-1 md:col-span-1",              tag: "LOCK",      title: "Locked. Signed. Shipped.",         hint: "Survives the 3am rethink." },
 ];
 
 function Bento() {
@@ -494,7 +501,7 @@ function Bento() {
           tag="WHAT'S INSIDE"
           title="Every screen designed to reduce hesitation."
         />
-        <div className="mt-14 grid grid-cols-2 md:grid-cols-4 auto-rows-[180px] md:auto-rows-[220px] gap-4">
+        <div className="mt-14 grid grid-cols-2 md:grid-cols-4 grid-flow-dense auto-rows-[190px] md:auto-rows-[220px] gap-4">
           {BENTO.map((b, i) => (
             <BentoCard key={i} tile={b} />
           ))}
@@ -656,7 +663,7 @@ function FinalCTA() {
           <Zap size={12} /> READY?
         </motion.p>
 
-        <h2 className="mt-8 font-display font-semibold italic tracking-[-0.04em] leading-[0.96] text-[64px] sm:text-[110px] md:text-[150px] lg:text-[176px] text-[var(--text)]">
+        <h2 className="mt-6 font-display font-semibold italic tracking-[-0.03em] leading-[0.98] text-[52px] sm:text-[80px] md:text-[104px] lg:text-[128px] text-[var(--text)]">
           <WordReveal text="Start building." tag="span" />
         </h2>
 
