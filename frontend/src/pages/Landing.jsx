@@ -844,7 +844,7 @@ function Testimonials() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="FROM THE FIELD"
-          title="Freelancers ship faster with Bracket."
+          title="Better decisions. Better client projects."
           center
         />
       </div>
