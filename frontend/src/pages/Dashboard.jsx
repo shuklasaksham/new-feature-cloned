@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
   ArrowUp,
@@ -213,31 +214,73 @@ export default function Dashboard() {
     setTimeout(() => inputRef.current?.focus(), 60);
   };
 
+  const shouldReduce = useReducedMotion();
+  // Cinematic staggered entry matching Landing/Login. Section → section, top down.
+  const container = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: shouldReduce ? 0 : 0.08, delayChildren: 0.05 } },
+  };
+  const item = {
+    hidden: { opacity: 0, y: shouldReduce ? 0 : 16 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
+  };
+
   return (
-    <div className="h-full flex flex-col" data-testid="dashboard-page">
+    <div className="dashboard-root relative min-h-full" data-testid="dashboard-page">
       <Seo title="Dashboard" path="/app" noindex />
-      <main className="flex-1 max-w-[1080px] w-full mx-auto px-6 sm:px-8 md:px-10 py-6 md:py-8 page-enter flex flex-col justify-center min-h-0">
-        {/* Hero */}
-        <div className="text-center">
+
+      {/* Cinematic dark backdrop — same `.hero-ambient` treatment used on
+         the Landing/Login pages so the app feels like one continuous universe. */}
+      <div aria-hidden="true" className="hero-ambient" />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 -z-10"
+        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+      />
+      {/* One faint ambient orb top-left, matching the Landing hero style. */}
+      <div
+        aria-hidden="true"
+        className="absolute -z-[5] pointer-events-none rounded-full"
+        style={{
+          width: 620, height: 620, top: "-18%", left: "-10%",
+          background: "radial-gradient(circle at 45% 45%, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 55%)",
+          filter: "blur(70px)",
+        }}
+      />
+
+      <motion.main
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="relative max-w-[1120px] w-full mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14"
+      >
+        {/* Hero — big cinematic headline with gradient accent, matches Landing type language. */}
+        <motion.div variants={item} className="text-center">
           <span className="section-label"><span className="dot" />Client Operating System</span>
           <h1
-            className="mt-3 font-display font-semibold tracking-[-0.03em] leading-[1.05] text-[30px] sm:text-[38px] md:text-[44px]"
+            className="mt-4 font-display font-semibold tracking-[-0.03em] leading-[1.05] text-[34px] sm:text-[46px] md:text-[56px] text-[var(--text)]"
             data-testid="dashboard-hero-headline"
           >
             Paste anything your client sent you.
           </h1>
-          <p className="mt-3 max-w-[640px] mx-auto text-[13px] sm:text-sm text-[var(--text-2)] leading-relaxed">
-            Email · WhatsApp · Meeting notes · Voice transcript · Contract. We&apos;ll figure out the rest —
+          <p className="mt-4 max-w-[640px] mx-auto text-[13.5px] sm:text-[14.5px] text-[var(--text-2)] leading-relaxed">
+            Email · WhatsApp · Meeting notes · Voice transcript · Contract. Bracket figures out the rest —
             scope, deliverables, timeline, risks, docs. The whole client-ready package.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Hero input — the ONE primary action */}
-        <div className="mt-5 relative" data-testid="dashboard-hero-input-wrap">
-          <div className="hero-input relative">
+        {/* Hero input — glassmorphic panel, the ONE primary action. */}
+        <motion.div variants={item} className="mt-8 md:mt-10 relative" data-testid="dashboard-hero-input-wrap">
+          <div className="dashboard-paste-panel liquid-glass relative overflow-hidden">
+            {/* Corner glow — subtle blue signal, ties it to the brand palette. */}
+            <div
+              aria-hidden="true"
+              className="absolute -top-24 -right-24 h-[280px] w-[280px] rounded-full blur-[80px] opacity-[0.16] pointer-events-none"
+              style={{ background: "radial-gradient(closest-side, #2E5BFF, transparent 70%)" }}
+            />
             <textarea
               ref={inputRef}
-              rows={3}
+              rows={4}
               value={paste}
               onChange={(e) => setPaste(e.target.value)}
               onKeyDown={(e) => {
@@ -247,11 +290,11 @@ export default function Dashboard() {
                 }
               }}
               placeholder={"Paste your client's message here… An email. A WhatsApp thread. Kickoff notes. Whatever they sent you — Bracket reads the mess."}
-              className="hero-input-textarea"
+              className="dashboard-paste-textarea"
               data-testid="dashboard-hero-paste-input"
             />
-            <div className="hero-input-footer">
-              <div className="text-xs text-[var(--text-3)] flex items-center gap-3 flex-wrap">
+            <div className="dashboard-paste-footer">
+              <div className="text-[11.5px] text-[var(--text-3)] flex items-center gap-3 flex-wrap">
                 <span className="inline-flex items-center gap-1.5">
                   <ClipboardPaste size={12} /> Paste anything
                 </span>
@@ -283,17 +326,17 @@ export default function Dashboard() {
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Quick-start briefs */}
-        <div className="mt-5" data-testid="dashboard-quickstart-wrap">
-          <div className="flex items-baseline justify-between mb-2">
-            <p className="mono-label text-[var(--text-3)]">
-              <span className="dot" /> Or start from an example
+        {/* Quick-start briefs — glass tiles, matches Landing bento aesthetic. */}
+        <motion.div variants={item} className="mt-10 md:mt-14" data-testid="dashboard-quickstart-wrap">
+          <div className="flex items-baseline justify-between mb-4">
+            <p className="mono-tag text-muted text-[10px]">
+              OR START FROM AN EXAMPLE
             </p>
             <p className="text-[11px] text-[var(--text-3)] hidden sm:block">1-click populates the box</p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {QUICK_STARTS.map((t) => {
               const Icon = t.icon;
               return (
@@ -301,57 +344,58 @@ export default function Dashboard() {
                   key={t.key}
                   type="button"
                   onClick={() => applyTemplate(t)}
-                  className="quickstart-card quickstart-card--compact group text-left"
+                  className="dashboard-tile group text-left"
                   data-testid={`dashboard-quickstart-${t.key}`}
                 >
-                  <Icon size={13} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors" />
-                  <p className="mt-2 text-[13px] font-medium leading-tight">{t.label}</p>
-                  <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug">{t.kicker}</p>
+                  <Icon size={15} className="text-[var(--text-3)] group-hover:text-[var(--accent)] transition-colors" />
+                  <p className="mt-3 text-[13.5px] font-medium leading-tight">{t.label}</p>
+                  <p className="mt-1 text-[11px] text-[var(--text-3)] leading-snug">{t.kicker}</p>
                 </button>
               );
             })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* AI output preview — sets expectation of what Bracket produces */}
-        <div className="mt-5" data-testid="dashboard-outputs-wrap">
-          <p className="mono-label text-[var(--text-3)] mb-2">
-            <span className="dot" /> Bracket produces
+        {/* AI output preview — sets expectation of what Bracket produces. */}
+        <motion.div variants={item} className="mt-10 md:mt-14" data-testid="dashboard-outputs-wrap">
+          <p className="mono-tag text-muted text-[10px] mb-4">
+            BRACKET PRODUCES
           </p>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {AI_OUTPUTS.map((o) => {
               const Icon = o.icon;
               return (
-                <div key={o.label} className="output-preview-card output-preview-card--compact">
-                  <Icon size={13} className="text-[var(--accent)]" />
-                  <p className="mt-1.5 text-[13px] font-medium leading-tight">{o.label}</p>
-                  <p className="mt-0.5 text-[10.5px] text-[var(--text-3)] leading-snug">{o.hint}</p>
+                <div key={o.label} className="dashboard-tile dashboard-tile--output">
+                  <Icon size={15} className="text-[var(--accent)]" />
+                  <p className="mt-2 text-[13.5px] font-medium leading-tight">{o.label}</p>
+                  <p className="mt-0.5 text-[11px] text-[var(--text-3)] leading-snug">{o.hint}</p>
                 </div>
               );
             })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Recent projects — only if any exist. Deliberately understated. */}
+        {/* Recent projects — glass rail, cinematic status pills. */}
         {loading ? (
-          <div
-            className="mt-5 grid sm:grid-cols-2 gap-2.5"
+          <motion.div
+            variants={item}
+            className="mt-10 md:mt-14 grid sm:grid-cols-2 gap-3"
             data-testid="dashboard-loading-skeleton"
             aria-busy="true"
           >
             {[0, 1].map((i) => (
-              <div key={i} className="card-brut p-3">
+              <div key={i} className="dashboard-tile p-4">
                 <div className="skeleton-bar h-2.5 w-24 rounded" />
                 <div className="skeleton-bar h-3 w-1/2 rounded mt-2" />
                 <div className="skeleton-bar h-2.5 w-1/3 rounded mt-2" />
               </div>
             ))}
-          </div>
+          </motion.div>
         ) : projects.length > 0 ? (
-          <div className="mt-5" data-testid="dashboard-recent-wrap">
-            <div className="flex items-baseline justify-between mb-2">
-              <p className="mono-label text-[var(--text-3)]">
-                <span className="dot" /> Recent · {projects.length}
+          <motion.div variants={item} className="mt-10 md:mt-14" data-testid="dashboard-recent-wrap">
+            <div className="flex items-baseline justify-between mb-4">
+              <p className="mono-tag text-muted text-[10px]">
+                RECENT · {projects.length}
               </p>
               {projects.length > 2 && (
                 <button
@@ -364,39 +408,44 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
-            <div className={`grid sm:grid-cols-2 gap-2.5 ${showAllProjects ? "max-h-[46vh] overflow-y-auto pr-1 dash-scroll" : ""}`} data-testid="dashboard-recent-list">
+            <div className={`grid sm:grid-cols-2 gap-3 ${showAllProjects ? "max-h-[50vh] overflow-y-auto pr-1 dash-scroll" : ""}`} data-testid="dashboard-recent-list">
               {(showAllProjects ? projects : projects.slice(0, 2)).map((p) => {
                 const isLocked = p.status === "locked";
                 const stepPct = Math.round(((p.step || 1) / 5) * 100);
                 return (
                   <div
                     key={p.id}
-                    className="recent-card recent-card--compact group relative"
+                    className="dashboard-recent-card group relative"
                     data-testid={`dashboard-recent-${p.id}`}
                   >
-                    <Link to={`/project/${p.id}`} className="block">
+                    <Link to={`/project/${p.id}`} className="block p-4 sm:p-5">
                       <div className="flex items-start justify-between gap-3">
-                        <p className="font-medium text-[13px] truncate flex-1 pr-16">{p.name}</p>
+                        <p className="font-medium text-[14px] truncate flex-1 pr-16">{p.name}</p>
                         <span
-                          className="mono-tag px-1.5 py-0.5 rounded shrink-0 text-[10px]"
+                          className="mono-tag px-2 py-0.5 rounded shrink-0 text-[10px]"
                           style={RECENT_STATUS_STYLE[p.status] || RECENT_STATUS_STYLE.draft}
                         >
                           {RECENT_STATUS_LABEL[p.status] || "DRAFT"}
                         </span>
                       </div>
-                      <div className="mt-1.5 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
+                      <div className="mt-2 flex items-center gap-2 text-[11.5px] text-[var(--text-3)]">
                         <span>Step {p.step || 1} / 5</span>
                         <span>·</span>
                         <span>{formatDate(p.updated_at)}</span>
                       </div>
-                      <div className="mt-2 h-[2px] bg-[var(--surface-2)] rounded-full overflow-hidden">
+                      <div className="mt-3 h-[3px] bg-[var(--surface-2)] rounded-full overflow-hidden">
                         <div
-                          className="h-full transition-all"
-                          style={{ width: `${stepPct}%`, backgroundColor: isLocked ? "#2E5BFF" : "var(--text-2)" }}
+                          className="h-full transition-all duration-500"
+                          style={{
+                            width: `${stepPct}%`,
+                            background: isLocked
+                              ? "linear-gradient(90deg, #2E5BFF, #7CD5FF)"
+                              : "linear-gradient(90deg, var(--text-2), var(--text-3))",
+                          }}
                         />
                       </div>
                     </Link>
-                    <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                       <button
                         type="button"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); renameProject(p); }}
@@ -405,7 +454,7 @@ export default function Dashboard() {
                         aria-label="Rename project"
                         data-testid={`dashboard-recent-rename-${p.id}`}
                       >
-                        <Pencil size={11} />
+                        <Pencil size={12} />
                       </button>
                       <button
                         type="button"
@@ -415,16 +464,16 @@ export default function Dashboard() {
                         aria-label="Delete project"
                         data-testid={`dashboard-recent-delete-${p.id}`}
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </motion.div>
         ) : null}
-      </main>
+      </motion.main>
     </div>
   );
 }

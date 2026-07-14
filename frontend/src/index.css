@@ -1917,3 +1917,92 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   cursor: pointer;
   border-radius: 3px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DASHBOARD — cinematic redesign, matches Landing/Login language.
+   ═══════════════════════════════════════════════════════════════════════ */
+.dashboard-root {
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Paste box — glassmorphic panel, blue signal corner glow. */
+.dashboard-paste-panel {
+  border-radius: 20px;
+  padding: 0;
+  transition: transform 0.35s ease, border-color 0.35s ease;
+}
+.dashboard-paste-panel:focus-within {
+  border-color: rgba(46, 91, 255, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(46, 91, 255, 0.28) inset,
+    0 30px 80px -32px rgba(46, 91, 255, 0.35),
+    0 12px 40px -12px rgba(0, 0, 0, 0.55);
+}
+.dashboard-paste-textarea {
+  width: 100%;
+  background: transparent;
+  resize: none;
+  outline: none;
+  border: none;
+  padding: 20px 22px 8px 22px;
+  color: var(--text);
+  font-size: 14.5px;
+  line-height: 1.55;
+  min-height: 140px;
+}
+.dashboard-paste-textarea::placeholder {
+  color: var(--text-3);
+}
+.dashboard-paste-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px 16px 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  flex-wrap: wrap;
+}
+
+/* Tiles — quickstart + output. Glass card with subtle hover lift. */
+.dashboard-tile {
+  position: relative;
+  border-radius: 14px;
+  padding: 16px 16px 18px 16px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.038) 0%, rgba(255,255,255,0.012) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  color: var(--text);
+  transition: transform 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+  min-height: 92px;
+  cursor: pointer;
+}
+.dashboard-tile.dashboard-tile--output {
+  cursor: default;
+}
+.dashboard-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(46, 91, 255, 0.32);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%);
+}
+
+/* Recent project card — glass, with animated progress fill. */
+.dashboard-recent-card {
+  position: relative;
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.012) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  transition: transform 0.35s ease, border-color 0.35s ease;
+  overflow: hidden;
+}
+.dashboard-recent-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(46, 91, 255, 0.34);
+}
+.dashboard-recent-card a { color: inherit; }
