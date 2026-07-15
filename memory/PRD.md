@@ -69,6 +69,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06-XX — **Shared projects frozen + sign-off footer alignment**:
+  - Once a project is shared with a client (share_status != none), steps can no longer be edited or unlocked. Backend: `_assert_not_shared()` raises 409 on `/unlock` and `/reset-from-step` (curl-verified). Frontend: ProjectOverview hides Unlock/Resume/step-edit buttons + shows a "shared" hint; ProjectFlow `guardStepRework` blocks with a toast.
+  - Client sign-off modal footer: name/role/email inputs now align on one row (role label made a flex row like the others; footer grid `align-items: start` + 24px padding on the buttons column). Verified all tops equal.
+  - After login (password/OTP) users always land on `/app` — `?next=` redirect removed from Login.jsx.
 - 2026-06-XX — **Dashboard stage tags + steps-page dead scroll + dark email templates**:
   - Dashboard project cards now show one of 4 stages via `projectStage()` (Dashboard.jsx): `IN PROGRESS` (default, also share_status sent/awaiting_reply — "awaiting a client" counts as in progress per user), `LOCKED` (blue #5E6AD2), `HAVE CONCERNS` (red #EF4444, share_status rejected only), `ACCEPTED` (green #22C55E). testid: `dashboard-stage-{id}`. Old RECENT_STATUS_* maps removed.
   - Steps page (ProjectFlow) dead-scroll fixed — same `.hero-ambient--dashboard::before` 1400px bleed as Dashboard; added `overflow-clip` to page roots of ProjectFlow, Settings, AdminDashboard. Verified: scrollHeight == content bottom (1101px).

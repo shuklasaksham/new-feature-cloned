@@ -1625,9 +1625,19 @@ async def bulk_delete_projects(body: BulkDeleteIn, request: Request):
     return {"deleted": int(result.deleted_count)}
 
 
+def _assert_not_shared(p: dict):
+    """Once a project is shared with a client, its steps are frozen."""
+    if (p.get("share_status") or "none") != "none":
+        raise HTTPException(
+            status_code=409,
+            detail="This project has been shared with your client — steps can no longer be edited or unlocked.",
+        )
+
+
 @api.post("/projects/{project_id}/unlock")
 async def unlock_project(project_id: str, request: Request):
     p = await _get_owned_project_or_404(project_id, request)
+    _assert_not_shared(p)
     await db.projects.update_one(
         {"id": p["id"]},
         {"$set": {"status": "in_progress", "locked_at": None, "updated_at": _now_iso()}},
@@ -1671,6 +1681,7 @@ _STEP_DOWNSTREAM_FIELDS = {
 @api.post("/projects/{project_id}/reset-from-step/{step}", response_model=ProjectOut)
 async def reset_downstream_from_step(project_id: str, step: int, request: Request):
     p = await _get_owned_project_or_404(project_id, request)
+    _assert_not_shared(p)
     if step not in _STEP_DOWNSTREAM_FIELDS:
         raise HTTPException(status_code=400, detail="Invalid step number.")
     unset = {f: "" for f in _STEP_DOWNSTREAM_FIELDS[step]}

@@ -487,7 +487,7 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
           </span>
         </label>
         <label className="block min-w-0">
-          <span className="mono-tag text-muted text-[10.5px]">ROLE (OPTIONAL)</span>
+          <span className="mono-tag text-muted flex items-center gap-2 text-[10.5px]">ROLE (OPTIONAL)</span>
           <input
             className="review-accept-input mt-2"
             value={role}

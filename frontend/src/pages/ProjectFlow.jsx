@@ -45,6 +45,10 @@ const STEP_DOWNSTREAM_KEYS = {
  *  - project (object) → reset succeeded, caller should setProject(...) THEN re-run.
  */
 async function guardStepRework(step, project, confirmDialog) {
+  if (project?.share_status && project.share_status !== "none") {
+    toast.error("This project is shared with your client — steps can no longer be edited.");
+    return false;
+  }
   const keys = (STEP_DOWNSTREAM_KEYS[step] || []).filter(
     (k) => k !== "locked_at" && k !== "framing" && k !== "context" && k !== "decision" && k !== "artifacts"
       ? false

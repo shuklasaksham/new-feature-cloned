@@ -264,8 +264,13 @@ export default function ProjectOverview() {
   }, [id, project?.share_status]);
 
   const isLocked = project?.status === "locked";
+  const isShared = !!project?.share_status && project.share_status !== "none";
 
   const editStep = async (stepN) => {
+    if (isShared) {
+      toast.error("This project is shared with your client — steps can no longer be edited.");
+      return;
+    }
     // If locked, prompt unlock first; otherwise go straight to the step
     if (isLocked) {
       const ok = await confirmDialog({
@@ -428,7 +433,7 @@ export default function ProjectOverview() {
 
           {/* Quick actions */}
           <div className="flex flex-wrap gap-2 shrink-0">
-            {!isLocked && (
+            {!isLocked && !isShared && (
               <button
                 onClick={() => navigate(`/project/${id}/flow?step=${currentStep}`)}
                 className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-2"
@@ -446,7 +451,7 @@ export default function ProjectOverview() {
                 <FileText size={12} /> Document
               </Link>
             )}
-            {isLocked && (
+            {isLocked && !isShared && (
               <button
                 onClick={() => unlockAndGo(currentStep)}
                 disabled={unlocking}
@@ -548,25 +553,29 @@ export default function ProjectOverview() {
                   <div className="mt-2.5 flex-1 min-h-0 overflow-hidden">
                     <StepSummary step={step} project={project} />
                   </div>
-                  <button
-                    onClick={() => editStep(step.n)}
-                    className="overview-step-btn mt-3"
-                    data-testid={`overview-edit-${step.n}`}
-                  >
-                    <Pencil size={11} /> {done ? "Refine" : current ? "Continue" : "Start"}
-                  </button>
+                  {!isShared && (
+                    <button
+                      onClick={() => editStep(step.n)}
+                      className="overview-step-btn mt-3"
+                      data-testid={`overview-edit-${step.n}`}
+                    >
+                      <Pencil size={11} /> {done ? "Refine" : current ? "Continue" : "Start"}
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
         </section>
 
-        {/* Hint when locked */}
-        {isLocked && (
+        {/* Hint when locked / shared */}
+        {(isLocked || isShared) && (
           <div className="mt-6 flex items-start gap-3 text-sm text-muted">
             <AlertCircle size={14} className="mt-0.5 shrink-0"/>
             <p>
-              This project is locked. Editing any step will unlock it (the client review status stays intact).
+              {isShared
+                ? "This project is shared with your client — steps can no longer be edited or unlocked."
+                : "This project is locked. Editing any step will unlock it (the client review status stays intact)."}
             </p>
           </div>
         )}
