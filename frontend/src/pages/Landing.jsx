@@ -579,8 +579,15 @@ function Showcase() {
   const canNext = activeIndex < SHOWCASE.length - 1;
 
   return (
-    <section className="relative py-24 md:py-32" style={{ background: "#08090A" }} data-testid="landing-showcase">
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
+    <section className="relative py-24 md:py-32" data-testid="landing-showcase">
+      {/* Opaque backdrop that bleeds past the section into the hero above
+          and the What's Inside section below. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 -top-40 -bottom-40 pointer-events-none"
+        style={{ background: "linear-gradient(180deg, rgba(8,9,10,0) 0%, #08090A 24%, #08090A 76%, rgba(8,9,10,0) 100%)" }}
+      />
+      <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="THE FLOW"
           title="From mess to decision, in five chapters."
