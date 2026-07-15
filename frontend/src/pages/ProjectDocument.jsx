@@ -63,9 +63,17 @@ export default function ProjectDocument() {
           if (!cur) return data;
           if (
             cur.share_status !== data.share_status ||
+            cur.applying_changes !== data.applying_changes ||
             (cur.share_review?.submitted_at || "") !== (data.share_review?.submitted_at || "") ||
             (cur.owner_replies?.length || 0) !== (data.owner_replies?.length || 0)
           ) {
+            if (cur.applying_changes && !data.applying_changes) {
+              toast.success(
+                data.share_status === "sent"
+                  ? "Changes applied — the updated document was sent to your client with a note on what changed."
+                  : "Applying the changes failed — please try again from the concerns modal."
+              );
+            }
             if (
               cur.share_status !== data.share_status &&
               (data.share_status === "accepted" || data.share_status === "rejected")
@@ -194,6 +202,26 @@ export default function ProjectDocument() {
             </Link>
           </div>
         </div>
+
+        {/* Background apply-changes pipeline running — refreshes via the poll. */}
+        {project.applying_changes && (
+          <div
+            className="mb-6 card-linear p-4 border-l-2 border-signal flex items-start gap-3"
+            data-testid="applying-changes-banner"
+          >
+            <Loader2 size={16} className="animate-spin text-signal mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm text-[var(--text)] font-medium">
+                Bracket is applying your client&apos;s changes…
+              </p>
+              <p className="mt-1 text-[12px] text-[var(--text-3)]">
+                Regenerating the affected steps and the document. Takes a minute or two — this page
+                refreshes automatically, then the updated document goes to your client with a note on
+                what changed.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-12 gap-6 md:gap-8">
         {/* DOCUMENT BODY — glass card matching dashboard/steps cards. */}

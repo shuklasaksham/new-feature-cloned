@@ -41,8 +41,15 @@ from ai_engine import (
     extract_full_brief_from_paste,
     generate_project_title,
     map_suggestion_to_step,
+    draft_change_note,
 )
-from emailer import send_thanks_email, send_review_outcome_email, send_client_receipt_email, send_owner_reply_email
+from emailer import (
+    send_thanks_email,
+    send_review_outcome_email,
+    send_client_receipt_email,
+    send_owner_reply_email,
+    send_document_updated_email,
+)
 from auth import (
     SESSION_COOKIE,
     current_user,
@@ -1969,49 +1976,130 @@ async def step_artifacts(project_id: str):
 
 
 # --- STEP 5: CONFIDENCE LOCK-IN ---
+async def _run_apply_changes_pipeline(project_id: str, owner_name: str):
+    """Background worker for "Apply the changes": maps every client suggestion
+    to the step it affects, regenerates those steps + artifacts with the
+    changes injected, re-locks, and emails the client an AI-drafted "here's
+    what changed" note. Runs as a task — the HTTP request returns immediately
+    and the document page polls `applying_changes` until it clears."""
+    p = await db.projects.find_one({"id": project_id}, {"_id": 0})
+    if not p:
+        return
+    review = p.get("share_review") or {}
+    suggestions = (review.get("ai_suggestions") or {}).get("suggestions") or []
+    try:
+        async def _map(s):
+            try:
+                mapped = await map_suggestion_to_step(p, s)
+            except Exception as e:
+                logger.warning("apply-changes mapping failed, defaulting to step 3: %s", e)
+                mapped = {"step": 3, "instruction": (s.get("what_to_change") or s.get("title") or "").strip()}
+            # Clamp to steps 1-3 — artifacts (4) always regenerate anyway.
+            step = min(max(int(mapped.get("step") or 3), 1), 3)
+            return {"step": step, "instruction": (mapped.get("instruction") or "").strip(), "title": s.get("title", "")}
+
+        items = [it for it in await asyncio.gather(*[_map(s) for s in suggestions]) if it["instruction"]]
+        if not items:
+            raise RuntimeError("no mappable changes")
+        items.sort(key=lambda it: it["step"])
+        first_step = items[0]["step"]
+        engine = p.get("engine", "claude")
+        rev_block = (
+            "\n\n[CLIENT-REQUESTED CHANGES — the client reviewed the document and these updates MUST be reflected]:\n"
+            + "\n".join(f"- {it['instruction']}" for it in items)
+        )
+
+        # Regenerate the pipeline from the earliest affected step downwards,
+        # with the client's changes injected so every output reflects them.
+        update: dict = {}
+        if first_step <= 1:
+            s_in = dict(p.get("situation_input") or {})
+            s_in["what"] = (s_in.get("what") or "") + rev_block
+            p["framing"] = await run_situation_framing(s_in, engine)
+            update.update({"situation_input": s_in, "framing": p["framing"]})
+        if first_step <= 2:
+            c_in = dict(p.get("context_input") or {})
+            c_in["requirements"] = (c_in.get("requirements") or "") + rev_block
+            p["context"] = await run_context_compression(c_in, p.get("framing") or {}, engine)
+            update.update({"context_input": c_in, "context": p["context"]})
+        d_in = dict(p.get("decision_input") or {})
+        d_in["optimizing_for"] = (d_in.get("optimizing_for") or "") + rev_block
+        p["decision"] = await run_decision_engine(d_in, p.get("framing") or {}, p.get("context") or {}, engine)
+        update.update({"decision_input": d_in, "decision": p["decision"]})
+        p["artifacts"] = await run_artifacts(p, engine)
+        update["artifacts"] = p["artifacts"]
+
+        try:
+            change_note = await draft_change_note(p, items, engine)
+        except Exception as e:
+            logger.warning("change-note drafting failed, using fallback: %s", e)
+            change_note = ""
+        if not change_note:
+            change_note = "I've updated the document based on your feedback:\n" + "\n".join(
+                f"- {it['instruction']}" for it in items
+            )
+
+        update.update(
+            {
+                "step": 5,
+                "status": "locked",
+                "locked_at": _now_iso(),
+                "share_status": "sent",
+                "revising": False,
+                "revision_context": None,
+                "applying_changes": False,
+                "last_change_note": change_note,
+                "updated_at": _now_iso(),
+            }
+        )
+        await db.projects.update_one({"id": project_id}, {"$set": update})
+
+        # Email the client the updated document + what changed (fire-and-forget).
+        client_email = review.get("client_email", "")
+        if client_email and p.get("share_token"):
+            base = os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com").rstrip("/")
+            try:
+                await send_document_updated_email(
+                    client_email=client_email,
+                    client_name=review.get("signature_name", ""),
+                    owner_name=owner_name,
+                    project_name=p.get("name", "your project"),
+                    change_note=change_note,
+                    share_url=f"{base}/r/{p.get('share_token')}",
+                )
+            except Exception as e:
+                logger.warning(f"document-updated email crashed: {e}")
+        logger.info(f"apply-changes pipeline finished for {project_id} (steps {sorted({it['step'] for it in items})})")
+    except Exception as e:
+        # Leave the project in its rejected state so the owner can retry.
+        logger.exception(f"apply-changes pipeline failed for {project_id}: {e}")
+        await db.projects.update_one(
+            {"id": project_id},
+            {"$set": {"applying_changes": False, "updated_at": _now_iso()}},
+        )
+
+
 @api.post("/projects/{project_id}/review/apply-changes")
 async def apply_review_changes(project_id: str, request: Request):
-    """Owner accepts the client's requested changes in one go: map every
-    suggestion to the flow step it affects, unfreeze the project, and drop
-    the owner at the earliest affected step with all changes pre-loaded."""
+    """Kick off the background apply-changes pipeline and return immediately.
+    The regeneration chain takes 1-3 minutes (multiple LLM calls) — far past
+    proxy timeouts — so the work runs as a task and the frontend polls the
+    project's `applying_changes` flag."""
     p = await _get_owned_project_or_404(project_id, request)
     review = p.get("share_review") or {}
     suggestions = (review.get("ai_suggestions") or {}).get("suggestions") or []
     if p.get("share_status") not in ("rejected", "awaiting_reply") or not suggestions:
         raise HTTPException(status_code=400, detail="No client concerns to apply on this project.")
-
-    async def _map(s):
-        try:
-            mapped = await map_suggestion_to_step(p, s)
-        except Exception as e:
-            logger.warning("apply-changes mapping failed, defaulting to step 3: %s", e)
-            mapped = {"step": 3, "instruction": (s.get("what_to_change") or s.get("title") or "").strip()}
-        return {"step": mapped["step"], "instruction": mapped["instruction"], "title": s.get("title", "")}
-
-    items = list(await asyncio.gather(*[_map(s) for s in suggestions]))
-    items = [it for it in items if it["instruction"]]
-    if not items:
-        raise HTTPException(status_code=502, detail="Couldn't map the client's changes to a step. Try again.")
-    items.sort(key=lambda it: it["step"])
-    first_step = items[0]["step"]
-    revision_context = {
-        "step": first_step,
-        "items": items,
-        "created_at": _now_iso(),
-    }
+    if p.get("applying_changes"):
+        return {"status": "applying"}
+    user = await current_user(request, db)
+    owner_name = (user or {}).get("name") or (user or {}).get("email") or "The project owner"
     await db.projects.update_one(
         {"id": p["id"]},
-        {
-            "$set": {
-                "status": "in_progress",
-                "step": first_step,
-                "revising": True,
-                "revision_context": revision_context,
-                "updated_at": _now_iso(),
-            }
-        },
+        {"$set": {"applying_changes": True, "updated_at": _now_iso()}},
     )
-    return {"step": first_step, "items": items}
+    asyncio.create_task(_run_apply_changes_pipeline(p["id"], owner_name))
+    return {"status": "applying"}
 
 
 @api.post("/projects/{project_id}/lock", response_model=ProjectOut)
@@ -2020,12 +2108,30 @@ async def step_lock(project_id: str):
     if not project.get("artifacts"):
         raise HTTPException(status_code=400, detail="Generate artifacts first.")
     update = {"status": "locked", "locked_at": _now_iso(), "updated_at": _now_iso()}
-    if project.get("revising") or project.get("share_status") in ("rejected", "awaiting_reply"):
-        # Revision applied (or the owner edited after concerns were raised) —
-        # the shared link now serves the new version and the client is asked
-        # to re-review.
+    resend_to_client = bool(
+        project.get("revising") or project.get("share_status") in ("rejected", "awaiting_reply")
+    )
+    if resend_to_client:
+        # The owner edited after concerns were raised — the shared link now
+        # serves the new version and the client is asked to re-review.
         update.update({"revising": False, "revision_context": None, "share_status": "sent"})
     await db.projects.update_one({"id": project_id}, {"$set": update})
+    if resend_to_client:
+        review = project.get("share_review") or {}
+        client_email = review.get("client_email", "")
+        if client_email and project.get("share_token"):
+            base = os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com").rstrip("/")
+            try:
+                await send_document_updated_email(
+                    client_email=client_email,
+                    client_name=review.get("signature_name", ""),
+                    owner_name=project.get("creator_email") or "The project owner",
+                    project_name=project.get("name", "your project"),
+                    change_note="The document has been updated in response to your feedback — please take another look.",
+                    share_url=f"{base}/r/{project.get('share_token')}",
+                )
+            except Exception as e:
+                logger.warning(f"document-updated email (manual re-lock) crashed: {e}")
     return await _get_project_or_404(project_id)
 
 
@@ -2751,6 +2857,15 @@ async def on_startup():
             logger.warning(f"[startup] index {keys} on {coll.name} skipped: {e}")
 
     # 1) Best-effort cleanup of orphan rows that would block unique indexes.
+    try:
+        # A restart mid-pipeline would leave apply-changes flags stuck true.
+        r = await db.projects.update_many(
+            {"applying_changes": True}, {"$set": {"applying_changes": False}}
+        )
+        if r.modified_count:
+            logger.info(f"[startup] cleared {r.modified_count} stale applying_changes flags")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] applying_changes cleanup skipped: {e}")
     try:
         r = await db.users.delete_many({
             "$or": [

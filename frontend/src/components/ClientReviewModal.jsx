@@ -53,20 +53,20 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
   const awaitingReply = status === "awaiting_reply";
 
   // ONE decision, two paths:
-  // - Apply the changes → backend maps every suggestion to the step it
-  //   affects, unfreezes the project, and we drop the owner at the earliest
-  //   affected step with all changes pre-loaded.
+  // - Apply the changes → backend regenerates the affected steps + document
+  //   automatically, re-locks, and emails the client a "here's what changed"
+  //   note. The owner just lands on the sign-off page.
   // - Keep as is & respond → pre-fill the reply composer with the AI drafts
   //   defending the current call.
   const applyChanges = async () => {
     setApplying(true);
     try {
-      const { data } = await api.post(`/projects/${project.id}/review/apply-changes`);
+      await api.post(`/projects/${project.id}/review/apply-changes`);
       toast.success(
-        `${data.items.length} change${data.items.length === 1 ? "" : "s"} loaded — starting at Step ${data.step}.`
+        "Applying the changes — Bracket is regenerating your document and will send it to your client with a note on what changed."
       );
       onClose?.();
-      navigate(`/project/${project.id}/flow?step=${data.step}`);
+      navigate(`/project/${project.id}/document`);
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -156,7 +156,7 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
                     data-testid="crm-apply-changes"
                   >
                     {applying ? (
-                      <><Loader2 size={12} className="animate-spin" /> Mapping the changes…</>
+                      <><Loader2 size={12} className="animate-spin" /> Applying the changes &amp; regenerating your document…</>
                     ) : (
                       <><Wand2 size={12} /> Apply the changes</>
                     )}
@@ -176,7 +176,7 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
               )}
               {suggestions.length > 0 && (
                 <p className="mt-2 text-[11px] text-[var(--text-3)] leading-snug">
-                  <span className="text-[var(--text-2)]">Apply the changes</span> unlocks the affected steps with every change pre-loaded.
+                  <span className="text-[var(--text-2)]">Apply the changes</span> updates the document automatically and re-sends it to your client — with a note on what changed. Takes about a minute.
                   {!awaitingReply && (
                     <> <span className="text-[var(--text-2)]">Keep as is</span> drafts a reply defending your call.</>
                   )}

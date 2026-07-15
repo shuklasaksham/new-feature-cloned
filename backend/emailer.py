@@ -480,3 +480,68 @@ async def send_owner_reply_email(
     except Exception as e:
         logger.exception(f"owner-reply email failed for {client_email}: {e}")
         return False
+
+
+def _document_updated_html(client_name: str, owner_name: str, project_name: str, change_note: str, share_url: str) -> str:
+    who = (client_name or "there").strip() or "there"
+    owner = (owner_name or "The project owner").strip() or "The project owner"
+    pname = (project_name or "your project").strip() or "your project"
+    safe = (change_note or "").replace("<", "&lt;").replace(">", "&gt;")
+    return f"""<!doctype html>
+<html><body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#08090A;padding:44px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
+<tr><td style="padding:32px 36px 0 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">&lt; bracket &middot; document updated &gt;</p>
+</td></tr>
+<tr><td style="padding:18px 36px 0 36px;">
+  <h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;">Your requested changes are in.</h1>
+</td></tr>
+<tr><td style="padding:16px 36px 0 36px;">
+  <p style="margin:0 0 14px 0;font-size:15px;line-height:1.65;color:#B9BFC9;">Hi {who} &mdash; {owner} updated <strong style="color:#F4F5F7;">{pname}</strong> based on your feedback. Here's what changed:</p>
+  <div style="margin:14px 0;padding:14px 16px;border-left:3px solid #4BE39B;background:#16181D;border-radius:0 10px 10px 0;font-size:13.5px;line-height:1.6;color:#B9BFC9;white-space:pre-wrap;">{safe}</div>
+  <p style="margin:0 0 20px 0;font-size:15px;line-height:1.65;color:#B9BFC9;">Take another look and sign off when it feels right.</p>
+  <a href="{share_url}" style="display:inline-block;padding:13px 24px;background:#5E6AD2;color:#ffffff;text-decoration:none;font-size:13.5px;font-weight:600;letter-spacing:0.01em;border-radius:10px;">Re-review the document &rarr;</a>
+</td></tr>
+<tr><td style="padding:30px 36px 28px 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">Bracket &middot; The AI decision workspace for client projects</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+
+async def send_document_updated_email(
+    client_email: str,
+    client_name: str,
+    owner_name: str,
+    project_name: str,
+    change_note: str,
+    share_url: str,
+) -> bool:
+    """Notify the client that the document was updated with their requested
+    changes, including a "here's what changed" note. Fire-and-forget."""
+    if not client_email:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning("RESEND_API_KEY not set; skipping document-updated email")
+        return False
+    resend.api_key = api_key
+    params = {
+        "from": _sender(),
+        "to": [client_email],
+        "subject": f"Updated for you — {project_name}",
+        "html": _document_updated_html(client_name, owner_name, project_name, change_note, share_url),
+        "text": f"{owner_name} updated {project_name} based on your feedback.\n\nWhat changed:\n{change_note}\n\nRe-review the document: {share_url}",
+        "reply_to": os.environ.get("SENDER_EMAIL", ""),
+    }
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"document-updated email sent to {client_email}: {result.get('id') if isinstance(result, dict) else result}")
+        return True
+    except Exception as e:
+        logger.exception(f"document-updated email failed for {client_email}: {e}")
+        return False

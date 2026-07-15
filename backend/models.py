@@ -73,6 +73,10 @@ class ProjectOut(BaseModel):
     # the flow page shows a banner with `revision_context.instruction`.
     revising: Optional[bool] = None
     revision_context: Optional[Dict[str, Any]] = None
+    # Background "apply the changes" pipeline is running — the document page
+    # shows a progress banner and polls until this clears.
+    applying_changes: Optional[bool] = None
+    last_change_note: Optional[str] = None
     owner_user_id: Optional[str] = ""
     created_at: str
     updated_at: str

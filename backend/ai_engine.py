@@ -90,6 +90,14 @@ def _extract_json(text: str) -> dict:
     return json.loads(text[start : end + 1])
 
 
+def _send_in_thread(chat, message):
+    """emergentintegrations' send_message awaits a SYNCHRONOUS litellm call
+    internally, which blocks the whole event loop for the duration of the LLM
+    request (10-60s). Run it on a worker thread with its own loop so the API
+    stays responsive while AI calls are in flight."""
+    return asyncio.run(chat.send_message(message))
+
+
 async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = None) -> dict:
     provider, model = MODEL_MAP.get(engine, (DEFAULT_PROVIDER, DEFAULT_MODEL))
     api_key = os.environ["EMERGENT_LLM_KEY"]
@@ -100,7 +108,7 @@ async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = 
     ).with_model(provider, model)
     try:
         response = await asyncio.wait_for(
-            chat.send_message(UserMessage(text=prompt)),
+            asyncio.to_thread(_send_in_thread, chat, UserMessage(text=prompt)),
             timeout=STEP_TIMEOUT_S,
         )
     except asyncio.TimeoutError as e:
@@ -119,7 +127,7 @@ async def _run_fast(prompt: str, session_id: Optional[str] = None) -> dict:
     ).with_model(SUGGEST_PROVIDER, SUGGEST_MODEL)
     try:
         response = await asyncio.wait_for(
-            chat.send_message(UserMessage(text=prompt)),
+            asyncio.to_thread(_send_in_thread, chat, UserMessage(text=prompt)),
             timeout=SUGGEST_TIMEOUT_S,
         )
     except asyncio.TimeoutError as e:
@@ -544,8 +552,10 @@ async def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/pn
     )
     try:
         response = await asyncio.wait_for(
-            chat.send_message(
-                UserMessage(text=prompt, file_contents=[ImageContent(image_base64=b64)])
+            asyncio.to_thread(
+                _send_in_thread,
+                chat,
+                UserMessage(text=prompt, file_contents=[ImageContent(image_base64=b64)]),
             ),
             timeout=STEP_TIMEOUT_S,
         )
@@ -673,3 +683,20 @@ Return STRICT JSON only: {{"step": 1, "instruction": "one or two clear imperativ
         step = 3
     instruction = str(data.get("instruction") or suggestion.get("what_to_change") or "").strip()
     return {"step": step, "instruction": instruction}
+
+
+async def draft_change_note(project: dict, items: list, engine: str = "claude") -> str:
+    """Draft a short, client-facing "here's what changed" note after the owner
+    applied the client's requested changes."""
+    changes = "\n".join(f"- {it.get('instruction', '')}" for it in items)
+    prompt = f"""A client reviewed the decision document for "{project.get('name', 'a project')}" and requested changes. The project owner has now applied them and is re-sending the document.
+
+CHANGES THAT WERE APPLIED:
+{changes}
+
+Write a short, warm, professional note (2-4 sentences, first person, from the project owner to the client) summarizing what changed and inviting them to re-review. No greeting line, no sign-off — just the body. No corporate fluff.
+
+Return JSON:
+{{"note": "the note text"}}"""
+    result = await _run(prompt, engine)
+    return (result.get("note") or "").strip()
