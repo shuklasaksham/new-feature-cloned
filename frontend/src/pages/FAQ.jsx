@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Seo from "../components/Seo";
+import { SectionBleed, GlowWash } from "../components/SectionBleed";
 
 const FAQS = [
   {
@@ -76,16 +77,16 @@ function FaqItem({ q, a }) {
 
 export default function FAQ() {
   return (
-    <div data-testid="faq-page" className="page-enter">
+    <div data-testid="faq-page" className="page-enter landing-page-bg">
       <Seo
         title="FAQ"
         description="Answers to common questions about Bracket — how the 5-step decision loop works, what makes it different from ChatGPT, pricing, privacy, and support."
         path="/faq"
       />
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-12 md:pb-20 text-center">
+        <div className="relative z-10 max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-12 md:pb-20 text-center">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -114,7 +115,17 @@ export default function FAQ() {
       </section>
 
       {/* CATEGORIES */}
-      <section>
+      <section className="relative overflow-x-clip isolate">
+        <SectionBleed className="-z-20" />
+        <GlowWash
+          color="#5E6AD2"
+          className="inset-x-0 top-1/4 mx-auto h-[900px] w-[900px] -z-10"
+        />
+        <GlowWash
+          color="#7CD5FF"
+          opacity={0.08}
+          className="inset-x-0 bottom-0 mx-auto h-[700px] w-[800px] -z-10"
+        />
         <div className="max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-16 md:py-20 space-y-14">
           {FAQS.map((g, i) => (
             <motion.div
@@ -150,9 +161,9 @@ export default function FAQ() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-28 md:py-36 text-center">
+        <div className="relative z-10 max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-28 md:py-36 text-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

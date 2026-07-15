@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { USE_CASES } from "../lib/constants";
 import Seo from "../components/Seo";
+import { SectionBleed, GlowWash } from "../components/SectionBleed";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -16,7 +17,7 @@ const fadeUp = {
 
 export default function UseCases() {
   return (
-    <div data-testid="use-cases-page" className="page-enter">
+    <div data-testid="use-cases-page" className="page-enter landing-page-bg">
       <Seo
         title="Use cases"
         description="From brand refreshes to product retainers — see how anyone who works with clients uses Bracket to unblock scope, kill ambiguity, and close projects faster."
@@ -24,9 +25,9 @@ export default function UseCases() {
       />
 
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-16 md:pb-20 text-center">
+        <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-16 md:pb-20 text-center">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -57,7 +58,17 @@ export default function UseCases() {
       </section>
 
       {/* CASES */}
-      <section>
+      <section className="relative overflow-x-clip isolate">
+        <SectionBleed className="-z-20" />
+        <GlowWash
+          color="#5E6AD2"
+          className="inset-x-0 top-1/4 mx-auto h-[900px] w-[900px] -z-10"
+        />
+        <GlowWash
+          color="#7CD5FF"
+          opacity={0.08}
+          className="inset-x-0 bottom-0 mx-auto h-[700px] w-[800px] -z-10"
+        />
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-20 md:py-24 space-y-4">
           {USE_CASES.map((u, i) => (
             <motion.div
@@ -105,9 +116,9 @@ export default function UseCases() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-28 md:py-36 text-center">
+        <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-6 md:px-8 py-28 md:py-36 text-center">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}

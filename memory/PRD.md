@@ -69,6 +69,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-07-15 — **Iteration 33 — Homepage bleed system on all marketing subpages + marquee gap fix** (self-tested via screenshots at 1920/2560/3840):
+  - Extracted `SectionBleed` (+ new `GlowWash`) from Landing.jsx into shared `/components/SectionBleed.jsx`; Landing now imports it.
+  - Pricing / Use Cases / Product (how-it-works) / Case Studies / FAQ: root gets `landing-page-bg` (fixed radial washes), heroes + final CTAs switched `overflow-hidden` → `overflow-x-clip isolate` so `hero-ambient` bleeds 800px into neighbours, middle sections get `SectionBleed -z-20` + colored `GlowWash -z-10` (case studies cycle blue→cyan→green→amber with bleeds on alternating sections) — backgrounds now blend section-to-section exactly like home.
+  - Testimonial marquee: track duplicated 4× (was 2×) + animation 60s→120s — one half-track (4390px) always wider than a 3840px viewport, so the loop never shows blank space (verified max uncovered gap = 20px card spacing at 4K).
 - 2026-07-15 — **Iteration 32 — Client-review response actions + drag&drop + repositioning + SEO** (verified iteration_32, 12/12 backend + all frontend flows PASS):
   - **"Apply this change"**: per-suggestion button in `ClientReviewModal.jsx` → `POST /projects/{id}/review/apply-suggestion` {index} → AI maps suggestion to the flow step, sets `revising=true` + `revision_context`, unfreezes the project (`_assert_not_shared` skips when revising), navigates owner to `/project/{id}/flow?step=N` where a `revision-banner` shows the client-requested change. Re-locking clears revising + sets share_status='sent' for client re-review.
   - **"Keep as is & respond"**: per-suggestion button loads the AI draft into the reply composer; Send posts `/projects/{id}/reply` → emails client + share_status='awaiting_reply'.

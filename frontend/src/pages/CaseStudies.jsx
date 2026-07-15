@@ -4,6 +4,11 @@ import { ArrowRight, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { CASE_STUDIES } from "../lib/constants";
 import Seo from "../components/Seo";
+import { SectionBleed, GlowWash } from "../components/SectionBleed";
+
+// Colour rhythm for the case sections — mirrors the homepage's blue → cyan →
+// green → amber wash cycle so backgrounds blend from one hue into the next.
+const CASE_WASHES = ["#5E6AD2", "#7CD5FF", "#4BE39B", "#FFB84C", "#B7B7FF"];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
@@ -16,7 +21,7 @@ const fadeUp = {
 
 export default function CaseStudies() {
   return (
-    <div data-testid="case-studies-page" className="page-enter">
+    <div data-testid="case-studies-page" className="page-enter landing-page-bg">
       <Seo
         title="Case studies"
         description="Real projects, real scopes, real client messages. See exactly how Bracket helped people who work with clients turn a vague brief into a locked-in decision."
@@ -24,9 +29,9 @@ export default function CaseStudies() {
       />
 
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-20">
+        <div className="relative z-10 max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-20">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -56,7 +61,15 @@ export default function CaseStudies() {
       </section>
 
       {CASE_STUDIES.map((cs, idx) => (
-        <section key={cs.slug} className="relative">
+        <section key={cs.slug} className="relative overflow-x-clip isolate">
+          {/* Alternate opaque bleeds so neighbouring washes blend into each
+              other instead of stacking hard edges — same rhythm as home. */}
+          {idx % 2 === 0 && <SectionBleed className="-z-20" />}
+          <GlowWash
+            color={CASE_WASHES[idx % CASE_WASHES.length]}
+            opacity={0.11}
+            className="inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[1000px] w-[900px] -z-10"
+          />
           <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-20 md:py-28">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -152,9 +165,9 @@ export default function CaseStudies() {
       ))}
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-36 text-center">
+        <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-36 text-center">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}

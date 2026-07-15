@@ -4,6 +4,7 @@ import { ArrowRight, Check, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { LAYERS, WALKTHROUGH } from "../lib/constants";
 import Seo from "../components/Seo";
+import { SectionBleed, GlowWash } from "../components/SectionBleed";
 
 // Cinematic wrapper for motion-in tiles.
 const fadeUp = {
@@ -17,7 +18,7 @@ const fadeUp = {
 
 export default function HowItWorks() {
   return (
-    <div data-testid="how-it-works-page" className="page-enter">
+    <div data-testid="how-it-works-page" className="page-enter landing-page-bg">
       <Seo
         title="How it works"
         description="See how Bracket's five-step decision loop turns messy briefs into a locked-in scope, decision doc, and client-ready message — in under 20 minutes."
@@ -25,9 +26,9 @@ export default function HowItWorks() {
       />
 
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-24">
+        <div className="relative z-10 max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-24">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -58,7 +59,12 @@ export default function HowItWorks() {
       </section>
 
       {/* 3 LAYERS */}
-      <section className="relative">
+      <section className="relative overflow-x-clip isolate">
+        <SectionBleed className="-z-20" />
+        <GlowWash
+          color="#5E6AD2"
+          className="inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[900px] w-[900px] -z-10"
+        />
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-24 md:py-32">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
@@ -124,7 +130,13 @@ export default function HowItWorks() {
       </section>
 
       {/* 5 STEPS */}
-      <section className="relative">
+      <section className="relative overflow-x-clip isolate">
+        <SectionBleed className="-z-20" />
+        <GlowWash
+          color="#7CD5FF"
+          opacity={0.09}
+          className="inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[1100px] w-[900px] -z-10"
+        />
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-24 md:py-32">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
@@ -186,9 +198,9 @@ export default function HowItWorks() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-40 text-center">
+        <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-40 text-center">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}

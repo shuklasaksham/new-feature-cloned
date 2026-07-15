@@ -4,6 +4,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { PRICING } from "../lib/constants";
 import Seo from "../components/Seo";
+import { SectionBleed, GlowWash } from "../components/SectionBleed";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -19,7 +20,7 @@ export default function Pricing() {
   const cur = PRICING.currencies[currency];
 
   return (
-    <div data-testid="pricing-page" className="page-enter">
+    <div data-testid="pricing-page" className="page-enter landing-page-bg">
       <Seo
         title="Pricing"
         description="Flat, transparent pricing for Bracket. Free early access with generous limits. Pro plan for anyone doing client work who needs unlimited decisions."
@@ -27,9 +28,9 @@ export default function Pricing() {
       />
 
       {/* HERO */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-20 text-center">
+        <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 pt-24 md:pt-32 pb-16 md:pb-20 text-center">
           <motion.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -71,10 +72,11 @@ export default function Pricing() {
       </section>
 
       {/* CURRENCY + TIERS */}
-      <section className="relative pb-24 md:pb-32">
+      <section className="relative pb-24 md:pb-32 overflow-x-clip isolate">
+        <SectionBleed className="-z-20" />
         <div
           aria-hidden="true"
-          className="absolute inset-x-0 top-24 mx-auto h-[500px] w-[800px] blur-[120px] opacity-[0.18] pointer-events-none"
+          className="absolute inset-x-0 top-24 mx-auto h-[500px] w-[800px] blur-[120px] opacity-[0.18] pointer-events-none -z-10"
           style={{ background: "radial-gradient(closest-side, #FFB84C, transparent 70%)" }}
         />
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 relative">
@@ -167,7 +169,12 @@ export default function Pricing() {
       </section>
 
       {/* FAQ */}
-      <section className="relative">
+      <section className="relative overflow-x-clip isolate">
+        <SectionBleed className="-z-20" />
+        <GlowWash
+          color="#5E6AD2"
+          className="inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[900px] w-[900px] -z-10"
+        />
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-20 md:py-28 grid md:grid-cols-2 gap-10 md:gap-16">
           <div>
             <span className="section-label"><span className="dot" />Honest answers</span>
@@ -200,9 +207,9 @@ export default function Pricing() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-x-clip isolate">
         <div className="hero-ambient" aria-hidden="true" />
-        <div className="relative max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-36 text-center">
+        <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-36 text-center">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

@@ -1165,7 +1165,7 @@ body::before {
   display: flex;
   gap: 20px;
   width: max-content;
-  animation: testimonial-loop 60s linear infinite;
+  animation: testimonial-loop 120s linear infinite;
   will-change: transform;
 }
 @keyframes testimonial-loop {
