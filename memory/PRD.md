@@ -69,6 +69,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06-XX — **Landing "THE FLOW" cards opaque + stage tags v2 + filters**:
+  - `.landing-showcase-card` background now fully opaque `#0E1014` (was translucent gradient + backdrop blur).
+  - Dashboard stages now: IN PROGRESS / LOCKED (blue) / AWAITING REPLY (amber, share_status sent or awaiting_reply) / REJECTED (red) / ACCEPTED (green).
+  - Dashboard filter pills: All, In progress, Locked, Rejected, Accepted — filter matches `projectStage(p).key` ("Draft" filter removed; awaiting-reply projects appear under All).
 - 2026-06-XX — **Shared projects frozen + sign-off footer alignment**:
   - Once a project is shared with a client (share_status != none), steps can no longer be edited or unlocked. Backend: `_assert_not_shared()` raises 409 on `/unlock` and `/reset-from-step` (curl-verified). Frontend: ProjectOverview hides Unlock/Resume/step-edit buttons + shows a "shared" hint; ProjectFlow `guardStepRework` blocks with a toast.
   - Client sign-off modal footer: name/role/email inputs now align on one row (role label made a flex row like the others; footer grid `align-items: start` + 24px padding on the buttons column). Verified all tops equal.

@@ -128,16 +128,16 @@ const AI_OUTPUTS = [
 const STAGE_STYLE = {
   in_progress: { backgroundColor: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--hairline)" },
   locked:      { backgroundColor: "#5E6AD2", color: "#FFFFFF", border: "1px solid #5E6AD2" },
-  concerns:    { backgroundColor: "#EF4444", color: "#FFFFFF", border: "1px solid #EF4444" },
+  awaiting:    { backgroundColor: "rgba(245,158,11,0.14)", color: "#FBBF24", border: "1px solid rgba(245,158,11,0.35)" },
+  rejected:    { backgroundColor: "#EF4444", color: "#FFFFFF", border: "1px solid #EF4444" },
   accepted:    { backgroundColor: "#22C55E", color: "#0A0A0C", border: "1px solid #22C55E" },
 };
-// Stage precedence: client review outcome > locked > in progress.
-// "awaiting_reply" / "sent" = waiting on the client → shown as IN PROGRESS.
+// Stage precedence: client review outcome > awaiting reply > locked > in progress.
 function projectStage(p) {
   if (p.share_status === "accepted") return { key: "accepted", label: "ACCEPTED" };
-  if (p.share_status === "rejected") return { key: "concerns", label: "HAVE CONCERNS" };
-  if (p.share_status === "awaiting_reply" || p.share_status === "sent")
-    return { key: "in_progress", label: "IN PROGRESS" };
+  if (p.share_status === "rejected") return { key: "rejected", label: "REJECTED" };
+  if (p.share_status === "sent" || p.share_status === "awaiting_reply")
+    return { key: "awaiting", label: "AWAITING REPLY" };
   if (p.status === "locked") return { key: "locked", label: "LOCKED" };
   return { key: "in_progress", label: "IN PROGRESS" };
 }
@@ -361,7 +361,7 @@ export default function Dashboard() {
 
   // ─── Search + status filter over the projects list ─────────────────
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");   // all | draft | in_progress | locked
+  const [statusFilter, setStatusFilter] = useState("all");   // all | in_progress | locked | rejected | accepted
 
   const stats = useMemo(() => {
     const total = projects.length;
@@ -378,10 +378,7 @@ export default function Dashboard() {
     return projects.filter((p) => {
       if (q && !p.name.toLowerCase().includes(q)) return false;
       if (statusFilter === "all") return true;
-      if (statusFilter === "locked") return p.status === "locked";
-      if (statusFilter === "in_progress") return p.status !== "locked" && (p.step || 1) > 1;
-      if (statusFilter === "draft") return p.status !== "locked" && (p.step || 1) === 1;
-      return true;
+      return projectStage(p).key === statusFilter;
     });
   }, [projects, query, statusFilter]);
 
@@ -572,7 +569,8 @@ export default function Dashboard() {
                     { key: "all", label: "All" },
                     { key: "in_progress", label: "In progress" },
                     { key: "locked", label: "Locked" },
-                    { key: "draft", label: "Draft" },
+                    { key: "rejected", label: "Rejected" },
+                    { key: "accepted", label: "Accepted" },
                   ].map((f) => (
                     <button
                       key={f.key}
