@@ -572,3 +572,9 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Dashboard / Overview dead-scroll** (`index.css` `.dashboard-root`): `.hero-ambient::before` is a 1400px-tall absolute gradient inside `.hero-ambient` (`overflow: visible`) which extended past `.dashboard-root`, pushing `.app-shell-main`'s scroll height beyond the content. Swapped `overflow-x: clip` → `overflow: clip` on `.dashboard-root`. Both axes clipped, no scroll container created, internal scroll still works. `main_scrollHeight == main_clientHeight` after fix.
 
 
+
+- 2026-06-15 — **Iteration 42 — Hero metrics: real data only, no placeholder flip-flop**:
+  - **Bug**: First page load showed hardcoded placeholder numbers (128/47/92) before `/api/public/metrics` responded, so reloads flip-flopped between fake and real data depending on network timing.
+  - **Fix (frontend, `Landing.jsx` `HeroMetrics`)**: Removed placeholder fallbacks entirely. Strip renders an empty spacer until real data arrives, then fades in and counts up to the real values only. Fetch sends `Cache-Control: no-cache`.
+  - **Fix (backend, `server.py` `public_metrics`)**: Response now sets `Cache-Control: no-store, no-cache, must-revalidate` to prevent CDN/browser caching in production.
+  - Verified via screenshot: hero shows exact live API values (26/34/90) on first load. NOTE: production needs a REDEPLOY to pick this up.

@@ -356,15 +356,16 @@ function Hero() {
 
 function HeroMetrics() {
   // Live platform KPIs — same aggregates the admin panel reports. Fetched
-  // from /public/metrics and refreshed every 12s so the hero updates in
-  // realtime as projects and signups happen. `m === null` = not loaded yet
-  // (show launch-baseline placeholders); once loaded, always show REAL data.
+  // from /public/metrics and refreshed every 12s. The strip stays hidden
+  // until REAL data arrives — no placeholder numbers, ever.
   const [m, setM] = useState(null);
   useEffect(() => {
     let cancelled = false;
     const fetchMetrics = async () => {
       try {
-        const { data } = await api.get("/public/metrics");
+        const { data } = await api.get("/public/metrics", {
+          headers: { "Cache-Control": "no-cache" },
+        });
         if (!cancelled) setM(data);
       } catch { /* silent — keep last known values */ }
     };
@@ -372,16 +373,17 @@ function HeroMetrics() {
     const t = setInterval(fetchMetrics, 12000);
     return () => { cancelled = true; clearInterval(t); };
   }, []);
+  if (!m) return <div className="mt-12 h-10" data-testid="hero-metrics" aria-hidden="true" />;
   const items = [
-    { n: m ? m.projects_started_with_ai ?? 0 : 128, label: "briefs turned into projects" },
-    { n: m ? m.projects_scoped ?? 0 : 47, label: "decisions locked" },
-    { n: m ? m.freelancers_and_teams ?? 0 : 92, label: "professionals on Bracket" },
+    { n: m.projects_started_with_ai ?? 0, label: "briefs turned into projects" },
+    { n: m.projects_scoped ?? 0, label: "decisions locked" },
+    { n: m.freelancers_and_teams ?? 0, label: "professionals on Bracket" },
   ];
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ delay: 1.2, duration: 0.8 }}
+      transition={{ duration: 0.8 }}
       className="mt-12 flex items-center gap-8 flex-wrap"
       data-testid="hero-metrics"
     >

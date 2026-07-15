@@ -465,9 +465,10 @@ async def auth_claim(body: ClaimDecisionIn, request: Request):
 # individual project or user data leaks.
 # ===========================================================================
 @api.get("/public/metrics")
-async def public_metrics():
+async def public_metrics(response: Response):
     """Aggregate KPIs shown on the landing page's metrics strip. All counts
     are numeric only — no identifiers, no content."""
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
     # 1. Freelancers & Teams — total signed-up users.
     total_users = await db.users.count_documents({})
 
