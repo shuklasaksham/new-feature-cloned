@@ -227,7 +227,12 @@ async def auth_set_password(body: SetPasswordIn, request: Request):
 
 @api.get("/auth/me")
 async def auth_me(request: Request):
-    user = await current_user(request, db)
+    # Anonymous visitors get 200 + null instead of a noisy 401 — public pages
+    # (landing, /r/{token}) probe this on every load.
+    try:
+        user = await current_user(request, db)
+    except HTTPException:
+        return None
     return public_user(user)
 
 

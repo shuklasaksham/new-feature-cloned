@@ -131,7 +131,10 @@ export default function ClientReview() {
             if (e.target === e.currentTarget) setMode("read");
           }}
         >
-          <div className={`review-modal-panel card-linear card-linear--solid ${mode === "accept" ? "review-modal-panel--wide" : ""}`}>
+          <div
+            className={`review-modal-panel card-linear card-linear--solid ${mode === "accept" ? "review-modal-panel--wide" : ""}`}
+            data-testid={`review-${mode}-modal`}
+          >
             <button
               type="button"
               className="bracket-dialog-close"

@@ -793,6 +793,7 @@ function BentoCard({ tile }) {
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       className={`bento-card group ${tile.span}`}
+      data-testid={`bento-${tile.ghost}`}
     >
       <div className="bento-card-glow" aria-hidden="true" />
       {/* Ghost interface fragment — abstract UI hint that lives BEHIND the

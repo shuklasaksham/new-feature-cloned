@@ -2023,7 +2023,13 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 }
 @media (min-width: 760px)  { .review-accept-items { columns: 2; } }
 @media (min-width: 1150px) { .review-accept-items { columns: 3; } }
-@media (min-width: 1500px) { .review-accept-items { columns: 4; } }
+@media (min-width: 1280px) { .review-accept-items { columns: 4; } }
+/* Short laptop screens — compress rows so long checklists fit without scroll. */
+@media (max-height: 820px) {
+  .review-accept-item { padding: 5px 8px; margin-bottom: 4px; gap: 8px; }
+  .review-accept-items { padding: 6px; }
+  .review-accept-footer { margin-top: 10px; }
+}
 .review-accept-items::-webkit-scrollbar { width: 6px; }
 .review-accept-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 3px; }
 .review-accept-item {
