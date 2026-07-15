@@ -233,6 +233,20 @@ export default function ProjectFlow() {
           </div>
         </div>
 
+        {/* Client-requested revision banner — set when the owner clicks
+            "Apply this change" from the review modal. */}
+        {project?.revising && project?.revision_context?.instruction && (
+          <div className="mt-5 card-linear p-4 border-l-2 border-signal" data-testid="revision-banner">
+            <p className="mono-tag text-signal text-[10.5px]">
+              CLIENT-REQUESTED CHANGE · STEP {project.revision_context.step}
+            </p>
+            <p className="mt-1.5 text-sm text-[var(--text)]">{project.revision_context.instruction}</p>
+            <p className="mt-1 text-[11.5px] text-[var(--text-3)]">
+              Update this step with the change, regenerate, and re-lock — your client will re-review the same link.
+            </p>
+          </div>
+        )}
+
         {/* Journey pipeline */}
         <div className="mt-6">
           <p className="mono-tag text-muted mb-2 hidden sm:block text-[10px]" data-testid="milestone-tracker-label">

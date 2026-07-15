@@ -8,7 +8,7 @@ const FAQS = [
   {
     cat: "Getting started",
     items: [
-      { q: "What is Bracket?", a: "Bracket is an AI decision OS for designers, freelancers, and creative pros. It sits between your input (a vague client ask) and your output (a defensible deliverable). Five steps. One stance. A document you can send." },
+      { q: "What is Bracket?", a: "Bracket is the AI decision workspace for client projects — built for anyone who works with clients: freelancers, consultants, agencies, developers, and creative pros. It sits between your input (a vague client ask) and your output (a defensible deliverable). Five steps. One stance. A document you can send." },
       { q: "How is it different from ChatGPT?", a: "ChatGPT will execute. Bracket helps you decide. It mirrors the situation, surfaces tensions, takes a stance with trade-offs, and produces an artifact you can defend in a room." },
       { q: "Do I need to sign up?", a: "No. Click \"Try it without an account\" on the login page and start a project as a guest. We'll ask for your email at step 5, when you lock the document." },
     ],

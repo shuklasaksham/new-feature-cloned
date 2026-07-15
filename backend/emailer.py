@@ -28,7 +28,7 @@ def _thanks_html(name: str, project_name: str) -> str:
             <tr>
               <td style="padding:32px 36px 0 36px;">
                 <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">
-                  &#123; bracket &middot; project started &#125;
+                  &lt; bracket &middot; project started &gt;
                 </p>
               </td>
             </tr>
@@ -56,7 +56,7 @@ def _thanks_html(name: str, project_name: str) -> str:
             <tr>
               <td style="padding:30px 36px 28px 36px;">
                 <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">
-                  Bracket &middot; Decisions for designers
+                  Bracket &middot; The AI decision workspace for client projects
                 </p>
                 <p style="margin:8px 0 0 0;font-size:12.5px;color:#6E7480;">
                   If this wasn't you, ignore this email &mdash; we won't follow up.
@@ -81,7 +81,7 @@ def _thanks_text(name: str, project_name: str) -> str:
         "you'll have scope, a client message, assumptions, and risk flags ready to send.\n\n"
         "It's free during early access. No account needed.\n\n"
         "— Bracket\n"
-        "Decisions for designers"
+        "The AI decision workspace for client projects"
     )
 
 
@@ -166,7 +166,7 @@ def _review_outcome_html(
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
 <tr><td style="padding:32px 36px 0 36px;">
   <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:{accent};">
-    {{ bracket &middot; {chip_label.lower()} }}
+    &lt; bracket &middot; {chip_label.lower()} &gt;
   </p>
 </td></tr>
 <tr><td style="padding:18px 36px 0 36px;">
@@ -186,7 +186,7 @@ def _review_outcome_html(
 </td></tr>
 <tr><td style="padding:30px 36px 28px 36px;">
   <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">
-    Bracket &middot; Decisions for designers
+    Bracket &middot; The AI decision workspace for client projects
   </p>
 </td></tr>
 </table>
@@ -214,14 +214,14 @@ def _review_outcome_text(
             f"Hi {display_name},\n\n"
             f"{signer_line} just signed off on {pname}. They checked {count}/{total} items.\n\n"
             f"Open the document: {document_url}\n\n"
-            "— Bracket\nDecisions for designers"
+            "— Bracket\nThe AI decision workspace for client projects"
         )
     return (
         f"Hi {display_name},\n\n"
         f"{signer_line} raised concerns on {pname}. Bracket already drafted three suggestions you can use to respond.\n\n"
         f"Concerns:\n{(review.get('concerns') or '').strip()}\n\n"
         f"Open the document: {document_url}\n\n"
-        "— Bracket\nDecisions for designers"
+        "— Bracket\nThe AI decision workspace for client projects"
     )
 
 
@@ -317,7 +317,7 @@ def _client_receipt_html(project_name: str, review: dict, share_url: str) -> str
 <table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
 <tr><td style="padding:32px 36px 0 36px;">
   <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:{accent};">
-    &#123; bracket &middot; {chip.lower()} &#125;
+    &lt; bracket &middot; {chip.lower()} &gt;
   </p>
 </td></tr>
 <tr><td style="padding:18px 36px 0 36px;">
@@ -333,7 +333,7 @@ def _client_receipt_html(project_name: str, review: dict, share_url: str) -> str
 </td></tr>
 <tr><td style="padding:30px 36px 28px 36px;">
   <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">
-    Bracket &middot; Decisions for designers
+    Bracket &middot; The AI decision workspace for client projects
   </p>
 </td></tr>
 </table>
@@ -354,14 +354,14 @@ def _client_receipt_text(project_name: str, review: dict, share_url: str) -> str
             f"You signed off on {pname}. {count}/{total} items confirmed.\n"
             f"The signed PDF is attached for your records.\n\n"
             f"View the document: {share_url}\n\n"
-            "— Bracket\nDecisions for designers"
+            "— Bracket\nThe AI decision workspace for client projects"
         )
     return (
         f"Hi {signer},\n\n"
         f"We received your concerns on {pname}. Here's what you sent:\n\n"
         f"{(review.get('concerns') or '').strip()}\n\n"
         f"The project owner will respond via the same review link:\n{share_url}\n\n"
-        "— Bracket\nDecisions for designers"
+        "— Bracket\nThe AI decision workspace for client projects"
     )
 
 
@@ -414,4 +414,69 @@ async def send_client_receipt_email(
         return True
     except Exception as e:
         logger.exception(f"client-receipt email failed for {client_email}: {e}")
+        return False
+
+
+def _owner_reply_html(client_name: str, owner_name: str, project_name: str, reply_text: str, share_url: str) -> str:
+    who = (client_name or "there").strip() or "there"
+    owner = (owner_name or "The project owner").strip() or "The project owner"
+    pname = (project_name or "your project").strip() or "your project"
+    safe = (reply_text or "").replace("<", "&lt;").replace(">", "&gt;")
+    return f"""<!doctype html>
+<html><body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#08090A;padding:44px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
+<tr><td style="padding:32px 36px 0 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">&lt; bracket &middot; reply to your concerns &gt;</p>
+</td></tr>
+<tr><td style="padding:18px 36px 0 36px;">
+  <h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;">{owner} replied.</h1>
+</td></tr>
+<tr><td style="padding:16px 36px 0 36px;">
+  <p style="margin:0 0 14px 0;font-size:15px;line-height:1.65;color:#B9BFC9;">Hi {who} &mdash; here's the response to the concerns you raised on <strong style="color:#F4F5F7;">{pname}</strong>:</p>
+  <div style="margin:14px 0;padding:14px 16px;border-left:3px solid #5E6AD2;background:#16181D;border-radius:0 10px 10px 0;font-size:13.5px;line-height:1.6;color:#B9BFC9;white-space:pre-wrap;">{safe}</div>
+  <p style="margin:0 0 20px 0;font-size:15px;line-height:1.65;color:#B9BFC9;">Open the document to review and continue the conversation.</p>
+  <a href="{share_url}" style="display:inline-block;padding:13px 24px;background:#5E6AD2;color:#ffffff;text-decoration:none;font-size:13.5px;font-weight:600;letter-spacing:0.01em;border-radius:10px;">Open the document &rarr;</a>
+</td></tr>
+<tr><td style="padding:30px 36px 28px 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">Bracket &middot; The AI decision workspace for client projects</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+
+async def send_owner_reply_email(
+    client_email: str,
+    client_name: str,
+    owner_name: str,
+    project_name: str,
+    reply_text: str,
+    share_url: str,
+) -> bool:
+    """Notify the client that the owner responded to their concerns.
+    Fire-and-forget — never raises."""
+    if not client_email:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning("RESEND_API_KEY not set; skipping owner-reply email")
+        return False
+    resend.api_key = api_key
+    params = {
+        "from": _sender(),
+        "to": [client_email],
+        "subject": f"Reply to your concerns — {project_name}",
+        "html": _owner_reply_html(client_name, owner_name, project_name, reply_text, share_url),
+        "text": f"{owner_name} replied to your concerns on {project_name}:\n\n{reply_text}\n\nOpen the document: {share_url}",
+        "reply_to": os.environ.get("SENDER_EMAIL", ""),
+    }
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"owner-reply email sent to {client_email}: {result.get('id') if isinstance(result, dict) else result}")
+        return True
+    except Exception as e:
+        logger.exception(f"owner-reply email failed for {client_email}: {e}")
         return False

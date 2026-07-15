@@ -313,7 +313,7 @@ def _otp_html(name: str, code: str) -> str:
 <tr><td align="center">
 <table role="presentation" width="480" style="max-width:480px;background:#0F1114;border-radius:16px;border:1px solid #26282D;">
 <tr><td style="padding:32px 36px 0 36px;">
-<p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">&#123; bracket &middot; sign in &#125;</p>
+<p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">&lt; bracket &middot; sign in &gt;</p>
 </td></tr>
 <tr><td style="padding:18px 36px 0 36px;">
 <p style="margin:0 0 4px 0;font-size:13.5px;color:#6E7480;">Hi {display},</p>
@@ -327,7 +327,7 @@ def _otp_html(name: str, code: str) -> str:
 </td></tr>
 <tr><td style="padding:22px 36px 30px 36px;">
 <p style="margin:0 0 6px 0;font-size:12.5px;line-height:1.55;color:#6E7480;">If you didn't try to sign in, you can safely ignore this email — no one will be able to access your account without the code.</p>
-<p style="margin:16px 0 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:16px;">Bracket &middot; Decisions for designers</p>
+<p style="margin:16px 0 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:16px;">Bracket &middot; The AI decision workspace for client projects</p>
 <p style="margin:8px 0 0 0;font-size:12px;color:#6E7480;"><a href="https://use-bracket.com" style="color:#5E6AD2;text-decoration:none;">use-bracket.com</a></p>
 </td></tr>
 </table>

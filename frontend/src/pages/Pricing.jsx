@@ -22,7 +22,7 @@ export default function Pricing() {
     <div data-testid="pricing-page" className="page-enter">
       <Seo
         title="Pricing"
-        description="Flat, transparent pricing for Bracket. Free early access with generous limits. Pro plan for freelancers and small studios who need unlimited decisions."
+        description="Flat, transparent pricing for Bracket. Free early access with generous limits. Pro plan for anyone doing client work who needs unlimited decisions."
         path="/pricing"
       />
 

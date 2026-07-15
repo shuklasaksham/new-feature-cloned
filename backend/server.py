@@ -40,8 +40,9 @@ from ai_engine import (
     extract_text_from_image,
     extract_full_brief_from_paste,
     generate_project_title,
+    map_suggestion_to_step,
 )
-from emailer import send_thanks_email, send_review_outcome_email, send_client_receipt_email
+from emailer import send_thanks_email, send_review_outcome_email, send_client_receipt_email, send_owner_reply_email
 from auth import (
     SESSION_COOKIE,
     current_user,
@@ -1325,6 +1326,30 @@ async def _extract_text_from_upload(raw: bytes, mime: str, filename: str) -> str
     return ""
 
 
+@api.post("/extract-brief")
+async def extract_brief(request: Request, file: UploadFile = File(...)):
+    """Extract text from an uploaded PDF / TXT / PNG / JPEG — no project is
+    created. Used by the dashboard composer's drag & drop attach."""
+    await current_user(request, db)
+    mime = (file.content_type or "").lower().strip()
+    if mime not in _ALLOWED_UPLOAD_MIMES:
+        ext = (file.filename or "").rsplit(".", 1)[-1].lower()
+        if ext not in {"pdf", "txt", "png", "jpg", "jpeg"}:
+            raise HTTPException(status_code=415, detail="Only PDF, TXT, PNG, or JPEG files are supported.")
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Empty file.")
+    if len(raw) > _UPLOAD_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="File is too large (max 8 MB).")
+    text = await _extract_text_from_upload(raw, mime, file.filename or "")
+    if not text or len(text.strip()) < 20:
+        raise HTTPException(
+            status_code=422,
+            detail="We couldn't pull useful text out of this file. Try pasting the brief manually.",
+        )
+    return {"filename": file.filename or "attachment", "text": text.strip()}
+
+
 @api.post("/projects/upload-brief", response_model=ProjectOut)
 async def upload_brief(request: Request, file: UploadFile = File(...)):
     """Create a project from an uploaded PDF / TXT / PNG / JPEG brief.
@@ -1631,7 +1656,10 @@ async def bulk_delete_projects(body: BulkDeleteIn, request: Request):
 
 
 def _assert_not_shared(p: dict):
-    """Once a project is shared with a client, its steps are frozen."""
+    """Once a project is shared with a client, its steps are frozen — unless
+    the owner is applying a client-requested revision (revising flag)."""
+    if p.get("revising"):
+        return
     if (p.get("share_status") or "none") != "none":
         raise HTTPException(
             status_code=409,
@@ -1734,6 +1762,21 @@ async def owner_reply_to_client(project_id: str, body: OwnerReplyIn, request: Re
             }
         },
     )
+    # Email the client the owner's response (fire-and-forget).
+    client_email = (p.get("share_review") or {}).get("client_email", "")
+    if client_email:
+        base = os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com").rstrip("/")
+        try:
+            await send_owner_reply_email(
+                client_email=client_email,
+                client_name=(p.get("share_review") or {}).get("signature_name", ""),
+                owner_name=reply["from_name"],
+                project_name=p.get("name", "your project"),
+                reply_text=reply["text"],
+                share_url=f"{base}/r/{p.get('share_token')}",
+            )
+        except Exception as e:
+            logger.warning(f"owner-reply email crashed: {e}")
     return await _get_project_or_404(project_id)
 
 
@@ -1923,15 +1966,60 @@ async def step_artifacts(project_id: str):
 
 
 # --- STEP 5: CONFIDENCE LOCK-IN ---
+class ApplySuggestionIn(BaseModel):
+    index: int = Field(ge=0, le=9)
+
+
+@api.post("/projects/{project_id}/review/apply-suggestion")
+async def apply_review_suggestion(project_id: str, body: ApplySuggestionIn, request: Request):
+    """Owner accepts a client-requested change: map the suggestion to the flow
+    step it affects, unfreeze the project, and drop the owner at that step
+    with the change pre-loaded as a regeneration instruction."""
+    p = await _get_owned_project_or_404(project_id, request)
+    review = p.get("share_review") or {}
+    suggestions = (review.get("ai_suggestions") or {}).get("suggestions") or []
+    if p.get("share_status") not in ("rejected", "awaiting_reply") or not suggestions:
+        raise HTTPException(status_code=400, detail="No client concerns to apply on this project.")
+    if body.index >= len(suggestions):
+        raise HTTPException(status_code=404, detail="Suggestion not found.")
+    suggestion = suggestions[body.index]
+    try:
+        mapped = await map_suggestion_to_step(p, suggestion)
+    except Exception as e:
+        logger.warning("apply-suggestion mapping failed, defaulting to step 3: %s", e)
+        mapped = {"step": 3, "instruction": (suggestion.get("what_to_change") or suggestion.get("title") or "").strip()}
+    revision_context = {
+        "step": mapped["step"],
+        "instruction": mapped["instruction"],
+        "suggestion_title": suggestion.get("title", ""),
+        "created_at": _now_iso(),
+    }
+    await db.projects.update_one(
+        {"id": p["id"]},
+        {
+            "$set": {
+                "status": "in_progress",
+                "step": mapped["step"],
+                "revising": True,
+                "revision_context": revision_context,
+                "updated_at": _now_iso(),
+            }
+        },
+    )
+    return {"step": mapped["step"], "instruction": mapped["instruction"]}
+
+
 @api.post("/projects/{project_id}/lock", response_model=ProjectOut)
 async def step_lock(project_id: str):
     project = await _get_project_or_404(project_id)
     if not project.get("artifacts"):
         raise HTTPException(status_code=400, detail="Generate artifacts first.")
-    await db.projects.update_one(
-        {"id": project_id},
-        {"$set": {"status": "locked", "locked_at": _now_iso(), "updated_at": _now_iso()}},
-    )
+    update = {"status": "locked", "locked_at": _now_iso(), "updated_at": _now_iso()}
+    if project.get("revising"):
+        # Revision applied — the shared link now serves the new version and
+        # the client is asked to re-review.
+        update.update({"revising": False, "revision_context": None, "share_status": "sent"})
+    await db.projects.update_one({"id": project_id}, {"$set": update})
     return await _get_project_or_404(project_id)
 
 
@@ -2000,7 +2088,19 @@ def _markdown_for(project: dict) -> str:
             for r in artifacts["risk_flags"]:
                 lines.append(f"- **[{r.get('severity','LOW')}] {r.get('flag','')}** — {r.get('why','')}")
             lines.append("")
-    lines.append("\n---\n_Generated by Bracket — decisions for designers._")
+    # Client review paper trail — concerns + owner's responses.
+    review = project.get("share_review") or {}
+    replies = project.get("owner_replies") or []
+    if review.get("type") == "reject" and review.get("concerns"):
+        lines += ["## Client review — concerns", "", review["concerns"], ""]
+        if review.get("signature_name"):
+            lines.append(f"_Raised by {review['signature_name']}{(' · ' + review['role']) if review.get('role') else ''}_")
+            lines.append("")
+    if replies:
+        lines.append("## Response to concerns")
+        for rep in replies:
+            lines += ["", f"**{rep.get('from_name','Owner')}** ({rep.get('sent_at','')[:10]}):", rep.get("text", ""), ""]
+    lines.append("\n---\n_Generated by Bracket — the AI decision workspace for client projects._")
     return "\n".join(lines)
 
 
@@ -2368,7 +2468,7 @@ def _pdf_for(project: dict) -> bytes:
     p.ln(3)
     p.set_font("Helvetica", "I", 9)
     p.set_text_color(120, 120, 120)
-    _safe_multi_cell(0, 5, "Generated by Bracket — decisions for designers.")
+    _safe_multi_cell(0, 5, "Generated by Bracket — the AI decision workspace for client projects.")
 
     out = p.output(dest="S")
     if isinstance(out, bytearray):

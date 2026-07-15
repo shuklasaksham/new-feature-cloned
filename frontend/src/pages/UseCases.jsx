@@ -19,7 +19,7 @@ export default function UseCases() {
     <div data-testid="use-cases-page" className="page-enter">
       <Seo
         title="Use cases"
-        description="From brand refreshes to product retainers — see how designers and freelancers use Bracket to unblock scope, kill ambiguity, and close projects faster."
+        description="From brand refreshes to product retainers — see how anyone who works with clients uses Bracket to unblock scope, kill ambiguity, and close projects faster."
         path="/use-cases"
       />
 
@@ -50,7 +50,7 @@ export default function UseCases() {
             className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto"
           >
             Bracket doesn&apos;t care about job titles. Designer, freelancer, copywriter,
-            illustrator, photographer, indie dev — it cares who has to make the decision
+            consultant, developer, agency owner — it cares who has to make the decision
             at 11pm on a Sunday.
           </motion.p>
         </div>

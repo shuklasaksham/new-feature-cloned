@@ -438,11 +438,16 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
           </p>
           <button
             onClick={toggleAll}
-            className="mono-tag text-signal hover:text-[var(--text)] transition-colors text-[10.5px]"
-            data-testid="review-toggle-all"
             type="button"
+            className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold tracking-[0.02em] transition-all press"
+            style={
+              allChecked
+                ? { border: "1px solid var(--hairline)", background: "transparent", color: "var(--text-2)" }
+                : { background: "#5E6AD2", color: "#FFFFFF", border: "1px solid #6E7AE8", boxShadow: "0 8px 24px rgba(94,106,210,0.40)" }
+            }
+            data-testid="review-toggle-all"
           >
-            {allChecked ? "UNCHECK ALL" : "ACCEPT ALL"}
+            {allChecked ? "Uncheck all" : (<><Check size={13} strokeWidth={2.5} /> Accept all</>)}
           </button>
         </div>
       </div>

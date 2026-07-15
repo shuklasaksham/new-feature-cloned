@@ -55,7 +55,7 @@ SYSTEM_VOICE = (
     "  • In-house product designers → stakeholder alignment, PM/eng handoff, "
     "org politics, roadmap trade-offs.\n"
     "  • Juniors levelling up → teach the reasoning behind the move, name the "
-    "framework, model senior-designer confidence without being condescending.\n"
+    "framework, model senior-operator confidence without being condescending.\n"
     "  • Independent designers → freelance economics, scope creep, boundaries "
     "with clients.\n"
     "\n"
@@ -189,9 +189,9 @@ async def generate_project_title(raw_paste: str) -> str:
     if not text:
         return ""
     prompt = (
-        "You are naming a project for a freelance designer's dashboard. "
+        "You are naming a project for a client-work dashboard. "
         "The user pasted a messy client conversation (email / WhatsApp / brief / notes). "
-        "Return a short, human project title that a designer would write in their dashboard — "
+        "Return a short, human project title that someone would write in their dashboard — "
         "3 to 6 words, Title Case, no quotes, no trailing punctuation. "
         "Name the project itself (e.g. 'Fintech Landing Redesign', 'Loop Coffee Brand Launch', "
         "'B2B Marketing Site Refresh'), NOT the client's greeting or first sentence. "
@@ -223,7 +223,7 @@ async def extract_situation_from_paste(raw_paste: str) -> dict:
         return {"what": "", "who": "", "unclear": ""}
     prompt = (
         "The user pasted a messy client conversation, email, brief, or notes. "
-        "Extract three plain-English answers a senior designer would write in a fresh notebook. "
+        "Extract three plain-English answers a senior professional would write in a fresh notebook. "
         "Be concise (1-3 sentences each). If the paste truly doesn't contain the info, "
         "leave the field as an empty string.\n\n"
         f"PASTE:\n---\n{text[:8000]}\n---\n\n"
@@ -300,7 +300,7 @@ async def extract_decision_from_paste(raw_paste: str) -> dict:
 
 async def run_situation_framing(inputs: dict, engine: str = "claude") -> dict:
     """Reframes the problem into crisp reality. Returns reframed_problem + clarity_score + signals."""
-    prompt = f"""A designer has submitted this raw project intake. Reframe it like a senior designer would.
+    prompt = f"""A professional has submitted this raw client-project intake. Reframe it like a seasoned operator would.
 
 PROJECT INTAKE:
 - What is the project: {inputs.get('what', '')}
@@ -310,7 +310,7 @@ PROJECT INTAKE:
 Do these three things:
 1. Name the REAL situation (strip marketing fluff, state what's actually happening)
 2. Score clarity from 0-100 (how clear the problem actually is right now)
-3. List 3-5 tensions or signals the designer should pay attention to
+3. List 3-5 tensions or signals the project owner should pay attention to
 
 Return JSON with this exact shape:
 {{
@@ -318,18 +318,18 @@ Return JSON with this exact shape:
   "clarity_score": 0-100,
   "clarity_label": "one of: MURKY | FORMING | CLEAR | SHARP",
   "tensions": ["tension 1", "tension 2", ...],
-  "what_to_name": "One sentence the designer can say to name the real problem"
+  "what_to_name": "One sentence the project owner can say to name the real problem"
 }}"""
     return await _run(prompt, engine)
 
 
 async def run_context_compression(inputs: dict, framing: dict, engine: str = "claude") -> dict:
     """Filters noise, extracts signal from requirements/constraints/inspirations."""
-    prompt = f"""Compress the designer's context. Remove noise. Surface only what CHANGES the decision.
+    prompt = f"""Compress the project owner's context. Remove noise. Surface only what CHANGES the decision.
 
 REFRAMED PROBLEM: {framing.get('reframed_problem', '')}
 
-DESIGNER'S RAW CONTEXT:
+PROJECT OWNER'S RAW CONTEXT:
 - Requirements: {inputs.get('requirements', '')}
 - Constraints: {inputs.get('constraints', '')}
 - Inspirations / references: {inputs.get('inspirations', '')}
@@ -346,13 +346,13 @@ Return JSON:
 
 async def run_decision_engine(inputs: dict, framing: dict, context: dict, engine: str = "claude") -> dict:
     """Returns recommended direction, alternatives, trade-offs, risks."""
-    prompt = f"""Make the call. The designer needs a recommendation, not a menu.
+    prompt = f"""Make the call. The project owner needs a recommendation, not a menu.
 
 REFRAMED PROBLEM: {framing.get('reframed_problem', '')}
 WHAT MATTERS: {context.get('what_actually_matters', '')}
 KEY SIGNALS: {json.dumps(context.get('key_signals', []))}
 
-DESIGNER'S DECISION INPUTS:
+PROJECT OWNER'S DECISION INPUTS:
 - Optimizing for: {inputs.get('optimizing_for', '')}
 - Known trade-offs on their mind: {inputs.get('tradeoffs', '')}
 - Risks they suspect: {inputs.get('risks', '')}
@@ -379,7 +379,7 @@ async def run_artifacts(project: dict, engine: str = "claude") -> dict:
     """Generate scope doc, client message, assumptions, risk flags."""
     framing = project.get("framing", {})
     decision = project.get("decision", {})
-    prompt = f"""Generate the artifacts a designer needs to protect their decision.
+    prompt = f"""Generate the artifacts a project owner needs to protect their decision.
 
 PROJECT: {project.get('name', '')}
 REFRAMED PROBLEM: {framing.get('reframed_problem', '')}
@@ -406,14 +406,14 @@ Return JSON:
 
 
 async def run_moment_advisor(inputs: dict, engine: str = "claude") -> dict:
-    """Moment Advisor — a designer pastes a client message or describes a moment,
+    """Moment Advisor — a user pastes a client message or describes a moment,
     Bracket recommends how to respond."""
-    prompt = f"""A designer is facing a client moment. They need a stance, not an essay.
+    prompt = f"""A professional is facing a client moment. They need a stance, not an essay.
 
 THE MOMENT (what the client said or what's happening):
 \"\"\"{inputs.get('moment', '')}\"\"\"
 
-CONTEXT THE DESIGNER GAVE (optional):
+CONTEXT THE PROJECT OWNER GAVE (optional):
 {inputs.get('context', '') or '(none)'}
 
 Decide:
@@ -430,7 +430,7 @@ Return JSON:
   "posture_why": "One sentence reason",
   "tone": "SOFTEN | FIRM_UP | KEEP",
   "tone_why": "One sentence reason",
-  "response_draft": "A 2-4 short-paragraph message the designer can send. Warm, direct, no fluff.",
+  "response_draft": "A 2-4 short-paragraph message the user can send. Warm, direct, no fluff.",
   "what_not_to_do": ["One pitfall to avoid", ...]
 }}"""
     return await _run(prompt, engine)
@@ -456,8 +456,8 @@ Return JSON simulating 4 likely reactions. Mix: silence, "can we reduce this", s
     {{
       "trigger": "The exact thing the client is likely to say or do",
       "why": "Why they'll say it — the underlying pressure",
-      "best_move": "What the designer should do",
-      "response_draft": "A short reply the designer can send (or say in a meeting)",
+      "best_move": "What the project owner should do",
+      "response_draft": "A short reply the project owner can send (or say in a meeting)",
       "what_not_to_do": "The common mistake to avoid"
     }},
     ...
@@ -468,14 +468,14 @@ Return JSON simulating 4 likely reactions. Mix: silence, "can we reduce this", s
 
 async def run_client_pushback_suggestions(project: dict, concerns: str, engine: str = "claude") -> dict:
     """A client raised concerns on the shared document. Generate calm, specific suggestions
-    the designer can offer to move the conversation forward without collapsing the stance."""
+    the project owner can offer to move the conversation forward without collapsing the stance."""
     context = project.get("context") or {}
     decision = project.get("decision") or {}
     rec = (decision.get("recommendation") or {})
     artifacts = project.get("artifacts") or {}
     scope = (artifacts.get("scope_doc") or {})
     prompt = f"""A client has reviewed a sign-off document and raised concerns.
-Your job is to give the designer (the project owner) three short, specific suggestions
+Your job is to give the project owner three short, specific suggestions
 to address the concerns WITHOUT collapsing on the original stance.
 
 PROJECT: {project.get('name', '')}
@@ -494,11 +494,11 @@ Return STRICT JSON:
   "suggestions": [
     {{
       "title": "Short label, max 8 words",
-      "what_to_say": "1-3 sentences the designer can paste back to the client",
+      "what_to_say": "1-3 sentences the project owner can paste back to the client",
       "what_to_change": "The smallest change that addresses the concern without losing the stance, or 'No change — defend the stance because…' if defense is the right move"
     }}
   ],
-  "watch_for": "One short warning about what NOT to concede on, so the designer doesn't unravel the whole decision."
+  "watch_for": "One short warning about what NOT to concede on, so the project owner doesn't unravel the whole decision."
 }}
 
 3 suggestions exactly. Pure JSON only."""
@@ -640,3 +640,36 @@ async def extract_full_brief_from_paste(raw_paste: str) -> dict:
         "sufficient": sufficient,
         "persona": persona,
     }
+
+
+async def map_suggestion_to_step(project: dict, suggestion: dict) -> dict:
+    """Map a client-concern suggestion to the flow step it affects (1-3) and
+    produce a concrete regeneration instruction for the owner."""
+    framing = ((project.get("framing") or {}).get("reframed_problem") or "")[:300]
+    matters = ((project.get("context") or {}).get("what_actually_matters") or "")[:300]
+    rec = (((project.get("decision") or {}).get("recommendation") or {}).get("title") or "")[:200]
+    concerns = ((project.get("share_review") or {}).get("concerns") or "")[:600]
+    prompt = f"""A client reviewed a professional's decision document and raised concerns:
+"{concerns}"
+
+Bracket suggested this change:
+TITLE: {suggestion.get('title', '')}
+WHAT TO CHANGE: {suggestion.get('what_to_change', '')}
+WHAT TO SAY: {suggestion.get('what_to_say', '')}
+
+The project has 3 editable steps:
+1. SITUATION FRAMING — the problem statement: "{framing}"
+2. CONTEXT — what actually matters: "{matters}"
+3. DECISION — the recommendation: "{rec}"
+
+Which ONE step should the project owner edit to apply this change, and what exact instruction should they follow when regenerating it?
+Return STRICT JSON only: {{"step": 1, "instruction": "one or two clear imperative sentences telling the freelancer exactly what to change, incorporating the client's request"}} where step is 1, 2 or 3."""
+    data = await _run_fast(prompt)
+    try:
+        step = int(data.get("step") or 3)
+    except (TypeError, ValueError):
+        step = 3
+    if step not in (1, 2, 3):
+        step = 3
+    instruction = str(data.get("instruction") or suggestion.get("what_to_change") or "").strip()
+    return {"step": step, "instruction": instruction}

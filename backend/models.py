@@ -69,6 +69,10 @@ class ProjectOut(BaseModel):
     share_status: str = "none"  # none | sent | accepted | rejected | awaiting_reply
     share_review: Optional[Dict[str, Any]] = None
     owner_replies: Optional[list] = None
+    # Owner is applying a client-requested change — steps are unfrozen and
+    # the flow page shows a banner with `revision_context.instruction`.
+    revising: Optional[bool] = None
+    revision_context: Optional[Dict[str, Any]] = None
     owner_user_id: Optional[str] = ""
     created_at: str
     updated_at: str

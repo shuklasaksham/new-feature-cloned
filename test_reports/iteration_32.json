@@ -1,0 +1,60 @@
+{
+  "summary": "Iteration 32 — verified new client-review owner-response actions (Apply this change / Keep as is & respond), Dashboard drag&drop file attach, /r/{token} Accept-all CTA, and copy/SEO regression on landing + subpages. 12/12 backend tests PASS. Fixed one CRITICAL schema bug: ProjectOut Pydantic model was missing `revising` and `revision_context` fields, so those flags were being stripped from every /api/projects/{id} response — which meant the revision-banner on the flow page could NEVER render after 'Apply this change'. Added fields to models.py, verified banner now renders end-to-end. All other flows work as specified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/projects/{id}", "issue": "SEO title tag duplicates the brand name — '<title>Bracket — The AI Decision Workspace for Client Projects — Bracket</title>'. Not a functional bug but wastes SERP characters."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Apply this change → revision banner (FIXED by testing agent)",
+        "issue": "Before fix: clicking crm-apply-change-{i} navigated to /project/{id}/flow?step=N correctly, and the backend set revising=true + revision_context in mongo, BUT the ProjectOut response model (backend/models.py) did not declare revising / revision_context, so Pydantic stripped them (extra='ignore'). The frontend guard `project?.revising && project?.revision_context?.instruction` was always false → revision-banner never rendered. Fix applied: added both optional fields to ProjectOut. Verified revision-banner now appears with 'CLIENT-REQUESTED CHANGE · STEP 3' + full instruction text.",
+        "affected_selectors": ["[data-testid='revision-banner']"]
+      }
+    ],
+    "design_issues": []
+  },
+  "verified_features": [
+    {"feature": "POST /api/projects/{id}/review/apply-suggestion", "status": "PASS", "detail": "Returns {step, instruction}, sets status='in_progress', step=mapped, revising=true, revision_context populated. Requires owner session; unauthenticated returns 401/403. Out-of-range index returns 404."},
+    {"feature": "POST /api/projects/{id}/reply", "status": "PASS", "detail": "Appends to owner_replies, sets share_status='awaiting_reply'. Rejects text<4 chars with 422. Rejects when share_status != 'rejected' with 400."},
+    {"feature": "revising bypass on _assert_not_shared", "status": "PASS", "detail": "Rejected project (revising=false) → /unlock returns 409. After apply-suggestion (revising=true) → /unlock returns 200. Subsequent /lock sets revising=false, revision_context=null, share_status='sent', status='locked'."},
+    {"feature": "Frontend ClientReviewModal.applyChange", "status": "PASS", "detail": "Clicking crm-apply-change-0 toasts 'Change loaded into Step 3', navigates to /project/{id}/flow?step=3. Button styled solid blue (bg #5E6AD2, white text) as spec requires."},
+    {"feature": "Frontend ClientReviewModal.keepAsIsRespond", "status": "PASS", "detail": "Clicking crm-keep-as-is-0 loads the suggestion draft into crm-reply-text ('We can add two weeks to production, no scope change.'). Send reply succeeds; modal switches to crm-awaiting-state and hides the composer."},
+    {"feature": "Revision banner on /project/{id}/flow", "status": "PASS (after ProjectOut fix)", "detail": "data-testid='revision-banner' renders with 'CLIENT-REQUESTED CHANGE · STEP 3' + full instruction, sitting above the milestone tracker."},
+    {"feature": "Dashboard drag&drop dropzone", "status": "PASS", "detail": "data-testid='dashboard-dropzone' present. Dispatching real DragEvent with DataTransfer triggers overlay data-testid='dashboard-drop-overlay' with text 'Drop your brief — PDF, TXT, PNG or JPEG'. Old '⌘↵ to structure' hint is gone; replaced by 'or drag & drop a file here'."},
+    {"feature": "POST /api/projects/upload-brief", "status": "PASS", "detail": "Uploading a .txt file returns 200 with a project id / job id — auto-advance polling not blocked."},
+    {"feature": "/r/{token} Accept-all CTA styling", "status": "PASS", "detail": "review-accept-cta opens sign-off; review-toggle-all is solid blue (rgb(94,106,210)) with white text and label 'Accept all' before click. Click checks all 21 items and swaps to transparent ghost 'Uncheck all'."},
+    {"feature": "Landing regression at 1920 + 1280", "status": "PASS", "detail": "No horizontal overflow. Copy contains 'PROFESSIONALS ON BRACKET' metric and 'AI decision workspace for client projects'. Title = 'Bracket — The AI Decision Workspace for Client Projects — Bracket' (brand duplicated — minor)."},
+    {"feature": "Subpages regression", "status": "PASS", "detail": "/pricing, /faq, /use-cases, /case-studies, /how-it-works all return 200 and render header nav."},
+    {"feature": "Auth (password login + OTP dev_code + admin login)", "status": "PASS", "detail": "Existing tests + demo_session fixture confirm password login works."},
+    {"feature": "Public share endpoint /api/share/{token}", "status": "PASS", "detail": "Returns 200 with expected fields for a shared project."}
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_32_review_actions.py",
+    "/app/test_reports/pytest/iteration_32.xml"
+  ],
+  "action_items": [
+    "REVIEW the ProjectOut model fix — I added `revising: Optional[bool]` and `revision_context: Optional[Dict[str, Any]]` to /app/backend/models.py. This is the minimum needed to make the revision-banner render. If you want richer typing (e.g. RevisionContext BaseModel) you can extend it.",
+    "LOW polish: <title> duplicates ' — Bracket' ('Bracket — … — Bracket'). Trim the trailing suffix in the SEO helper.",
+    "OPTIONAL: consider showing the revision instruction inline on each step card (currently only banner at top of flow page) — helps if the user scrolls past the banner."
+  ],
+  "critical_code_review_comments": [
+    "backend/models.py ProjectOut had extra='ignore' plus a stale field list — any new project state added on the mutation side (like revising, revision_context) will silently disappear from API responses. Suggest adding an integration test that GET /projects/{id} returns every top-level key present in the mongo doc, OR switch to `extra='allow'` for ProjectOut so future flags leak through automatically.",
+    "backend/server.py step_lock (line 2012) does NOT verify ownership — it uses _get_project_or_404 not _get_owned_project_or_404. That's inconsistent with unlock/reset-from-step which both call _get_owned_project_or_404. Any authenticated user could /lock another user's project if they guess the id (though currently the frontend gates it). Consider tightening to owner-only.",
+    "ClientReviewModal applyChange (line 62): success toast fires and navigation happens even when the backend call throws AFTER the mutation succeeds — race here is fine but worth adding a loading skeleton on the destination flow page so the user doesn't see the pre-revision state momentarily."
+  ],
+  "updated_files": [
+    "/app/backend/models.py (added revising + revision_context to ProjectOut)",
+    "/app/backend/tests/test_iteration_32_review_actions.py (new test file, 12 tests)"
+  ],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "100% for tested flows after ProjectOut fix"},
+  "test_credentials": "Demo: demo@use-bracket.com / BracketDemo@2026 (password toggle on /login). Admin: support@use-bracket.com / Bracket@123. Both verified via curl + UI.",
+  "seed_data_creation": "Seeded three test projects in mongo (UITESTREV-*, UITESTREV2-*, UITESTSHR-*, plus TESTREV-* inside pytest fixture) copied from the Ceramic Vase demo project with canned share_review.ai_suggestions. All test seed docs deleted after the UI run — mongo state clean. Pytest fixture uses per-test setup/teardown so nothing lingers.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 32 fixed the critical ProjectOut model omission. If any future iteration adds more project-level flags (e.g. `frozen_reason`, `client_note`), they MUST be declared on ProjectOut or they'll silently disappear from all GET /projects responses. Also: iteration 31's LOW items are still open (Dashboard tag semantics for 'sent' vs 'awaiting_reply', PageLoader ~4.3s duration vs 3s target, /api/auth/me 401 noise for anonymous visitors, missing data-testids on landing showcase arrows + bento cards). Not blocking but worth revisiting.",
+  "rca_of_the_issue": "Root cause: /app/backend/models.py ProjectOut is a strict Pydantic schema with extra='ignore'. The two new fields added on the mutation side by apply_review_suggestion (revising: bool, revision_context: dict) were never added to ProjectOut. Consequence: every GET /projects/{id} response returned by _get_project_or_404 → response_model=ProjectOut had those keys stripped. Frontend guard `project?.revising && project?.revision_context?.instruction` therefore always evaluated to false → the [data-testid='revision-banner'] JSX branch never entered the DOM. Fix: added `revising: Optional[bool] = None` and `revision_context: Optional[Dict[str, Any]] = None` to ProjectOut. Verified via curl and Playwright that GET /api/projects/{revisingId} now returns both fields and the banner renders."
+}

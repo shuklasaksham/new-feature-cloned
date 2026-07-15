@@ -83,10 +83,10 @@ export const USE_CASES = [
     example: "\"Can you just add one more revision?\" → Bracket gives you the exact boundary and the exact words.",
   },
   {
-    who: "Independent Designers",
+    who: "Consultants & Solo Experts",
     pain: "Subjective feedback, vague briefs, decisions that come back to haunt you",
     win: "Decisions you can defend, in writing, with a stance",
-    example: "You stop debating taste. You start defending choices. Stakeholders feel the shift in week one.",
+    example: "You stop debating opinions. You start defending choices. Clients feel the shift in week one.",
   },
   {
     who: "Indie Creatives (writers, photo, video, illustration, dev)",
@@ -98,10 +98,10 @@ export const USE_CASES = [
     who: "Small Agencies & Studios",
     pain: "Junior team-mates making inconsistent calls",
     win: "Shared decision systems, consistent output",
-    example: "Every freelancer on every project reasons the same way. Not the same taste — the same rigour.",
+    example: "Everyone on every project reasons the same way. Not the same taste — the same rigour.",
   },
   {
-    who: "In-house Product Designers",
+    who: "In-house Teams",
     pain: "PM pressure, unclear asks, shifting priorities",
     win: "Structured thinking that survives stakeholders",
     example: "You bring a decision, not a draft. The conversation changes.",
@@ -176,8 +176,8 @@ export const PRICING = {
     {
       id: "pro",
       name: "PRO",
-      tagline: "For freelancers and agencies doing client work.",
-      bestFor: "Best for freelancers & agencies",
+      tagline: "For anyone doing client work — solo or with a team.",
+      bestFor: "Best for client-facing pros & agencies",
       badge: "POPULAR",
       features: [
         "Unlimited projects",

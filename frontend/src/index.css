@@ -1155,13 +1155,12 @@ body::before {
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
 }
-.marquee-track:hover { animation-play-state: paused; }
 @keyframes marquee { from { transform: translate3d(0,0,0); } to { transform: translate3d(-50%,0,0); } }
 @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
 /* Testimonial carousel — infinite scroll rail. Content is duplicated in JSX
    so translating by -50% lands on the identical second copy and loops
-   seamlessly. Pauses on hover so users can read a specific card. */
+   seamlessly. Runs continuously — no hover pause. */
 .testimonial-track {
   display: flex;
   gap: 20px;
@@ -1169,7 +1168,6 @@ body::before {
   animation: testimonial-loop 60s linear infinite;
   will-change: transform;
 }
-.testimonial-track:hover { animation-play-state: paused; }
 @keyframes testimonial-loop {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }

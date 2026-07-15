@@ -380,7 +380,7 @@ function HeroMetrics() {
       {[
         { n: m.projects_created_total || 128, label: "briefs turned into projects" },
         { n: m.decisions_locked_total || 47, label: "decisions locked" },
-        { n: m.users_total || 92, label: "designers on Bracket" },
+        { n: m.users_total || 92, label: "professionals on Bracket" },
       ].map((it, i) => (
         <div key={i} className="flex items-baseline gap-2">
           <CountUp to={it.n} className="font-display text-3xl md:text-4xl text-[var(--text)] tabular-nums" />
@@ -1147,7 +1147,7 @@ const STORY = [
     year: "Aug 2025",
     title: "Bracket started at 3am.",
     body:
-      "A freelancer receives a messy client brief. Hours disappear trying to understand the scope, price the work, and write the perfect response. We built Bracket to compress that entire process into minutes.",
+      "A messy client brief lands in your inbox. Hours disappear trying to understand the scope, price the work, and write the perfect response. We built Bracket to compress that entire process into minutes — for anyone who works with clients.",
     accent: "#5E6AD2",
   },
   {
@@ -1155,7 +1155,7 @@ const STORY = [
     year: "Oct → Dec 2025",
     title: "We tried to be another writing tool.",
     body:
-      "Version one generated better documents. The problem wasn't writing — it was deciding. We rebuilt Bracket around one question: \u201CWhat would an experienced product designer do next?\u201D",
+      "Version one generated better documents. The problem wasn't writing — it was deciding. We rebuilt Bracket around one question: \u201CWhat would the most experienced person in the room do next?\u201D",
     accent: "#FF6B6B",
   },
   {
@@ -1298,7 +1298,7 @@ function Testimonials() {
           center
         />
       </div>
-      {/* Marquee row — full-bleed, hover pauses. */}
+      {/* Marquee row — full-bleed, continuous. */}
       <div className="mt-14 md:mt-20 overflow-hidden" data-testid="testimonials-track-wrap">
         <div className="testimonial-track">
           {track.map((t, i) => (
@@ -1638,8 +1638,8 @@ export default function Landing() {
   return (
     <>
       <Seo
-        title="Bracket — Paste the mess. Ship the decision."
-        description="Bracket is the decision OS for freelance designers. Turn messy client conversations into scoped, decisioned, client-ready projects in under a minute."
+        title="Bracket — The AI Decision Workspace for Client Projects"
+        description="Bracket is the AI decision workspace and decision OS for client projects. Turn messy client conversations into scoped, decisioned, client-ready projects in under a minute."
         path="/"
       />
       {/* Single seamless page background — soft, near-black vertical gradient

@@ -12,12 +12,16 @@ export default function Seo({
   path = "",
   noindex = false,
 }) {
-  const fullTitle = title ? `${title} — Bracket` : "Bracket — Decisions for creative pros";
+  const fullTitle = title ? `${title} — Bracket` : "Bracket — The AI Decision Workspace for Client Projects";
   const canonical = `https://use-bracket.com${path}`;
   return (
     <Helmet>
       <title>{fullTitle}</title>
       {description && <meta name="description" content={description} />}
+      <meta
+        name="keywords"
+        content="bracket, bracket app, AI decision workspace, client OS, decision OS, decision engine, AI operating system, client projects, project scoping AI, client decision system"
+      />
       {noindex ? (
         <meta name="robots" content="noindex, nofollow" />
       ) : (
@@ -28,6 +32,8 @@ export default function Seo({
       {description && <meta property="og:description" content={description} />}
       <meta property="og:url" content={canonical} />
       <meta property="og:type" content="website" />
+      <meta property="og:site_name" content="Bracket" />
+      <meta property="og:image" content="https://use-bracket.com/logo512.png" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       {description && <meta name="twitter:description" content={description} />}

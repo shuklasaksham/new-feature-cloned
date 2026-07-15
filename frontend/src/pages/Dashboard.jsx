@@ -148,6 +148,7 @@ export default function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [paste, setPaste] = useState("");
+  const [dragOver, setDragOver] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -452,7 +453,29 @@ export default function Dashboard() {
 
         {/* ─── Composer — always the primary path. Big paste target. ──── */}
         <motion.section variants={item} data-testid="dashboard-composer-section">
-          <div className="dashboard-paste-panel liquid-glass relative overflow-hidden">
+          <div
+            className="dashboard-paste-panel liquid-glass relative overflow-hidden"
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const f = e.dataTransfer.files?.[0];
+              if (f) handleFileUpload(f);
+            }}
+            data-testid="dashboard-dropzone"
+          >
+            {dragOver && (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] border-2 border-dashed pointer-events-none"
+                style={{ borderColor: "#5E6AD2", background: "rgba(94,106,210,0.10)", backdropFilter: "blur(2px)" }}
+                data-testid="dashboard-drop-overlay"
+              >
+                <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text)]">
+                  <Paperclip size={14} /> Drop your brief — PDF, TXT, PNG or JPEG
+                </p>
+              </div>
+            )}
             <div
               aria-hidden="true"
               className="absolute -top-20 -right-20 h-[220px] w-[220px] rounded-full blur-[80px] opacity-[0.08] pointer-events-none"
@@ -484,7 +507,7 @@ export default function Dashboard() {
                   </span>
                 )}
                 <span className="hidden md:inline text-[var(--text-3)]">
-                  <kbd className="mono-tag px-1.5 py-0.5 rounded border border-[var(--hairline)]">⌘↵</kbd> to structure
+                  or drag &amp; drop a file here
                 </span>
               </div>
               <div className="flex items-center gap-2">

@@ -19,7 +19,7 @@ export default function CaseStudies() {
     <div data-testid="case-studies-page" className="page-enter">
       <Seo
         title="Case studies"
-        description="Real projects, real scopes, real client messages. See exactly how Bracket helped freelancers turn a vague brief into a locked-in decision."
+        description="Real projects, real scopes, real client messages. See exactly how Bracket helped people who work with clients turn a vague brief into a locked-in decision."
         path="/case-studies"
       />
 
