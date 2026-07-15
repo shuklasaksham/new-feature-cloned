@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#08090A" />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="32x32" href="/logo-diamond.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/logo-diamond.png" />
@@ -26,6 +26,9 @@
         -->
         <title>Bracket — Decisions for creative pros</title>
         <style>#emergent-badge{display:none!important;visibility:hidden!important;}</style>
+        <!-- Critical inline style: paints the site background before the JS
+             bundle loads, so no white flash appears on hard reloads. -->
+        <style>html,body,#root{background:#08090A;min-height:100%;}</style>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
         <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script>
     </head>
