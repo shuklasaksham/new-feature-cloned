@@ -3393,71 +3393,107 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   pointer-events: none;
 }
 
-/* Soft signal-blue halo behind the mark. */
-.page-loader-halo {
-  position: absolute;
-  width: 620px; height: 620px;
-  background: radial-gradient(closest-side,
-    rgba(94, 106, 210, 0.20) 0%,
-    rgba(94, 106, 210, 0.05) 40%,
-    rgba(94, 106, 210, 0) 70%);
-  filter: blur(24px);
-  opacity: 0;
-  animation: pageLoaderHalo 1.6s cubic-bezier(.16,1,.3,1) 200ms forwards;
-  z-index: -1;
-}
-@keyframes pageLoaderHalo {
-  0%   { opacity: 0; transform: scale(0.9); }
-  50%  { opacity: 1; transform: scale(1.05); }
-  100% { opacity: 0.85; transform: scale(1); }
-}
+/* Bracket loading mark — brackets focus inward, diamond core spins/breathes,
+   an edge trace orbits and a light band sweeps through the mark. */
+.page-loader { --plx-dur: 1.8s; --plx-ease: cubic-bezier(0.45, 0, 0.55, 1); }
 
-.page-loader-mark {
+.plx-stage {
   position: relative;
-  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  display: grid;
+  place-items: center;
 }
-
-.page-loader-diamond {
+.plx-stage::before {
+  content: "";
+  position: absolute;
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(33, 70, 249, 0.10) 0%, rgba(33, 70, 249, 0) 62%);
+  animation: plxAmbience var(--plx-dur) var(--plx-ease) infinite;
+  pointer-events: none;
+}
+.plx-mark {
+  width: min(60px, 56vw);
+  height: auto;
+  overflow: visible;
   display: block;
-  filter: drop-shadow(0 0 24px rgba(94, 106, 210, 0.55));
-  animation: pageLoaderDiamondIn 720ms cubic-bezier(.16, 1, .3, 1),
-             pageLoaderDiamondFloat 2.4s cubic-bezier(.4, 0, .6, 1) 720ms infinite alternate;
 }
 
-@keyframes pageLoaderDiamondIn {
-  from { opacity: 0; transform: scale(0.85) rotate(-8deg); }
-  to   { opacity: 1; transform: scale(1) rotate(0); }
+.plx-bracket-left,
+.plx-bracket-right {
+  fill: #EDF1FF;
+  animation-duration: var(--plx-dur);
+  animation-timing-function: var(--plx-ease);
+  animation-iteration-count: infinite;
 }
-@keyframes pageLoaderDiamondFloat {
-  from { transform: translateY(-2px) scale(1); }
-  to   { transform: translateY(2px) scale(1.03); }
+.plx-bracket-left  { animation-name: plxFocusLeft; }
+.plx-bracket-right { animation-name: plxFocusRight; }
+@keyframes plxFocusLeft {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(4.5px); }
+}
+@keyframes plxFocusRight {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(-4.5px); }
 }
 
-/* Signal-blue underline that grows from centre after the braces land. */
-.page-loader-underline {
-  display: block;
-  width: 60px; height: 2px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(94, 106, 210, 0.9) 50%,
-    transparent 100%);
-  border-radius: 999px;
-  transform: scaleX(0);
-  transform-origin: center;
-  animation: pageLoaderUnderline 620ms cubic-bezier(.16, 1, .3, 1) 1000ms forwards;
-  filter: drop-shadow(0 0 8px rgba(94, 106, 210, 0.6));
+.plx-core-rot {
+  animation: plxCoreSpin var(--plx-dur) var(--plx-ease) infinite;
+  transform-origin: 191.94px 99.47px;
 }
-@keyframes pageLoaderUnderline {
-  from { transform: scaleX(0);   opacity: 0; }
-  to   { transform: scaleX(1);   opacity: 1; }
+@keyframes plxCoreSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.plx-core {
+  fill: #2146F9;
+  animation: plxCoreBreathe var(--plx-dur) var(--plx-ease) infinite;
+  transform-origin: 191.94px 99.47px;
+}
+.plx-core-halo {
+  fill: #3D5DFF;
+  filter: url(#plx-soften);
+  opacity: 0.28;
+  animation: plxHaloPulse var(--plx-dur) var(--plx-ease) infinite;
+  transform-origin: 191.7px 99.3px;
+}
+@keyframes plxCoreBreathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.045); }
+}
+@keyframes plxHaloPulse {
+  0%, 100% { opacity: 0.22; transform: scale(1); }
+  50%      { opacity: 0.70; transform: scale(1.10); }
+}
+@keyframes plxAmbience {
+  0%, 100% { opacity: 0.55; transform: scale(0.96); }
+  50%      { opacity: 1;    transform: scale(1); }
+}
+
+.plx-sweep { animation: plxSweepTravel var(--plx-dur) var(--plx-ease) infinite; }
+@keyframes plxSweepTravel {
+  0%   { transform: translateX(-320px); }
+  100% { transform: translateX(560px); }
+}
+
+.plx-trace {
+  fill: none;
+  stroke: rgba(160, 180, 255, 0.85);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  stroke-dasharray: 96 288; /* perimeter ≈ 384 */
+  animation: plxTraceRun var(--plx-dur) linear infinite;
+  opacity: 0.9;
+}
+@keyframes plxTraceRun {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -384; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page-loader-diamond,
-  .page-loader-underline,
-  .page-loader-halo {
+  .plx-bracket-left, .plx-bracket-right, .plx-core, .plx-core-halo,
+  .plx-core-rot, .plx-sweep, .plx-trace, .plx-stage::before {
     animation: none;
-    transform: none;
-    opacity: 1;
   }
+  .plx-trace { display: none; }
+  .plx-core-halo { opacity: 0.35; }
 }
