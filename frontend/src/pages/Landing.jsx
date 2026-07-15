@@ -819,255 +819,287 @@ function BentoCard({ tile }) {
   );
 }
 
-// Ghost interface fragments — real Bracket product screenshots layered
-// inside each bento card. Dark-tinted + masked so they read as atmosphere
-// rather than screenshots, matching the calm/minimal card aesthetic.
+// Conceptual feature visualizations — premium diagram language shared across
+// all cards: thin strokes, soft gradients, faint dot grids, gentle motion.
+// No product screenshots.
 function BentoGhost({ variant }) {
-  // Cards showing an actual product view use a real screenshot; the more
-  // abstract concepts (risks, decision-tree, message) stay as tight SVGs.
-  const shot = {
-    cards: "/bento/dashboard.jpg",       // DASHBOARD
-    checklist: "/bento/overview.jpg",    // SCOPE — 5-milestone board
-    timeline: "/bento/flow.jpg",         // SPEED — the actual 5-step flow
-    signed: "/bento/document.jpg",       // LOCK — locked sign-off view
+  const Comp = {
+    cards: GhostFlow,
+    checklist: GhostScope,
+    risk: GhostRisk,
+    tree: GhostTree,
+    bubbles: GhostMessage,
+    timeline: GhostTimeline,
+    signed: GhostSigned,
   }[variant];
   return (
-    <div className="bento-ghost" aria-hidden="true">
-      {shot ? (
-        <img
-          src={shot}
-          alt=""
-          loading="lazy"
-          className={`bento-ghost-shot bento-ghost--${variant}`}
-        />
-      ) : (
-        <>
-          {variant === "risk" && <GhostRisk />}
-          {variant === "tree" && <GhostTree />}
-          {variant === "bubbles" && <GhostBubbles />}
-        </>
-      )}
+    <div className={`bento-ghost bento-ghost-wrap--${variant}`} aria-hidden="true">
+      {Comp && <Comp />}
     </div>
   );
 }
 
-// DASHBOARD (large tile) — mimics the actual Bracket project dashboard:
-// a project card with title, status pill + a mono-tag "STEP 4 / 5" row.
-// Uses signal-blue accents exactly as in the real /app view.
-function GhostCards() {
-  return (
-    <svg viewBox="0 0 260 180" className="bento-ghost-svg bento-ghost--cards">
-      <defs>
-        <linearGradient id="ghostCardGradA" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="rgba(94,106,210,0.28)" />
-          <stop offset="100%" stopColor="rgba(94,106,210,0.02)" />
-        </linearGradient>
-      </defs>
+const MONO = "ui-monospace,monospace";
 
-      {/* back card (project draft) */}
-      <g className="bento-ghost-cards-g2" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1">
-        <rect x="88" y="10" width="160" height="70" rx="10" fill="rgba(255,255,255,0.02)" />
-        <rect x="100" y="24" width="8" height="8" rx="2" fill="rgba(255,255,255,0.10)" stroke="none" />
-        <line x1="114" y1="28" x2="180" y2="28" stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
-        <line x1="100" y1="46" x2="220" y2="46" stroke="rgba(255,255,255,0.06)" />
-        <line x1="100" y1="58" x2="196" y2="58" stroke="rgba(255,255,255,0.06)" />
-        <rect x="100" y="66" width="24" height="6" rx="3" fill="rgba(94,106,210,0.15)" stroke="none" />
+// Shared defs used by every illustration (unique ids per svg via prefix).
+function GhostDefs({ id }) {
+  return (
+    <defs>
+      <linearGradient id={`${id}-panel`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="rgba(94,106,210,0.14)" />
+        <stop offset="100%" stopColor="rgba(94,106,210,0.02)" />
+      </linearGradient>
+      <radialGradient id={`${id}-glow`} cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0%" stopColor="rgba(94,106,210,0.45)" />
+        <stop offset="100%" stopColor="rgba(94,106,210,0)" />
+      </radialGradient>
+      <pattern id={`${id}-dots`} width="22" height="22" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.055)" />
+      </pattern>
+    </defs>
+  );
+}
+
+// DASHBOARD (large tile) — "mess in → structure out": chat scraps flow
+// through a glowing Bracket node into a structured workspace panel.
+function GhostFlow() {
+  return (
+    <svg viewBox="0 0 460 280" className="bento-ghost-svg bento-ghost--cards">
+      <GhostDefs id="gf" />
+      <rect x="0" y="0" width="460" height="280" fill="url(#gf-dots)" />
+
+      {/* messy input scraps */}
+      <g fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.12)" strokeWidth="1">
+        <g transform="rotate(-4 60 66)">
+          <rect x="14" y="42" width="96" height="42" rx="9" />
+          <path d="M26 56 q8 -6 16 0 t18 -2 t22 3" stroke="rgba(255,255,255,0.18)" fill="none" />
+          <path d="M26 70 q10 4 20 0 t24 2" stroke="rgba(255,255,255,0.10)" fill="none" />
+        </g>
+        <g transform="rotate(3 62 140)">
+          <rect x="18" y="118" width="84" height="38" rx="9" />
+          <path d="M30 132 q9 -5 18 1 t20 -3" stroke="rgba(255,255,255,0.16)" fill="none" />
+          <path d="M30 144 q12 5 26 0" stroke="rgba(255,255,255,0.09)" fill="none" />
+        </g>
+        <g transform="rotate(-2 58 208)">
+          <rect x="12" y="188" width="100" height="36" rx="9" />
+          <path d="M24 202 q10 -6 22 0 t26 -2" stroke="rgba(255,255,255,0.15)" fill="none" />
+          <path d="M24 213 q8 4 18 1 t22 1" stroke="rgba(255,255,255,0.09)" fill="none" />
+        </g>
       </g>
 
-      {/* main "active" project card — sits above with heavier presence */}
-      <g className="bento-ghost-cards-g" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1">
-        <rect x="10" y="50" width="170" height="90" rx="10" fill="url(#ghostCardGradA)" />
-        <rect x="10" y="50" width="170" height="90" rx="10" />
-        {/* mono-tag row: "PROJECT · SIGNED" */}
-        <rect x="22" y="62" width="8" height="8" rx="2" fill="rgba(94,106,210,0.55)" stroke="none" />
-        <text x="36" y="70" fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.35)" letterSpacing="1">PROJECT · SIGNED</text>
-        {/* title */}
-        <line x1="22" y1="86"  x2="130" y2="86"  stroke="rgba(255,255,255,0.28)" strokeWidth="1.4" />
-        <line x1="22" y1="98"  x2="100" y2="98"  stroke="rgba(255,255,255,0.12)" />
-        {/* progress + step counter */}
-        <rect x="22" y="116" width="60" height="4" rx="2" fill="rgba(255,255,255,0.08)" stroke="none" />
-        <rect x="22" y="116" width="48" height="4" rx="2" fill="rgba(94,106,210,0.55)" stroke="none" />
-        <text x="88" y="120" fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.30)">4 / 5</text>
+      {/* converging flow lines */}
+      <g fill="none" stroke="rgba(94,106,210,0.42)" strokeWidth="1.1" className="bg-flowdash">
+        <path d="M112 62 C 160 70, 178 108, 200 130" />
+        <path d="M104 138 C 140 140, 168 140, 196 140" />
+        <path d="M114 206 C 160 200, 180 168, 200 150" />
+      </g>
+
+      {/* Bracket node — glow + ring + diamond core */}
+      <g transform="translate(222, 140)">
+        <circle r="44" fill="url(#gf-glow)" className="bg-pulse" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
+        <circle r="21" fill="rgba(8,9,10,0.6)" stroke="rgba(94,106,210,0.55)" strokeWidth="1.1" />
+        <circle r="27" fill="none" stroke="rgba(94,106,210,0.22)" strokeWidth="1" strokeDasharray="2.5 5" className="bg-slowspin" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
+        <rect x="-7" y="-7" width="14" height="14" rx="2.5" transform="rotate(45)" fill="rgba(94,106,210,0.85)" />
+      </g>
+
+      {/* node → workspace */}
+      <path d="M250 140 C 268 140, 272 140, 288 140" fill="none" stroke="rgba(94,106,210,0.5)" strokeWidth="1.2" className="bg-flowdash" />
+
+      {/* structured workspace panel */}
+      <g>
+        <rect x="292" y="46" width="156" height="188" rx="12" fill="url(#gf-panel)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+        <text x="306" y="68" fontSize="7.5" fontFamily={MONO} letterSpacing="1.5" fill="rgba(94,106,210,0.85)">WORKSPACE</text>
+        <line x1="306" y1="78" x2="434" y2="78" stroke="rgba(255,255,255,0.10)" />
+        {[92, 106, 120].map((y, i) => (
+          <g key={y}>
+            <circle cx="311" cy={y} r="2.2" fill="rgba(94,106,210,0.7)" />
+            <line x1="320" y1={y} x2={320 + [104, 84, 96][i]} y2={y} stroke={`rgba(255,255,255,${0.22 - i * 0.05})`} strokeWidth="1.2" />
+          </g>
+        ))}
+        {/* structured chips */}
+        <g fontFamily={MONO} fontSize="6.5" letterSpacing="1">
+          <rect x="306" y="138" width="52" height="16" rx="8" fill="rgba(94,106,210,0.16)" stroke="rgba(94,106,210,0.4)" strokeWidth="0.8" />
+          <text x="332" y="148.5" textAnchor="middle" fill="rgba(197,203,255,0.9)">SCOPE</text>
+          <rect x="364" y="138" width="52" height="16" rx="8" fill="rgba(239,68,68,0.10)" stroke="rgba(239,68,68,0.35)" strokeWidth="0.8" />
+          <text x="390" y="148.5" textAnchor="middle" fill="rgba(252,165,165,0.85)">RISKS</text>
+          <rect x="306" y="160" width="64" height="16" rx="8" fill="rgba(34,197,94,0.10)" stroke="rgba(34,197,94,0.32)" strokeWidth="0.8" />
+          <text x="338" y="170.5" textAnchor="middle" fill="rgba(134,239,172,0.85)">DECISION</text>
+        </g>
+        {/* progress */}
+        <rect x="306" y="192" width="128" height="4" rx="2" fill="rgba(255,255,255,0.07)" />
+        <rect x="306" y="192" width="96" height="4" rx="2" fill="rgba(94,106,210,0.65)" className="bg-progress" />
+        <text x="306" y="214" fontSize="6.5" fontFamily={MONO} fill="rgba(255,255,255,0.35)" letterSpacing="1">STEP 4 / 5</text>
       </g>
     </svg>
   );
 }
 
-// SCOPE — mirrors the sign-off checklist rows from the real ClientReview
-// page (circle bullet + line + subtle divider). First two rows checked.
-function GhostChecklist() {
+// SCOPE — structured document: deliverable checklist + week timeline strip.
+function GhostScope() {
   return (
-    <svg viewBox="0 0 200 140" className="bento-ghost-svg bento-ghost--checklist">
-      <g fill="none" strokeWidth="1.4">
-        {[
-          { checked: true,  w: 96 },
-          { checked: true,  w: 116 },
-          { checked: false, w: 80 },
-          { checked: false, w: 104 },
-        ].map((it, i) => (
-          <g key={i} transform={`translate(0, ${i * 28})`}>
-            <circle cx="14" cy="16" r="7"
-              fill={it.checked ? "rgba(94,106,210,0.35)" : "transparent"}
-              stroke={it.checked ? "rgba(94,106,210,0.65)" : "rgba(255,255,255,0.14)"} />
-            {it.checked && (
-              <path d="M10 16 l3 3 l6 -6"
-                stroke="rgba(255,255,255,0.9)" fill="none" strokeWidth="1.7"
-                strokeLinecap="round" strokeLinejoin="round" />
-            )}
-            <line x1="30" y1="16" x2={30 + it.w} y2="16"
-              stroke={it.checked ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.12)"} strokeWidth="1.2" />
-            {/* subtle divider row like the real client-review card */}
-            <line x1="30" y1="27" x2={30 + it.w - 20} y2="27" stroke="rgba(255,255,255,0.05)" />
-          </g>
+    <svg viewBox="0 0 220 172" className="bento-ghost-svg bento-ghost--checklist">
+      <GhostDefs id="gs" />
+      <rect x="0" y="0" width="220" height="172" fill="url(#gs-dots)" />
+      <rect x="16" y="8" width="188" height="150" rx="12" fill="url(#gs-panel)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      <text x="30" y="28" fontSize="7.5" fontFamily={MONO} letterSpacing="1.5" fill="rgba(94,106,210,0.85)">SCOPE · V1</text>
+      <line x1="30" y1="37" x2="190" y2="37" stroke="rgba(255,255,255,0.10)" />
+      {[
+        { y: 53, w: 108, on: true },
+        { y: 71, w: 88, on: true },
+        { y: 89, w: 118, on: false },
+      ].map((r, i) => (
+        <g key={i}>
+          <circle cx="37" cy={r.y} r="6" fill={r.on ? "rgba(94,106,210,0.32)" : "transparent"} stroke={r.on ? "rgba(94,106,210,0.7)" : "rgba(255,255,255,0.16)"} strokeWidth="1.1" />
+          {r.on && <path d={`M33.6 ${r.y} l2.4 2.4 l4.6 -4.8`} stroke="rgba(255,255,255,0.9)" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />}
+          <line x1="50" y1={r.y} x2={50 + r.w} y2={r.y} stroke={r.on ? "rgba(255,255,255,0.26)" : "rgba(255,255,255,0.12)"} strokeWidth="1.2" />
+        </g>
+      ))}
+      {/* timeline strip */}
+      <text x="30" y="118" fontSize="6.5" fontFamily={MONO} letterSpacing="1.2" fill="rgba(255,255,255,0.35)">TIMELINE</text>
+      <g>
+        <rect x="30" y="126" width="160" height="6" rx="3" fill="rgba(255,255,255,0.06)" />
+        <rect x="30" y="126" width="64" height="6" rx="3" fill="rgba(94,106,210,0.55)" />
+        <rect x="98" y="126" width="52" height="6" rx="3" fill="rgba(94,106,210,0.28)" />
+        {["W1", "W2", "W3"].map((w, i) => (
+          <text key={w} x={34 + i * 66} y="146" fontSize="6" fontFamily={MONO} fill="rgba(255,255,255,0.30)">{w}</text>
         ))}
       </g>
     </svg>
   );
 }
 
-// RISKS — warning triangle + LIVE red badge + tiny "issues" list ticker.
+// RISKS — document lines with one highlighted risk + scanning beam.
 function GhostRisk() {
   return (
-    <svg viewBox="0 0 200 140" className="bento-ghost-svg bento-ghost--risk">
-      <g transform="translate(70, 42)">
-        <path d="M0 -22 L22 18 L-22 18 Z"
-          fill="rgba(208,38,32,0.10)" stroke="rgba(208,38,32,0.42)" strokeWidth="1.5"
-          strokeLinejoin="round" />
-        <line x1="0" y1="-6" x2="0" y2="8" stroke="rgba(208,38,32,0.65)" strokeWidth="1.8" strokeLinecap="round" />
-        <circle cx="0" cy="13" r="1.4" fill="rgba(208,38,32,0.8)" />
+    <svg viewBox="0 0 220 172" className="bento-ghost-svg bento-ghost--risk">
+      <GhostDefs id="gr" />
+      <rect x="0" y="0" width="220" height="172" fill="url(#gr-dots)" />
+      <rect x="16" y="8" width="188" height="150" rx="12" fill="rgba(255,255,255,0.015)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      {/* risk count chip */}
+      <rect x="138" y="18" width="54" height="16" rx="8" fill="rgba(239,68,68,0.12)" stroke="rgba(239,68,68,0.4)" strokeWidth="0.8" />
+      <circle cx="149" cy="26" r="2.4" fill="rgba(239,68,68,0.9)" className="bg-pulse" style={{ transformOrigin: "149px 26px" }} />
+      <text x="157" y="29" fontSize="6.5" fontFamily={MONO} letterSpacing="1" fill="rgba(252,165,165,0.9)">3 RISKS</text>
+      {/* body rows */}
+      <g stroke="rgba(255,255,255,0.14)" strokeWidth="1.2">
+        <line x1="30" y1="52" x2="150" y2="52" />
+        <line x1="30" y1="68" x2="126" y2="68" strokeOpacity="0.6" />
+        <line x1="30" y1="116" x2="140" y2="116" strokeOpacity="0.6" />
+        <line x1="30" y1="132" x2="112" y2="132" strokeOpacity="0.45" />
       </g>
-      {/* notification badge with count 3 */}
-      <g>
-        <circle cx="150" cy="20" r="12" fill="rgba(208,38,32,0.22)" className="bento-ghost-pulse" />
-        <circle cx="150" cy="20" r="8"  fill="rgba(208,38,32,0.85)" />
-        <text x="150" y="23.5" textAnchor="middle" fontSize="9" fontWeight="700" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.98)">3</text>
-      </g>
-      {/* tiny risk-list rows */}
-      <g transform="translate(112, 78)">
-        <line x1="0" y1="0"  x2="70" y2="0"  stroke="rgba(255,255,255,0.14)" />
-        <line x1="0" y1="10" x2="52" y2="10" stroke="rgba(255,255,255,0.08)" />
-        <line x1="0" y1="20" x2="62" y2="20" stroke="rgba(255,255,255,0.08)" />
-        {/* red bullet on the first */}
-        <circle cx="-6" cy="0" r="2.2" fill="rgba(208,38,32,0.7)" />
-      </g>
+      {/* highlighted risk row */}
+      <rect x="24" y="80" width="172" height="22" rx="6" fill="rgba(239,68,68,0.10)" stroke="rgba(239,68,68,0.35)" strokeWidth="1" />
+      <line x1="34" y1="91" x2="146" y2="91" stroke="rgba(255,255,255,0.32)" strokeWidth="1.2" />
+      <path d="M34 98 q4 3 8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0" stroke="rgba(239,68,68,0.6)" strokeWidth="1" fill="none" />
+      <text x="168" y="94" fontSize="6" fontFamily={MONO} fill="rgba(252,165,165,0.85)" letterSpacing="0.5">RISK</text>
+      {/* scanning beam */}
+      <rect x="24" y="44" width="172" height="14" rx="4" fill="rgba(94,106,210,0.10)" className="bg-scan" />
     </svg>
   );
 }
 
-// DECISION (tall tile) — matches Bracket's decision engine card: a branching
-// tree with a selected recommendation + confidence bar readout.
+// DECISION (tall) — branching paths: one option chosen with confidence + evidence.
 function GhostTree() {
   return (
-    <svg viewBox="0 0 200 300" className="bento-ghost-svg bento-ghost--tree" preserveAspectRatio="xMidYMid meet">
-      <g fill="none" stroke="rgba(255,255,255,0.16)" strokeWidth="1.2">
-        {/* trunk */}
-        <line x1="100" y1="30" x2="100" y2="88" />
-        {/* branches */}
-        <path d="M100 88 Q 100 122 54 132 L 42 156" />
-        <path d="M100 88 Q 100 122 146 132 L 158 156" />
-        {/* sub-branches */}
-        <path d="M42 156 L 24 184" strokeDasharray="3 3" />
-        <path d="M42 156 L 60 184" strokeDasharray="3 3" />
-        <path d="M158 156 L 176 184" />
+    <svg viewBox="0 0 220 400" className="bento-ghost-svg bento-ghost--tree" preserveAspectRatio="xMidYMid meet">
+      <GhostDefs id="gt" />
+      <rect x="0" y="0" width="220" height="400" fill="url(#gt-dots)" />
+      {/* brief chip */}
+      <rect x="76" y="22" width="68" height="20" rx="10" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
+      <text x="110" y="35" fontSize="7" fontFamily={MONO} letterSpacing="1.5" fill="rgba(255,255,255,0.5)" textAnchor="middle">BRIEF</text>
+      {/* trunk + branches */}
+      <line x1="110" y1="42" x2="110" y2="88" stroke="rgba(255,255,255,0.16)" strokeWidth="1.1" />
+      <path d="M110 88 C 110 118, 58 122, 58 152" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.1" strokeDasharray="3 4" />
+      <path d="M110 88 C 110 118, 162 122, 162 152" fill="none" stroke="rgba(94,106,210,0.65)" strokeWidth="1.4" className="bg-draw" />
+      {/* option A — dimmed */}
+      <g opacity="0.55">
+        <rect x="22" y="152" width="72" height="46" rx="9" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.13)" strokeWidth="1" />
+        <text x="32" y="167" fontSize="6.5" fontFamily={MONO} letterSpacing="1" fill="rgba(255,255,255,0.4)">PATH A</text>
+        <line x1="32" y1="177" x2="82" y2="177" stroke="rgba(255,255,255,0.14)" />
+        <line x1="32" y1="186" x2="68" y2="186" stroke="rgba(255,255,255,0.09)" />
       </g>
-      {/* nodes with labels */}
+      {/* option B — chosen */}
       <g>
-        <circle cx="100" cy="30"  r="7" fill="rgba(94,106,210,0.30)" stroke="rgba(94,106,210,0.7)" strokeWidth="1.2" />
-        <text x="100" y="18"  fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.4)" textAnchor="middle">DECIDE</text>
-        <circle cx="42"  cy="156" r="5" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.20)" strokeWidth="1.2" />
-        <circle cx="158" cy="156" r="6" fill="rgba(94,106,210,0.5)" stroke="rgba(94,106,210,0.85)" strokeWidth="1.2" />
-        <circle cx="24"  cy="184" r="3" fill="rgba(255,255,255,0.10)" />
-        <circle cx="60"  cy="184" r="3" fill="rgba(255,255,255,0.10)" />
-        <circle cx="176" cy="184" r="3.5" fill="rgba(94,106,210,0.7)" />
+        <rect x="126" y="148" width="76" height="54" rx="9" fill="url(#gt-panel)" stroke="rgba(94,106,210,0.55)" strokeWidth="1.1" />
+        <text x="136" y="163" fontSize="6.5" fontFamily={MONO} letterSpacing="1" fill="rgba(197,203,255,0.95)">PATH B ✓</text>
+        <line x1="136" y1="173" x2="192" y2="173" stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" />
+        <line x1="136" y1="182" x2="176" y2="182" stroke="rgba(255,255,255,0.13)" />
+        <text x="136" y="196" fontSize="5.8" fontFamily={MONO} fill="rgba(255,255,255,0.35)">RECOMMENDED</text>
       </g>
-      {/* selected recommendation card */}
-      <g transform="translate(120, 210)" opacity="0.85">
-        <rect x="0" y="0" width="70" height="52" rx="6"
-          fill="rgba(94,106,210,0.08)" stroke="rgba(94,106,210,0.35)" strokeWidth="1" />
-        {/* label */}
-        <text x="8" y="13" fontSize="6.5" fontFamily="ui-monospace,monospace" fill="rgba(94,106,210,0.75)" letterSpacing="1">CHOOSE</text>
-        {/* two lines */}
-        <line x1="8"  y1="22" x2="60" y2="22" stroke="rgba(255,255,255,0.28)" />
-        <line x1="8"  y1="30" x2="46" y2="30" stroke="rgba(255,255,255,0.14)" />
-        {/* confidence readout */}
-        <text x="8" y="46" fontSize="6" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.35)">CONF.</text>
-        <rect x="30" y="40" width="34" height="4" rx="2" fill="rgba(255,255,255,0.08)" />
-        <rect x="30" y="40" width="28" height="4" rx="2" fill="rgba(94,106,210,0.6)" />
-      </g>
+      {/* confidence */}
+      <text x="30" y="238" fontSize="6.5" fontFamily={MONO} letterSpacing="1.2" fill="rgba(255,255,255,0.4)">CONFIDENCE</text>
+      <rect x="30" y="246" width="160" height="5" rx="2.5" fill="rgba(255,255,255,0.07)" />
+      <rect x="30" y="246" width="132" height="5" rx="2.5" fill="rgba(94,106,210,0.65)" className="bg-progress" />
+      <text x="196" y="252" fontSize="7" fontFamily={MONO} fill="rgba(197,203,255,0.9)" textAnchor="end">92%</text>
+      {/* evidence rows */}
+      <text x="30" y="282" fontSize="6.5" fontFamily={MONO} letterSpacing="1.2" fill="rgba(255,255,255,0.4)">EVIDENCE</text>
+      {[296, 314, 332].map((y, i) => (
+        <g key={y}>
+          <rect x="30" y={y - 8} width="160" height="14" rx="4" fill={`rgba(255,255,255,${0.03 - i * 0.006})`} stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
+          <circle cx="39" cy={y - 1} r="2" fill="rgba(94,106,210,0.7)" />
+          <line x1="47" y1={y - 1} x2={47 + [110, 92, 76][i]} y2={y - 1} stroke={`rgba(255,255,255,${0.2 - i * 0.05})`} strokeWidth="1.1" />
+        </g>
+      ))}
     </svg>
   );
 }
 
-// MESSAGE — mimics the "client email in your voice" preview: subject line,
-// message body preview, animated typing dots, "send" pill.
-function GhostBubbles() {
+// MESSAGE — generated client email: lines type themselves in, cursor blinks.
+function GhostMessage() {
   return (
-    <svg viewBox="0 0 200 140" className="bento-ghost-svg bento-ghost--bubbles">
-      {/* subject pill (from field) */}
-      <g>
-        <rect x="10" y="10" width="110" height="18" rx="9"
-          fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-        <circle cx="20" cy="19" r="3" fill="rgba(94,106,210,0.55)" />
-        <text x="28" y="22" fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.38)" letterSpacing="1">TO CLIENT</text>
-      </g>
-
-      {/* body bubble */}
-      <g>
-        <rect x="10" y="38" width="170" height="60" rx="10"
-          fill="rgba(94,106,210,0.10)" stroke="rgba(94,106,210,0.30)" strokeWidth="1" />
-        <line x1="22" y1="52" x2="164" y2="52" stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" />
-        <line x1="22" y1="64" x2="140" y2="64" stroke="rgba(255,255,255,0.14)" />
-        <line x1="22" y1="76" x2="120" y2="76" stroke="rgba(255,255,255,0.14)" />
-        {/* sign-off scribble */}
-        <path d="M22 88 q4 -5 8 0 t8 0 t8 -1" stroke="rgba(94,106,210,0.55)" strokeWidth="1.3" strokeLinecap="round" fill="none" />
-      </g>
-
-      {/* typing dots */}
-      <g transform="translate(24, 118)" className="bento-ghost-typing">
-        <circle cx="0"  cy="0" r="2.5" fill="rgba(255,255,255,0.35)" />
-        <circle cx="9"  cy="0" r="2.5" fill="rgba(255,255,255,0.35)" />
-        <circle cx="18" cy="0" r="2.5" fill="rgba(255,255,255,0.35)" />
-      </g>
-
+    <svg viewBox="0 0 220 172" className="bento-ghost-svg bento-ghost--bubbles">
+      <GhostDefs id="gm" />
+      <rect x="0" y="0" width="220" height="172" fill="url(#gm-dots)" />
+      {/* to-client pill */}
+      <rect x="16" y="10" width="96" height="18" rx="9" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.13)" strokeWidth="1" />
+      <circle cx="27" cy="19" r="3" fill="rgba(94,106,210,0.7)" />
+      <text x="35" y="22" fontSize="6.5" fontFamily={MONO} letterSpacing="1" fill="rgba(255,255,255,0.45)">TO CLIENT</text>
+      {/* email panel */}
+      <rect x="16" y="38" width="188" height="94" rx="12" fill="url(#gm-panel)" stroke="rgba(94,106,210,0.3)" strokeWidth="1" />
+      <line x1="30" y1="56" x2="176" y2="56" stroke="rgba(255,255,255,0.3)" strokeWidth="1.3" className="bg-type" style={{ transformOrigin: "30px 56px" }} />
+      <line x1="30" y1="72" x2="156" y2="72" stroke="rgba(255,255,255,0.16)" strokeWidth="1.2" className="bg-type bg-type-2" style={{ transformOrigin: "30px 72px" }} />
+      <line x1="30" y1="88" x2="140" y2="88" stroke="rgba(255,255,255,0.16)" strokeWidth="1.2" className="bg-type bg-type-3" style={{ transformOrigin: "30px 88px" }} />
+      {/* signature scribble + cursor */}
+      <path d="M30 110 q5 -7 10 0 t10 0 t10 -2" stroke="rgba(94,106,210,0.6)" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+      <rect x="66" y="103" width="1.6" height="10" fill="rgba(197,203,255,0.9)" className="bg-cursor" />
       {/* send pill */}
-      <g transform="translate(148, 110)">
-        <rect x="0" y="0" width="42" height="18" rx="9" fill="rgba(94,106,210,0.30)" stroke="rgba(94,106,210,0.55)" strokeWidth="1" />
-        <text x="21" y="12" fontSize="7" fontWeight="700" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.85)" textAnchor="middle">SEND</text>
+      <g transform="translate(150, 142)">
+        <rect x="0" y="0" width="54" height="20" rx="10" fill="rgba(94,106,210,0.30)" stroke="rgba(94,106,210,0.6)" strokeWidth="1" className="bg-glowpulse" />
+        <text x="27" y="13.5" fontSize="7" fontWeight="700" fontFamily={MONO} fill="rgba(255,255,255,0.9)" textAnchor="middle">SEND →</text>
       </g>
     </svg>
   );
 }
 
-// SPEED (wide tile) — Bracket's actual 5-step timeline (PASTE → FRAMING →
-// CONTEXT → DECISION → SIGN). Progress bar draws with a scroll-friendly loop.
+// SPEED (wide) — five-step timeline with a travelling light pulse.
 function GhostTimeline() {
   const steps = [
-    { x: 24,  label: "PASTE"   },
-    { x: 92,  label: "FRAMING" },
-    { x: 160, label: "CONTEXT" },
-    { x: 228, label: "DECISION"},
-    { x: 296, label: "SIGN"    },
+    { x: 28, label: "PASTE" },
+    { x: 102, label: "FRAMING" },
+    { x: 176, label: "CONTEXT" },
+    { x: 250, label: "DECISION" },
+    { x: 324, label: "SIGN" },
   ];
   return (
-    <svg viewBox="0 0 340 100" className="bento-ghost-svg bento-ghost--timeline" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox="0 0 380 110" className="bento-ghost-svg bento-ghost--timeline" preserveAspectRatio="xMidYMid meet">
+      <GhostDefs id="gl" />
+      <rect x="0" y="0" width="380" height="110" fill="url(#gl-dots)" />
+      {/* time chip */}
+      <rect x="298" y="8" width="66" height="17" rx="8.5" fill="rgba(94,106,210,0.14)" stroke="rgba(94,106,210,0.4)" strokeWidth="0.8" />
+      <text x="331" y="19" fontSize="6.8" fontFamily={MONO} letterSpacing="1" fill="rgba(197,203,255,0.9)" textAnchor="middle">&lt; 60 SEC</text>
       <g fill="none">
-        {/* track */}
-        <line x1="16" y1="50" x2="324" y2="50" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
-        {/* progress fill */}
-        <line x1="16" y1="50" x2="300" y2="50" stroke="rgba(94,106,210,0.6)" strokeWidth="2" className="bento-ghost-progress" />
+        <line x1="20" y1="62" x2="360" y2="62" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+        <line x1="20" y1="62" x2="332" y2="62" stroke="rgba(94,106,210,0.55)" strokeWidth="1.6" className="bento-ghost-progress" />
+        {/* travelling pulse */}
+        <circle r="3.4" cy="62" fill="rgba(197,203,255,0.95)" className="bg-comet">
+          <animate attributeName="cx" values="20;332;332" keyTimes="0;0.7;1" dur="3.6s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1;0 0 1 1" />
+        </circle>
+        <circle r="9" cy="62" fill="url(#gl-glow)">
+          <animate attributeName="cx" values="20;332;332" keyTimes="0;0.7;1" dur="3.6s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1;0 0 1 1" />
+        </circle>
         {steps.map((s, i) => (
-          <g key={s.label} transform={`translate(${s.x}, 50)`}>
-            {/* tick */}
-            <line y1="-7" y2="7" stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
-            {/* dot */}
-            <circle r={i === 4 ? 6 : 4}
-              fill={i <= 3 ? "rgba(94,106,210,0.65)" : "rgba(255,255,255,0.16)"}
-              stroke={i === 4 ? "rgba(94,106,210,0.75)" : "none"}
-              strokeWidth={i === 4 ? 1.2 : 0} />
-            {/* label */}
-            <text y="24" fontSize="7" fontFamily="ui-monospace,monospace"
-              fill={i <= 3 ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.28)"}
-              textAnchor="middle" letterSpacing="0.5">{s.label}</text>
+          <g key={s.label} transform={`translate(${s.x}, 62)`}>
+            <circle r={i === 4 ? 6 : 4} fill={i <= 3 ? "rgba(94,106,210,0.65)" : "rgba(255,255,255,0.14)"} stroke={i === 4 ? "rgba(94,106,210,0.7)" : "none"} strokeWidth={i === 4 ? 1.2 : 0} />
+            <text y="24" fontSize="7" fontFamily={MONO} fill={i <= 3 ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.28)"} textAnchor="middle" letterSpacing="0.5">{s.label}</text>
           </g>
         ))}
       </g>
@@ -1075,32 +1107,33 @@ function GhostTimeline() {
   );
 }
 
-// LOCK — real sign-off document + signature line + circular seal.
+// LOCK — signed approval: signature draws itself, dashed seal slowly rotates.
 function GhostSigned() {
   return (
-    <svg viewBox="0 0 200 160" className="bento-ghost-svg bento-ghost--signed">
-      <g fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1">
-        <rect x="24" y="12" width="108" height="130" rx="6"
-          fill="rgba(255,255,255,0.02)" />
-        {/* header tag */}
-        <text x="36" y="30" fontSize="7" fontFamily="ui-monospace,monospace" fill="rgba(94,106,210,0.70)" letterSpacing="1">SIGN-OFF · v1</text>
-        <line x1="36" y1="42" x2="118" y2="42" stroke="rgba(255,255,255,0.18)" strokeWidth="1.2" />
-        {/* body rows */}
-        <line x1="36" y1="56" x2="108" y2="56" stroke="rgba(255,255,255,0.08)" />
-        <line x1="36" y1="66" x2="120" y2="66" stroke="rgba(255,255,255,0.08)" />
-        <line x1="36" y1="76" x2="94"  y2="76" stroke="rgba(255,255,255,0.08)" />
-        <line x1="36" y1="86" x2="112" y2="86" stroke="rgba(255,255,255,0.08)" />
-        {/* signature block */}
-        <line x1="36" y1="106" x2="94" y2="106" stroke="rgba(255,255,255,0.18)" />
-        <path d="M36 100 q6 -8 12 0 t12 0 t12 -3 t14 3" stroke="rgba(94,106,210,0.60)" strokeWidth="1.4" strokeLinecap="round" fill="none" />
-        <text x="36" y="118" fontSize="6" fontFamily="ui-monospace,monospace" fill="rgba(255,255,255,0.30)">SIGNED BY CLIENT</text>
+    <svg viewBox="0 0 220 172" className="bento-ghost-svg bento-ghost--signed">
+      <GhostDefs id="gd" />
+      <rect x="0" y="0" width="220" height="172" fill="url(#gd-dots)" />
+      <rect x="20" y="10" width="126" height="148" rx="10" fill="url(#gd-panel)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+      <text x="34" y="30" fontSize="7" fontFamily={MONO} letterSpacing="1.2" fill="rgba(94,106,210,0.85)">SIGN-OFF · V1</text>
+      <line x1="34" y1="40" x2="132" y2="40" stroke="rgba(255,255,255,0.14)" strokeWidth="1.1" />
+      <g stroke="rgba(255,255,255,0.09)" strokeWidth="1">
+        <line x1="34" y1="56" x2="120" y2="56" />
+        <line x1="34" y1="68" x2="128" y2="68" />
+        <line x1="34" y1="80" x2="104" y2="80" />
       </g>
-      {/* circular seal / stamp with tick + LOCKED ring */}
-      <g transform="translate(160, 108)">
-        <circle r="22" fill="rgba(94,106,210,0.10)" stroke="rgba(94,106,210,0.55)" strokeWidth="1" />
-        <circle r="16" fill="none" stroke="rgba(94,106,210,0.35)" strokeDasharray="3 3" />
-        <path d="M-7 0 l5 5 l10 -10" stroke="rgba(94,106,210,0.9)" strokeWidth="1.7"
-          fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {/* signature draws in */}
+      <line x1="34" y1="112" x2="112" y2="112" stroke="rgba(255,255,255,0.18)" />
+      <path d="M36 106 q7 -10 14 0 t14 0 t14 -4 t16 4" stroke="rgba(94,106,210,0.75)" strokeWidth="1.5" strokeLinecap="round" fill="none" className="bg-sign" />
+      <text x="34" y="126" fontSize="6" fontFamily={MONO} letterSpacing="0.8" fill="rgba(255,255,255,0.35)">SIGNED BY CLIENT</text>
+      {/* accepted chip */}
+      <rect x="34" y="134" width="62" height="14" rx="7" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.35)" strokeWidth="0.8" />
+      <text x="65" y="143.5" fontSize="6" fontFamily={MONO} letterSpacing="1" fill="rgba(134,239,172,0.9)" textAnchor="middle">ACCEPTED</text>
+      {/* seal */}
+      <g transform="translate(178, 116)">
+        <circle r="26" fill="url(#gd-glow)" opacity="0.7" />
+        <circle r="21" fill="rgba(8,9,10,0.5)" stroke="rgba(94,106,210,0.55)" strokeWidth="1" />
+        <circle r="15" fill="none" stroke="rgba(94,106,210,0.35)" strokeDasharray="3 3.5" className="bg-slowspin" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
+        <path d="M-7 0 l5 5 l10 -10" stroke="rgba(197,203,255,0.95)" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </g>
     </svg>
   );
