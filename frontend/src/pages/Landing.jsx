@@ -92,14 +92,33 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
   );
 }
 
-// Opaque section backdrop that bleeds past section edges with eased alpha
-// stops (smoothstep-ish) so no perceptual "edge line" appears at boundaries.
+// Opaque section backdrop that bleeds past section edges. True smoothstep
+// alpha stops + a noise dither layer prevent 8-bit gradient banding ("visible
+// line") in the near-black fade zones.
 const SECTION_BLEED_BG =
-  "linear-gradient(180deg, rgba(8,9,10,0) 0%, rgba(8,9,10,0.08) 8%, rgba(8,9,10,0.28) 15%, rgba(8,9,10,0.55) 21%, rgba(8,9,10,0.8) 26%, #08090A 32%, #08090A 68%, rgba(8,9,10,0.8) 74%, rgba(8,9,10,0.55) 79%, rgba(8,9,10,0.28) 85%, rgba(8,9,10,0.08) 92%, rgba(8,9,10,0) 100%)";
+  "linear-gradient(180deg, rgba(8,9,10,0) 0%, rgba(8,9,10,0.04) 4%, rgba(8,9,10,0.16) 8%, rgba(8,9,10,0.32) 12%, rgba(8,9,10,0.5) 16%, rgba(8,9,10,0.68) 20%, rgba(8,9,10,0.84) 24%, rgba(8,9,10,0.96) 28%, #08090A 32%, #08090A 68%, rgba(8,9,10,0.96) 72%, rgba(8,9,10,0.84) 76%, rgba(8,9,10,0.68) 80%, rgba(8,9,10,0.5) 84%, rgba(8,9,10,0.32) 88%, rgba(8,9,10,0.16) 92%, rgba(8,9,10,0.04) 96%, rgba(8,9,10,0) 100%)";
+const BLEED_NOISE =
+  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='d'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23d)'/></svg>\")";
+
+function SectionBleed({ className = "" }) {
+  const fadeMask = "linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%)";
+  return (
+    <div aria-hidden="true" className={`absolute inset-x-0 -top-64 -bottom-64 pointer-events-none ${className}`}>
+      <div className="absolute inset-0" style={{ background: SECTION_BLEED_BG }} />
+      {/* Dither layer — masked with the same fade so it never leaks a hard edge. */}
+      <div
+        className="absolute inset-0"
+        style={{ background: BLEED_NOISE, maskImage: fadeMask, WebkitMaskImage: fadeMask }}
+      />
+    </div>
+  );
+}
 
 // Film grain overlay — SVG turbulence baked as data URI, animated with a slow
 // translate for subtle life. Non-interactive.
-function FilmGrain({ opacity = 0.06, fadeBottom = false }) {
+function FilmGrain({ opacity = 0.06, fadeBottom = false, fadeTop = false }) {
+  const stops = `${fadeTop ? "transparent 0%, #000 20%" : "#000 0%"}, ${fadeBottom ? "#000 60%, transparent 100%" : "#000 100%"}`;
+  const mask = fadeTop || fadeBottom ? `linear-gradient(180deg, ${stops})` : undefined;
   return (
     <div
       aria-hidden="true"
@@ -108,12 +127,7 @@ function FilmGrain({ opacity = 0.06, fadeBottom = false }) {
         opacity,
         backgroundImage:
           "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
-        ...(fadeBottom
-          ? {
-              maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-              WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
-            }
-          : {}),
+        ...(mask ? { maskImage: mask, WebkitMaskImage: mask } : {}),
       }}
     />
   );
@@ -592,13 +606,8 @@ function Showcase() {
   return (
     <section className="relative py-24 md:py-32" data-testid="landing-showcase">
       {/* Opaque backdrop that bleeds past the section into the hero above
-          and the What's Inside section below. Eased alpha stops (smoothstep-ish)
-          prevent the perceptual "edge line" a linear ramp creates. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 -top-64 -bottom-64 pointer-events-none"
-        style={{ background: SECTION_BLEED_BG }}
-      />
+          and the What's Inside section below. */}
+      <SectionBleed />
       <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="THE FLOW"
@@ -1256,11 +1265,7 @@ function Testimonials() {
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-testimonials" id="testimonials">
       {/* Opaque backdrop bleeding into neighbours — sits BELOW the blue wash
           (-z-20 vs -z-10) so the glow stays visible on top of it. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 -top-64 -bottom-64 -z-20 pointer-events-none"
-        style={{ background: SECTION_BLEED_BG }}
-      />
+      <SectionBleed className="-z-20" />
       {/* Signal-blue centre wash — extended vertically so it kisses both
          the story section above and overlaps deep into the pricing amber
          below (soft blue→amber colour blend, no visible seam). Parallax. */}
@@ -1331,11 +1336,7 @@ function PricingSection() {
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-pricing" id="pricing">
       {/* Opaque backdrop bleeding into neighbours — below the amber wash. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 -top-64 -bottom-64 -z-20 pointer-events-none"
-        style={{ background: SECTION_BLEED_BG }}
-      />
+      <SectionBleed className="-z-20" />
       {/* Amber wash — pulled UP past the section top so it overlaps the
          testimonials blue for a soft colour transition (no visible seam). */}
       <ParallaxGlow
@@ -1346,7 +1347,7 @@ function PricingSection() {
           background: "radial-gradient(closest-side, #FFB84C, transparent 70%)",
         }}
       />
-      <FilmGrain opacity={0.05} />
+      <FilmGrain opacity={0.05} fadeTop fadeBottom />
 
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 relative">
         <SectionHeading
@@ -1474,7 +1475,7 @@ function FinalCTA() {
           background: "radial-gradient(60% 40% at 50% 45%, rgba(94,106,210,0.18), transparent 70%)",
         }}
       />
-      <FilmGrain opacity={0.08} />
+      <FilmGrain opacity={0.08} fadeTop />
 
       <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 text-center">
         <motion.p

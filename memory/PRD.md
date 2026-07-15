@@ -69,6 +69,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06-XX — **Landing section-bleed system (final)**: `SectionBleed` component in Landing.jsx — opaque #08090A backdrop extending 256px past section edges, used by THE FLOW (showcase), FROM THE FIELD (testimonials, `-z-20` under blue wash) and PRICING (`-z-20` under amber wash). Root cause of the recurring "visible line": 8-bit gradient banding in near-black fade zones (whole fade spans ~2 luminance levels). Fix: 17-stop smoothstep alpha ramp + masked noise-dither layer (BLEED_NOISE). FilmGrain gained fadeTop/fadeBottom props (hero: fadeBottom; pricing: both; final CTA: fadeTop). Verified via per-row luminance analysis of screenshots (max jump ≤0.7 in all gap bands).
 - 2026-06-XX — **Landing "THE FLOW" cards opaque + stage tags v2 + filters**:
   - `.landing-showcase-card` background now fully opaque `#0E1014` (was translucent gradient + backdrop blur).
   - Dashboard stages now: IN PROGRESS / LOCKED (blue) / AWAITING REPLY (amber, share_status sent or awaiting_reply) / REJECTED (red) / ACCEPTED (green).
