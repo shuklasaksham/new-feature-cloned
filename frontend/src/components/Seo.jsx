@@ -12,7 +12,11 @@ export default function Seo({
   path = "",
   noindex = false,
 }) {
-  const fullTitle = title ? `${title} — Bracket` : "Bracket — The AI Decision Workspace for Client Projects";
+  const fullTitle = !title
+    ? "Bracket — The AI Decision Workspace for Client Projects"
+    : title.includes("Bracket")
+      ? title
+      : `${title} — Bracket`;
   const canonical = `https://use-bracket.com${path}`;
   return (
     <Helmet>
