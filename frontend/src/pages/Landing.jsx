@@ -192,20 +192,34 @@ function MagneticButton({ children, to, testid, className = "", ...rest }) {
 // Metrics count-up on view.
 function CountUp({ to, suffix = "", className = "" }) {
   const ref = useRef(null);
+  const valRef = useRef(0);
+  const startedRef = useRef(false);
   const [val, setVal] = useState(0);
   const shouldReduce = useReducedMotion();
   useEffect(() => {
     if (!ref.current) return;
     if (shouldReduce) {
+      valRef.current = to;
       setVal(to);
       return;
     }
+    const tick = (v) => {
+      valRef.current = v;
+      setVal(Math.floor(v));
+    };
+    // After the first reveal, glide from the current value — lets live
+    // metric updates animate smoothly instead of restarting from 0.
+    if (startedRef.current) {
+      const c = animate(valRef.current, to, { duration: 0.9, ease: [0.16, 1, 0.3, 1], onUpdate: tick });
+      return () => c.stop();
+    }
     const io = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
+        startedRef.current = true;
         const c = animate(0, to, {
           duration: 1.6,
           ease: [0.16, 1, 0.3, 1],
-          onUpdate: (v) => setVal(Math.floor(v)),
+          onUpdate: tick,
         });
         io.disconnect();
         return () => c.stop();
@@ -341,29 +355,37 @@ function Hero() {
 }
 
 function HeroMetrics() {
-  const [m, setM] = useState({ projects_created_total: 0, decisions_locked_total: 0, users_total: 0 });
+  // Live platform KPIs — same aggregates the admin panel reports. Fetched
+  // from /public/metrics and refreshed every 12s so the hero updates in
+  // realtime as projects and signups happen. `m === null` = not loaded yet
+  // (show launch-baseline placeholders); once loaded, always show REAL data.
+  const [m, setM] = useState(null);
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    const fetchMetrics = async () => {
       try {
         const { data } = await api.get("/public/metrics");
         if (!cancelled) setM(data);
-      } catch { /* silent */ }
-    })();
-    return () => { cancelled = true; };
+      } catch { /* silent — keep last known values */ }
+    };
+    fetchMetrics();
+    const t = setInterval(fetchMetrics, 12000);
+    return () => { cancelled = true; clearInterval(t); };
   }, []);
+  const items = [
+    { n: m ? m.projects_started_with_ai ?? 0 : 128, label: "briefs turned into projects" },
+    { n: m ? m.projects_scoped ?? 0 : 47, label: "decisions locked" },
+    { n: m ? m.freelancers_and_teams ?? 0 : 92, label: "professionals on Bracket" },
+  ];
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ delay: 1.2, duration: 0.8 }}
       className="mt-12 flex items-center gap-8 flex-wrap"
+      data-testid="hero-metrics"
     >
-      {[
-        { n: m.projects_created_total || 128, label: "briefs turned into projects" },
-        { n: m.decisions_locked_total || 47, label: "decisions locked" },
-        { n: m.users_total || 92, label: "professionals on Bracket" },
-      ].map((it, i) => (
+      {items.map((it, i) => (
         <div key={i} className="flex items-baseline gap-2">
           <CountUp to={it.n} className="font-display text-3xl md:text-4xl text-[var(--text)] tabular-nums" />
           <span className="mono-tag text-muted text-[10.5px] max-w-[160px]">{it.label}</span>
