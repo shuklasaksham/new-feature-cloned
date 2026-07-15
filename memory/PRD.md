@@ -69,6 +69,11 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-07-15 — **Iteration 35 — Revised client-concern flow: single decision + unfreeze on concerns** (verified iteration_33 report, 16/16 backend + frontend PASS):
+  - **Unfreeze on concerns**: `_assert_not_shared` now allows editing/unlocking when share_status is 'rejected' or 'awaiting_reply' (frozen only for 'sent'/'accepted'). Frontend gates updated: ProjectOverview `isFrozen` (edit/unlock buttons visible again on rejected), ProjectFlow `guardStepRework` same rule. Re-locking after concern-era edits flips share_status → 'sent' (client re-reviews same link) and clears revising/revision_context.
+  - **ONE decision, two paths** in ClientReviewModal (per-suggestion buttons DELETED, old `/review/apply-suggestion` endpoint DELETED): modal-level `crm-apply-changes` ("Apply the changes" → new POST `/projects/{id}/review/apply-changes` maps ALL suggestions to steps via parallel asyncio.gather, sets revising + revision_context{step, items[]}, navigates to earliest step) and `crm-keep-as-is` ("Keep as is & respond" → pre-fills composer with combined what_to_say drafts + focuses).
+  - ProjectFlow `revision-banner` now lists all changes with STEP n badges.
+  - Testing agent fixed a leftover dead JSX block in the modal (referenced removed identifiers → ReferenceError crash) and replaced stale backend tests (`test_iteration_33_apply_changes.py`, 16 tests).
 - 2026-07-15 — **Iteration 34 — Scroll-linked nav accent + footer fixes** (self-tested via screenshots/JS probes on all 6 marketing pages):
   - Navbar: new `--nav-accent` motion value interpolates blue #5E6AD2 → cyan #7CD5FF → amber #FFB84C over `scrollYProgress`; rendered as a soft 2px hairline under the nav (`.cinema-nav-accent`, fades in after 160px scroll) and feeds the link underlines.
   - Fixed "scrolling beyond footer" on all 5 subpages: root cause was `.hero-ambient::before` (fixed 1400px glow) overflowing far past the short final-CTA sections once `overflow-hidden` was removed in iteration 33. New `.hero-ambient--cta` variant (bottom:0, overflow:hidden, ::before height:100%) applied to every subpage final CTA — verified 0px space below footer on /, /pricing, /how-it-works, /use-cases, /case-studies, /faq.
