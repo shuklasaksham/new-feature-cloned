@@ -1387,16 +1387,10 @@ async def upload_brief(request: Request, file: UploadFile = File(...)):
             detail="We couldn't pull useful text out of this file. Try pasting the brief manually.",
         )
 
-    # Ask Haiku for a project title from the extracted text.
+    # Ask Haiku for a project title in the background — it's not worth
+    # blocking the upload response for (the poll picks the new name up).
     pname = f"Uploaded · {(file.filename or 'brief')[:40]}"
     name_source = "heuristic"
-    try:
-        ai_title = await generate_project_title(text)
-        if ai_title and len(ai_title) >= 3:
-            pname = ai_title[:120]
-            name_source = "ai"
-    except Exception as e:
-        logger.warning("upload_brief title generation failed: %s", e)
 
     now = _now_iso()
     doc = {
@@ -1450,6 +1444,18 @@ async def upload_brief(request: Request, file: UploadFile = File(...)):
     # project immediately and the frontend polls until `auto_advance_status`
     # settles to `advanced` (Step 5) or `partial` / `failed`.
     async def _auto_advance_task():
+        async def _title_task():
+            try:
+                ai_title = await generate_project_title(text)
+                if ai_title and len(ai_title) >= 3:
+                    await db.projects.update_one(
+                        {"id": doc["id"]},
+                        {"$set": {"name": ai_title[:120], "name_source": "ai", "updated_at": _now_iso()}},
+                    )
+            except Exception as e:
+                logger.warning("upload_brief title generation failed: %s", e)
+
+        asyncio.create_task(_title_task())
         try:
             extracted = await extract_full_brief_from_paste(text)
         except Exception as e:

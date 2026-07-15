@@ -130,6 +130,31 @@ export default function ProjectFlow() {
     })();
   }, [id, searchParams]);
 
+  // Live-follow an uploaded brief's auto-advance: while the background chain
+  // builds steps, refresh the project every 3s so outputs (and the AI title)
+  // fill in as they're generated. Pauses while the user is mid-edit.
+  useEffect(() => {
+    if (project?.auto_advance_status !== "pending") return undefined;
+    const t = setInterval(async () => {
+      if (dirtyRef.current) return;
+      try {
+        const { data } = await api.get(`/projects/${id}`);
+        setProject(data);
+        setCurrentStep((s) => Math.max(s, data.step || 1));
+        const st = data.auto_advance_status;
+        if (st && st !== "pending") {
+          if (st === "advanced") toast.success("Brief complete — Bracket generated the full document.");
+          else if (st === "partial") toast.info("Brief mostly ready — finish the last step manually.");
+          else if (st === "insufficient") toast.info("The brief was thin — Bracket will guide you from Step 1.");
+          else if (st === "failed") toast.info("Auto-build hit a snag — your brief text is loaded, continue from Step 1.");
+        }
+      } catch {
+        /* transient — keep polling */
+      }
+    }, 3000);
+    return () => clearInterval(t);
+  }, [project?.auto_advance_status, id]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -235,6 +260,20 @@ export default function ProjectFlow() {
             </Link>
           </div>
         </div>
+
+        {/* Uploaded-brief auto-build in progress — steps fill in live. */}
+        {project?.auto_advance_status === "pending" && (
+          <div
+            className="mt-5 card-linear p-3.5 border-l-2 border-signal flex items-center gap-3"
+            data-testid="auto-advance-banner"
+          >
+            <Loader2 size={15} className="animate-spin text-signal shrink-0" />
+            <p className="text-[13px] text-[var(--text-2)]">
+              Bracket is building your project from the brief — steps fill in automatically as
+              they&apos;re generated. Feel free to review each one as it lands.
+            </p>
+          </div>
+        )}
 
         {/* Journey pipeline */}
         <div className="mt-6">

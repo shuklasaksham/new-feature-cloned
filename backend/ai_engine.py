@@ -117,7 +117,7 @@ async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = 
     return _extract_json(response)
 
 
-async def _run_fast(prompt: str, session_id: Optional[str] = None) -> dict:
+async def _run_fast(prompt: str, session_id: Optional[str] = None, timeout: float = SUGGEST_TIMEOUT_S) -> dict:
     """Ultra-low-latency path for typing suggestions (Haiku 4.5)."""
     api_key = os.environ["EMERGENT_LLM_KEY"]
     chat = LlmChat(
@@ -128,7 +128,7 @@ async def _run_fast(prompt: str, session_id: Optional[str] = None) -> dict:
     try:
         response = await asyncio.wait_for(
             asyncio.to_thread(_send_in_thread, chat, UserMessage(text=prompt)),
-            timeout=SUGGEST_TIMEOUT_S,
+            timeout=timeout,
         )
     except asyncio.TimeoutError as e:
         logger.info("Suggest call timed out after %ss — returning empty list", SUGGEST_TIMEOUT_S)
@@ -611,7 +611,14 @@ async def extract_full_brief_from_paste(raw_paste: str) -> dict:
         "}"
     )
     try:
-        data = await _run_fast(prompt)
+        # Extraction reads up to 12k chars — needs far more headroom than the
+        # 8s typing-suggestion budget. One retry: a single transient timeout
+        # here used to silently kill the whole auto-advance chain.
+        try:
+            data = await _run_fast(prompt, timeout=35)
+        except Exception as first_err:
+            logger.warning("extract_full_brief_from_paste attempt 1 failed, retrying: %s", first_err)
+            data = await _run_fast(prompt, timeout=35)
     except Exception as e:
         logger.warning("extract_full_brief_from_paste failed: %s", e)
         return {

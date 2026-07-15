@@ -273,32 +273,10 @@ export default function Dashboard() {
       });
       projectId = data.id;
       toast.dismiss(toastId);
-      // Immediate feedback — the auto-advance runs in the background.
-      const pollToast = toast.loading("Brief loaded. Bracket is generating your document…");
-      // Poll up to 3 min for the auto-advance to complete.
-      const started = Date.now();
-      let finalStatus = data.auto_advance_status || "pending";
-      while (Date.now() - started < 180000) {
-        await new Promise((r) => setTimeout(r, 3000));
-        try {
-          const { data: p } = await api.get(`/projects/${projectId}`);
-          if (p.auto_advance_status && p.auto_advance_status !== "pending") {
-            finalStatus = p.auto_advance_status;
-            break;
-          }
-          if (p.step >= 5) { finalStatus = "advanced"; break; }
-        } catch { /* keep polling on transient errors */ }
-      }
-      toast.dismiss(pollToast);
-      if (finalStatus === "advanced") {
-        toast.success("Brief complete — jumping to the final step.");
-      } else if (finalStatus === "partial") {
-        toast.info("Brief mostly ready — finish the last step manually.");
-      } else if (finalStatus === "insufficient") {
-        toast.info("Brief loaded. Bracket will guide you from Step 1.");
-      } else {
-        toast.info("Brief loaded — pick up from where Bracket got to.");
-      }
+      // Land in the flow immediately — the auto-advance chain runs in the
+      // background and ProjectFlow live-follows it, filling steps in as
+      // they're generated. No more waiting on the dashboard.
+      toast.success("Brief loaded — Bracket is building your project live.");
       navigate(`/project/${projectId}/flow`);
     } catch (e) {
       toast.dismiss(toastId);

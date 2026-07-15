@@ -69,6 +69,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-07-15 — **Iteration 38 — Upload-brief speed fix** (self-tested: curl timing + full UI e2e):
+  - **Root causes**: (a) Dashboard blocked the user for up to 3 min polling before navigating; (b) synchronous title generation added 3-6s to the upload response; (c) `extract_full_brief_from_paste` ran with the 8s typing-suggestion timeout — 12k-char briefs frequently timed out silently, killing the auto-advance (project stuck at step 1).
+  - **Fixes**: upload-brief responds in ~0.1-0.3s (title gen moved into the background task); Dashboard navigates to the flow IMMEDIATELY; ProjectFlow live-follows the auto-advance (3s poll while `auto_advance_status==='pending'`, pauses when dirtyRef, `auto-advance-banner` shown, completion toasts incl. new 'failed' case); `_run_fast` accepts a timeout param — extraction now uses 35s + one retry.
+  - Verified: steps fill in live (step 2 at ~15s, full doc ~2min), AI title lands via poll.
 - 2026-07-15 — **Hotfix**: pricing card CTAs unclickable on homepage — FinalCTA's ParallaxGlow (absolute div extending -300px up over the pricing grid) intercepted clicks. ParallaxGlow now always renders `pointer-events-none`. Verified all 6 CTAs click → /login on both pages.
 - 2026-07-15 — **Iteration 37 — Free-plan pricing strike-through + rotating logo diamond** (self-tested via screenshots + DOM checks):
   - All plan cards (homepage pricing section + /pricing) show the original price struck-through next to a big ₹0/$0; free tier stays "Free". All three CTAs → "Start Free" (constants.js) and link to /login on both pages (Pricing.jsx was /app).
