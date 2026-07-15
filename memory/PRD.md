@@ -69,6 +69,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-07-15 — **Hotfix**: pricing card CTAs unclickable on homepage — FinalCTA's ParallaxGlow (absolute div extending -300px up over the pricing grid) intercepted clicks. ParallaxGlow now always renders `pointer-events-none`. Verified all 6 CTAs click → /login on both pages.
 - 2026-07-15 — **Iteration 37 — Free-plan pricing strike-through + rotating logo diamond** (self-tested via screenshots + DOM checks):
   - All plan cards (homepage pricing section + /pricing) show the original price struck-through next to a big ₹0/$0; free tier stays "Free". All three CTAs → "Start Free" (constants.js) and link to /login on both pages (Pricing.jsx was /app).
   - BracketMark rewritten from `<img src=/logo-diamond.png>` to inline SVG (same polygons as PageLoader; white chevrons + blue gradient diamond `.bracket-mark-core`). Navbar hover rotates ONLY the diamond 90° (`.cinema-nav-brand:hover .bracket-mark-core`, transform-box: fill-box). All BracketMark usages (Footer, Login, AppHeader, etc.) now render the crisp SVG.

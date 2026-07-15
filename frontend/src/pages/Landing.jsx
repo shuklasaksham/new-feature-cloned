@@ -141,7 +141,7 @@ function ParallaxGlow({ className, style, children, distance = 40, testid }) {
       ref={ref}
       aria-hidden="true"
       data-testid={testid}
-      className={className}
+      className={`pointer-events-none ${className || ""}`}
       style={shouldReduce ? style : { ...style, y, willChange: "transform" }}
     >
       {children}
