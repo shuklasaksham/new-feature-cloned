@@ -94,7 +94,7 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
 
 // Film grain overlay — SVG turbulence baked as data URI, animated with a slow
 // translate for subtle life. Non-interactive.
-function FilmGrain({ opacity = 0.06 }) {
+function FilmGrain({ opacity = 0.06, fadeBottom = false }) {
   return (
     <div
       aria-hidden="true"
@@ -103,6 +103,12 @@ function FilmGrain({ opacity = 0.06 }) {
         opacity,
         backgroundImage:
           "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+        ...(fadeBottom
+          ? {
+              maskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(180deg, #000 60%, transparent 100%)",
+            }
+          : {}),
       }}
     />
   );
@@ -266,7 +272,7 @@ function Hero() {
          gives the hero atmosphere without pulling attention from the type. */}
       <HeroOrbs />
 
-      <FilmGrain opacity={0.06} />
+      <FilmGrain opacity={0.06} fadeBottom />
 
       {/* Copy */}
       <div className="relative z-20 max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 w-full">
@@ -581,11 +587,15 @@ function Showcase() {
   return (
     <section className="relative py-24 md:py-32" data-testid="landing-showcase">
       {/* Opaque backdrop that bleeds past the section into the hero above
-          and the What's Inside section below. */}
+          and the What's Inside section below. Eased alpha stops (smoothstep-ish)
+          prevent the perceptual "edge line" a linear ramp creates. */}
       <div
         aria-hidden="true"
-        className="absolute inset-x-0 -top-40 -bottom-40 pointer-events-none"
-        style={{ background: "linear-gradient(180deg, rgba(8,9,10,0) 0%, #08090A 24%, #08090A 76%, rgba(8,9,10,0) 100%)" }}
+        className="absolute inset-x-0 -top-64 -bottom-64 pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(180deg, rgba(8,9,10,0) 0%, rgba(8,9,10,0.08) 8%, rgba(8,9,10,0.28) 15%, rgba(8,9,10,0.55) 21%, rgba(8,9,10,0.8) 26%, #08090A 32%, #08090A 68%, rgba(8,9,10,0.8) 74%, rgba(8,9,10,0.55) 79%, rgba(8,9,10,0.28) 85%, rgba(8,9,10,0.08) 92%, rgba(8,9,10,0) 100%)",
+        }}
       />
       <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
