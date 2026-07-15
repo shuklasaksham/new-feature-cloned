@@ -1,12 +1,12 @@
 import React from "react";
 
 /**
- * BracketMark — official Bracket brand mark.
+ * BracketMark — official Bracket brand mark, inline SVG.
  *
- * The logo is the `<◇>` glyph (angle brackets flanking a diamond) from
- * `/logo-diamond.png`. Renders at `size × size` — the source is roughly
- * 2:1 wide-to-tall so we let `object-fit: contain` letterbox it into the
- * requested square (or the caller can pass a wider aspect via className).
+ * The `< ◇ >` glyph: white angle brackets flanking a blue diamond. Same
+ * geometry as the loading animation (PageLoader.jsx). Rendered as SVG so the
+ * diamond (`.bracket-mark-core`) can animate independently — the navbar
+ * rotates it on hover (see .cinema-nav-brand rules in index.css).
  *
  * `label` and `variant` are kept for API compatibility (unused).
  */
@@ -18,19 +18,35 @@ export default function BracketMark({
 }) {
   void label; void variant;
   return (
-    <img
-      src="/logo-diamond.png"
-      alt="Bracket"
+    <svg
+      viewBox="0 0 384.65 196.33"
       height={size}
-      width={size * 2}
+      width={size * 1.96}
       className={className}
-      style={{
-        display: "block",
-        flexShrink: 0,
-        objectFit: "contain",
-        height: size,
-        width: "auto",
-      }}
-    />
+      style={{ display: "block", flexShrink: 0 }}
+      role="img"
+      aria-label="Bracket"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="bracket-mark-blue" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2C4FF2" />
+          <stop offset="1" stopColor="#70A7FF" />
+        </linearGradient>
+      </defs>
+      <polygon
+        fill="#F4F5F7"
+        points="257.8 36.05 290.37 3.47 384.65 101.19 288.23 196.33 256.08 165.04 320.37 99.9 257.8 36.05"
+      />
+      <polygon
+        fill="#F4F5F7"
+        points="126.86 32.57 94.29 0 0 97.71 96.43 192.86 128.57 161.57 64.29 96.43 126.86 32.57"
+      />
+      <polygon
+        className="bracket-mark-core"
+        fill="url(#bracket-mark-blue)"
+        points="121.37 98.76 193.08 29.33 261.94 100.47 191.37 169.33 121.37 98.76"
+      />
+    </svg>
   );
 }

@@ -1402,7 +1402,6 @@ function PricingSection() {
 }
 
 function PricingCard({ tier, price, symbol, popular }) {
-  const priceLabel = price === 0 ? "Free" : `${symbol}${price}`;
   return (
     <motion.div
       initial={{ opacity: 0, y: 40 }}
@@ -1434,8 +1433,18 @@ function PricingCard({ tier, price, symbol, popular }) {
             {tier.bestFor}
           </p>
         )}
-        <div className="mt-6 flex items-baseline gap-1">
-          <span className="font-display font-semibold text-[56px] leading-none tracking-[-0.03em]">{priceLabel}</span>
+        <div className="mt-6 flex items-baseline gap-2.5">
+          {price !== 0 && (
+            <span
+              className="font-display font-semibold text-[26px] leading-none tracking-[-0.02em] line-through text-[var(--text-3)]"
+              data-testid={`pricing-old-price-${tier.id}`}
+            >
+              {symbol}{price}
+            </span>
+          )}
+          <span className="font-display font-semibold text-[56px] leading-none tracking-[-0.03em]">
+            {price === 0 ? "Free" : `${symbol}0`}
+          </span>
           {price !== 0 && <span className="text-[12px] text-[var(--text-3)]">/ mo</span>}
         </div>
         <ul className="mt-8 space-y-3 flex-1">

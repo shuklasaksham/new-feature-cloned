@@ -132,9 +132,17 @@ export default function Pricing() {
                         {t.bestFor}
                       </p>
                     )}
-                    <div className="mt-6 flex items-baseline gap-1">
+                    <div className="mt-6 flex items-baseline gap-2.5">
+                      {price !== 0 && (
+                        <span
+                          className="font-display font-semibold text-[24px] leading-none tracking-[-0.02em] line-through text-[var(--text-3)]"
+                          data-testid={`pricing-old-price-${t.id}`}
+                        >
+                          {cur.symbol}{price}
+                        </span>
+                      )}
                       <span className="font-display font-semibold text-[52px] leading-none tracking-[-0.03em]">
-                        {price === 0 ? "Free" : `${cur.symbol}${price}`}
+                        {price === 0 ? "Free" : `${cur.symbol}0`}
                       </span>
                       {price !== 0 && <span className="text-[12px] text-[var(--text-3)]">/ mo</span>}
                     </div>
@@ -150,7 +158,7 @@ export default function Pricing() {
                       ))}
                     </ul>
                     <Link
-                      to="/app"
+                      to="/login"
                       className={`mt-10 landing-plan-cta ${isPro ? "landing-plan-cta--popular" : ""}`}
                       data-testid={`pricing-cta-${t.id}`}
                     >

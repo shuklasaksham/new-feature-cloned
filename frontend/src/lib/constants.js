@@ -186,7 +186,7 @@ export const PRICING = {
         "AI risk analysis",
         "Project templates",
       ],
-      cta: "Start Pro",
+      cta: "Start Free",
     },
     {
       id: "studio",
@@ -200,7 +200,7 @@ export const PRICING = {
         "Version history",
         "Client collaboration",
       ],
-      cta: "Book a demo",
+      cta: "Start Free",
     },
   ],
 };
