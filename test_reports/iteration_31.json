@@ -1,0 +1,65 @@
+{
+  "summary": "Iteration 31 — comprehensive E2E + UI polish audit on Bracket. Verified backend guards (shared-freeze 409s on /unlock and /reset-from-step), auth (password + OTP dev_code flow), dashboard stage tags + all 6 filter pills, shared project overview (Unlock/edit hidden + hint visible), client review /r/{token} accept modal (fits 1366x768, inputs aligned, checklist 3-column) and reject flow (modal centered with textarea + Bracket suggestions CTA), landing page at 1920 and 1366 (no horizontal scroll, 5 showcase cards with 0 trailing gap, 14 bento SVGs, section bg all transparent — no seams). All CRITICAL functional flows working. Several polish issues found (loader duration 4.3s vs 3s target, checklist bottom row clipped by fixed footer at 1366×768, terminology inconsistency between dashboard tag and overview badge, missing/nonstandard data-testids on landing arrows + review-reject-modal, noisy 401s on /api/auth/me for anonymous visitors).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/me", "issue": "Anonymous frontend visits get 6+ 401 responses per session (Landing, /login, /r/{token}). Anonymous-safe endpoints (landing, public share) should not gate on auth or should suppress the 401 log by returning 200 with user:null. Fills the browser console with red errors."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ClientReview /r/{token} Accept modal", "issue": "At 1366×768, last row of checklist items ('retail launch flexibility', etc. — the 20th/21st items) is clipped beneath the fixed .review-accept-footer bar. inner_scroll reports overflow_px=0 (panel fits) but the checklist itself has more items than can be viewed above the footer. On larger viewports all 21 items are visible.", "selector": "[data-testid='review-accept-modal'] .review-accept-checklist", "priority": "MEDIUM"},
+      {"component": "PageLoader", "issue": "Loader stays attached ~4.3s on hard load (measured 0.48s attach → 4.31s detach). Task spec + iteration-30 report both said target is ~3s. Extra ~1.3s adds friction on every page navigation.", "selector": "[data-testid='page-loader']", "priority": "LOW"},
+      {"component": "Dashboard stage tag", "issue": "Both share_status='sent' (client hasn't reviewed yet) and share_status='awaiting_reply' (owner replied after rejection) collapse to the SAME 'AWAITING REPLY' amber tag. The Overview page distinguishes them ('AWAITING CLIENT REVIEW' badge vs no such badge). Consider a distinct label like 'SENT' or 'IN REVIEW' for the sent state to give the owner clarity.", "selector": "Dashboard.jsx projectStage() line 139-140", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Landing carousel", "issues": ["No data-testid on showcase arrows — spec expected [data-testid='showcase-arrow-left'/'-right']. The arrows do render as visible overlay controls per the earlier screenshot; only missing test hooks. Adding testids will unblock automated arrow-edge-hide verification."]},
+      {"screen": "ClientReview reject modal", "issues": ["Modal wrapper is a bare [role='dialog'] with class .review-modal-overlay + .review-modal-panel — no [data-testid='review-reject-modal']. Adding a data-testid on the wrapper (accept + reject variants) will make automated coverage of the reject flow reliable."]},
+      {"screen": "Landing bento", "issues": ["7 bento cards described in spec have no data-testid^='bento-' attributes on the card wrappers. 14 SVGs present (illustrations + icons), no <img> tags → visualisations are all SVG as intended. Only the testability is missing."]},
+      {"screen": "Landing loader animation", "issues": ["4.3s duration feels a hair long on repeat navigations. Consider reducing to 2.4-3s or skipping after first paint for same-session route changes."]}
+    ]
+  },
+  "verified_features": [
+    {"feature": "Backend shared-freeze guard on /unlock", "status": "PASS", "detail": "POST /api/projects/{sharedId}/unlock → 409 with 'This project has been shared with your client — steps can no longer be edited or unlocked.'"},
+    {"feature": "Backend shared-freeze guard on /reset-from-step/{n}", "status": "PASS", "detail": "POST /api/projects/{sharedId}/reset-from-step/3 → 409 with same message."},
+    {"feature": "Password login (demo account) + land on /app", "status": "PASS", "detail": "POST /api/auth/login → 200 with session_token; UI redirects to /app (dashboard), not to a project page."},
+    {"feature": "OTP flow via OTP_TEST_MODE dev_code", "status": "PASS", "detail": "POST /api/auth/otp/request returns {ok, ttl_minutes:10, dev_code:'288433'}; POST /api/auth/otp/verify with dev_code → 200 with session_token + is_new:true, user auto-created."},
+    {"feature": "Admin auth (via /api/auth/login) + /api/admin/users", "status": "PASS", "detail": "support@use-bracket.com / Bracket@123 logs in with is_admin:true; /api/admin/users returns paginated user list."},
+    {"feature": "Public share endpoint /api/share/{token}", "status": "PASS", "detail": "Returns name, creator_name, framing, decision, artifacts, share_status='sent', share_review, owner_replies without auth."},
+    {"feature": "Dashboard stage tags + filter pills", "status": "PASS", "detail": "All 6 filter pills present with expected testids: dashboard-filter-all/in_progress/locked/awaiting/rejected/accepted. Filter All=1, Locked=0, Awaiting reply=1, In progress=0 — filtering works. Sole Ceramic Vase project shows 'AWAITING REPLY' amber tag."},
+    {"feature": "Dashboard no dead scroll", "status": "PASS", "detail": "scrollHeight=900 = innerHeight=900 → 0px overflow."},
+    {"feature": "Project overview shared-freeze (UI)", "status": "PASS", "detail": "For share_status='sent' project: unlock_btn absent, 0 edit buttons on any of 5 steps, banner text 'This project is shared with your client — steps can no longer be edited or unlocked.' visible."},
+    {"feature": "Client review /r/{token} loads without auth", "status": "PASS", "detail": "Renders 'Ceramic Vase Order Inquiry' document with Accept & sign + Request changes CTAs, no horizontal overflow at 1366×768."},
+    {"feature": "Accept sign-off modal layout at 1366×768", "status": "PARTIAL PASS", "detail": "Panel width 1318px (24-1342), centered horizontally (0px offset), fits bottom (b=768). Checklist rendered in 3 columns. 24 inputs total (21 checkboxes + Name/Role/Email at y=679.75 aligned in one row). inner_scroll overflow_px=0. Issue: last 1-2 checklist items are visually clipped by the fixed sign-off footer at 1366×768."},
+    {"feature": "Reject concerns modal", "status": "PASS", "detail": "Opens centered, textarea + 'Back to document' + 'See Bracket suggestions' CTAs visible, no clipping."},
+    {"feature": "Landing hero + section arrangement", "status": "PASS", "detail": "landing-hero, -showcase, -bento, -story, -testimonials, -pricing, -final-cta all present. All section backgrounds rgba(0,0,0,0) with 0px borders → no visible seams between sections."},
+    {"feature": "Showcase carousel", "status": "PASS", "detail": "5 cards (620px each), scrollWidth 3282, at scrollLeft=max the trailing_gap = 0 → no blank space after 5th card."},
+    {"feature": "Bento section", "status": "PASS", "detail": "14 SVGs (illustrations + icons, roughly 2 per card × 7 cards), 0 <img> tags → all SVG visualisations as required."},
+    {"feature": "Horizontal overflow at both viewports", "status": "PASS", "detail": "1920×1080: scrollWidth=1920, clientWidth=1920, overflow=0. 1366×768: overflow=0."},
+    {"feature": "Owner reply modal (ClientReviewModal)", "status": "SKIPPED", "detail": "Cannot open on the seed data — Ceramic Vase project is in share_status='sent' state so [data-testid='overview-view-review-cta'] is not rendered. Modal is only shown when share_status='rejected'. Iteration-30 already verified the modal layout (1080px 2-col grid, centered) so re-verify is only needed if a rejected project is re-seeded."}
+  ],
+  "test_report_links": ["/app/backend/tests/backend_test.py"],
+  "action_items": [
+    "MEDIUM: Fix Accept modal on 1366×768 — either reduce checklist row spacing, tighten the fixed footer, or move footer above modal edge so last 1-2 acceptance items don't clip beneath the .review-accept-footer.",
+    "LOW: Reduce PageLoader duration from 4.3s to ~2.5-3s to hit the stated target.",
+    "LOW: Split 'AWAITING REPLY' dashboard tag into two states — one for share_status='sent' (e.g. 'IN REVIEW') and one for 'awaiting_reply' — to match the overview badge wording and give the owner clearer signal.",
+    "LOW/TESTABILITY: Add data-testid attributes to landing showcase arrows (showcase-arrow-left/right), bento cards (bento-{key}), and client review modals (review-accept-modal, review-reject-modal).",
+    "LOW: Suppress or gracefully handle /api/auth/me 401 for anonymous visitors — either treat as expected (no console.error) or wrap in try/catch that logs at debug level instead of surfacing 6+ red console errors on every anonymous navigation."
+  ],
+  "critical_code_review_comments": [
+    "Dashboard.jsx line 139-140 — projectStage() collapses two distinct backend states ('sent' + 'awaiting_reply') into a single UI label 'AWAITING REPLY'. The two states have different semantics: 'sent' = client hasn't opened, 'awaiting_reply' = owner replied and now client owes a response. Consider two labels for owner clarity.",
+    "ClientReview.jsx AcceptForm — the 21-item .review-accept-checklist is rendered inside a modal panel with a fixed .review-accept-footer. At 1366×768 the checklist items exceed the vertical space above the footer, and the footer overlays the last row (I saw 'retail launch flexibility' partially cut off). Options: (a) reduce vertical row-gap, (b) add scrollable interior for the checklist region only (leaving the footer static), (c) drop the least-critical acceptance items.",
+    "PageLoader.jsx — measured detach at 4.31s but comment in code + iteration-30 say '3s duration'. Verify the actual setTimeout / animation duration matches the documented 3s target.",
+    "Auth cross-cutting — every route change fires /api/auth/me even when the visitor is on a public route (Landing, /r/{token}). This is a wasted round-trip for anonymous visitors AND generates noisy 401 console errors. Consider gating the /me call behind a session-cookie presence check or making /api/auth/me return 200 { user: null } for anonymous.",
+    "Testability — Landing showcase arrows, bento cards, and both client review modal variants lack data-testids. Not functional bugs but they undermine automated regression coverage."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (all guarded endpoints + auth flows tested)", "frontend": "~90% (all critical flows PASS, 1 medium visual clipping bug + polish items)"},
+  "test_credentials": "Demo: demo@use-bracket.com / BracketDemo@2026 (verified via UI + curl). Admin: support@use-bracket.com / Bracket@123 (verified via curl). OTP: e2e+iter31@example.com → dev_code returned in body (OTP_TEST_MODE=1).",
+  "seed_data_creation": "None — reused Ceramic Vase Order Inquiry project (id 0b9effac-2b12-4beb-9f9a-40ab7213d23f, share_token 4aGBBLb7MwKwS41n, share_status='sent') as instructed. Did not delete or mutate it. Also did not create a NEW project for the flow-step test to save time; if 5-step AI flow needs deeper coverage, next iteration should create a fresh project via /start.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All backend guards + auth + dashboard filters + shared-freeze UI + landing polish already verified in iter 31. Focus for next iteration: (1) create a NEW project via /start or /app/new and run the 5-step AI flow end-to-end (steps 1-2 with real Emergent LLM calls, 30-60s each) to confirm outputs render and step-rework guards work. (2) Seed a rejected project via /api/share/{token}/reject/confirm to test the owner ClientReviewModal from a fresh state (iteration 30 already verified layout but re-verify functional reply → status='awaiting_reply' transition). (3) Admin console UI flow (login, users tab, expand user, project detail modal Meta+Step tabs, reset password modal, bulk delete modal). Not tested in iter 31 due to time.",
+  "rca_of_the_issue": "Accept modal checklist clipping (1366×768): The AcceptForm renders 21 checklist items in a 3-column grid inside a modal panel whose max-height is capped at ~744px. A fixed footer bar with signature inputs is positioned at the bottom of the panel. On 1366×768 the checklist grid needs ~640px of vertical space; the footer bar consumes ~90px; combined they exceed the 720px content region, so the bottom row of the checklist ('assumptions: 11-week timeline is non-negotiable...') is rendered underneath the footer overlay. Fix candidates: give .review-accept-checklist its own overflow-y:auto (isolated inner scroll like the reject flow uses), or reduce checklist row-gap from ~20px to 12px, or bump the modal panel max-height to min(90vh, 860px) so more room is available."
+}
