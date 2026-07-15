@@ -25,8 +25,10 @@ SUGGEST_MODEL = "claude-haiku-4-5-20251001"  # ultra-fast for typing suggestions
 
 # Hard timeouts so a hung Anthropic call never lets Cloudflare's 100s timeout
 # fire (which surfaces as a scary 520 "malformed response" page). We return a
-# clean 502 well before that.
-STEP_TIMEOUT_S = 70   # Sonnet step calls (framing, context, decision, artifacts)
+# clean 502 well before that. Step calls get one automatic retry — the two
+# attempt budgets must sum to < ~95s.
+STEP_TIMEOUT_S = 50       # attempt 1 budget for Sonnet step calls
+STEP_RETRY_TIMEOUT_S = 40  # attempt 2 budget (retry on transient failures)
 SUGGEST_TIMEOUT_S = 8  # Haiku typing suggestions
 
 MODEL_MAP = {
@@ -100,22 +102,36 @@ def _send_in_thread(chat, message):
 
 
 async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = None) -> dict:
+    """One LLM step call with ONE automatic retry. Transient provider errors
+    (429/5xx), hung requests and malformed JSON all get a fresh second attempt
+    instead of surfacing an error the user fixes by reloading."""
     provider, model = MODEL_MAP.get(engine, (DEFAULT_PROVIDER, DEFAULT_MODEL))
     api_key = os.environ["EMERGENT_LLM_KEY"]
-    chat = LlmChat(
-        api_key=api_key,
-        session_id=session_id or str(uuid.uuid4()),
-        system_message=SYSTEM_VOICE,
-    ).with_model(provider, model)
-    try:
-        response = await asyncio.wait_for(
-            asyncio.to_thread(_send_in_thread, chat, UserMessage(text=prompt)),
-            timeout=STEP_TIMEOUT_S,
-        )
-    except asyncio.TimeoutError as e:
-        logger.warning("AI step call timed out after %ss (engine=%s)", STEP_TIMEOUT_S, engine)
-        raise TimeoutError(f"AI took longer than {STEP_TIMEOUT_S}s — please retry.") from e
-    return _extract_json(response)
+    last_err: Exception | None = None
+    for attempt, budget in enumerate((STEP_TIMEOUT_S, STEP_RETRY_TIMEOUT_S)):
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=session_id or str(uuid.uuid4()),
+            system_message=SYSTEM_VOICE,
+        ).with_model(provider, model)
+        try:
+            response = await asyncio.wait_for(
+                asyncio.to_thread(_send_in_thread, chat, UserMessage(text=prompt)),
+                timeout=budget,
+            )
+            return _extract_json(response)
+        except asyncio.TimeoutError as e:
+            logger.warning(
+                "AI step call timed out after %ss (engine=%s, attempt=%d)", budget, engine, attempt + 1
+            )
+            last_err = TimeoutError(f"AI took longer than {budget}s — please retry.")
+            last_err.__cause__ = e
+        except Exception as e:
+            logger.warning("AI step call failed (engine=%s, attempt=%d): %s", engine, attempt + 1, e)
+            last_err = e
+        if attempt == 0:
+            await asyncio.sleep(1.5)
+    raise last_err
 
 
 async def _run_fast(prompt: str, session_id: Optional[str] = None, timeout: float = SUGGEST_TIMEOUT_S) -> dict:

@@ -584,3 +584,8 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - `ProjectDocument.jsx`: replaced the inline applying-changes banner with the overlay. `ProjectOverview.jsx`: added the overlay + `applying_changes` change-detection & completion toast in its 6s poll.
   - `ClientReviewModal.jsx` `applyChanges`: optimistically sets `applying_changes: true` so the popup appears instantly after clicking "Apply the changes"; removed the redundant toast.
   - Overlay auto-closes when the poll sees `applying_changes` flip false (success toast fires). Verified via screenshot: visible, survives Escape + backdrop click, 0 close buttons.
+
+- 2026-06-15 — **Iteration 44 — Fix intermittent "AI engine error" on output generation**:
+  - **Root cause**: every step-generation endpoint called the LLM exactly once via `ai_engine._run` — any transient provider error (429/5xx/overloaded), hung request, or malformed JSON surfaced a 502 to the user; reloading/resubmitting succeeded.
+  - **Fix** (`ai_engine.py` `_run`): one automatic retry with a fresh chat session on ANY failure (timeout, provider error, JSON parse). Attempt budgets: 50s + 40s (+1.5s backoff) so the total stays under Cloudflare's ~100s proxy limit. `STEP_TIMEOUT_S` 70→50, new `STEP_RETRY_TIMEOUT_S=40`.
+  - Verified: live framing call succeeds (14.5s); unit test proves recovery from a simulated first-attempt failure and clean raise after two failures.
