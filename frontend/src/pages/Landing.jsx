@@ -442,30 +442,23 @@ const SHOWCASE = [
 
 function Showcase() {
   const stripRef = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [edges, setEdges] = useState({ atStart: true, atEnd: false });
 
-  // Sync the active state with whichever card is currently centered in the strip.
+  // Track whether the strip is at its extreme left/right — arrows hide there.
   useEffect(() => {
     const strip = stripRef.current;
     if (!strip) return;
     const onScroll = () => {
-      const cards = strip.querySelectorAll("[data-showcase-card]");
-      if (!cards.length) return;
-      const stripRect = strip.getBoundingClientRect();
-      const centerX = stripRect.left + stripRect.width / 2;
-      let best = 0;
-      let bestDist = Infinity;
-      cards.forEach((el, i) => {
-        const r = el.getBoundingClientRect();
-        const c = r.left + r.width / 2;
-        const d = Math.abs(c - centerX);
-        if (d < bestDist) { bestDist = d; best = i; }
-      });
-      setActiveIndex(best);
+      const max = strip.scrollWidth - strip.clientWidth;
+      setEdges({ atStart: strip.scrollLeft <= 4, atEnd: strip.scrollLeft >= max - 4 });
     };
     strip.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     onScroll();
-    return () => strip.removeEventListener("scroll", onScroll);
+    return () => {
+      strip.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
   }, []);
 
   // Pointer drag-to-scroll — matches touch-drag UX for mouse users.
@@ -587,21 +580,13 @@ function Showcase() {
     };
   }, []);
 
-  const scrollToIndex = (i) => {
+  const scrollByCard = (dir) => {
     const strip = stripRef.current;
-    if (!strip) return;
-    const cards = strip.querySelectorAll("[data-showcase-card]");
-    const target = cards[Math.max(0, Math.min(cards.length - 1, i))];
-    if (!target) return;
-    const stripRect = strip.getBoundingClientRect();
-    const cardRect = target.getBoundingClientRect();
-    const delta =
-      cardRect.left - stripRect.left - (stripRect.width - cardRect.width) / 2;
-    strip.scrollBy({ left: delta, behavior: "smooth" });
+    const card = strip?.querySelector("[data-showcase-card]");
+    if (!strip || !card) return;
+    const gap = parseFloat(getComputedStyle(strip).columnGap) || 24;
+    strip.scrollBy({ left: dir * (card.getBoundingClientRect().width + gap), behavior: "smooth" });
   };
-
-  const canPrev = activeIndex > 0;
-  const canNext = activeIndex < SHOWCASE.length - 1;
 
   return (
     <section className="relative py-24 md:py-32" data-testid="landing-showcase">
@@ -618,7 +603,7 @@ function Showcase() {
       <div className="showcase-carousel-wrap mt-14">
         <div
           ref={stripRef}
-          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto pb-4 pl-5 sm:pl-6 md:pl-10 pr-[max(20px,calc((100vw-1200px)/2+40px))]"
+          className="showcase-carousel flex gap-6 md:gap-8 overflow-x-auto pb-4 pl-5 sm:pl-6 md:pl-10 pr-5 sm:pr-6 md:pr-10"
           data-testid="showcase-strip"
         >
           {SHOWCASE.map((c) => (
@@ -632,24 +617,22 @@ function Showcase() {
           ))}
         </div>
 
-        {/* Side arrows — overlay controls */}
+        {/* Side arrows — overlay controls, hidden at the extremes */}
         <button
           type="button"
-          onClick={() => scrollToIndex(activeIndex - 1)}
-          disabled={!canPrev}
+          onClick={() => scrollByCard(-1)}
           aria-label="Previous card"
           data-testid="showcase-prev"
-          className="showcase-nav-btn showcase-nav-btn--side showcase-nav-btn--left"
+          className={`showcase-nav-btn showcase-nav-btn--side showcase-nav-btn--left ${edges.atStart ? "is-hidden" : ""}`}
         >
           <ArrowLeft size={18} />
         </button>
         <button
           type="button"
-          onClick={() => scrollToIndex(activeIndex + 1)}
-          disabled={!canNext}
+          onClick={() => scrollByCard(1)}
           aria-label="Next card"
           data-testid="showcase-next"
-          className="showcase-nav-btn showcase-nav-btn--side showcase-nav-btn--right"
+          className={`showcase-nav-btn showcase-nav-btn--side showcase-nav-btn--right ${edges.atEnd ? "is-hidden" : ""}`}
         >
           <ArrowRight size={18} />
         </button>
