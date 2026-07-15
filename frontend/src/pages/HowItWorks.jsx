@@ -199,7 +199,7 @@ export default function HowItWorks() {
 
       {/* FINAL CTA */}
       <section className="relative overflow-x-clip isolate">
-        <div className="hero-ambient" aria-hidden="true" />
+        <div className="hero-ambient hero-ambient--contained hero-ambient--cta" aria-hidden="true" />
         <div className="relative z-10 max-w-[1100px] mx-auto px-5 sm:px-6 md:px-10 py-28 md:py-40 text-center">
           <motion.span
             initial={{ opacity: 0, y: 10 }}

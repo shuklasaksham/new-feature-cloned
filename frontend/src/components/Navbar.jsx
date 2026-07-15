@@ -18,9 +18,18 @@ export default function Navbar() {
   const logoHref = user ? "/app" : "/";
 
   // Scroll-based solidification.
-  const { scrollY } = useScroll();
+  const { scrollY, scrollYProgress } = useScroll();
   const bgOpacity = useTransform(scrollY, [0, 80], [0.9, 1]);
   const borderOpacity = useTransform(scrollY, [0, 80], [0, 0.08]);
+  // Scroll-progress-linked accent — blue near the top (product), drifting
+  // through cyan into amber as the pricing band approaches. Fades in once
+  // the page starts scrolling so the nav stays quiet above the hero.
+  const navAccent = useTransform(
+    scrollYProgress,
+    [0, 0.45, 0.85, 1],
+    ["#5E6AD2", "#7CD5FF", "#FFB84C", "#FFB84C"]
+  );
+  const accentOpacity = useTransform(scrollY, [0, 160], [0, 0.9]);
 
   // Close mobile panel on route change.
   useEffect(() => { setOpen(false); }, [location.pathname]);
@@ -34,6 +43,7 @@ export default function Navbar() {
         // Using CSS custom props so styling stays in index.css.
         "--nav-bg-a": bgOpacity,
         "--nav-border-a": borderOpacity,
+        "--nav-accent": navAccent,
       }}
     >
       <motion.div
@@ -45,6 +55,12 @@ export default function Navbar() {
         aria-hidden="true"
         className="cinema-nav-border"
         style={{ opacity: borderOpacity }}
+      />
+      <motion.div
+        aria-hidden="true"
+        className="cinema-nav-accent"
+        style={{ opacity: accentOpacity }}
+        data-testid="nav-scroll-accent"
       />
       <div className="cinema-nav-inner">
         {/* Brand */}

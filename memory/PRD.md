@@ -69,6 +69,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-07-15 — **Iteration 34 — Scroll-linked nav accent + footer fixes** (self-tested via screenshots/JS probes on all 6 marketing pages):
+  - Navbar: new `--nav-accent` motion value interpolates blue #5E6AD2 → cyan #7CD5FF → amber #FFB84C over `scrollYProgress`; rendered as a soft 2px hairline under the nav (`.cinema-nav-accent`, fades in after 160px scroll) and feeds the link underlines.
+  - Fixed "scrolling beyond footer" on all 5 subpages: root cause was `.hero-ambient::before` (fixed 1400px glow) overflowing far past the short final-CTA sections once `overflow-hidden` was removed in iteration 33. New `.hero-ambient--cta` variant (bottom:0, overflow:hidden, ::before height:100%) applied to every subpage final CTA — verified 0px space below footer on /, /pricing, /how-it-works, /use-cases, /case-studies, /faq.
+  - Footer made uniform across pages: solid `#08090A` background so page ambients no longer tint it differently.
 - 2026-07-15 — **Iteration 33 — Homepage bleed system on all marketing subpages + marquee gap fix** (self-tested via screenshots at 1920/2560/3840):
   - Extracted `SectionBleed` (+ new `GlowWash`) from Landing.jsx into shared `/components/SectionBleed.jsx`; Landing now imports it.
   - Pricing / Use Cases / Product (how-it-works) / Case Studies / FAQ: root gets `landing-page-bg` (fixed radial washes), heroes + final CTAs switched `overflow-hidden` → `overflow-x-clip isolate` so `hero-ambient` bleeds 800px into neighbours, middle sections get `SectionBleed -z-20` + colored `GlowWash -z-10` (case studies cycle blue→cyan→green→amber with bleeds on alternating sections) — backgrounds now blend section-to-section exactly like home.
