@@ -69,6 +69,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-07-15 — **Favicon updated to the new mark**: generated favicon.svg + favicon.ico + favicon-32/logo192/logo512/apple-touch-icon PNGs (dark rounded square, white chevrons, blue gradient diamond — drawn from the BracketMark polygons via PIL). index.html icon links updated (SVG first, ICO/PNG fallbacks); og:image (logo512) refreshed too. All assets verified serving 200.
 - 2026-07-15 — **Iteration 39 — ≤30s full auto-build + "thinking out loud" arrival effect** (self-tested: timed curl runs small 21s / big 26s + full UI e2e at 21.8s):
   - `auto_build_from_brief` (ai_engine.py) replaces the 5-call chain: TWO parallel Haiku 4.5 calls (throughput ~50 tok/s so output tokens dominate) — call A: inputs + framing + context_out; call B: decision_out + artifacts_out. Brief capped at 9k chars, one retry per call, MODEL_MAP gained "haiku". Whole document (step 5, advanced) in 21-26s for small AND big docs.
   - Sufficiency now judges OUTPUT completeness (was blocking short briefs lacking explicit trade-offs). Fallback artifacts call retained if call B returns no scope_doc.
