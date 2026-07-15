@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Loader2, Send, X, MessageSquare, AlertTriangle, Wand2 } from "lucide-react";
@@ -21,9 +21,10 @@ import { api, formatApiError } from "../lib/api";
  */
 export default function ClientReviewModal({ open, onClose, project, setProject }) {
   const navigate = useNavigate();
+  const replyRef = useRef(null);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
-  const [applyingIdx, setApplyingIdx] = useState(null);
+  const [applying, setApplying] = useState(false);
 
   // Lock body scroll while open — same recipe as the sign-off popup.
   useEffect(() => {
@@ -51,26 +52,35 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
   const isAccept = review?.type === "accept";
   const awaitingReply = status === "awaiting_reply";
 
-  const applySuggestion = (s) => {
-    const draft = (s.what_to_say || s.what_to_change || "").trim();
-    if (draft) setReplyText(draft);
-  };
-
-  // Owner accepts the client's requested change: backend maps it to the flow
-  // step it affects, unfreezes the project, and we drop them at that step
-  // with the change pre-loaded as a revision instruction.
-  const applyChange = async (i) => {
-    setApplyingIdx(i);
+  // ONE decision, two paths:
+  // - Apply the changes → backend maps every suggestion to the step it
+  //   affects, unfreezes the project, and we drop the owner at the earliest
+  //   affected step with all changes pre-loaded.
+  // - Keep as is & respond → pre-fill the reply composer with the AI drafts
+  //   defending the current call.
+  const applyChanges = async () => {
+    setApplying(true);
     try {
-      const { data } = await api.post(`/projects/${project.id}/review/apply-suggestion`, { index: i });
-      toast.success(`Change loaded into Step ${data.step}. Project unlocked — update it and re-lock.`);
+      const { data } = await api.post(`/projects/${project.id}/review/apply-changes`);
+      toast.success(
+        `${data.items.length} change${data.items.length === 1 ? "" : "s"} loaded — starting at Step ${data.step}.`
+      );
       onClose?.();
       navigate(`/project/${project.id}/flow?step=${data.step}`);
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
-      setApplyingIdx(null);
+      setApplying(false);
     }
+  };
+
+  const keepAsIs = () => {
+    const draft = suggestions
+      .map((s) => (s.what_to_say || "").trim())
+      .filter(Boolean)
+      .join("\n\n");
+    if (draft) setReplyText(draft);
+    setTimeout(() => replyRef.current?.focus(), 50);
   };
 
   const send = async () => {
@@ -132,6 +142,46 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
                 {review.role ? `, ${review.role}` : ""}
                 {review.submitted_at ? ` · ${new Date(review.submitted_at).toLocaleString()}` : ""}
               </p>
+
+              {/* ONE decision: apply everything the client asked for, or
+                  keep the call and respond. */}
+              {suggestions.length > 0 && (
+                <div className="mt-4 flex flex-wrap items-center gap-2" data-testid="crm-decision-actions">
+                  <button
+                    type="button"
+                    onClick={applyChanges}
+                    disabled={applying}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold transition-all press disabled:opacity-60"
+                    style={{ background: "#5E6AD2", color: "#fff", border: "1px solid #6E7AE8", boxShadow: "0 8px 24px rgba(94,106,210,0.35)" }}
+                    data-testid="crm-apply-changes"
+                  >
+                    {applying ? (
+                      <><Loader2 size={12} className="animate-spin" /> Mapping the changes…</>
+                    ) : (
+                      <><Wand2 size={12} /> Apply the changes</>
+                    )}
+                  </button>
+                  {!awaitingReply && (
+                    <button
+                      type="button"
+                      onClick={keepAsIs}
+                      disabled={applying}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-medium transition-colors border border-[var(--hairline)] text-[var(--text-2)] hover:text-[var(--text)] hover:border-[var(--text-3)]"
+                      data-testid="crm-keep-as-is"
+                    >
+                      <MessageSquare size={12} /> Keep as is &amp; respond
+                    </button>
+                  )}
+                </div>
+              )}
+              {suggestions.length > 0 && (
+                <p className="mt-2 text-[11px] text-[var(--text-3)] leading-snug">
+                  <span className="text-[var(--text-2)]">Apply the changes</span> unlocks the affected steps with every change pre-loaded.
+                  {!awaitingReply && (
+                    <> <span className="text-[var(--text-2)]">Keep as is</span> drafts a reply defending your call.</>
+                  )}
+                </p>
+              )}
             </div>
 
             <div className="crm-cols">
@@ -170,6 +220,7 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
                       <MessageSquare size={11} /> REPLY TO THE CLIENT
                     </p>
                     <textarea
+                      ref={replyRef}
                       rows={3}
                       className="review-accept-input mt-2"
                       style={{ height: "auto", padding: "12px 14px", resize: "vertical" }}
@@ -212,10 +263,6 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
                 <div className="crm-col">
                   <section className="card-linear p-4">
                     <p className="mono-tag text-signal text-[10.5px]">BRACKET SUGGESTS</p>
-                    <p className="mt-1.5 text-[11px] text-[var(--text-3)] leading-snug">
-                      <span className="text-[var(--text-2)]">Apply this change</span> unlocks the exact step and loads the change for you.{" "}
-                      <span className="text-[var(--text-2)]">Keep as is &amp; respond</span> drafts a reply defending your call.
-                    </p>
                     {review.ai_suggestions?.summary && (
                       <p className="mt-2 text-xs italic text-[var(--text-2)]">
                         {review.ai_suggestions.summary}
@@ -236,34 +283,6 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
                             <p className="text-[11.5px] mt-1 text-[var(--text-2)]">
                               <span className="mono-tag text-signal">CHANGE →</span> {s.what_to_change}
                             </p>
-                          )}
-                          {(s.what_to_say || s.what_to_change) && (
-                            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                              <button
-                                type="button"
-                                onClick={() => applyChange(i)}
-                                disabled={applyingIdx !== null}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all press disabled:opacity-50"
-                                style={{ background: "#5E6AD2", color: "#fff", border: "1px solid #5E6AD2" }}
-                                data-testid={`crm-apply-change-${i}`}
-                              >
-                                {applyingIdx === i ? (
-                                  <><Loader2 size={11} className="animate-spin" /> Opening the step…</>
-                                ) : (
-                                  <><Wand2 size={11} /> Apply this change</>
-                                )}
-                              </button>
-                              {!awaitingReply && (
-                                <button
-                                  type="button"
-                                  onClick={() => applySuggestion(s)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-colors border border-[var(--hairline)] text-[var(--text-2)] hover:text-[var(--text)] hover:border-[var(--text-3)]"
-                                  data-testid={`crm-keep-as-is-${i}`}
-                                >
-                                  <MessageSquare size={11} /> Keep as is &amp; respond
-                                </button>
-                              )}
-                            </div>
                           )}
                         </li>
                       ))}

@@ -1,0 +1,58 @@
+{
+  "summary": "Iteration 33 — verified the REVISED client-concern flow (single decision at modal level: 'Apply the changes' vs 'Keep as is & respond'; per-suggestion buttons deleted; unfreeze on concerns; lock flips share_status to 'sent'). 16/16 backend tests PASS on the new /review/apply-changes endpoint. Old /review/apply-suggestion endpoint correctly returns 405 (route removed). CRITICAL runtime bug found and fixed in ClientReviewModal.jsx: the leftover per-suggestion buttons block (lines ~287-314) still referenced undefined identifiers (`applyingIdx`, `applyChange`, `applySuggestion`), causing the WHOLE modal to crash with 'ReferenceError: applyingIdx is not defined' the moment any suggestion had `what_to_say` or `what_to_change` — which is EVERY realistic case. Removed the dead JSX block (spec explicitly said 'Per-suggestion buttons must NOT exist anymore'), and the entire flow now works end-to-end: modal opens → Apply the changes → backend maps ALL suggestions in parallel (~5-6s here) → toast '2 changes loaded — starting at Step 3' → navigate to /project/{id}/flow?step=3 → revision-banner lists both items each prefixed 'STEP 3'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ClientReviewModal.jsx",
+        "issue": "FIXED by testing agent — leftover per-suggestion buttons (lines 287-314) referenced undefined `applyingIdx`, `applyChange`, `applySuggestion` → ReferenceError crashed the whole modal via Array.map render path. Modal was completely unusable on any project whose suggestions had what_to_say/what_to_change fields (i.e. every real client-review). Removed the block; kept the informational LI content (title / SAY / CHANGE).",
+        "selector": "[data-testid=\"client-review-modal\"] li[data-testid^=\"crm-suggestion-\"]",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_features": [
+    {"feature": "POST /api/projects/{id}/review/apply-changes (no body)", "status": "PASS", "detail": "Returns {step, items:[{step, instruction, title}]} items sorted by step, step=earliest. Sets DB status='in_progress', step=earliest, revising=true, revision_context={step, items, created_at}. Works on rejected AND awaiting_reply. 400 when share_status is 'sent' or when suggestions=[]. 401/403 without owner session."},
+    {"feature": "Old endpoint POST /review/apply-suggestion REMOVED", "status": "PASS", "detail": "Returns 405 Method Not Allowed (route deleted from server.py)."},
+    {"feature": "Unfreeze on concerns — _assert_not_shared", "status": "PASS", "detail": "share_status='rejected' or 'awaiting_reply' with revising=false → /unlock returns 200 and /reset-from-step/{n} returns 200 (previously both returned 409). share_status='sent' still returns 409 with detail 'This project is with your client for review…'."},
+    {"feature": "POST /projects/{id}/lock on rejected/awaiting_reply", "status": "PASS", "detail": "Flips share_status='sent', revising=false, revision_context=null, status='locked' — client re-review on same link."},
+    {"feature": "POST /projects/{id}/reply", "status": "PASS", "detail": "Appends owner_replies, share_status→'awaiting_reply'. Rejects text<4 chars with 422."},
+    {"feature": "Frontend — decision actions row", "status": "PASS", "detail": "data-testid='crm-decision-actions' with 'Apply the changes' (crm-apply-changes, solid blue rgb(94,106,210)) and 'Keep as is & respond' (crm-keep-as-is, transparent ghost). Per-suggestion crm-apply-change-{i} and crm-keep-as-is-{i} are gone (verified 0 matches in DOM)."},
+    {"feature": "Frontend — Apply the changes end-to-end", "status": "PASS", "detail": "Clicking triggers loader ('Mapping the changes…'), backend call ~5-6s, toast '2 changes loaded — starting at Step 3.', navigates to /project/{id}/flow?step=3. Revision-banner shows both items each prefixed 'STEP 3' + full instruction text."},
+    {"feature": "Frontend — Keep as is pre-fills reply composer", "status": "PASS", "detail": "Clicking pre-fills crm-reply-text with 'We can add two weeks to production, no scope change.\\n\\nHappy to trim deliverables to align with your budget.' (both what_to_say drafts joined by blank line). Textarea is focused."},
+    {"feature": "Frontend — overview-edit-{n} visible on rejected", "status": "PASS", "detail": "5/5 overview-edit-* buttons visible and labelled 'Refine' on rejected project. Overview-unlock is present ('Unlock to edit'). Frozen hint 'This project is locked. Editing any step will unlock it (the client review status stays intact).' shown because status=locked (correct — locked but NOT frozen by share_status)."},
+    {"feature": "isFrozen gating logic", "status": "PASS (code review)", "detail": "isFrozen = !!share_status && !['none','rejected','awaiting_reply'].includes(share_status) — returns true only for 'sent'/'accepted'. All conditional gates (edit button visibility, editStep guard, frozen hint) use isFrozen consistently."},
+    {"feature": "Backend regression: public share /api/share/{token}", "status": "PASS", "detail": "Returns 200 with name + share_status."}
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_33_apply_changes.py",
+    "/app/test_reports/pytest/iteration_33.xml"
+  ],
+  "action_items": [
+    "REVIEW my ClientReviewModal.jsx fix — I removed the dead JSX block (lines 287-314) that rendered per-suggestion buttons referencing undefined identifiers. The spec explicitly said these must not exist anymore, so this is aligned with the intended design. The suggestions LI still shows title + SAY/CHANGE text as informational.",
+    "OPTIONAL polish: consider adding an ErrorBoundary around ClientReviewModal so a future ReferenceError like this one falls back to a graceful message instead of crashing the whole modal.",
+    "OPTIONAL: previously-flagged low items still open (title tag brand duplication, PageLoader ~4.3s vs 3s target, /api/auth/me 401 noise for anonymous)."
+  ],
+  "critical_code_review_comments": [
+    "ClientReviewModal.jsx had leftover dead JSX from the previous per-suggestion design (`applyingIdx`, `applyChange`, `applySuggestion` all undefined) — this crashed the modal completely on every rejected/awaiting project that had suggestions with what_to_say/what_to_change. When you delete an old design path, delete BOTH the state (`applyingIdx`) AND the JSX consumers — leaving JSX behind is a runtime timebomb because JSX referencing undefined identifiers only fails at render, and only when that JSX branch is entered.",
+    "server.py step_lock still doesn't verify ownership — uses _get_project_or_404 (any authed user) not _get_owned_project_or_404. Inconsistent with unlock/reset-from-step. Not exploitable via UI today, but any leaked project id + an authed account elsewhere = privilege boundary broken.",
+    "apply_review_changes has a defensive `mapped = {step: 3, ...}` fallback if map_suggestion_to_step throws (line 1988) — good, but the fallback step is hardcoded to 3 regardless of the suggestion's `affects_step` hint. Could use `s.get('affects_step', 3)` for a smarter default."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_33_apply_changes.py (new: 16 tests, replaces iteration_32 file)",
+    "/app/backend/tests/test_iteration_32_review_actions.py (DELETED — referenced removed /review/apply-suggestion endpoint)",
+    "/app/frontend/src/components/ClientReviewModal.jsx (removed dead per-suggestion buttons block, lines ~287-314, that crashed the modal with ReferenceError)"
+  ],
+  "success_rate": {"backend": "100% (16/16)", "frontend": "100% for the flows tested after ClientReviewModal fix"},
+  "test_credentials": "Demo: demo@use-bracket.com / BracketDemo@2026 (password toggle on /login). Verified via UI + backend fixture.",
+  "seed_data_creation": "Seeded 1 UI test project (UITEST-4775b9884826, copy of Ceramic Vase with share_status='rejected' + canned ai_suggestions.suggestions[2]) and multiple TESTREV-* projects via pytest fixture. All seed data deleted after run — mongo clean.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 33 removed dead per-suggestion buttons from ClientReviewModal.jsx and rebuilt the backend test suite around /review/apply-changes. When testing similar dead-code cleanups, ALWAYS render the affected component with realistic seed data — a JSX branch that references an undefined identifier will only crash at render time, so a stub project without what_to_say/what_to_change would have silently passed. Also, the frontend uses PORTAL for the modal — pageerror listener catches the ReferenceError even though the DOM appears empty (modal never mounts).",
+  "rca_of_the_issue": "Root cause: The main agent removed the per-suggestion state (`applyingIdx`, `applyChange`, `applySuggestion`) at the top of ClientReviewModal.jsx as part of the flow rewrite, BUT left the JSX consumers (buttons at lines 287-314 inside the suggestions .map). JSX references identifiers by closure — since they no longer exist in scope, React threw `ReferenceError: applyingIdx is not defined` the moment Array.map hit any suggestion with `what_to_say || what_to_change` (which is EVERY real case). Because ClientReviewModal is portalled and the entire render throws, the modal never mounts — from the user's POV clicking 'View concerns & reply' does nothing. Reproduction: seed a rejected project with any suggestion having a `what_to_say` string, log in as owner, open the overview, click 'View concerns & reply' — Uncaught runtime errors overlay appears in dev, blank screen in prod. Fix: delete the dead JSX block. Verified working end-to-end: modal opens, both new decision actions present, Apply the changes navigates to flow?step=3 with a 2-item revision-banner."
+}

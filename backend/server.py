@@ -1656,15 +1656,18 @@ async def bulk_delete_projects(body: BulkDeleteIn, request: Request):
 
 
 def _assert_not_shared(p: dict):
-    """Once a project is shared with a client, its steps are frozen — unless
-    the owner is applying a client-requested revision (revising flag)."""
+    """Steps are frozen while the document sits with the client (sent) or
+    after they accepted. Once the client raises concerns (rejected /
+    awaiting_reply) the owner may edit again to address them — re-locking
+    sends the new version back for re-review."""
     if p.get("revising"):
         return
-    if (p.get("share_status") or "none") != "none":
-        raise HTTPException(
-            status_code=409,
-            detail="This project has been shared with your client — steps can no longer be edited or unlocked.",
-        )
+    if (p.get("share_status") or "none") in ("none", "rejected", "awaiting_reply"):
+        return
+    raise HTTPException(
+        status_code=409,
+        detail="This project is with your client for review — steps can't be edited until they respond.",
+    )
 
 
 @api.post("/projects/{project_id}/unlock")
@@ -1966,32 +1969,34 @@ async def step_artifacts(project_id: str):
 
 
 # --- STEP 5: CONFIDENCE LOCK-IN ---
-class ApplySuggestionIn(BaseModel):
-    index: int = Field(ge=0, le=9)
-
-
-@api.post("/projects/{project_id}/review/apply-suggestion")
-async def apply_review_suggestion(project_id: str, body: ApplySuggestionIn, request: Request):
-    """Owner accepts a client-requested change: map the suggestion to the flow
-    step it affects, unfreeze the project, and drop the owner at that step
-    with the change pre-loaded as a regeneration instruction."""
+@api.post("/projects/{project_id}/review/apply-changes")
+async def apply_review_changes(project_id: str, request: Request):
+    """Owner accepts the client's requested changes in one go: map every
+    suggestion to the flow step it affects, unfreeze the project, and drop
+    the owner at the earliest affected step with all changes pre-loaded."""
     p = await _get_owned_project_or_404(project_id, request)
     review = p.get("share_review") or {}
     suggestions = (review.get("ai_suggestions") or {}).get("suggestions") or []
     if p.get("share_status") not in ("rejected", "awaiting_reply") or not suggestions:
         raise HTTPException(status_code=400, detail="No client concerns to apply on this project.")
-    if body.index >= len(suggestions):
-        raise HTTPException(status_code=404, detail="Suggestion not found.")
-    suggestion = suggestions[body.index]
-    try:
-        mapped = await map_suggestion_to_step(p, suggestion)
-    except Exception as e:
-        logger.warning("apply-suggestion mapping failed, defaulting to step 3: %s", e)
-        mapped = {"step": 3, "instruction": (suggestion.get("what_to_change") or suggestion.get("title") or "").strip()}
+
+    async def _map(s):
+        try:
+            mapped = await map_suggestion_to_step(p, s)
+        except Exception as e:
+            logger.warning("apply-changes mapping failed, defaulting to step 3: %s", e)
+            mapped = {"step": 3, "instruction": (s.get("what_to_change") or s.get("title") or "").strip()}
+        return {"step": mapped["step"], "instruction": mapped["instruction"], "title": s.get("title", "")}
+
+    items = list(await asyncio.gather(*[_map(s) for s in suggestions]))
+    items = [it for it in items if it["instruction"]]
+    if not items:
+        raise HTTPException(status_code=502, detail="Couldn't map the client's changes to a step. Try again.")
+    items.sort(key=lambda it: it["step"])
+    first_step = items[0]["step"]
     revision_context = {
-        "step": mapped["step"],
-        "instruction": mapped["instruction"],
-        "suggestion_title": suggestion.get("title", ""),
+        "step": first_step,
+        "items": items,
         "created_at": _now_iso(),
     }
     await db.projects.update_one(
@@ -1999,14 +2004,14 @@ async def apply_review_suggestion(project_id: str, body: ApplySuggestionIn, requ
         {
             "$set": {
                 "status": "in_progress",
-                "step": mapped["step"],
+                "step": first_step,
                 "revising": True,
                 "revision_context": revision_context,
                 "updated_at": _now_iso(),
             }
         },
     )
-    return {"step": mapped["step"], "instruction": mapped["instruction"]}
+    return {"step": first_step, "items": items}
 
 
 @api.post("/projects/{project_id}/lock", response_model=ProjectOut)
@@ -2015,9 +2020,10 @@ async def step_lock(project_id: str):
     if not project.get("artifacts"):
         raise HTTPException(status_code=400, detail="Generate artifacts first.")
     update = {"status": "locked", "locked_at": _now_iso(), "updated_at": _now_iso()}
-    if project.get("revising"):
-        # Revision applied — the shared link now serves the new version and
-        # the client is asked to re-review.
+    if project.get("revising") or project.get("share_status") in ("rejected", "awaiting_reply"):
+        # Revision applied (or the owner edited after concerns were raised) —
+        # the shared link now serves the new version and the client is asked
+        # to re-review.
         update.update({"revising": False, "revision_context": None, "share_status": "sent"})
     await db.projects.update_one({"id": project_id}, {"$set": update})
     return await _get_project_or_404(project_id)

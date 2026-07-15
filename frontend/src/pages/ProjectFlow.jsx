@@ -45,8 +45,11 @@ const STEP_DOWNSTREAM_KEYS = {
  *  - project (object) → reset succeeded, caller should setProject(...) THEN re-run.
  */
 async function guardStepRework(step, project, confirmDialog) {
-  if (project?.share_status && project.share_status !== "none") {
-    toast.error("This project is shared with your client — steps can no longer be edited.");
+  const status = project?.share_status || "none";
+  // Frozen only while the doc sits with the client (sent) or after they
+  // accepted. Once concerns are raised the owner can edit again.
+  if (!["none", "rejected", "awaiting_reply"].includes(status)) {
+    toast.error("This project is with your client for review — steps can't be edited until they respond.");
     return false;
   }
   const keys = (STEP_DOWNSTREAM_KEYS[step] || []).filter(
@@ -233,16 +236,22 @@ export default function ProjectFlow() {
           </div>
         </div>
 
-        {/* Client-requested revision banner — set when the owner clicks
-            "Apply this change" from the review modal. */}
-        {project?.revising && project?.revision_context?.instruction && (
+        {/* Client-requested changes banner — set when the owner clicks
+            "Apply the changes" from the review modal. Lists every change
+            with the step it belongs to. */}
+        {project?.revising && project?.revision_context && (
           <div className="mt-5 card-linear p-4 border-l-2 border-signal" data-testid="revision-banner">
-            <p className="mono-tag text-signal text-[10.5px]">
-              CLIENT-REQUESTED CHANGE · STEP {project.revision_context.step}
-            </p>
-            <p className="mt-1.5 text-sm text-[var(--text)]">{project.revision_context.instruction}</p>
-            <p className="mt-1 text-[11.5px] text-[var(--text-3)]">
-              Update this step with the change, regenerate, and re-lock — your client will re-review the same link.
+            <p className="mono-tag text-signal text-[10.5px]">CLIENT-REQUESTED CHANGES</p>
+            <ul className="mt-1.5 space-y-1.5">
+              {(project.revision_context.items || [project.revision_context]).map((it, i) => (
+                <li key={i} className="text-sm text-[var(--text)]">
+                  <span className="mono-tag text-signal text-[10px] mr-1.5">STEP {it.step}</span>
+                  {it.instruction}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-[11.5px] text-[var(--text-3)]">
+              Update the steps above, regenerate, and re-lock — your client will re-review the same link.
             </p>
           </div>
         )}

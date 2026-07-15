@@ -264,11 +264,14 @@ export default function ProjectOverview() {
   }, [id, project?.share_status]);
 
   const isLocked = project?.status === "locked";
-  const isShared = !!project?.share_status && project.share_status !== "none";
+  // Frozen only while the doc is with the client (sent) or accepted — once
+  // the client raises concerns the owner can edit again.
+  const isFrozen =
+    !!project?.share_status && !["none", "rejected", "awaiting_reply"].includes(project.share_status);
 
   const editStep = async (stepN) => {
-    if (isShared) {
-      toast.error("This project is shared with your client — steps can no longer be edited.");
+    if (isFrozen) {
+      toast.error("This project is with your client for review — steps can't be edited until they respond.");
       return;
     }
     // If locked, prompt unlock first; otherwise go straight to the step
@@ -433,7 +436,7 @@ export default function ProjectOverview() {
 
           {/* Quick actions */}
           <div className="flex flex-wrap gap-2 shrink-0">
-            {!isLocked && !isShared && (
+            {!isLocked && !isFrozen && (
               <button
                 onClick={() => navigate(`/project/${id}/flow?step=${currentStep}`)}
                 className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-2"
@@ -451,7 +454,7 @@ export default function ProjectOverview() {
                 <FileText size={12} /> Document
               </Link>
             )}
-            {isLocked && !isShared && (
+            {isLocked && !isFrozen && (
               <button
                 onClick={() => unlockAndGo(currentStep)}
                 disabled={unlocking}
@@ -553,7 +556,7 @@ export default function ProjectOverview() {
                   <div className="mt-2.5 flex-1 min-h-0 overflow-hidden">
                     <StepSummary step={step} project={project} />
                   </div>
-                  {!isShared && (
+                  {!isFrozen && (
                     <button
                       onClick={() => editStep(step.n)}
                       className="overview-step-btn mt-3"
@@ -569,12 +572,12 @@ export default function ProjectOverview() {
         </section>
 
         {/* Hint when locked / shared */}
-        {(isLocked || isShared) && (
+        {(isLocked || isFrozen) && (
           <div className="mt-6 flex items-start gap-3 text-sm text-muted">
             <AlertCircle size={14} className="mt-0.5 shrink-0"/>
             <p>
-              {isShared
-                ? "This project is shared with your client — steps can no longer be edited or unlocked."
+              {isFrozen
+                ? "This project is with your client for review — steps can't be edited until they respond."
                 : "This project is locked. Editing any step will unlock it (the client review status stays intact)."}
             </p>
           </div>
