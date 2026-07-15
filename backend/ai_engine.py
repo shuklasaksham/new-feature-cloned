@@ -31,6 +31,7 @@ SUGGEST_TIMEOUT_S = 8  # Haiku typing suggestions
 
 MODEL_MAP = {
     "claude": ("anthropic", "claude-sonnet-4-5-20250929"),
+    "haiku": ("anthropic", "claude-haiku-4-5-20251001"),
     "gpt": ("openai", "gpt-5.2"),
 }
 
@@ -707,3 +708,113 @@ Return JSON:
 {{"note": "the note text"}}"""
     result = await _run(prompt, engine)
     return (result.get("note") or "").strip()
+
+
+async def auto_build_from_brief(raw_paste: str) -> dict:
+    """One-shot auto-build for uploaded briefs. Two Haiku calls run in
+    PARALLEL (throughput is ~50 tok/s, so output tokens dominate wall time):
+    call A extracts inputs + framing + context, call B makes the decision +
+    artifacts. Whole document in ~25-30s regardless of brief size. Output
+    shapes match run_situation_framing / run_context_compression /
+    run_decision_engine / run_artifacts exactly."""
+    text = (raw_paste or "").strip()[:9000]
+    prompt_a = f"""The user uploaded a client brief (PDF text, note dump, or transcribed image). In one pass:
+1. Extract the workflow inputs. Be honest — leave a field empty if the brief truly doesn't mention it. Do NOT invent details.
+2. Reframe the situation like a seasoned operator (strip fluff, name what's actually happening).
+3. Compress the context — surface only what changes the decision.
+Also infer the user's persona: INDIE_CREATIVE | SMALL_AGENCY | INHOUSE_PRODUCT | JUNIOR | INDEPENDENT_DESIGNER.
+Be concise — lists max 3 items each.
+
+BRIEF:
+---
+{text}
+---
+
+Return JSON with EXACTLY this shape:
+{{
+  "situation": {{"what": "", "who": "", "unclear": ""}},
+  "context": {{"requirements": "", "constraints": "", "inspirations": ""}},
+  "decision": {{"optimizing_for": "", "tradeoffs": "", "risks": ""}},
+  "persona": "",
+  "framing": {{
+    "reframed_problem": "2-3 sentence crisp restatement of what's actually going on",
+    "clarity_score": 0-100,
+    "clarity_label": "one of: MURKY | FORMING | CLEAR | SHARP",
+    "tensions": ["tension 1", "tension 2"],
+    "what_to_name": "One sentence the project owner can say to name the real problem"
+  }},
+  "context_out": {{
+    "key_signals": ["signal 1"],
+    "noise_removed": ["item 1"],
+    "what_actually_matters": "One sharp paragraph naming the 1-2 things that drive this decision",
+    "hidden_assumptions": ["assumption 1"]
+  }}
+}}"""
+    prompt_b = f"""The user uploaded a client brief. Make the call — a stance, not a menu — and generate the protective artifacts. Be concise — lists max 3-4 items each.
+
+BRIEF:
+---
+{text}
+---
+
+Return JSON with EXACTLY this shape:
+{{
+  "decision_out": {{
+    "recommendation": {{"title": "Short directive title", "rationale": "2-3 sentence why", "confidence": 0-100}},
+    "alternatives": [{{"title": "Alt 1", "when_to_choose": "when this becomes the right call", "cost": "what you give up"}}],
+    "tradeoffs": ["trade-off statement 1"],
+    "risks": [{{"risk": "risk description", "severity": "LOW|MEDIUM|HIGH", "mitigation": "how to de-risk"}}]
+  }},
+  "artifacts_out": {{
+    "scope_doc": {{
+      "title": "Project scope title",
+      "in_scope": ["item"],
+      "out_of_scope": ["item"],
+      "deliverables": ["deliverable"],
+      "timeline_note": "One line on timeline posture"
+    }},
+    "client_message": "A ready-to-send message (3-4 short paragraphs) explaining direction, boundaries, and next steps. Warm, clear, confident. No corporate fluff.",
+    "assumptions": ["explicit assumption"],
+    "risk_flags": [{{"flag": "short flag name", "why": "why it matters", "severity": "LOW|MEDIUM|HIGH"}}]
+  }}
+}}"""
+
+    async def _call(prompt):
+        try:
+            return await _run(prompt, "haiku")
+        except Exception as first_err:
+            logger.warning("auto_build call failed, retrying: %s", first_err)
+            return await _run(prompt, "haiku")
+
+    data_a, data_b = await asyncio.gather(_call(prompt_a), _call(prompt_b))
+
+    def _sanitize(d: dict, keys: list, cap: int) -> dict:
+        out = {}
+        for k in keys:
+            v = d.get(k, "") if isinstance(d, dict) else ""
+            out[k] = str(v or "").strip()[:cap]
+        return out
+
+    situation = _sanitize(data_a.get("situation") or {}, ["what", "who", "unclear"], 500)
+    context = _sanitize(data_a.get("context") or {}, ["requirements", "constraints", "inspirations"], 800)
+    decision = _sanitize(data_a.get("decision") or {}, ["optimizing_for", "tradeoffs", "risks"], 800)
+    # Sufficiency is about OUTPUT completeness — the model already made the
+    # call, so a thin input field (e.g. no explicit trade-offs in a short
+    # brief) must not block the auto-build.
+    sufficient = bool(
+        situation["what"]
+        and (data_a.get("framing") or {}).get("reframed_problem")
+        and ((data_b.get("decision_out") or {}).get("recommendation") or {}).get("title")
+        and ((data_b.get("artifacts_out") or {}).get("scope_doc") or {}).get("title")
+    )
+    return {
+        "situation": situation,
+        "context": context,
+        "decision": decision,
+        "persona": str(data_a.get("persona") or "").strip().upper()[:40],
+        "framing": data_a.get("framing") or {},
+        "context_out": data_a.get("context_out") or {},
+        "decision_out": data_b.get("decision_out") or {},
+        "artifacts_out": data_b.get("artifacts_out") or {},
+        "sufficient": sufficient,
+    }

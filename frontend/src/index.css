@@ -2568,8 +2568,46 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   backdrop-filter: blur(32px) saturate(180%);
   -webkit-backdrop-filter: blur(32px) saturate(180%);
 }
-/* Nav logo hover — only the blue diamond of the mark rotates. */
-.bracket-mark-core {
+/* Auto-build arrival — "thinking out loud": new step outputs blur-fade in
+   with a light diagonal shimmer sweep while Bracket builds from a brief. */
+.ai-arrive {
+  position: relative;
+  animation: aiArrive 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes aiArrive {
+  0% { opacity: 0; transform: translateY(14px); filter: blur(7px); }
+  55% { filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.ai-arrive::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(105deg, transparent 42%, rgba(94, 106, 210, 0.12) 50%, rgba(124, 213, 255, 0.07) 54%, transparent 62%);
+  transform: translateX(-130%);
+  animation: aiSweep 1.5s 0.2s cubic-bezier(0.4, 0, 0.2, 1) 2;
+}
+@keyframes aiSweep {
+  to { transform: translateX(130%); }
+}
+/* Stagger the panel's top-level blocks so content "types itself" in. */
+.ai-arrive > * > * { animation: aiArriveChild 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ai-arrive > * > *:nth-child(2) { animation-delay: 0.1s; }
+.ai-arrive > * > *:nth-child(3) { animation-delay: 0.2s; }
+.ai-arrive > * > *:nth-child(4) { animation-delay: 0.3s; }
+.ai-arrive > * > *:nth-child(n + 5) { animation-delay: 0.4s; }
+@keyframes aiArriveChild {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-arrive, .ai-arrive > * > * { animation: none; }
+  .ai-arrive::after { display: none; }
+}
+
+/* Nav logo hover — only the blue diamond of the mark rotates. */.bracket-mark-core {
   transform-box: fill-box;
   transform-origin: center;
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);

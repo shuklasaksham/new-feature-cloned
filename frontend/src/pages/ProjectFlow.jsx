@@ -136,7 +136,10 @@ export default function ProjectFlow() {
   useEffect(() => {
     if (project?.auto_advance_status !== "pending") return undefined;
     const t = setInterval(async () => {
-      if (dirtyRef.current) return;
+      // Note: don't gate on dirtyRef here — step 1 flags itself dirty while
+      // a raw paste has no framing yet, which is exactly the uploaded-brief
+      // state. Step components hold their own local form state, so a
+      // project refresh won't clobber in-progress typing.
       try {
         const { data } = await api.get(`/projects/${id}`);
         setProject(data);
@@ -314,7 +317,10 @@ export default function ProjectFlow() {
           </div>
         </div>
 
-        <div className="mt-8 md:mt-10">
+        <div
+          key={project?.auto_advance_status === "pending" ? `arrive-${currentStep}` : "steps"}
+          className={`mt-8 md:mt-10 ${project?.auto_advance_status === "pending" ? "ai-arrive" : ""}`}
+        >
         {currentStep === 1 && (
           <Step1 project={project} setProject={setProject} dirtyRef={dirtyRef} onDone={() => setCurrentStep(2)} />
         )}

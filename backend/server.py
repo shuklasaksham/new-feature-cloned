@@ -38,7 +38,7 @@ from ai_engine import (
     extract_context_from_paste,
     extract_decision_from_paste,
     extract_text_from_image,
-    extract_full_brief_from_paste,
+    auto_build_from_brief,
     generate_project_title,
     map_suggestion_to_step,
     draft_change_note,
@@ -1456,85 +1456,57 @@ async def upload_brief(request: Request, file: UploadFile = File(...)):
                 logger.warning("upload_brief title generation failed: %s", e)
 
         asyncio.create_task(_title_task())
+        # One-shot auto-build (single Haiku call for inputs + steps 1-3
+        # outputs) followed by one artifacts call — whole document in ~30s
+        # instead of the old five-call chain.
         try:
-            extracted = await extract_full_brief_from_paste(text)
+            built = await auto_build_from_brief(text)
         except Exception as e:
-            logger.warning("upload_brief full-extract failed: %s", e)
+            logger.warning("upload_brief auto-build failed: %s", e)
             await db.projects.update_one(
                 {"id": doc["id"]},
                 {"$set": {"auto_advance_status": "failed", "updated_at": _now_iso()}},
             )
             return
-        if not extracted.get("sufficient"):
-            await db.projects.update_one(
-                {"id": doc["id"]},
-                {"$set": {"auto_advance_status": "insufficient", "updated_at": _now_iso()}},
-            )
-            return
-        sit = extracted["situation"]
-        ctx = extracted["context"]
-        dec = extracted["decision"]
-        sit_input = {**sit, "raw_paste": text}
-        ctx_input = {**ctx, "raw_paste": text}
-        dec_input = {**dec, "raw_paste": text}
-        try:
-            framing = await run_situation_framing(sit_input, "claude")
+        sit_input = {**built["situation"], "raw_paste": text}
+        if not built.get("sufficient"):
+            # Seed whatever inputs we did get so Step 1 isn't empty.
             await db.projects.update_one(
                 {"id": doc["id"]},
                 {"$set": {
                     "situation_input": sit_input,
-                    "framing": framing,
-                    "step": 2,
-                    "status": "in_progress",
+                    "auto_advance_status": "insufficient",
                     "updated_at": _now_iso(),
                 }},
             )
-        except Exception as e:
-            logger.warning("upload_brief framing failed: %s", e)
-            await db.projects.update_one(
-                {"id": doc["id"]},
-                {"$set": {"auto_advance_status": "failed", "updated_at": _now_iso()}},
-            )
             return
-        try:
-            context_out = await run_context_compression(ctx_input, framing, "claude")
-            await db.projects.update_one(
-                {"id": doc["id"]},
-                {"$set": {
-                    "context_input": ctx_input,
-                    "context": context_out,
-                    "step": 3,
-                    "updated_at": _now_iso(),
-                }},
-            )
-        except Exception as e:
-            logger.warning("upload_brief context failed: %s", e)
-            await db.projects.update_one(
-                {"id": doc["id"]},
-                {"$set": {"auto_advance_status": "partial", "updated_at": _now_iso()}},
-            )
+        ctx_input = {**built["context"], "raw_paste": text}
+        dec_input = {**built["decision"], "raw_paste": text}
+        artifacts = built.get("artifacts_out") or {}
+        has_artifacts = bool((artifacts.get("scope_doc") or {}).get("title"))
+        await db.projects.update_one(
+            {"id": doc["id"]},
+            {"$set": {
+                "situation_input": sit_input,
+                "framing": built["framing"],
+                "context_input": ctx_input,
+                "context": built["context_out"],
+                "decision_input": dec_input,
+                "decision": built["decision_out"],
+                **({"artifacts": artifacts} if has_artifacts else {}),
+                "step": 5 if has_artifacts else 4,
+                "status": "in_progress",
+                "auto_advance_status": "advanced" if has_artifacts else "pending",
+                "updated_at": _now_iso(),
+            }},
+        )
+        if has_artifacts:
             return
-        try:
-            decision_out = await run_decision_engine(dec_input, framing, context_out, "claude")
-            await db.projects.update_one(
-                {"id": doc["id"]},
-                {"$set": {
-                    "decision_input": dec_input,
-                    "decision": decision_out,
-                    "step": 4,
-                    "updated_at": _now_iso(),
-                }},
-            )
-        except Exception as e:
-            logger.warning("upload_brief decision failed: %s", e)
-            await db.projects.update_one(
-                {"id": doc["id"]},
-                {"$set": {"auto_advance_status": "partial", "updated_at": _now_iso()}},
-            )
-            return
+        # Fallback: artifacts missing from the one-shot output — generate
+        # them with a dedicated fast call.
         try:
             project_for_artifacts = await _get_project_or_404(doc["id"])
-            artifacts = await run_artifacts(project_for_artifacts, "claude")
+            artifacts = await run_artifacts(project_for_artifacts, "haiku")
             await db.projects.update_one(
                 {"id": doc["id"]},
                 {"$set": {
