@@ -2522,6 +2522,8 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   box-shadow: 0 14px 40px rgba(255,184,76,0.44), 0 2px 8px rgba(0,0,0,0.4);
 }
 .landing-plan-cta--popular:hover {
+  background: linear-gradient(180deg, #FFDD99 0%, #FFC466 100%);
+  border-color: rgba(255,196,102,0.8);
   box-shadow: 0 22px 60px rgba(255,184,76,0.60), 0 4px 14px rgba(0,0,0,0.5);
   transform: translateY(-1px);
 }
