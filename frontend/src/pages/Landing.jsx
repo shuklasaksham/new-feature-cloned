@@ -92,6 +92,11 @@ function WordReveal({ text, className = "", tag: Tag = "span", delayBase = 0 }) 
   );
 }
 
+// Opaque section backdrop that bleeds past section edges with eased alpha
+// stops (smoothstep-ish) so no perceptual "edge line" appears at boundaries.
+const SECTION_BLEED_BG =
+  "linear-gradient(180deg, rgba(8,9,10,0) 0%, rgba(8,9,10,0.08) 8%, rgba(8,9,10,0.28) 15%, rgba(8,9,10,0.55) 21%, rgba(8,9,10,0.8) 26%, #08090A 32%, #08090A 68%, rgba(8,9,10,0.8) 74%, rgba(8,9,10,0.55) 79%, rgba(8,9,10,0.28) 85%, rgba(8,9,10,0.08) 92%, rgba(8,9,10,0) 100%)";
+
 // Film grain overlay — SVG turbulence baked as data URI, animated with a slow
 // translate for subtle life. Non-interactive.
 function FilmGrain({ opacity = 0.06, fadeBottom = false }) {
@@ -592,10 +597,7 @@ function Showcase() {
       <div
         aria-hidden="true"
         className="absolute inset-x-0 -top-64 -bottom-64 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(8,9,10,0) 0%, rgba(8,9,10,0.08) 8%, rgba(8,9,10,0.28) 15%, rgba(8,9,10,0.55) 21%, rgba(8,9,10,0.8) 26%, #08090A 32%, #08090A 68%, rgba(8,9,10,0.8) 74%, rgba(8,9,10,0.55) 79%, rgba(8,9,10,0.28) 85%, rgba(8,9,10,0.08) 92%, rgba(8,9,10,0) 100%)",
-        }}
+        style={{ background: SECTION_BLEED_BG }}
       />
       <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
@@ -1252,6 +1254,13 @@ function Testimonials() {
   const track = [...TESTIMONIALS, ...TESTIMONIALS];
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-testimonials" id="testimonials">
+      {/* Opaque backdrop bleeding into neighbours — sits BELOW the blue wash
+          (-z-20 vs -z-10) so the glow stays visible on top of it. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 -top-64 -bottom-64 -z-20 pointer-events-none"
+        style={{ background: SECTION_BLEED_BG }}
+      />
       {/* Signal-blue centre wash — extended vertically so it kisses both
          the story section above and overlaps deep into the pricing amber
          below (soft blue→amber colour blend, no visible seam). Parallax. */}
@@ -1321,6 +1330,12 @@ function PricingSection() {
 
   return (
     <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-pricing" id="pricing">
+      {/* Opaque backdrop bleeding into neighbours — below the amber wash. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-x-0 -top-64 -bottom-64 -z-20 pointer-events-none"
+        style={{ background: SECTION_BLEED_BG }}
+      />
       {/* Amber wash — pulled UP past the section top so it overlaps the
          testimonials blue for a soft colour transition (no visible seam). */}
       <ParallaxGlow
