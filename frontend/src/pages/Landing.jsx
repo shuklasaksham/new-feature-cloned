@@ -579,7 +579,7 @@ function Showcase() {
   const canNext = activeIndex < SHOWCASE.length - 1;
 
   return (
-    <section className="relative py-24 md:py-32" data-testid="landing-showcase">
+    <section className="relative py-24 md:py-32" style={{ background: "#08090A" }} data-testid="landing-showcase">
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="THE FLOW"

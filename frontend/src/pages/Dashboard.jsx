@@ -569,6 +569,7 @@ export default function Dashboard() {
                     { key: "all", label: "All" },
                     { key: "in_progress", label: "In progress" },
                     { key: "locked", label: "Locked" },
+                    { key: "awaiting", label: "Awaiting reply" },
                     { key: "rejected", label: "Rejected" },
                     { key: "accepted", label: "Accepted" },
                   ].map((f) => (
