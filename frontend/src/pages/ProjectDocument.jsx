@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import BracketMark from "../components/BracketMark";
 import { api, API_BASE, formatApiError } from "../lib/api";
 import ClientReviewModal from "../components/ClientReviewModal";
+import ApplyingChangesOverlay from "../components/ApplyingChangesOverlay";
 
 // Inline-style severity palette (Tailwind text classes get overridden by
 // `.mono-tag`'s hardcoded color, so use inline styles for guaranteed contrast).
@@ -203,25 +204,8 @@ export default function ProjectDocument() {
           </div>
         </div>
 
-        {/* Background apply-changes pipeline running — refreshes via the poll. */}
-        {project.applying_changes && (
-          <div
-            className="mb-6 card-linear p-4 border-l-2 border-signal flex items-start gap-3"
-            data-testid="applying-changes-banner"
-          >
-            <Loader2 size={16} className="animate-spin text-signal mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm text-[var(--text)] font-medium">
-                Bracket is applying your client&apos;s changes…
-              </p>
-              <p className="mt-1 text-[12px] text-[var(--text-3)]">
-                Regenerating the affected steps and the document. Takes a minute or two — this page
-                refreshes automatically, then the updated document goes to your client with a note on
-                what changed.
-              </p>
-            </div>
-          </div>
-        )}
+        {/* Background apply-changes pipeline running — blocking popup until done. */}
+        <ApplyingChangesOverlay open={!!project.applying_changes} />
 
         <div className="grid lg:grid-cols-12 gap-6 md:gap-8">
         {/* DOCUMENT BODY — glass card matching dashboard/steps cards. */}

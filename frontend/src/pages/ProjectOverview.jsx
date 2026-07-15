@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useDialog } from "../components/Dialog";
 import ClientReviewModal from "../components/ClientReviewModal";
+import ApplyingChangesOverlay from "../components/ApplyingChangesOverlay";
 
 const STEPS = [
   {
@@ -239,9 +240,17 @@ export default function ProjectOverview() {
           // Cheap change detection — status shifted or a new review/reply arrived
           if (
             cur.share_status !== data.share_status ||
+            cur.applying_changes !== data.applying_changes ||
             (cur.share_review?.submitted_at || "") !== (data.share_review?.submitted_at || "") ||
             (cur.owner_replies?.length || 0) !== (data.owner_replies?.length || 0)
           ) {
+            if (cur.applying_changes && !data.applying_changes) {
+              toast.success(
+                data.share_status === "sent"
+                  ? "Changes applied — the updated document was sent to your client with a note on what changed."
+                  : "Applying the changes failed — please try again from the concerns modal."
+              );
+            }
             if (
               cur.share_status !== data.share_status &&
               (data.share_status === "accepted" || data.share_status === "rejected")
@@ -529,6 +538,8 @@ export default function ProjectOverview() {
           project={project}
           setProject={setProject}
         />
+
+        <ApplyingChangesOverlay open={!!project.applying_changes} />
 
         {/* Step grid — cards, one per milestone; fits on one screen. */}
         <section data-testid="overview-steps">

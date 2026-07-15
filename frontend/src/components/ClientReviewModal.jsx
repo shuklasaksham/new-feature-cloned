@@ -62,9 +62,9 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
     setApplying(true);
     try {
       await api.post(`/projects/${project.id}/review/apply-changes`);
-      toast.success(
-        "Applying the changes — Bracket is regenerating your document and will send it to your client with a note on what changed."
-      );
+      // Optimistically flag the project so the blocking "applying changes"
+      // overlay appears immediately — the poll keeps it in sync after.
+      setProject?.((cur) => (cur ? { ...cur, applying_changes: true } : cur));
       onClose?.();
       navigate(`/project/${project.id}/document`);
     } catch (e) {

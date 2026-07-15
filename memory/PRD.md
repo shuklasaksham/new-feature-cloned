@@ -578,3 +578,9 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Fix (frontend, `Landing.jsx` `HeroMetrics`)**: Removed placeholder fallbacks entirely. Strip renders an empty spacer until real data arrives, then fades in and counts up to the real values only. Fetch sends `Cache-Control: no-cache`.
   - **Fix (backend, `server.py` `public_metrics`)**: Response now sets `Cache-Control: no-store, no-cache, must-revalidate` to prevent CDN/browser caching in production.
   - Verified via screenshot: hero shows exact live API values (26/34/90) on first load. NOTE: production needs a REDEPLOY to pick this up.
+
+- 2026-06-15 — **Iteration 43 — Blocking "Applying changes" popup**:
+  - **New** `ApplyingChangesOverlay.jsx`: non-dismissable full-screen popup (portal, no close button, no Escape, no backdrop-click) shown while `project.applying_changes` is true. Rotating stage messages every 9s, opaque panel (`rgba(10,11,13,0.97)`), `data-testid="applying-changes-overlay"`.
+  - `ProjectDocument.jsx`: replaced the inline applying-changes banner with the overlay. `ProjectOverview.jsx`: added the overlay + `applying_changes` change-detection & completion toast in its 6s poll.
+  - `ClientReviewModal.jsx` `applyChanges`: optimistically sets `applying_changes: true` so the popup appears instantly after clicking "Apply the changes"; removed the redundant toast.
+  - Overlay auto-closes when the poll sees `applying_changes` flip false (success toast fires). Verified via screenshot: visible, survives Escape + backdrop click, 0 close buttons.
