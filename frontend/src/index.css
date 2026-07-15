@@ -1221,6 +1221,21 @@ body::before {
   to   { opacity: 1;    transform: scale(1.06); }
 }
 
+/* Landing-hero variant — the ambient (and its dot grid) stays inside the hero
+   and fades out linearly before the hero's bottom edge, so no dot-field
+   boundary is ever visible between the hero and THE FLOW section. */
+.hero-ambient--contained { bottom: 0; }
+.hero-ambient--contained::after {
+  mask-image:
+    radial-gradient(ellipse 80% 70% at 50% 35%, #000 30%, transparent 90%),
+    linear-gradient(180deg, #000 55%, rgba(0,0,0,0.5) 75%, transparent 96%);
+  -webkit-mask-image:
+    radial-gradient(ellipse 80% 70% at 50% 35%, #000 30%, transparent 90%),
+    linear-gradient(180deg, #000 55%, rgba(0,0,0,0.5) 75%, transparent 96%);
+  mask-composite: intersect;
+  -webkit-mask-composite: destination-in;
+}
+
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }

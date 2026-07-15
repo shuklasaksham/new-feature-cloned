@@ -285,7 +285,7 @@ function Hero() {
          the Login page (blue-signal radial wash + subtle dot grid). Keeps
          the whole app in one visual universe, without a photo backdrop.
          Parallax-drift makes it feel like it lives BEHIND the stage. */}
-      <ParallaxGlow distance={30} className="hero-ambient" />
+      <ParallaxGlow distance={30} className="hero-ambient hero-ambient--contained" />
       {/* Ambient orbs — soft blurred spheres scattered across the stage.
          Layered above the base ambient, below the copy. Subtle slow drift
          gives the hero atmosphere without pulling attention from the type. */}
