@@ -600,3 +600,8 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Tested**: iteration_34.json — 32/32 mobile checks pass at 390×844 (marketing, login, dashboard, overview, flow, document, public review, settings) + desktop regression at 1920×800 pass.
 
 - 2026-06-15 — **Iteration 46 — Desktop CTA truncation (final)**: `.disc-btn` `margin-left:-12px` pushed the pill's left edge outside its `overflow:auto` parent (`.output-card--scrollable`), clipping the border + ↓ arrow on desktop. Removed the negative margin entirely (also fixes ↑ HIDE). Removed 2 stray `}` at end of index.css that broke compilation. Verified: btnLeft == parentLeft, no clipping at 1920px.
+
+- 2026-06-15 — **Iteration 47 — Mobile logout + Install Bracket popup**:
+  - **Dashboard mobile logout** (`Dashboard.jsx` header): round `LogOut` icon button, `md:hidden`, `data-testid="dashboard-mobile-logout"` — signs out and leaves the app (sidebar+logout hidden on phones made signout unreachable).
+  - **InstallPrompt.jsx** (mounted globally in `App.js`): shows on EVERY page load on phones (≤768px, no dismissal persistence), skipped when already installed (standalone). Android/Chrome: captures `beforeinstallprompt`, "Install app" button calls native prompt → icon lands on home screen. iOS: Share → "Add to Home Screen" 2-step instructions (Apple forbids programmatic install). Card floats above the tab bar (`.install-prompt` CSS block).
+  - Verified: logout works (→/login), Android path (synthetic BIP event) shows card + prompt + closes, iOS UA path shows steps, reappears after reload.

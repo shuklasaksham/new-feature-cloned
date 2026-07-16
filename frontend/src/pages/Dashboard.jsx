@@ -23,6 +23,7 @@ import {
   Lock,
   CircleDot,
   X,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -336,7 +337,7 @@ export default function Dashboard() {
   };
 
   const shouldReduce = useReducedMotion();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   // ─── Search + status filter over the projects list ─────────────────
   const [query, setQuery] = useState("");
@@ -407,16 +408,28 @@ export default function Dashboard() {
       >
         {/* ─── Header — greeting + primary CTA + stats ────────────────── */}
         <motion.header variants={item} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <p className="mono-tag text-muted text-[10px]">DASHBOARD</p>
-            <h1 className="mt-1.5 font-display font-semibold tracking-[-0.028em] leading-[1.1] text-[26px] sm:text-[30px] text-[var(--text)]" data-testid="dashboard-greeting">
-              {greeting}
-            </h1>
-            <p className="mt-1 text-[13px] text-[var(--text-3)]">
-              {hasProjects
-                ? `You have ${stats.total} project${stats.total === 1 ? "" : "s"} · ${stats.locked} locked · ${stats.inProgress} in progress.`
-                : "Paste a client conversation and Bracket does the thinking."}
-            </p>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="mono-tag text-muted text-[10px]">DASHBOARD</p>
+              <h1 className="mt-1.5 font-display font-semibold tracking-[-0.028em] leading-[1.1] text-[26px] sm:text-[30px] text-[var(--text)]" data-testid="dashboard-greeting">
+                {greeting}
+              </h1>
+              <p className="mt-1 text-[13px] text-[var(--text-3)]">
+                {hasProjects
+                  ? `You have ${stats.total} project${stats.total === 1 ? "" : "s"} · ${stats.locked} locked · ${stats.inProgress} in progress.`
+                  : "Paste a client conversation and Bracket does the thinking."}
+              </p>
+            </div>
+            {/* Mobile-only sign out — the sidebar (and its logout) is hidden on phones. */}
+            <button
+              type="button"
+              onClick={async () => { await logout(); navigate("/", { replace: true }); }}
+              className="md:hidden shrink-0 mt-1 inline-flex items-center justify-center w-10 h-10 rounded-full border border-[var(--hairline)] text-[var(--text-3)] active:text-[var(--text)]"
+              aria-label="Sign out"
+              data-testid="dashboard-mobile-logout"
+            >
+              <LogOut size={16} strokeWidth={1.75} />
+            </button>
           </div>
         </motion.header>
 

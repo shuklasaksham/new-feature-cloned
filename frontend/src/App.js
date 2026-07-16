@@ -7,6 +7,7 @@ import MarketingLayout from "./components/MarketingLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
 import ScrollToTop from "./components/ScrollToTop";
+import InstallPrompt from "./components/InstallPrompt";
 import PageLoader from "./components/PageLoader";
 import { DialogProvider } from "./components/Dialog";
 import { AuthProvider } from "./lib/AuthContext";
@@ -44,6 +45,7 @@ export default function App() {
         <BrowserRouter>
         <ScrollToTop />
         <Toaster position="top-right" richColors />
+        <InstallPrompt />
         <Routes>
           {/* Marketing — public */}
           <Route element={<MarketingLayout />}>
