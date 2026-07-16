@@ -745,6 +745,18 @@ body::before {
   gap: 0;
   width: 100%;
 }
+/* Tablets: labels take more room than the row allows — let it scroll
+   sideways instead of clipping the last milestones. */
+@media (max-width: 1100px) {
+  .step-pipeline {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .step-pipeline::-webkit-scrollbar { display: none; }
+  .step-pipeline .step-node { flex-shrink: 0; }
+  .step-pipeline .step-connector { min-width: 18px; }
+}
 .step-node {
   display: inline-flex;
   align-items: center;
@@ -3765,6 +3777,7 @@ html { -webkit-text-size-adjust: 100%; }
     display: flex;
     width: 100%;
     gap: 8px;
+    flex-wrap: wrap;
   }
   .dashboard-paste-footer .clay-signal,
   .dashboard-paste-footer .clay-ghost {
@@ -3772,6 +3785,11 @@ html { -webkit-text-size-adjust: 100%; }
     justify-content: center;
     min-height: 44px;
     white-space: nowrap;
+  }
+  /* Narrowest phones (≤360px): the two CTAs can't share a row. */
+  @media (max-width: 374px) {
+    .dashboard-paste-footer .clay-signal,
+    .dashboard-paste-footer .clay-ghost { flex: 1 1 100%; }
   }
 
   /* 7 ── Comfortable tap targets across the app. */

@@ -605,3 +605,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Dashboard mobile logout** (`Dashboard.jsx` header): round `LogOut` icon button, `md:hidden`, `data-testid="dashboard-mobile-logout"` — signs out and leaves the app (sidebar+logout hidden on phones made signout unreachable).
   - **InstallPrompt.jsx** (mounted globally in `App.js`): shows on EVERY page load on phones (≤768px, no dismissal persistence), skipped when already installed (standalone). Android/Chrome: captures `beforeinstallprompt`, "Install app" button calls native prompt → icon lands on home screen. iOS: Share → "Add to Home Screen" 2-step instructions (Apple forbids programmatic install). Card floats above the tab bar (`.install-prompt` CSS block).
   - Verified: logout works (→/login), Android path (synthetic BIP event) shows card + prompt + closes, iOS UA path shows steps, reappears after reload.
+
+- 2026-06-15 — **Iteration 48 — Installed-app launch + all-device responsiveness**:
+  - **Installed app start screen**: verified (no code change needed) — manifest `start_url:/app` + ProtectedRoute means the installed app opens on the login screen when logged out, dashboard when logged in; mobile web untouched.
+  - **Device matrix audit** (320/360/390/430 phones · 768/820/834/1024 tablets): zero horizontal overflow on landing, dashboard, flow. Fixes: ① ≤374px — dashboard paste-footer CTAs stack full-width (were clipping at 320px); ② ≤1100px — `.step-pipeline` journey rail becomes horizontally swipeable instead of clipping the last milestones on iPads.
