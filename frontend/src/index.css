@@ -3892,3 +3892,13 @@ html { -webkit-text-size-adjust: 100%; }
   font-size: 11px; line-height: 1.5;
   color: var(--text-3);
 }
+
+/* Installed app: keep content clear of the device status bar / notch.
+   env(safe-area-inset-top) is 0 unless the OS actually overlays content. */
+@media (display-mode: standalone) {
+  .app-sidebar { padding-top: calc(12px + env(safe-area-inset-top)); }
+  .app-shell-main { padding-top: env(safe-area-inset-top); }
+  .marketing-header,
+  .flow-header,
+  .cinema-nav { padding-top: env(safe-area-inset-top); }
+}
