@@ -3861,3 +3861,8 @@ html { -webkit-text-size-adjust: 100%; }
   font-weight: 600; font-size: 13.5px;
   box-shadow: 0 8px 24px rgba(94, 106, 210, 0.35);
 }
+
+/* Installed app (standalone): hide web-only escape hatches. */
+@media (display-mode: standalone) {
+  .back-to-site { display: none; }
+}

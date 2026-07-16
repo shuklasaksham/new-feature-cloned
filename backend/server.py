@@ -43,6 +43,7 @@ from ai_engine import (
     map_suggestion_to_step,
     draft_change_note,
 )
+from push_notify import send_push_to_owner, send_push_to_user  # noqa: F401
 from emailer import (
     send_thanks_email,
     send_review_outcome_email,
@@ -464,6 +465,45 @@ async def auth_claim(body: ClaimDecisionIn, request: Request):
 # No authentication required. Only aggregated counts are returned; no
 # individual project or user data leaks.
 # ===========================================================================
+# ─── Web Push subscriptions ─────────────────────────────────────────────
+class PushSubscribeIn(BaseModel):
+    subscription: Dict[str, Any]
+
+
+@api.get("/push/vapid-public-key")
+async def push_vapid_public_key():
+    return {"public_key": os.environ.get("VAPID_PUBLIC_KEY", "")}
+
+
+@api.post("/push/subscribe")
+async def push_subscribe(body: PushSubscribeIn, request: Request):
+    user = await current_user(request, db)
+    endpoint = (body.subscription or {}).get("endpoint", "")
+    if not endpoint:
+        raise HTTPException(status_code=422, detail="Invalid subscription.")
+    await db.push_subscriptions.update_one(
+        {"user_id": user["user_id"], "subscription.endpoint": endpoint},
+        {"$set": {
+            "user_id": user["user_id"],
+            "subscription": body.subscription,
+            "user_agent": request.headers.get("user-agent", ""),
+            "updated_at": _now_iso(),
+        }, "$setOnInsert": {"created_at": _now_iso()}},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
+@api.post("/push/unsubscribe")
+async def push_unsubscribe(body: PushSubscribeIn, request: Request):
+    user = await current_user(request, db)
+    endpoint = (body.subscription or {}).get("endpoint", "")
+    await db.push_subscriptions.delete_many(
+        {"user_id": user["user_id"], "subscription.endpoint": endpoint}
+    )
+    return {"ok": True}
+
+
 @api.get("/public/metrics")
 async def public_metrics(response: Response):
     """Aggregate KPIs shown on the landing page's metrics strip. All counts
@@ -1502,6 +1542,15 @@ async def upload_brief(request: Request, file: UploadFile = File(...)):
             }},
         )
         if has_artifacts:
+            try:
+                await send_push_to_owner(
+                    db, doc,
+                    "Your project is ready ✓",
+                    f"Bracket finished building “{doc.get('name', 'your project')}” from your brief.",
+                    f"/project/{doc['id']}/flow?step=5",
+                )
+            except Exception as e:
+                logger.warning("auto-advance push crashed: %s", e)
             return
         # Fallback: artifacts missing from the one-shot output — generate
         # them with a dedicated fast call.
@@ -1524,6 +1573,15 @@ async def upload_brief(request: Request, file: UploadFile = File(...)):
                 {"$set": {"auto_advance_status": "partial", "updated_at": _now_iso()}},
             )
             return
+        try:
+            await send_push_to_owner(
+                db, doc,
+                "Your project is ready ✓",
+                f"Bracket finished building “{doc.get('name', 'your project')}” from your brief.",
+                f"/project/{doc['id']}/flow?step=5",
+            )
+        except Exception as e:
+            logger.warning("auto-advance push crashed: %s", e)
 
     # Kick off the background task without blocking the HTTP response.
     asyncio.create_task(_auto_advance_task())
@@ -2692,6 +2750,15 @@ async def client_accept(token: str, body: AcceptIn):
         )
     except Exception as e:
         logger.warning(f"accept outcome email crashed: {e}")
+    try:
+        await send_push_to_owner(
+            db, project,
+            "Client accepted ✓",
+            f"{review['signature_name']} signed off on “{project.get('name', 'your project')}”.",
+            f"/project/{project.get('id', '')}/document",
+        )
+    except Exception as e:
+        logger.warning(f"accept push crashed: {e}")
     # Also mail the client — with the signed PDF attached — as a receipt.
     try:
         pdf_bytes = _pdf_for(project)
@@ -2776,6 +2843,15 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
         )
     except Exception as e:
         logger.warning(f"reject outcome email crashed: {e}")
+    try:
+        await send_push_to_owner(
+            db, project,
+            "Client raised concerns",
+            f"{review['signature_name']} flagged concerns on “{project.get('name', 'your project')}”. Tap to review.",
+            f"/project/{project.get('id', '')}/document",
+        )
+    except Exception as e:
+        logger.warning(f"reject push crashed: {e}")
     # Send the client a receipt echoing back their concerns.
     try:
         base = os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com").rstrip("/")

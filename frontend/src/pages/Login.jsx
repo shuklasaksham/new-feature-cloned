@@ -107,18 +107,18 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" data-testid="login-page">
+    <div className="min-h-screen flex flex-col overflow-clip" data-testid="login-page">
       <Seo title="Sign in" path="/login" noindex />
       <header className="marketing-header">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2" aria-label="Bracket home">
             <BracketMark size={30} label={true} />
           </Link>
-          <Link to="/" className="marketing-nav-link">← Back to site</Link>
+          <Link to="/" className="marketing-nav-link back-to-site">← Back to site</Link>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 py-12 md:py-20 relative">
+      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 py-8 md:py-10 relative">
         <div className="hero-ambient" aria-hidden="true" />
         <div className="w-full max-w-[420px] relative page-enter">
           <div className="text-center">
