@@ -912,11 +912,16 @@ body::before {
 .disc-btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 8px 12px; margin-left: -12px;
+  max-width: 100%;
   font-family: "JetBrains Mono", monospace; font-size: 11px;
   letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2);
   background: transparent; border: 1px solid var(--hairline); border-radius: 8px;
   cursor: pointer;
+  text-align: left;
   transition: background var(--d-fast) var(--ease-out), color var(--d-fast) var(--ease-out), border-color var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
+}
+@media (max-width: 640px) {
+  .disc-btn { margin-left: 0; white-space: normal; line-height: 1.5; }
 }
 .disc-btn:hover { color: var(--accent); border-color: var(--accent); background: rgba(94, 106, 210, 0.06); transform: translateY(-1px); }
 .disc-btn:active { transform: translateY(0); }
@@ -3629,4 +3634,153 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   }
   .plx-trace { display: none; }
   .plx-core-halo { opacity: 0.35; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE APP EXPERIENCE — phones (≤768px) get a native-app shell:
+   bottom tab bar instead of the sidebar rail, touch-first targets,
+   bottom-sheet modals, safe-area support, no web artifacts.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Touch fundamentals — applied everywhere, harmless on desktop. */
+* { -webkit-tap-highlight-color: transparent; }
+button, a, [role="button"] { touch-action: manipulation; }
+html { -webkit-text-size-adjust: 100%; }
+
+/* Bottom tab bar — hidden on desktop. */
+.mobile-tabbar { display: none; }
+
+@media (max-width: 768px) {
+  /* 0 ── Clip any decorative absolutely-positioned bleed (e.g. .hero-ambient
+     glow blobs that intentionally overflow on desktop). Without this the
+     marketing/login pages produce real horizontal scroll on phones. */
+  html, body { overflow-x: hidden; }
+
+  /* 1 ── Kill the sidebar rail, content owns the full width. */
+  :root { --sidebar-w: 0px; }
+  .app-sidebar { display: none; }
+  .app-shell { height: 100dvh; }
+  .app-shell-main {
+    height: 100dvh;
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  /* 2 ── App-style bottom tab bar. */
+  .mobile-tabbar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 90;
+    display: flex;
+    align-items: stretch;
+    justify-content: space-around;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(8, 9, 10, 0.86);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 52px;
+    padding: 4px 0;
+    border: none;
+    background: transparent;
+    color: var(--text-3);
+    font-family: "Poppins", sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    border-radius: 12px;
+    transition: color 0.2s ease;
+  }
+  .mobile-tab.is-active { color: var(--accent); }
+  .mobile-tab:active { color: var(--text); }
+  .mobile-tab--new { color: var(--text-2); }
+  .mobile-tab-new-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px; height: 34px;
+    margin-top: -14px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid #6E7AE8;
+    box-shadow: 0 8px 20px rgba(94, 106, 210, 0.45);
+  }
+
+  /* 3 ── Prevent iOS zoom-on-focus: form fields must be ≥16px. */
+  input, textarea, select { font-size: 16px !important; }
+
+  /* 4 ── Bottom-sheet modals: every overlay panel slides from the bottom,
+     full-width, rounded top corners, safe-area padded. */
+  .review-modal-overlay,
+  .bracket-dialog-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .review-modal-panel,
+  .bracket-dialog {
+    max-width: 100% !important;
+    width: 100%;
+    margin: 0;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92dvh !important;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+    animation: mobileSheetUp 340ms cubic-bezier(.16, 1, .3, 1);
+  }
+
+  /* 5 ── Flow workbench: chapter strip wraps instead of squeezing. */
+  .workbench-topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+  .workbench-num { font-size: 28px; min-width: 36px; }
+  .workbench-celebration {
+    flex-wrap: wrap;
+    max-width: 100%;
+    font-size: 11px;
+  }
+
+  /* 6 ── Dashboard: filter tabs become a swipeable strip; paste footer
+     stacks so CTAs never clip. */
+  .dashboard-filter-tabs {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dashboard-filter-tabs::-webkit-scrollbar { display: none; }
+  .dashboard-paste-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .dashboard-paste-footer > div:last-child {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+  }
+  .dashboard-paste-footer .clay-signal,
+  .dashboard-paste-footer .clay-ghost {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  /* 7 ── Comfortable tap targets across the app. */
+  .flow-header-action { min-height: 40px; }
+  .clay-signal, .clay-ghost, .btn-primary, .btn-ghost { min-height: 42px; }
+  .nav-item { min-height: 44px; }
+}
+
+@keyframes mobileSheetUp {
+  from { transform: translateY(24%); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
 }

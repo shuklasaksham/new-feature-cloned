@@ -2005,7 +2005,7 @@ function Step5({ project, setProject, onBack, onExport, projectId }) {
       nextHint={isLocked ? "send · sign · ship" : undefined}
     >
       <GuestUpgradeBanner />
-      <div className="grid lg:grid-cols-3 gap-5 mt-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mt-5">
         <div className="lg:col-span-2 space-y-5">
           <OutputCard
             label={"{ 05 · the stance }"}

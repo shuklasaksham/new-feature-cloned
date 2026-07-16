@@ -1,0 +1,57 @@
+{
+  "summary": "Iteration 34 — exhaustive MOBILE (390x844) verification of the new native-app shell + PWA + touch UX + bottom-sheet modals across marketing, auth, dashboard, project overview/flow/document, public client review, settings; plus desktop regression at 1920x800. 32 checks executed → 31 pass, 1 real bug found & fixed by testing agent.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "index.css — @media (max-width: 768px) block",
+        "issue": "FIXED by testing agent. /login (and any page using .hero-ambient) produced real horizontal scroll on mobile: document.documentElement.scrollWidth = 1198px (viewport 390px). Root cause: .hero-ambient sets overflow:visible with an absolutely-positioned ::before pseudo-element that is 1100px wide starting at left:20% — intended as a soft glow, but on a 390px viewport its right edge lands at ~1178px. html/body did not have overflow-x:hidden on mobile, so the bleed became scrollable. The scrollWidth was even growing over time (1201→1204→1207) because of the heroPulse animation's transform:scale(1.06). Fix: added `html, body { overflow-x: hidden; }` inside the existing @media (max-width: 768px) block (top of block, comment 0). Confirmed after fix: /login sw=390, / sw=390, /pricing sw=390, /faq sw=390, /how-it-works sw=390. Desktop untouched (sw=1920 at 1920px vp).",
+        "selector": "html, body @ (max-width: 768px)",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_features": [
+    {"feature": "PWA manifest", "status": "PASS", "detail": "GET /manifest.json → 200, valid JSON, display:standalone, icons 192+512 (any + maskable), start_url:/app, theme_color:#08090A."},
+    {"feature": "index.html mobile meta", "status": "PASS", "detail": "<link rel=manifest> present, viewport has viewport-fit=cover, apple-mobile-web-app-capable=yes, apple-mobile-web-app-status-bar-style=black-translucent, theme-color=#08090A."},
+    {"feature": "Marketing pages no h-scroll", "status": "PASS (after fix)", "detail": "/, /pricing, /faq, /how-it-works all sw=390 at vp=390. Landing hamburger opens menu with 'Start a project' CTA."},
+    {"feature": "Login page mobile", "status": "PASS (after fix)", "detail": "/login sw=390, inputs font-size=16px (no iOS zoom), 'I have a password' toggle works, POST /api/auth/login succeeded, landed on /app."},
+    {"feature": "App shell — sidebar hidden, tabbar visible", "status": "PASS", "detail": "[data-testid=app-sidebar] not visible on /app at 390px; [data-testid=mobile-tabbar] fixed at bottom. All 3 tabs (mobile-tab-dashboard, mobile-tab-new, mobile-tab-settings) visible and functional. Tab navigation: Projects → /app, Settings → /settings, New → focuses dashboard-hero-paste-input (verified activeElement testid)."},
+    {"feature": "Dashboard mobile", "status": "PASS", "detail": "No h-scroll. Stats cards render. dashboard-hero-paste-input full width (w=346). dashboard-hero-structure-btn fully inside viewport (x=162, w=193, right=355). dashboard-filter-tabs has overflow-x:auto (swipeable). Project cards render."},
+    {"feature": "Project overview mobile", "status": "PASS", "detail": "/project/{pid} sw=390, no overflow. Test project (share_status=sent) does NOT expose overview-view-review-cta (correct — CTA only shows for rejected/awaiting_reply per code). Bottom-sheet transform confirmed applies to .review-modal-panel via CSS."},
+    {"feature": "Project flow step 3 mobile", "status": "PASS", "detail": "/project/{pid}/flow?step=3 sw=390. workbench-topbar wraps (flex-wrap:wrap active). Zero children clip past 390px. step3-reveal-more button rendered with w=317, sw=315, cw=315 → NOT truncated, text wraps inside its border. Did NOT trigger AI generation."},
+    {"feature": "Document page mobile", "status": "PASS", "detail": "/project/{pid}/document sw=390. article.doc-card w=355 fits viewport (<390). No right-edge clipping."},
+    {"feature": "Public client review /r/{token} mobile", "status": "PASS", "detail": "sw=390. Sticky bottom action bar confirmed (position:fixed, bottom:20px) containing 'Accept & sign' + 'Request changes'. Clicking 'Accept & sign' opens sign-off modal as bottom-sheet (full width, anchored to bottom). All 21 form inputs inside modal have font-size>=16px (no iOS zoom). Modal closed via Escape — form NOT submitted (per instructions)."},
+    {"feature": "Settings mobile", "status": "PASS", "detail": "/settings sw=390. mobile-tabbar visible. Save profile button reachable above the tabbar (button y+h < tabbar y)."},
+    {"feature": "Desktop regression 1920x800", "status": "PASS", "detail": "app-sidebar visible on /app. mobile-tabbar hidden. Landing renders cleanly (sw=1920)."},
+    {"feature": "PWA installable", "status": "PASS", "detail": "manifest served with 200, valid JSON, standalone display, 192+512 icons, HTTPS URL — meets install criteria."}
+  ],
+  "test_report_links": [
+    "/app/test_reports/iteration_34.json"
+  ],
+  "action_items": [
+    "REVIEW my CSS fix: added `html, body { overflow-x: hidden; }` at the top of the existing @media (max-width:768px) block in /app/frontend/src/index.css (~line 3656). This is the standard mobile-safety pattern for pages that use decorative absolutely-positioned bleed elements (.hero-ambient, orbit backgrounds, etc.). Confirmed no regression on desktop (overflow-x hidden is scoped to mobile media query only). The alternative — clipping .hero-ambient itself — would remove the intended visual glow on marketing pages; the mobile clip is the correct trade.",
+    "OPTIONAL: consider adding a lightweight visual-regression check for scrollWidth<=clientWidth across all top-level routes at 390x844 as part of CI, since decorative-overflow bleed regressions are easy to reintroduce (any new absolute-positioned decoration without overflow-x guard could trip it)."
+  ],
+  "critical_code_review_comments": [
+    "The mobile CSS block was thoughtful (bottom sheets, 16px inputs, filter-tab swipe, tabbar safe-area) but missed the html/body overflow-x guard — a nearly-universal mobile CSS baseline. Any page mounting .hero-ambient (Landing, Login, most marketing pages) would have h-scrolled without it. Now fixed.",
+    "MobileTabBar.jsx: `onNew` scrolls the paste input into view even when user is already on /app (setTimeout 350ms fires regardless of route). Fine, but if the user is deep-scrolled in the projects list this yanks them back to hero without a visible cue — a small toast or focus-ring flash would soften it. Not a bug.",
+    "Login page has decorative .hero-ambient inside <main> with no wrapping container that clips — if the html/body overflow guard were ever removed, this would silently regress. Consider wrapping .hero-ambient parents with overflow:hidden as a belt-and-braces defence.",
+    "index.css is 3782 lines — approaching the 'split into modules' threshold. The new mobile block is at the tail and easy to lose; splitting into index.css + mobile.css (or Tailwind's @layer utilities) would help discoverability."
+  ],
+  "updated_files": [
+    "/app/frontend/src/index.css (added `html, body { overflow-x: hidden; }` at top of @media (max-width: 768px) block, ~line 3656)"
+  ],
+  "success_rate": {"backend": "not tested (out of scope)", "frontend": "32/32 after fix (was 31/32)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 via /login → 'I have a password →' toggle (verified working).",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Mobile shell (bottom tab bar, hidden sidebar, bottom-sheet modals, 16px inputs, no h-scroll, PWA manifest) is now fully working at 390x844 across every page tested. If future iterations add new marketing sections/decorations, verify document.documentElement.scrollWidth <= 390 at 390px viewport — that's the single most reliable canary for mobile-app-feel regressions. The `html, body { overflow-x: hidden; }` mobile rule in index.css (@media ≤768px) MUST be preserved.",
+  "rca_of_the_issue": "Root cause: /login (and any route that mounts <div class='hero-ambient'>) had real horizontal scroll on mobile because .hero-ambient sets overflow:visible with a pseudo-element ::before that is 1100px wide + heroPulse animation scaling it 1.06x. On a 390px viewport, the ::before's right edge falls at ~1178px, growing to ~1207px mid-animation. Neither html nor body had overflow-x:hidden on mobile, so the browser reported document.documentElement.scrollWidth=1198+ and enabled horizontal scrolling (touch swipe reveals empty background on the right). Reproduction: at viewport 390x844, load /login → swipe horizontally → page scrolls right. Fix applied by test agent: added `html, body { overflow-x: hidden; }` inside the existing MOBILE APP EXPERIENCE @media (max-width: 768px) block at index.css:3656. Verified across /, /login, /pricing, /faq, /how-it-works: all now report scrollWidth=390. Desktop viewport (1920px) reports scrollWidth=1920 (unchanged) since the rule is media-query scoped."
+}

@@ -207,7 +207,7 @@ export default function ProjectDocument() {
         {/* Background apply-changes pipeline running — blocking popup until done. */}
         <ApplyingChangesOverlay open={!!project.applying_changes} />
 
-        <div className="grid lg:grid-cols-12 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
         {/* DOCUMENT BODY — glass card matching dashboard/steps cards. */}
         <article className="lg:col-span-8 doc-card">
           <div className="doc-container">
