@@ -118,7 +118,7 @@ export default function Login() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 py-8 md:py-10 relative">
+      <main className="flex-1 flex items-center justify-center px-5 sm:px-6 pt-[92px] pb-8 md:pt-[100px] md:pb-10 relative">
         <div className="hero-ambient" aria-hidden="true" />
         <div className="w-full max-w-[420px] relative page-enter">
           <div className="text-center">

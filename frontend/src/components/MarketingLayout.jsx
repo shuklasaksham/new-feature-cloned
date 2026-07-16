@@ -19,7 +19,7 @@ export default function MarketingLayout() {
         </>
       )}
       <Navbar />
-      <main className="flex-1 relative z-10">
+      <main className="flex-1 relative z-10 pt-16">
         <Outlet />
       </main>
       <Footer />
