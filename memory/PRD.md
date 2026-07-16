@@ -626,3 +626,5 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Verified: iOS popup → guide → flag → reload = no popup; Android with installed related app + synthetic BIP = no popup.
 
 - 2026-06-15 — **Iteration 53 — iOS status bar bleed fix**: `apple-mobile-web-app-status-bar-style` switched `black-translucent` → `black` (solid, app content starts below the clock/battery bar; matches #08090A). Plus `@media (display-mode: standalone)` safe-area-inset-top padding on `.app-sidebar`, `.app-shell-main`, `.marketing-header`, `.flow-header`, `.cinema-nav` for notched devices. NOTE: iOS bakes this meta at install time — users must remove + re-add the app to Home Screen after redeploy.
+
+- 2026-06-15 — **Iteration 54 — Landscape tablet safe-area strengthening**: standalone CSS block extended with `safe-area-inset-left/right` padding on `.app-shell`, `.marketing-header`, `.cinema-nav` for landscape notch intrusions. (User's screenshots were from the pre-redeploy build — the iteration-53 top-inset fix + this one require REDEPLOY; the solid status-bar meta additionally requires remove/re-add of the Home Screen icon.)

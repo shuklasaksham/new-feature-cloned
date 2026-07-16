@@ -3901,4 +3901,8 @@ html { -webkit-text-size-adjust: 100%; }
   .marketing-header,
   .flow-header,
   .cinema-nav { padding-top: env(safe-area-inset-top); }
+  /* Landscape: notch/status intrusions on the sides. */
+  .app-shell { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .marketing-header,
+  .cinema-nav { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
 }
