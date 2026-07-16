@@ -620,3 +620,7 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - 2026-06-15 — **Iteration 50 — iOS install CTA**: iOS install popup now shows the same "Install app" primary CTA as Android; tapping reveals a numbered 3-step visual guide (Share → Add to Home Screen → Add) with a note that Apple only permits installs via the Share menu. Verified via iPhone UA emulation: CTA visible, guide expands on tap.
 
 - 2026-06-15 — **Iteration 51 — iPad logout alignment**: dashboard mobile logout wrapper now `flex w-full items-center justify-between` + button `self-center` — icon sticks to the right edge and is vertically centered with the greeting. Verified at 744px (iPad mini) and 390px: button centerY == greeting centerY, flush right.
+
+- 2026-06-15 — **Iteration 52 — Suppress install popup when app installed**:
+  - `InstallPrompt.jsx`: ① Chrome/Android — `navigator.getInstalledRelatedApps()` check (manifest gains `related_applications` webapp entry) + `beforeinstallprompt` inherently never fires when installed. ② iOS — no installed-state API exists in browsers, so once the user opens the install guide we set `localStorage bracket.ios.installed=1` and stop showing the popup thereafter. Standalone mode was already excluded.
+  - Verified: iOS popup → guide → flag → reload = no popup; Android with installed related app + synthetic BIP = no popup.

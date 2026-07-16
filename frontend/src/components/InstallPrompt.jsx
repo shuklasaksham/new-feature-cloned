@@ -16,6 +16,8 @@ const isStandalone = () =>
  * native install prompt via the captured `beforeinstallprompt` event. iOS
  * Safari can't install programmatically, so we show the 2-step instructions.
  */
+const IOS_GUIDE_KEY = "bracket.ios.installed";
+
 export default function InstallPrompt() {
   const [visible, setVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -26,20 +28,42 @@ export default function InstallPrompt() {
     if (isStandalone()) return;
     if (!window.matchMedia("(max-width: 768px)").matches) return;
 
-    if (isIOS()) {
-      setIos(true);
-      const t = setTimeout(() => setVisible(true), 1600);
-      return () => clearTimeout(t);
-    }
+    let cancelled = false;
+    (async () => {
+      // Chrome/Android: skip when the app is already installed on the device.
+      try {
+        if (navigator.getInstalledRelatedApps) {
+          const apps = await navigator.getInstalledRelatedApps();
+          if (apps && apps.length > 0) return;
+        }
+      } catch { /* unsupported — fall through */ }
+      if (cancelled) return;
 
-    const onBIP = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setVisible(true);
-    };
-    window.addEventListener("beforeinstallprompt", onBIP);
-    return () => window.removeEventListener("beforeinstallprompt", onBIP);
+      if (isIOS()) {
+        // iOS gives browsers NO installed-state API. Once the user has been
+        // through the install guide, assume installed and stop nagging.
+        if (localStorage.getItem(IOS_GUIDE_KEY) === "1") return;
+        setIos(true);
+        setTimeout(() => { if (!cancelled) setVisible(true); }, 1600);
+        return;
+      }
+
+      const onBIP = (e) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setVisible(true);
+      };
+      // `beforeinstallprompt` only fires when the app is NOT installed —
+      // installed Android devices never see this popup.
+      window.addEventListener("beforeinstallprompt", onBIP);
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  const openIosGuide = () => {
+    setIosGuide(true);
+    try { localStorage.setItem(IOS_GUIDE_KEY, "1"); } catch { /* ignore */ }
+  };
 
   const install = async () => {
     if (!deferredPrompt) return;
@@ -103,7 +127,7 @@ export default function InstallPrompt() {
         ) : (
           <button
             type="button"
-            onClick={() => setIosGuide(true)}
+            onClick={openIosGuide}
             className="install-prompt-cta"
             data-testid="install-prompt-install-btn"
           >
