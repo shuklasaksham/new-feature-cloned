@@ -589,3 +589,12 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Root cause**: every step-generation endpoint called the LLM exactly once via `ai_engine._run` — any transient provider error (429/5xx/overloaded), hung request, or malformed JSON surfaced a 502 to the user; reloading/resubmitting succeeded.
   - **Fix** (`ai_engine.py` `_run`): one automatic retry with a fresh chat session on ANY failure (timeout, provider error, JSON parse). Attempt budgets: 50s + 40s (+1.5s backoff) so the total stays under Cloudflare's ~100s proxy limit. `STEP_TIMEOUT_S` 70→50, new `STEP_RETRY_TIMEOUT_S=40`.
   - Verified: live framing call succeeds (14.5s); unit test proves recovery from a simulated first-attempt failure and clean raise after two failures.
+
+- 2026-06-15 — **Iteration 45 — Mobile app experience (full treatment) + CTA truncation fix**:
+  - **CTA fix** (`index.css` `.disc-btn`): `max-width:100%`, wraps + `margin-left:0` on ≤640px — "Show alternatives, trade-offs & risks" no longer truncated.
+  - **PWA installable**: new `public/manifest.json` (standalone, start_url /app, 192/512 icons incl. maskable); `index.html` gains manifest link, `viewport-fit=cover, maximum-scale=1`, apple-mobile-web-app metas (black-translucent).
+  - **Bottom tab bar** (`MobileTabBar.jsx`, rendered by `AppShell`): Projects / New (raised accent circle, focuses dashboard paste box) / Settings (+ Admin for admins). Shown ≤768px; sidebar fully hidden (`--sidebar-w:0`), main gets safe-area bottom padding.
+  - **Bottom-sheet modals** (≤768px): `.review-modal-panel` + `.bracket-dialog` become full-width sheets anchored to bottom with `mobileSheetUp` animation + safe-area padding.
+  - **Touch/no-web-artifacts**: tap-highlight removed, `touch-action:manipulation` on buttons/links, inputs ≥16px on mobile (no iOS zoom), `html,body{overflow-x:hidden}` on mobile (fix by testing agent — `.hero-ambient` 1100px glow caused real h-scroll on /login + marketing).
+  - **Layout fixes**: grid blowout fixed via `grid-cols-1` base (`ProjectDocument.jsx` doc grid, `ProjectFlow.jsx` lg:grid-cols-3); `workbench-topbar` wraps on mobile (num 28px); dashboard paste-footer stacks with full-width CTAs; filter tabs horizontally swipeable.
+  - **Tested**: iteration_34.json — 32/32 mobile checks pass at 390×844 (marketing, login, dashboard, overview, flow, document, public review, settings) + desktop regression at 1920×800 pass.
