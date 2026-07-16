@@ -618,3 +618,5 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - Verified: subscribe endpoint stores sub, `send_push_to_user` pushes + prunes fake endpoint gracefully; real delivery needs a physical device (headless denies Notification permission). Fixed pre-existing `client.close()` duplicate-line IndentationError at server.py shutdown handler.
 
 - 2026-06-15 — **Iteration 50 — iOS install CTA**: iOS install popup now shows the same "Install app" primary CTA as Android; tapping reveals a numbered 3-step visual guide (Share → Add to Home Screen → Add) with a note that Apple only permits installs via the Share menu. Verified via iPhone UA emulation: CTA visible, guide expands on tap.
+
+- 2026-06-15 — **Iteration 51 — iPad logout alignment**: dashboard mobile logout wrapper now `flex w-full items-center justify-between` + button `self-center` — icon sticks to the right edge and is vertically centered with the greeting. Verified at 744px (iPad mini) and 390px: button centerY == greeting centerY, flush right.
