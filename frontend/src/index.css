@@ -1273,14 +1273,22 @@ body::before {
 
 .app-shell {
   display: flex;
-  height: 100vh;
+  height: 100dvh;
   background: var(--bg);
   overflow: hidden;
+}
+/* App routes: the page itself must NEVER scroll — only .app-shell-main
+   scrolls internally. Stops the sidebar/chrome moving on iOS landscape
+   where 100vh can exceed the real visible height. */
+body:has(.app-shell) {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 .app-shell-main {
   flex: 1;
   min-width: 0;
-  height: 100vh;
+  height: 100dvh;
   background: var(--bg);
   overflow-y: auto;
   overflow-x: hidden;
@@ -1291,7 +1299,7 @@ body::before {
   top: 0;
   align-self: flex-start;
   width: var(--sidebar-w);
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   /* Same glassy translucent surface as the marketing top-nav. */
