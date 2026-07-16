@@ -616,3 +616,5 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Frontend**: `public/sw.js` (push + notificationclick handlers), `lib/push.js` `enablePushNotifications()` called from `AppShell` when user present (registers SW, requests permission, subscribes, POSTs subscription). iOS: works only for the installed PWA (16.4+); silent no-op otherwise.
   - **Standalone**: `.back-to-site` hidden via `@media (display-mode: standalone)` on login header.
   - Verified: subscribe endpoint stores sub, `send_push_to_user` pushes + prunes fake endpoint gracefully; real delivery needs a physical device (headless denies Notification permission). Fixed pre-existing `client.close()` duplicate-line IndentationError at server.py shutdown handler.
+
+- 2026-06-15 — **Iteration 50 — iOS install CTA**: iOS install popup now shows the same "Install app" primary CTA as Android; tapping reveals a numbered 3-step visual guide (Share → Add to Home Screen → Add) with a note that Apple only permits installs via the Share menu. Verified via iPhone UA emulation: CTA visible, guide expands on tap.

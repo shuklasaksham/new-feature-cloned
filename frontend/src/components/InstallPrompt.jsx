@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Share, PlusSquare, Download } from "lucide-react";
+import { X, Share, PlusSquare, Download, Check } from "lucide-react";
 import BracketMark from "./BracketMark";
 
 const isIOS = () =>
@@ -20,6 +20,7 @@ export default function InstallPrompt() {
   const [visible, setVisible] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [ios, setIos] = useState(false);
+  const [iosGuide, setIosGuide] = useState(false);
 
   useEffect(() => {
     if (isStandalone()) return;
@@ -76,16 +77,39 @@ export default function InstallPrompt() {
         </div>
       </div>
       {ios ? (
-        <ol className="install-prompt-steps" data-testid="install-prompt-ios-steps">
-          <li>
-            <Share size={14} className="text-signal shrink-0" />
-            Tap the <strong>Share</strong> button below
-          </li>
-          <li>
-            <PlusSquare size={14} className="text-signal shrink-0" />
-            Choose <strong>Add to Home Screen</strong>
-          </li>
-        </ol>
+        iosGuide ? (
+          <div data-testid="install-prompt-ios-steps">
+            <ol className="install-prompt-steps install-prompt-steps--big">
+              <li>
+                <span className="install-step-num">1</span>
+                <span className="install-step-icon"><Share size={16} /></span>
+                Tap the <strong>Share</strong> button in your browser bar
+              </li>
+              <li>
+                <span className="install-step-num">2</span>
+                <span className="install-step-icon"><PlusSquare size={16} /></span>
+                Scroll and tap <strong>Add to Home Screen</strong>
+              </li>
+              <li>
+                <span className="install-step-num">3</span>
+                <span className="install-step-icon"><Check size={16} /></span>
+                Tap <strong>Add</strong> — Bracket appears on your home screen
+              </li>
+            </ol>
+            <p className="install-prompt-note">
+              Apple only allows installing from the Share menu — no site can skip these steps.
+            </p>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIosGuide(true)}
+            className="install-prompt-cta"
+            data-testid="install-prompt-install-btn"
+          >
+            <Download size={14} /> Install app
+          </button>
+        )
       ) : (
         <button
           type="button"

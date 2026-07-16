@@ -3866,3 +3866,29 @@ html { -webkit-text-size-adjust: 100%; }
 @media (display-mode: standalone) {
   .back-to-site { display: none; }
 }
+
+/* iOS install guide — numbered visual steps inside the install prompt. */
+.install-prompt-steps--big { margin-top: 14px; gap: 10px; }
+.install-step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(94, 106, 210, 0.16);
+  border: 1px solid rgba(94, 106, 210, 0.4);
+  color: var(--accent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10.5px; font-weight: 600;
+}
+.install-step-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: var(--text);
+}
+.install-prompt-note {
+  margin-top: 12px;
+  font-size: 11px; line-height: 1.5;
+  color: var(--text-3);
+}
