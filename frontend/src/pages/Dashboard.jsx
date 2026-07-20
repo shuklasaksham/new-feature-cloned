@@ -30,6 +30,7 @@ import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
 import { useDialog } from "../components/Dialog";
+import StructuringModal from "../components/StructuringModal";
 
 // Quick-start seed briefs — one click drops a realistic messy paste in the
 // hero input so a curious user can watch Bracket work without typing a word.
@@ -222,27 +223,53 @@ export default function Dashboard() {
   const wordCount = paste.trim().split(/\s+/).filter(Boolean).length;
   const canSubmit = paste.trim().length >= 20 && !submitting;
 
-  // Hand off the paste to a new project's Step 1. Backend uses the raw
-  // paste to generate a proper AI project title (falls back to the client
-  // heuristic if AI generation fails). We stash the paste in sessionStorage
-  // so Step 1 can auto-submit on mount.
+  // Hand off the paste to a new project. We now do the AI structuring call
+  // (POST /projects/{id}/situation) FROM the dashboard so we know — before
+  // routing — whether the brief was rich enough to skip to Step 5 or if the
+  // user needs to start at Step 1. The non-dismissable StructuringModal
+  // covers the wait so nothing else is clickable during the pass.
   const structureBrief = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
+    let projectId = null;
     try {
       const derivedName = deriveProjectName(paste);
-      const { data } = await api.post("/projects", {
+      // 1) Create the project.
+      const { data: created } = await api.post("/projects", {
         project_name: derivedName,
         raw_paste: paste,
       });
-      try {
-        window.sessionStorage.setItem(`bracket:pending-paste:${data.id}`, paste);
-      } catch (e) { /* private-mode / quota — Step 1 shows empty input, no crash */ }
-      navigate(`/project/${data.id}/flow`);
+      projectId = created.id;
+      // 2) Run the situation call — this is the heavy AI pass. Backend
+      // returns step=5 with `artifacts` + `decision` when the brief is
+      // rich enough for a one-shot; otherwise it returns step=2 with
+      // framing + open_questions saved for the follow-up flow.
+      const { data: situated } = await api.post(
+        `/projects/${projectId}/situation`,
+        { raw_paste: paste },
+        { timeout: 120000 },
+      );
+      const isRich = situated?.step === 5 && !!situated?.artifacts && !!situated?.decision;
+      // 3) Route the user:
+      //    - Rich brief   → Step 5 (final review), skipping everything.
+      //    - Thin brief   → Step 1, so they can inspect the framing and
+      //                     continue — Bracket has already stashed the
+      //                     targeted open_questions used on Steps 2 & 3.
+      const targetStep = isRich ? 5 : 1;
+      navigate(`/project/${projectId}/flow?step=${targetStep}`);
     } catch (e) {
       toast.error(formatApiError(e));
-      setSubmitting(false);
+      // If the project was created but the situation call failed, still
+      // land the user on Step 1 so they can retry manually.
+      if (projectId) {
+        navigate(`/project/${projectId}/flow?step=1`);
+      } else {
+        setSubmitting(false);
+      }
     }
+    // NOTE: intentionally NOT clearing `submitting` on success — we want the
+    // modal to stay visible until the next page has mounted, which unmounts
+    // this component entirely.
   };
 
   // ─── FILE UPLOAD BRIEF ────────────────────────────────────────────────
@@ -391,6 +418,11 @@ export default function Dashboard() {
   return (
     <div className="dashboard-root relative min-h-full" data-testid="dashboard-page">
       <Seo title="Dashboard" path="/app" noindex />
+
+      {/* Non-dismissable "Bracket is thinking" modal — covers the wait
+          while we run the situation-framing pass. Hides itself once we
+          navigate to /project/:id/flow. */}
+      <StructuringModal open={submitting} />
 
       {/* Cinematic dark backdrop — dimmer version of the marketing ambient. */}
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
