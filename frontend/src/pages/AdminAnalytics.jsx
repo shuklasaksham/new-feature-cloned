@@ -903,6 +903,62 @@ function NpsDetailPanel() {
   );
 }
 
+// Helper — format duration in seconds → "1h 12m" / "42m 6s" / "18s".
+function formatDuration(secs) {
+  if (!secs || secs < 1) return "—";
+  const s = Math.round(secs);
+  if (s >= 3600) {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    return `${h}h ${m}m`;
+  }
+  if (s >= 60) {
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}m ${r}s`;
+  }
+  return `${s}s`;
+}
+
+function ProductSignalsRow({ ps = {} }) {
+  if (!ps) return null;
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" data-testid="pitch-product-signals-row">
+      <PitchStat
+        label="Signup → 1st doc"
+        value={ps.avg_signup_to_first_doc_minutes != null ? formatDuration(ps.avg_signup_to_first_doc_minutes * 60) : "—"}
+        tone="sky"
+        testid="ps-time-to-first-doc"
+      />
+      <PitchStat
+        label="Activated in 10 min"
+        value={ps.pct_activated_10min ?? 0}
+        unit="%"
+        tone="emerald"
+        testid="ps-activated-10min"
+      />
+      <PitchStat
+        label="Projects / active user"
+        value={ps.avg_projects_per_active_user ?? 0}
+        tone="violet"
+        testid="ps-projects-per-user"
+      />
+      <PitchStat
+        label="Returning (7d / 30d)"
+        value={`${ps.returning_users_7d ?? 0} / ${ps.returning_users_30d ?? 0}`}
+        tone="pink"
+        testid="ps-returning"
+      />
+      <PitchStat
+        label="Avg session length"
+        value={ps.avg_session_duration_seconds ? formatDuration(ps.avg_session_duration_seconds) : "—"}
+        tone="lime"
+        testid="ps-session-duration"
+      />
+    </div>
+  );
+}
+
 // ============================================================================
 // PITCH METRICS BOARD — prominent investor-headline block, rendered above the
 // analytics grid. Auto-computed numbers come from GET /admin/pitch-metrics;
@@ -1408,6 +1464,9 @@ function PitchMetricsBoard() {
         <PitchStat label="Weekly active users"      value={data.weekly_active_users}       tone="sky"     testid="pitch-wau" />
         <PitchStat label="4-week retention"         value={data.retention_4w}        unit="%" tone="pink"    testid="pitch-retention" />
       </div>
+
+      {/* Row 1b — product signals (activation + engagement + returning) */}
+      <ProductSignalsRow ps={data.product_signals} />
 
       {/* Row 2 — three interactive/qualitative cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="pitch-secondary-row">

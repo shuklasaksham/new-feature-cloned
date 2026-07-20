@@ -1215,7 +1215,98 @@ async def admin_pitch_metrics(request: Request):
             "total_sessions":  total_sessions,
         },
         "notable_users": clean_notables,
+        # --- Product signals block ------------------------------------
+        "product_signals": await _compute_product_signals(db, d7, d28),
         "generated_at":  auth_iso(now),
+    }
+
+
+async def _compute_product_signals(db, d7, d28) -> Dict[str, Any]:
+    """Activation + engagement + retention metrics for the pitch board.
+    Kept in a helper because the pitch endpoint is already large."""
+    now_dt = auth_now()
+
+    # --- Time signup → first project (per user, then average) ---------
+    minutes_list: list = []
+    activated_10min = 0
+    users_with_project = 0
+    total_users_for_activation = 0
+    async for u in db.users.find(
+        {"$or": [{"is_guest": {"$exists": False}}, {"is_guest": {"$ne": True}}]},
+        {"_id": 0, "user_id": 1, "created_at": 1},
+    ):
+        total_users_for_activation += 1
+        uc = _iso_to_dt(u.get("created_at"))
+        if not uc:
+            continue
+        first_project = await db.projects.find_one(
+            {"owner_user_id": u["user_id"]},
+            sort=[("created_at", 1)],
+            projection={"_id": 0, "created_at": 1},
+        )
+        if not first_project:
+            continue
+        pc = _iso_to_dt(first_project.get("created_at"))
+        if not pc:
+            continue
+        delta_min = max(0, (pc - uc).total_seconds() / 60.0)
+        minutes_list.append(delta_min)
+        users_with_project += 1
+        if delta_min <= 10:
+            activated_10min += 1
+
+    avg_signup_to_first_doc_minutes: Optional[float] = None
+    if minutes_list:
+        avg_signup_to_first_doc_minutes = round(sum(minutes_list) / len(minutes_list), 1)
+    pct_activated_10min = round((activated_10min / total_users_for_activation) * 100, 1) if total_users_for_activation else 0.0
+
+    # --- Avg projects per active user (active in past 7d) -------------
+    active_7d = await db.users.count_documents({"last_seen_at": {"$gte": auth_iso(d7)}})
+    total_projects = await db.projects.count_documents({})
+    avg_projects_per_active_user = round(total_projects / active_7d, 2) if active_7d else 0.0
+
+    # --- Returning users (came back after signup week) ---------------
+    # Definition: users whose signup was >7d ago AND who have last_seen_at
+    # in the past 7 (or 30) days.
+    returning_7d = await db.users.count_documents({
+        "created_at":   {"$lt":  auth_iso(d7)},
+        "last_seen_at": {"$gte": auth_iso(d7)},
+    })
+    returning_30d = await db.users.count_documents({
+        "created_at":   {"$lt":  auth_iso(d28)},
+        "last_seen_at": {"$gte": auth_iso(d28)},
+    })
+
+    # --- Avg session duration (Python-side compute for portability) ---
+    total_secs = 0.0
+    session_duration_count = 0
+    async for s in db.sessions.find(
+        {"first_seen_at": {"$exists": True}, "last_seen_at": {"$exists": True}},
+        {"_id": 0, "first_seen_at": 1, "last_seen_at": 1},
+    ):
+        f = _iso_to_dt(s.get("first_seen_at"))
+        l = _iso_to_dt(s.get("last_seen_at"))
+        if not f or not l:
+            continue
+        diff = (l - f).total_seconds()
+        if diff < 0:
+            continue
+        total_secs += diff
+        session_duration_count += 1
+    avg_session_duration_seconds = round(total_secs / session_duration_count, 1) if session_duration_count else 0.0
+
+    return {
+        "avg_signup_to_first_doc_minutes":  avg_signup_to_first_doc_minutes,
+        "users_with_first_doc":             users_with_project,
+        "pct_activated_10min":              pct_activated_10min,
+        "activated_10min_count":            activated_10min,
+        "avg_projects_per_active_user":     avg_projects_per_active_user,
+        "active_users_7d":                  active_7d,
+        "total_projects_for_avg":           total_projects,
+        "returning_users_7d":               returning_7d,
+        "returning_users_30d":              returning_30d,
+        "avg_session_duration_seconds":     avg_session_duration_seconds,
+        "session_duration_sample_size":     session_duration_count,
     }
 
 

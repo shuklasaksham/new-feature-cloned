@@ -690,7 +690,15 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 
 - 2026-07-20 — **Iteration 65 — NPS deep view + 24h cool-down + live campaign progress** (later removed): See earlier session log; cool-down was rolled back in iteration 65b per user request. Delete-response endpoint added (iteration 65c).
 
+- 2026-07-20 — **Iteration 67 — Product signals row (activation + engagement + retention)**:
+  - **User ask**: Add average time signup→first document, % activated in 10 min, avg projects per active user, returning users (7d/30d), and avg session duration.
+  - **Backend** (`_compute_product_signals` helper): iterates users, joins to earliest project per user_id for activation math; counts returning users (signup >Nd ago AND last_seen within past Nd); avg session duration = mean of (`last_seen_at − first_seen_at`) across all sessions.
+  - **Response fields** added to `/admin/pitch-metrics.product_signals`: `avg_signup_to_first_doc_minutes`, `pct_activated_10min`, `avg_projects_per_active_user`, `returning_users_7d`, `returning_users_30d`, `avg_session_duration_seconds`, plus sample counts for context.
+  - **Frontend**: new `ProductSignalsRow` component + `formatDuration()` helper render a 5-card row directly below the primary pitch KPIs. Cards use the existing `PitchStat` component for visual consistency (color-coded, large tabular-nums), values format nicely (`4h 35m`, `44.7%`, `12`, `4 / 1`, `37m 9s`).
+  - **Verified**: All 5 metrics computed correctly on live preview data — 40 users with a first document, 38 activated within 10 min (44.7%), 12.0 avg projects per 7d-active user, 4 returning-7d / 1 returning-30d, avg session 37m 9s across 186 sessions. Screenshot captured.
+
 - 2026-07-20 — **Iteration 66 — Website Analytics (traffic + geo + click heatmap) + retention fix**:
+
   - **User ask**: Lifetime website analytics on admin panel (total sessions, requests/page views, locations, how many visitors, from where), multiple time-range filters (Yesterday, Last 7 days, etc.), heatmaps, real-time updates, and corrected 4-week retention %.
   - **Session tracking upgraded** (`server.py::/public/track/session`): now captures visitor IP from `X-Forwarded-For`, `CF-Connecting-IP`, or `X-Real-IP`, increments `page_views` on every ping, and fires an async background `_ensure_geo_for_ip()` task that resolves the IP to country/city via free ip-api.com and caches the result in a new `geoip_cache` collection (indefinite cache — one lookup per unique IP).
   - **Click tracker** — new `POST /api/public/track/click` endpoint stores normalized (x_frac, y_frac) click positions to a new `click_events` collection with viewport size and target-element tag (e.g. `button[cta-primary]`).
