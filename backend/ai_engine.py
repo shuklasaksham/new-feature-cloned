@@ -8,6 +8,7 @@ import re
 import uuid
 import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from emergentintegrations.llm.chat import (
     LlmChat,
@@ -30,6 +31,81 @@ SUGGEST_MODEL = "claude-haiku-4-5-20251001"  # ultra-fast for typing suggestions
 STEP_TIMEOUT_S = 35       # attempt 1 budget for step calls
 STEP_RETRY_TIMEOUT_S = 20  # attempt 2 budget (retry on transient failures)
 SUGGEST_TIMEOUT_S = 8  # Haiku typing suggestions
+
+# ---------------------------------------------------------------------------
+# LLM CONCURRENCY POOL
+# ---------------------------------------------------------------------------
+# Every LlmChat.send_message internally awaits a SYNCHRONOUS litellm call
+# (see _send_in_thread). Under load the default asyncio-to-thread executor
+# (min(32, cpu+4) workers, shared with other blocking IO) exhausts fast —
+# new AI calls then queue silently, waiting for a free thread. Since
+# asyncio.wait_for cannot cancel a thread that hasn't been dispatched yet,
+# a queued task can wait 100+ seconds — long enough for Cloudflare's origin
+# timeout to fire and surface a scary 524 page to the user.
+#
+# The fix, in three parts:
+#   1. A DEDICATED thread pool for AI work — isolated from PDF parsing,
+#      Motor's executor, image OCR, etc. Doesn't compete for the default
+#      pool's slots.
+#   2. An asyncio.Semaphore that caps CONCURRENT AI calls slightly BELOW
+#      the pool size, guaranteeing headroom.
+#   3. When the semaphore is full for > _AI_SEMAPHORE_WAIT_S seconds, we
+#      raise AIBackpressureError → server.py maps it to HTTP 503 with a
+#      Retry-After header. The client sees a friendly "try again in 5s"
+#      message instead of the browser rendering Cloudflare's 524 page.
+_AI_MAX_WORKERS = int(os.environ.get("AI_MAX_WORKERS", "64"))
+_AI_MAX_CONCURRENT = int(os.environ.get("AI_MAX_CONCURRENT", "48"))
+_AI_SEMAPHORE_WAIT_S = float(os.environ.get("AI_SEMAPHORE_WAIT_S", "8.0"))
+
+_ai_executor = ThreadPoolExecutor(
+    max_workers=_AI_MAX_WORKERS,
+    thread_name_prefix="bracket-ai",
+)
+_ai_semaphore: Optional[asyncio.Semaphore] = None
+
+
+class AIBackpressureError(RuntimeError):
+    """Raised when the AI concurrency semaphore is saturated. Maps to
+    HTTP 503 with Retry-After so the client retries gracefully instead of
+    waiting long enough for Cloudflare to render a 524 error page."""
+
+
+def _get_ai_semaphore() -> asyncio.Semaphore:
+    """Lazily create the semaphore inside a running event loop. Doing this
+    at import time deprecates on 3.10+ because there's no running loop yet."""
+    global _ai_semaphore
+    if _ai_semaphore is None:
+        _ai_semaphore = asyncio.Semaphore(_AI_MAX_CONCURRENT)
+    return _ai_semaphore
+
+
+async def _dispatch_llm_call(chat, message, *, timeout: float):
+    """Single choke-point for every LLM invocation.
+
+    Guarantees:
+      - Runs on the dedicated `_ai_executor` (never starves against app IO).
+      - Respects `_AI_MAX_CONCURRENT` — surfaces AIBackpressureError fast
+        when saturated instead of piling up behind Cloudflare's 100s wall.
+      - Honours the caller's per-attempt timeout even when the SDK ignores it.
+    """
+    sem = _get_ai_semaphore()
+    try:
+        # Fail fast if the whole system is under load — don't sit behind a
+        # queue for longer than the client is willing to wait.
+        await asyncio.wait_for(sem.acquire(), timeout=_AI_SEMAPHORE_WAIT_S)
+    except asyncio.TimeoutError as e:
+        raise AIBackpressureError(
+            "Bracket is handling a surge of requests. Please retry in a few seconds."
+        ) from e
+    try:
+        loop = asyncio.get_running_loop()
+        return await asyncio.wait_for(
+            loop.run_in_executor(_ai_executor, _send_in_thread, chat, message),
+            timeout=timeout,
+        )
+    finally:
+        sem.release()
+
 
 MODEL_MAP = {
     # Default step engine is Haiku 4.5 — 3-5x faster than Sonnet 4.5 with
@@ -119,11 +195,14 @@ async def _run(prompt: str, engine: str = "claude", session_id: Optional[str] = 
             system_message=SYSTEM_VOICE,
         ).with_model(provider, model)
         try:
-            response = await asyncio.wait_for(
-                asyncio.to_thread(_send_in_thread, chat, UserMessage(text=prompt)),
-                timeout=budget,
+            response = await _dispatch_llm_call(
+                chat, UserMessage(text=prompt), timeout=budget,
             )
             return _extract_json(response)
+        except AIBackpressureError:
+            # Don't retry on backpressure — the client should get an
+            # immediate 503 so it can back off and retry gracefully.
+            raise
         except asyncio.TimeoutError as e:
             logger.warning(
                 "AI step call timed out after %ss (engine=%s, attempt=%d)", budget, engine, attempt + 1
@@ -147,9 +226,8 @@ async def _run_fast(prompt: str, session_id: Optional[str] = None, timeout: floa
         system_message="Return strict JSON only. No prose, no markdown fences.",
     ).with_model(SUGGEST_PROVIDER, SUGGEST_MODEL)
     try:
-        response = await asyncio.wait_for(
-            asyncio.to_thread(_send_in_thread, chat, UserMessage(text=prompt)),
-            timeout=timeout,
+        response = await _dispatch_llm_call(
+            chat, UserMessage(text=prompt), timeout=timeout,
         )
     except asyncio.TimeoutError as e:
         logger.info("Suggest call timed out after %ss — returning empty list", SUGGEST_TIMEOUT_S)
@@ -611,17 +689,19 @@ async def extract_text_from_image(image_bytes: bytes, mime_type: str = "image/pn
         "Plain text only."
     )
     try:
-        response = await asyncio.wait_for(
-            asyncio.to_thread(
-                _send_in_thread,
-                chat,
-                UserMessage(text=prompt, file_contents=[ImageContent(image_base64=b64)]),
-            ),
+        response = await _dispatch_llm_call(
+            chat,
+            UserMessage(text=prompt, file_contents=[ImageContent(image_base64=b64)]),
             timeout=STEP_TIMEOUT_S,
         )
         return (response or "").strip()
     except asyncio.TimeoutError:
         logger.warning("extract_text_from_image timed out after %ss", STEP_TIMEOUT_S)
+        return ""
+    except AIBackpressureError:
+        # Under load, degrade gracefully — the upload flow will still work
+        # with just the extracted text (no OCR augmentation).
+        logger.warning("extract_text_from_image skipped due to AI backpressure")
         return ""
     except Exception as e:
         logger.warning("extract_text_from_image failed: %s", e)

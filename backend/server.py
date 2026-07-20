@@ -39,6 +39,7 @@ from ai_engine import (
     generate_project_title,
     map_suggestion_to_step,
     draft_change_note,
+    AIBackpressureError,
 )
 from push_notify import send_push_to_owner, send_push_to_user  # noqa: F401
 from emailer import (
@@ -81,6 +82,30 @@ db = client[os.environ["DB_NAME"]]
 
 app = FastAPI(title="Bracket API")
 api = APIRouter(prefix="/api")
+
+
+# ---------------------------------------------------------------------------
+# AI backpressure → HTTP 503 with Retry-After. When the AI concurrency
+# semaphore is saturated (dozens of users pasting briefs at the same time),
+# we return this instead of holding the request until Cloudflare's 100s
+# origin timeout fires and shows the user a scary 524 page.
+# ---------------------------------------------------------------------------
+from fastapi.responses import JSONResponse as _JSONResponse
+
+
+@app.exception_handler(AIBackpressureError)
+async def _ai_backpressure_handler(request, exc):
+    return _JSONResponse(
+        status_code=503,
+        headers={"Retry-After": "5"},
+        content={
+            "detail": (
+                "Bracket is handling a surge of requests right now. "
+                "Please retry in a few seconds."
+            ),
+            "code": "ai_backpressure",
+        },
+    )
 
 
 # --- health ---
@@ -3127,6 +3152,8 @@ async def step_situation(project_id: str, body: SituationIn):
             # Auto-build call itself failed — run just the framing.
             try:
                 framing = await run_situation_framing(payload, engine)
+            except AIBackpressureError:
+                raise  # let the app-level handler emit 503 with Retry-After
             except Exception as e:
                 logger.exception("situation framing failed")
                 raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
@@ -3141,6 +3168,8 @@ async def step_situation(project_id: str, body: SituationIn):
             else:
                 framing = await run_situation_framing(payload, engine)
                 title_result = None
+        except AIBackpressureError:
+            raise
         except Exception as e:
             logger.exception("situation framing failed")
             raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
@@ -3184,6 +3213,8 @@ async def step_context(project_id: str, body: ContextIn):
         payload["raw_paste"] = body.raw_paste
     try:
         compressed = await run_context_compression(payload, project["framing"], project.get("engine", "claude"))
+    except AIBackpressureError:
+        raise
     except Exception as e:
         logger.exception("context compression failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
@@ -3219,6 +3250,8 @@ async def step_decision(project_id: str, body: DecisionIn):
         decision = await run_decision_engine(
             payload, project["framing"], project["context"], project.get("engine", "claude")
         )
+    except AIBackpressureError:
+        raise
     except Exception as e:
         logger.exception("decision engine failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
@@ -3247,6 +3280,8 @@ async def step_artifacts(project_id: str):
         raise HTTPException(status_code=400, detail="Complete Decision step first.")
     try:
         artifacts = await run_artifacts(project, project.get("engine", "claude"))
+    except AIBackpressureError:
+        raise
     except Exception as e:
         logger.exception("artifacts failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
@@ -4046,6 +4081,8 @@ async def client_reject_preview(token: str, body: RejectPreviewIn):
         suggestions = await run_client_pushback_suggestions(
             project, body.concerns, project.get("engine", "claude")
         )
+    except AIBackpressureError:
+        raise
     except Exception as e:
         logger.exception("pushback suggestions failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
