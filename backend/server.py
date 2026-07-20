@@ -1523,6 +1523,216 @@ async def admin_heatmap(request: Request, path: str = "/", range: str = "lifetim
 
 
 # ===========================================================================
+# PUBLISH-EVENT LOG + BEFORE/AFTER COMPARISON
+# ===========================================================================
+class PublishEventIn(_BM):
+    name: str = _Fd(min_length=2, max_length=120)
+    description: str = _Fd(default="", max_length=800)
+    # Optional ISO timestamp — defaults to "now" if omitted.
+    published_at: Optional[str] = None
+
+
+@api.get("/admin/publishes")
+async def admin_list_publishes(request: Request):
+    """Recent publish events, newest first."""
+    await auth_current_admin(request, db)
+    rows: list = []
+    async for r in db.publish_events.find({}, {"_id": 0}).sort("published_at", -1).limit(40):
+        rows.append(r)
+    return {"publishes": rows}
+
+
+@api.post("/admin/publishes")
+async def admin_create_publish(body: PublishEventIn, request: Request):
+    """Log a deployment/publish for later before/after comparison."""
+    admin = await auth_current_admin(request, db)
+    published_at = body.published_at or auth_iso(auth_now())
+    doc = {
+        "id":            _uuid(),
+        "name":          body.name.strip()[:120],
+        "description":   (body.description or "").strip()[:800],
+        "published_at":  published_at,
+        "created_by":    admin["email"],
+        "created_at":    auth_iso(auth_now()),
+    }
+    await db.publish_events.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api.delete("/admin/publishes/{publish_id}")
+async def admin_delete_publish(publish_id: str, request: Request):
+    await auth_current_admin(request, db)
+    r = await db.publish_events.delete_one({"id": publish_id})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Publish not found.")
+    return {"ok": True}
+
+
+async def _metrics_in_window(db, start_iso: str, end_iso: str) -> Dict[str, Any]:
+    """Compute a compact funnel + engagement snapshot within [start, end).
+
+    Funnel definitions (matches the mature product-team playbook):
+      - Visitor → Signup    = new_signups / sessions × 100
+      - Signup → 1st Project = of users who signed up IN window, how many
+                                have a project (any time). Approximates the
+                                onboarding activation rate.
+      - 1st Project → Locked  = of projects created IN window, how many
+                                reached share_status ≠ 'none' (any time).
+    """
+    match_range = {"$gte": start_iso, "$lt": end_iso}
+
+    total_sessions = await db.sessions.count_documents({"last_seen_at": match_range})
+    page_views = 0
+    async for row in db.sessions.aggregate([
+        {"$match": {"last_seen_at": match_range}},
+        {"$group": {"_id": None, "s": {"$sum": {"$ifNull": ["$page_views", 1]}}}},
+    ]):
+        page_views = int(row.get("s") or 0)
+
+    new_signups = await db.users.count_documents({
+        "created_at": match_range,
+        "$or": [{"is_guest": {"$exists": False}}, {"is_guest": {"$ne": True}}],
+    })
+    new_projects = await db.projects.count_documents({"created_at": match_range})
+
+    # Projects created in window → locked/shared (any time later)
+    locked_from_window = await db.projects.count_documents({
+        "created_at": match_range,
+        "share_status": {"$exists": True, "$nin": [None, "", "none"]},
+    })
+
+    # Signups in window → who has at least one project (any time)
+    signups_with_project = 0
+    time_to_first_mins: list = []
+    step_values: list = []
+    async for u in db.users.find({
+        "created_at": match_range,
+        "$or": [{"is_guest": {"$exists": False}}, {"is_guest": {"$ne": True}}],
+    }, {"_id": 0, "user_id": 1, "created_at": 1}):
+        first_p = await db.projects.find_one(
+            {"owner_user_id": u["user_id"]},
+            sort=[("created_at", 1)],
+            projection={"_id": 0, "created_at": 1, "step": 1},
+        )
+        if first_p:
+            signups_with_project += 1
+            uc = _iso_to_dt(u.get("created_at"))
+            pc = _iso_to_dt(first_p.get("created_at"))
+            if uc and pc:
+                time_to_first_mins.append(max(0, (pc - uc).total_seconds() / 60.0))
+    # Avg steps completed for projects created in window
+    async for p in db.projects.find({"created_at": match_range}, {"_id": 0, "step": 1}):
+        try:
+            step_values.append(int(p.get("step") or 0))
+        except (TypeError, ValueError):
+            pass
+
+    def _rate(num, denom):
+        return round((num / denom) * 100, 1) if denom else None
+
+    def _avg(xs):
+        return round(sum(xs) / len(xs), 1) if xs else None
+
+    accepted = await db.projects.count_documents({"share_status": "accepted", "updated_at": match_range})
+    rejected = await db.projects.count_documents({"share_status": "rejected", "updated_at": match_range})
+    reviewed = accepted + rejected
+    nps_responses = await db.nps_responses.count_documents({"updated_at": match_range})
+
+    return {
+        "start":                     start_iso,
+        "end":                       end_iso,
+        "sessions":                  total_sessions,
+        "page_views":                page_views,
+        "new_signups":               new_signups,
+        "new_projects":              new_projects,
+        "docs_shared":               locked_from_window,
+        "client_accept_rate":        _rate(accepted, reviewed),
+        "nps_responses":             nps_responses,
+        # Funnel rates
+        "visitor_to_signup_pct":     _rate(new_signups, total_sessions),
+        "signup_to_first_project_pct": _rate(signups_with_project, new_signups),
+        "project_to_locked_pct":     _rate(locked_from_window, new_projects),
+        # Engagement
+        "avg_time_to_first_doc_min": _avg(time_to_first_mins),
+        "avg_steps_completed":       _avg(step_values),
+    }
+
+
+def _pct_change(before, after) -> Optional[float]:
+    if before is None or after is None:
+        return None
+    try:
+        b = float(before)
+        a = float(after)
+    except (TypeError, ValueError):
+        return None
+    if b == 0:
+        return None if a == 0 else 100.0
+    return round(((a - b) / b) * 100, 1)
+
+
+@api.get("/admin/publishes/{publish_id}/compare")
+async def admin_compare_publish(publish_id: str, request: Request, window_days: int = 14):
+    """Compare metrics from the `window_days` before vs after a publish
+    (default 14 days — the minimum recommended window for small user bases
+    to smooth out day-to-day variation)."""
+    from datetime import timedelta as _td
+    await auth_current_admin(request, db)
+    window_days = max(1, min(window_days, 90))
+    pub = await db.publish_events.find_one({"id": publish_id}, {"_id": 0})
+    if not pub:
+        raise HTTPException(status_code=404, detail="Publish not found.")
+    at = _iso_to_dt(pub["published_at"])
+    if not at:
+        raise HTTPException(status_code=400, detail="Publish has an invalid timestamp.")
+    before_start = auth_iso(at - _td(days=window_days))
+    before_end   = auth_iso(at)
+    after_start  = auth_iso(at)
+    after_end_dt = at + _td(days=window_days)
+    now = auth_now()
+    if after_end_dt > now:
+        after_end_dt = now
+    after_end    = auth_iso(after_end_dt)
+
+    before = await _metrics_in_window(db, before_start, before_end)
+    after  = await _metrics_in_window(db, after_start, after_end)
+
+    keys_labels = [
+        ("visitor_to_signup_pct",       "Visitor → Signup (%)",           "pct"),
+        ("signup_to_first_project_pct", "Signup → First Project (%)",     "pct"),
+        ("project_to_locked_pct",       "First Project → Locked Doc (%)", "pct"),
+        ("avg_time_to_first_doc_min",   "Avg time to first doc (min)",    "lower_better"),
+        ("avg_steps_completed",         "Avg steps completed",            "num"),
+        ("sessions",                    "Sessions",                       "num"),
+        ("page_views",                  "Page views",                     "num"),
+        ("new_signups",                 "New signups",                    "num"),
+        ("new_projects",                "New projects",                   "num"),
+        ("docs_shared",                 "Docs locked & shared",           "num"),
+        ("client_accept_rate",          "Client accept rate (%)",         "pct"),
+        ("nps_responses",               "NPS responses",                  "num"),
+    ]
+    deltas = [{
+        "key":   k,
+        "label": lbl,
+        "kind":  kind,
+        "before": before.get(k),
+        "after":  after.get(k),
+        "pct_change": _pct_change(before.get(k), after.get(k)),
+    } for (k, lbl, kind) in keys_labels]
+
+    return {
+        "publish":       pub,
+        "window_days":   window_days,
+        "before_window": {"start": before_start, "end": before_end},
+        "after_window":  {"start": after_start,  "end": after_end},
+        "before":        before,
+        "after":         after,
+        "deltas":        deltas,
+    }
+
+
+# ===========================================================================
 # NPS SURVEY CAMPAIGN
 # ===========================================================================
 NPS_SECRET_KEY = os.environ.get("JWT_SECRET") or os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or "bracket-nps-signing-key"

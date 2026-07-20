@@ -282,6 +282,271 @@ function ScatterTooltip({ active, payload }) {
 }
 
 // ============================================================================
+// PUBLISH LOG — track every release + compare before/after metrics.
+// ============================================================================
+function DeltaValue({ before, after, pct, kind }) {
+  const fmt = (v) => v == null ? "—" : (typeof v === "number" ? v.toLocaleString(undefined, { maximumFractionDigits: 1 }) : String(v));
+  let arrow = "→";
+  let color = "var(--text-3)";
+  if (typeof pct === "number") {
+    // For "lower_better" (time-to-first-doc), a negative pct is GOOD.
+    const good = kind === "lower_better" ? pct < 0 : pct > 0;
+    const bad  = kind === "lower_better" ? pct > 0 : pct < 0;
+    if (pct === 0) { arrow = "→"; color = "var(--text-3)"; }
+    else if (good) { arrow = "↑"; color = "#22C55E"; }
+    else if (bad)  { arrow = "↓"; color = "#EF4444"; }
+  }
+  return (
+    <span className="inline-flex items-baseline gap-2">
+      <span className="tabular-nums" style={{ color: "var(--text-3)" }}>{fmt(before)}</span>
+      <span style={{ color: "var(--text-3)" }}>→</span>
+      <span className="tabular-nums" style={{ color: "var(--text)" }}>{fmt(after)}</span>
+      {typeof pct === "number" && (
+        <span className="tabular-nums text-[12px] ml-1" style={{ color }}>
+          {arrow} {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%
+        </span>
+      )}
+    </span>
+  );
+}
+
+function PublishLogPanel() {
+  const [publishes, setPublishes] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [comparison, setComparison] = useState(null);
+  const [windowDays, setWindowDays] = useState(14);
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState({ name: "", description: "", published_at: "" });
+
+  const load = async () => {
+    try {
+      const { data } = await api.get("/admin/publishes");
+      setPublishes(data.publishes || []);
+      if (!selectedId && (data.publishes || []).length > 0) {
+        setSelectedId(data.publishes[0].id);
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("publishes load", e);
+    }
+  };
+  const loadCompare = async (id, w) => {
+    if (!id) { setComparison(null); return; }
+    try {
+      const { data } = await api.get(`/admin/publishes/${id}/compare?window_days=${w || windowDays}`);
+      setComparison(data);
+    } catch {
+      setComparison(null);
+    }
+  };
+  useEffect(() => { load(); }, []);
+  useEffect(() => { loadCompare(selectedId, windowDays); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [selectedId, windowDays]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.name || form.name.length < 2) return;
+    const body = { name: form.name, description: form.description };
+    if (form.published_at) body.published_at = new Date(form.published_at).toISOString();
+    try {
+      const { data } = await api.post("/admin/publishes", body);
+      setForm({ name: "", description: "", published_at: "" });
+      setAdding(false);
+      setSelectedId(data.id);
+      load();
+    } catch (e2) {
+      // eslint-disable-next-line no-alert
+      window.alert(`Add failed: ${formatApiError(e2)}`);
+    }
+  };
+  const remove = async (id) => {
+    // eslint-disable-next-line no-alert
+    if (!window.confirm("Remove this publish from the log?")) return;
+    try {
+      await api.delete(`/admin/publishes/${id}`);
+      if (selectedId === id) setSelectedId(null);
+      load();
+    } catch {
+      /* silent */
+    }
+  };
+
+  return (
+    <section className="space-y-4" data-testid="publish-log-panel">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <span className="section-label"><span className="dot" />Publish log</span>
+          <h2 className="mt-2 font-display text-[22px] sm:text-[24px] leading-none"
+              style={{ letterSpacing: "-0.03em", color: "var(--text)", fontWeight: 500 }}>
+            Did this release make the product better?
+          </h2>
+          <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+            Log each release. Compare visitor→signup, activation, and locked-doc rates
+            {" "}<b>{windowDays}</b> days before vs after.
+            <span style={{ color: "var(--text-3)" }}> Recommended min 14d to smooth noise.</span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-[11px] uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Window</label>
+          <select
+            value={windowDays}
+            onChange={(e) => setWindowDays(Number(e.target.value))}
+            className="text-[12.5px] rounded-md px-2 py-1.5"
+            style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+            data-testid="publish-window-select"
+          >
+            {[7, 14, 21, 30, 60].map((d) => <option key={d} value={d}>{d} days</option>)}
+          </select>
+          <button
+            onClick={() => setAdding((v) => !v)}
+            className="clay-signal px-3 py-1.5 t-tag inline-flex items-center gap-2 text-[12px]"
+            data-testid="publish-add-btn"
+          >
+            <Plus size={12} /> Log publish
+          </button>
+        </div>
+      </div>
+
+      {adding && (
+        <form
+          onSubmit={submit}
+          className="rounded-2xl px-5 py-4 space-y-3"
+          style={{ background: "rgba(94,106,210,0.06)", border: "1px solid rgba(94,106,210,0.35)" }}
+          data-testid="publish-add-form"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input
+              placeholder="Name (e.g. v0.9.4 · NPS launch)"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="px-3 py-2 rounded-md text-[13px]"
+              style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+              required
+              data-testid="publish-name"
+            />
+            <input
+              placeholder="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              className="px-3 py-2 rounded-md text-[13px]"
+              style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+              data-testid="publish-description"
+            />
+            <input
+              type="datetime-local"
+              value={form.published_at}
+              onChange={(e) => setForm({ ...form, published_at: e.target.value })}
+              className="px-3 py-2 rounded-md text-[13px]"
+              style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+              title="Publish date/time (defaults to now)"
+              data-testid="publish-when"
+            />
+          </div>
+          <div className="flex items-center gap-2 justify-end">
+            <button type="button" onClick={() => setAdding(false)} className="btn-ghost text-[12px]" data-testid="publish-cancel">Cancel</button>
+            <button type="submit" className="clay-signal px-3 py-1.5 t-tag text-[12px]" data-testid="publish-save">Save publish</button>
+          </div>
+        </form>
+      )}
+
+      {publishes.length === 0 ? (
+        <p className="rounded-2xl px-5 py-6 text-[13px] text-center"
+           style={{ background: "var(--surface)", border: "1px dashed var(--hairline)", color: "var(--text-3)" }}>
+          No publishes logged yet. Add your first one to start comparing before/after metrics.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+          {/* Publishes list */}
+          <div className="lg:col-span-4 rounded-2xl overflow-hidden"
+               style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+               data-testid="publish-list">
+            <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--hairline)" }}>
+              <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>
+                Releases ({publishes.length})
+              </p>
+            </div>
+            <ul className="max-h-[380px] overflow-y-auto">
+              {publishes.map((p) => {
+                const active = p.id === selectedId;
+                return (
+                  <li
+                    key={p.id}
+                    className="px-4 py-3 flex items-start gap-2 cursor-pointer group"
+                    style={{
+                      borderBottom: "1px solid var(--hairline)",
+                      background: active ? "rgba(94,106,210,0.08)" : "transparent",
+                    }}
+                    onClick={() => setSelectedId(p.id)}
+                    data-testid={`publish-row-${p.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium truncate" style={{ color: active ? "var(--text)" : "var(--text-2)" }}>{p.name}</p>
+                      {p.description && (
+                        <p className="text-[12px] mt-0.5 truncate" style={{ color: "var(--text-3)" }}>{p.description}</p>
+                      )}
+                      <p className="text-[11px] mt-1 tabular-nums" style={{ color: "var(--text-3)" }}>
+                        {new Date(p.published_at).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); remove(p.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-white/[0.05]"
+                      title="Delete"
+                      data-testid={`publish-delete-${p.id}`}
+                    >
+                      <Trash2 size={13} style={{ color: "#EF4444" }} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Comparison table */}
+          <div className="lg:col-span-8 rounded-2xl overflow-hidden"
+               style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+               data-testid="publish-comparison">
+            {!comparison ? (
+              <p className="p-6 text-[13px] text-center" style={{ color: "var(--text-3)" }}>
+                Select a release to see its before / after comparison.
+              </p>
+            ) : (
+              <>
+                <div className="px-5 py-3.5" style={{ borderBottom: "1px solid var(--hairline)" }}>
+                  <p className="text-[13px] font-medium" style={{ color: "var(--text)" }}>
+                    {comparison.publish.name}
+                  </p>
+                  <p className="text-[11px] tabular-nums" style={{ color: "var(--text-3)" }}>
+                    {new Date(comparison.before_window.start).toLocaleDateString([], { month: "short", day: "numeric" })}
+                    {" → "}
+                    {new Date(comparison.before_window.end).toLocaleDateString([], { month: "short", day: "numeric" })}
+                    {"  vs  "}
+                    {new Date(comparison.after_window.start).toLocaleDateString([], { month: "short", day: "numeric" })}
+                    {" → "}
+                    {new Date(comparison.after_window.end).toLocaleDateString([], { month: "short", day: "numeric" })}
+                  </p>
+                </div>
+                <table className="w-full text-left">
+                  <tbody>
+                    {comparison.deltas.map((d) => (
+                      <tr key={d.key} style={{ borderTop: "1px solid var(--hairline)" }} data-testid={`publish-delta-${d.key}`}>
+                        <td className="py-2.5 px-4 text-[13px]" style={{ color: "var(--text-2)" }}>{d.label}</td>
+                        <td className="py-2.5 px-4 text-right">
+                          <DeltaValue before={d.before} after={d.after} pct={d.pct_change} kind={d.kind} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ============================================================================
 // WEBSITE ANALYTICS PANEL — traffic + geo + click heatmap with time-range
 // filter. Auto-refreshes hourly. Every section respects the range dropdown.
 // ============================================================================
@@ -1567,6 +1832,12 @@ export default function AdminAnalytics() {
 
       {/* Website analytics — traffic, geo, heatmap with time-range filter */}
       <WebsiteAnalyticsPanel />
+
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid var(--hairline)" }} />
+
+      {/* Publish log — release history + before/after comparison */}
+      <PublishLogPanel />
 
       {/* Divider */}
       <div style={{ borderTop: "1px solid var(--hairline)" }} />

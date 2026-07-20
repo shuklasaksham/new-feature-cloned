@@ -690,6 +690,14 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 
 - 2026-07-20 — **Iteration 65 — NPS deep view + 24h cool-down + live campaign progress** (later removed): See earlier session log; cool-down was rolled back in iteration 65b per user request. Delete-response endpoint added (iteration 65c).
 
+- 2026-07-20 — **Iteration 68 — Publish Log + before/after comparison**:
+  - **User ask**: Compare data from before and after a particular publish. Track visitor→signup, signup→first-project, first-project→locked-doc, avg time to first doc, avg steps completed. 14-day default window. Chart annotations.
+  - **Backend**: new `POST/GET/DELETE /api/admin/publishes` for the release log, and `GET /api/admin/publishes/{id}/compare?window_days=N` for the comparison. Default window = **14 days** (matches investor-story recommendation).
+  - **Funnel metrics in `_metrics_in_window`**: `visitor_to_signup_pct` (signups / sessions), `signup_to_first_project_pct` (of users signed up in window, how many have any project), `project_to_locked_pct` (of projects created in window, how many reached `share_status ≠ 'none'`), `avg_time_to_first_doc_min`, `avg_steps_completed`.
+  - **Delta table** returns 12 metrics with `pct_change`. Each row is tagged `kind: "pct" | "num" | "lower_better"` so the frontend inverts the arrow color for time-to-first-doc (a decrease is good).
+  - **Frontend** (`PublishLogPanel`): 2-column layout — releases list (add / select / delete, hover-to-remove) + comparison table with `DeltaValue` component (before → after + colored ↑/↓/→ arrow). Window dropdown (7/14/21/30/60 days). "Log publish" CTA opens an inline form (name / description / optional datetime).
+  - **Verified on preview**: created "v0.9.4 · NPS launch" 5 days ago → comparison table populated correctly with 14-day windows on either side; delta arrows and % changes rendering right (Sessions 182→10 = −94.5% red, Avg steps completed 1.6→3.6 = +125% green, NPS responses 0→5 = +100% green). Screenshot captured.
+
 - 2026-07-20 — **Iteration 67 — Product signals row (activation + engagement + retention)**:
   - **User ask**: Add average time signup→first document, % activated in 10 min, avg projects per active user, returning users (7d/30d), and avg session duration.
   - **Backend** (`_compute_product_signals` helper): iterates users, joins to earliest project per user_id for activation math; counts returning users (signup >Nd ago AND last_seen within past Nd); avg session duration = mean of (`last_seen_at − first_seen_at`) across all sessions.
