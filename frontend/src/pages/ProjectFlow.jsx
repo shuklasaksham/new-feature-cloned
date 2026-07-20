@@ -23,6 +23,7 @@ import {
 import { api, formatApiError, API_BASE } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import { useDialog } from "../components/Dialog";
+import AutoBuildOverlay from "../components/AutoBuildOverlay";
 import { toast } from "sonner";
 
 // Downstream fields cleared when a user reworks an earlier step. Mirrors
@@ -764,7 +765,10 @@ function EmptyModuleHint({ title, blurb, testid }) {
 // surfaced when the first-chatbox paste was too thin to auto-build the whole
 // document. Numbered list, subtle callout, prompts the user to answer them
 // in the paste field below. Hidden once the step's own output exists.
-function OpenQuestions({ label = "Bracket still needs your read on", items = [], testid }) {
+// Clicking a question calls `onPick(question)` — Step 2 / Step 3 wire this
+// to append "Q: <question>\nA: " to their paste box so the user just types
+// the answer.
+function OpenQuestions({ label = "Bracket still needs your read on", items = [], testid, onPick }) {
   if (!items || items.length === 0) return null;
   return (
     <div
@@ -774,12 +778,25 @@ function OpenQuestions({ label = "Bracket still needs your read on", items = [],
       <p className="mono-tag text-signal">{label}</p>
       <ol className="mt-2 space-y-1.5 text-sm leading-relaxed" data-testid={`${testid || "open-questions"}-list`}>
         {items.map((q, i) => (
-          <li key={i} className="flex gap-2" data-testid={`${testid || "open-questions"}-item-${i}`}>
-            <span className="mono-tag text-muted mt-[3px] shrink-0">{String(i + 1).padStart(2, "0")}</span>
-            <span>{q}</span>
+          <li key={i} data-testid={`${testid || "open-questions"}-item-${i}`}>
+            <button
+              type="button"
+              onClick={() => onPick && onPick(q)}
+              className="flex w-full text-left gap-2 rounded-sm px-1 py-1 -mx-1 hover:bg-white/[0.03] focus:bg-white/[0.05] focus:outline-none transition-colors"
+              data-testid={`${testid || "open-questions"}-pick-${i}`}
+              aria-label={`Answer question ${i + 1}: ${q}`}
+            >
+              <span className="mono-tag text-muted mt-[3px] shrink-0">{String(i + 1).padStart(2, "0")}</span>
+              <span className="flex-1">{q}</span>
+            </button>
           </li>
         ))}
       </ol>
+      {onPick && (
+        <p className="mt-2.5 text-[11px] text-muted leading-snug">
+          Tap a question to answer it in your paste below.
+        </p>
+      )}
     </div>
   );
 }
@@ -802,6 +819,11 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
   const [phase, setPhase] = useState(null); // detecting | scanning | framing | done
   const [isSample, setIsSample] = useState(false);
   const [draftSaved, setDraftSaved] = useState(false);
+  // When true, Step 1 is running the initial paste-driven auto-build. We
+  // show a subtle overlay (AutoBuildOverlay) instead of the Step-1 workbench
+  // UI so the user never sees the raw form during this pass. On completion
+  // we auto-route them to Step 2 or Step 5 depending on brief richness.
+  const [autoBuilding, setAutoBuilding] = useState(false);
   const whatRef = useRef(null);
   const framing = project.framing;
   const navigate = useNavigate();
@@ -847,7 +869,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     }
   }, [framing, draftKey]);
 
-  const runInternal = async (payload) => {
+  const runInternal = async (payload, opts = {}) => {
+    const autoRoute = !!opts.autoRoute;
     // Cascade guard — if downstream steps already have Bracket output,
     // ask before overwriting. Applies only when framing already exists
     // (i.e., this is a re-run, not the first pass).
@@ -858,6 +881,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     }
     setLoading(true);
     setError("");
+    if (autoRoute) setAutoBuilding(true);
     // Sequential progress checkmarks synced with actual AI latency (~4-6s).
     setPhase("detecting");
     const t1 = setTimeout(() => setPhase("scanning"), 900);
@@ -866,16 +890,24 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
       const { data } = await api.post(`/projects/${project.id}/situation`, payload);
       setProject(data);
       setPhase("done");
-      // Backend one-shot: if the paste was rich enough, the response comes
-      // back with step=5 (all outputs populated). Jump the user straight
-      // there instead of parking on Step 1's "continue" screen.
-      if (data?.step === 5 && data?.artifacts && data?.decision) {
-        // Small delay so the "done" checkmark flashes before the jump.
+      // Route the user: rich brief → Step 5, thin brief → Step 2. Only for
+      // the initial paste-driven pass (autoRoute) — a manual re-run on
+      // Step 1 keeps the user on Step 1 so they can inspect the framing.
+      if (autoRoute) {
+        const nextStep = data?.step === 5 && data?.artifacts && data?.decision ? 5 : 2;
+        // Brief hold so the overlay stays visible for the last checkmark.
+        setTimeout(() => {
+          try { onDone(nextStep); } catch { /* noop */ }
+          setAutoBuilding(false);
+        }, 500);
+      } else if (data?.step === 5 && data?.artifacts && data?.decision) {
+        // Manual Step-1 rerun that happened to be rich enough for a one-shot.
         setTimeout(() => { try { onDone(5); } catch { /* noop */ } }, 700);
       }
     } catch (e) {
       setError(formatApiError(e));
       setPhase(null);
+      setAutoBuilding(false);
     } finally {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -898,8 +930,9 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
         const nextForm = { raw_paste: paste };
         setForm(nextForm);
         // Auto-submit so the user sees Bracket start working immediately —
-        // this is the whole promise of the paste-first flow.
-        runInternal(nextForm);
+        // this is the whole promise of the paste-first flow. Route the user
+        // to Step 5 (rich brief) or Step 2 (thin brief) automatically.
+        runInternal(nextForm, { autoRoute: true });
       }
     } catch (e) { /* private mode / quota — user can still submit manually */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -914,8 +947,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
     const nextForm = { raw_paste: s.raw_paste };
     setForm(nextForm);
     setIsSample(true);
-    // Full magical demo: pre-fill AND auto-submit.
-    await runInternal(nextForm);
+    // Full magical demo: pre-fill AND auto-submit + auto-route to next step.
+    await runInternal(nextForm, { autoRoute: true });
   };
 
   // If Dashboard launched us with ?sample=<key>, auto-trigger that specific
@@ -939,6 +972,8 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
   const canSubmit = !loading && (form.raw_paste || "").trim().length > 0 && !pasteGibberish;
 
   return (
+    <>
+    <AutoBuildOverlay open={autoBuilding} />
     <StepShell
       num={1}
       label="Understand"
@@ -1139,6 +1174,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
         </div>
       )}
     </StepShell>
+    </>
   );
 }
 
@@ -1247,6 +1283,23 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
   const [phase, setPhase] = useState(null);
   const compressed = project.context;
   const { confirm: confirmDialog } = useDialog();
+  const pasteRef = useRef(null);
+
+  const pickQuestion = (q) => {
+    const stub = `Q: ${q}\nA: `;
+    const cur = (form.raw_paste || "").trimEnd();
+    const next = cur ? `${cur}\n\n${stub}` : stub;
+    setForm({ ...form, raw_paste: next });
+    // Focus + drop caret at end so the user can start typing the answer.
+    requestAnimationFrame(() => {
+      const el = pasteRef.current;
+      if (!el) return;
+      el.focus();
+      const len = next.length;
+      try { el.setSelectionRange(len, len); } catch { /* noop */ }
+      el.scrollTop = el.scrollHeight;
+    });
+  };
 
   useEffect(() => {
     if (!dirtyRef) return;
@@ -1310,6 +1363,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
               testid="step2-open-questions"
               label="Bracket still needs your read on"
               items={project.open_questions.context}
+              onPick={pickQuestion}
             />
           )}
           <Field
@@ -1318,6 +1372,7 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
             helper="Requirements · constraints · references · timelines. Dump it all."
           >
             <textarea
+              ref={pasteRef}
               className="textarea-brut"
               rows={6}
               value={form.raw_paste || ""}
@@ -1472,6 +1527,22 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
   const [showAlternatives, setShowAlternatives] = useState(false);
   const decision = project.decision;
   const { confirm: confirmDialog } = useDialog();
+  const pasteRef = useRef(null);
+
+  const pickQuestion = (q) => {
+    const stub = `Q: ${q}\nA: `;
+    const cur = (form.raw_paste || "").trimEnd();
+    const next = cur ? `${cur}\n\n${stub}` : stub;
+    setForm({ ...form, raw_paste: next });
+    requestAnimationFrame(() => {
+      const el = pasteRef.current;
+      if (!el) return;
+      el.focus();
+      const len = next.length;
+      try { el.setSelectionRange(len, len); } catch { /* noop */ }
+      el.scrollTop = el.scrollHeight;
+    });
+  };
 
   useEffect(() => {
     if (!dirtyRef) return;
@@ -1533,6 +1604,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
               testid="step3-open-questions"
               label="Bracket still needs your read on"
               items={project.open_questions.decision}
+              onPick={pickQuestion}
             />
           )}
           <Field
@@ -1541,6 +1613,7 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
             helper="What matters most · trade-offs · worries · non-negotiables."
           >
             <textarea
+              ref={pasteRef}
               className="textarea-brut"
               rows={6}
               value={form.raw_paste || ""}
