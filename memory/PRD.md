@@ -688,7 +688,21 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **HMAC signing** — `_nps_token(user_id)` = first 16 chars of HMAC-SHA256(JWT_SECRET, user_id). Prevents randoms from ballot-stuffing the score without needing per-invite storage.
   - **Verified end-to-end** on preview: sent test campaign (test_only=1) → 1 email queued; simulated 5 responses via signed URLs → NPS auto-updated to 80 ("From 5 responses · World-class."); thank-you page + email HTML both render on-brand with diamond logo, correct color-coded rating buttons, and promoter-specific follow-up copy.
 
-- 2026-07-20 — **Iteration 65 — NPS deep view + 24h cool-down + live campaign progress**:
+- 2026-07-20 — **Iteration 65 — NPS deep view + 24h cool-down + live campaign progress** (later removed): See earlier session log; cool-down was rolled back in iteration 65b per user request. Delete-response endpoint added (iteration 65c).
+
+- 2026-07-20 — **Iteration 66 — Website Analytics (traffic + geo + click heatmap) + retention fix**:
+  - **User ask**: Lifetime website analytics on admin panel (total sessions, requests/page views, locations, how many visitors, from where), multiple time-range filters (Yesterday, Last 7 days, etc.), heatmaps, real-time updates, and corrected 4-week retention %.
+  - **Session tracking upgraded** (`server.py::/public/track/session`): now captures visitor IP from `X-Forwarded-For`, `CF-Connecting-IP`, or `X-Real-IP`, increments `page_views` on every ping, and fires an async background `_ensure_geo_for_ip()` task that resolves the IP to country/city via free ip-api.com and caches the result in a new `geoip_cache` collection (indefinite cache — one lookup per unique IP).
+  - **Click tracker** — new `POST /api/public/track/click` endpoint stores normalized (x_frac, y_frac) click positions to a new `click_events` collection with viewport size and target-element tag (e.g. `button[cta-primary]`).
+  - **Frontend tracker** — new `frontend/src/lib/analyticsTracker.js` + `useAnalyticsTracker()` hook mounted globally in `App.js`. Fires a session ping on every route change AND records every user click (throttled to 200 ms). Replaces the stale, broken `/public/track` call that was previously in Landing.jsx.
+  - **New admin endpoints**:
+    - `GET /admin/website-analytics?range={yesterday|7d|30d|90d|lifetime}` — returns traffic KPIs (sessions/visitors/page views/logged-in visits), daily series, top pages, top sources, top countries (with lat/lon), and unresolved-IP count.
+    - `GET /admin/heatmap/pages?range=…` — list of pages with click counts.
+    - `GET /admin/heatmap?path=&range=…` — up to 5000 click events with normalized coords + tag for a given page.
+  - **Frontend admin panel** — new `WebsiteAnalyticsPanel` (mounted below the NPS deep view). Sections: RangePicker (5 presets), 4 KPI cards, Top Countries with gradient bars, Top Pages table, Top Traffic Sources grid, and a **Click Heatmap** with a page-selector dropdown and a scaled canvas rendering red radial-glow dots at each click position. Refresh button + hourly auto-refresh timer.
+  - **4-week retention fix** — was "% of 4-week-old users active in past 28 days" (nearly always high). Now "% of 4-week-old users active in past 7 days" — a real stickiness metric. Changed from 100% → 50% on the current dataset (accurate).
+  - **Verified on preview**: session ping with `X-Forwarded-For: 8.8.8.8` → session stored with IP → background geo lookup resolved to `United States/Ashburn/39.03,-77.5` → country appeared on the admin panel. 3 test clicks rendered as red dots at correct positions on the heatmap canvas. Range filter tested: switching to "7d" instantly filtered Total Sessions 185 → 7. Screenshots captured.
+
   - **User ask**: "Should be able to see the email sending queue in Admin panel, and detailed NPS view (how many mail sent/failed/queued, how many responded, etc.) and the CTA should be disabled for 24 hours after sending the mail."
   - **24-hour cool-down** — `POST /admin/nps/send-campaign` now returns **HTTP 429** with a friendly "Next campaign available in Xh Ym" message when a full (non-test) campaign was fired < 24 h ago. `test_only=true` calls always bypass the cool-down for self-checks.
   - **Live campaign progress** — the send task now writes progress to the `nps_campaigns` doc every 5 emails (or on the last one), updating `sent`, `failed`, `queued`, `status ("running" → "completed")`, `updated_at`, `completed_at`. Campaign doc is upserted BEFORE the task starts so the UI can poll immediately.

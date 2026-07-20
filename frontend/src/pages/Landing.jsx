@@ -1628,29 +1628,8 @@ export default function Landing() {
     };
   }, [shouldReduce]);
 
-  // Acquisition tracking — fire once per session.
-  useEffect(() => {
-    try {
-      const KEY = "bracket_track_session";
-      let sid = sessionStorage.getItem(KEY);
-      if (!sid) {
-        sid = crypto.randomUUID();
-        sessionStorage.setItem(KEY, sid);
-        const params = new URLSearchParams(window.location.search);
-        const utm = {};
-        ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach((k) => {
-          const v = params.get(k);
-          if (v) utm[k] = v;
-        });
-        api.post("/public/track", {
-          session_id: sid,
-          referrer: document.referrer || "",
-          landing_path: window.location.pathname,
-          utm,
-        }).catch(() => {});
-      }
-    } catch { /* silent */ }
-  }, []);
+  // Acquisition tracking moved to `useAnalyticsTracker` in App.js so it
+  // fires on every route, not just the landing page.
 
   return (
     <>

@@ -34,7 +34,14 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
+import { useAnalyticsTracker } from "./lib/analyticsTracker";
+
 import "./App.css";
+
+function AnalyticsTrackerMount() {
+  useAnalyticsTracker();
+  return null;
+}
 
 export default function App() {
   return (
@@ -44,6 +51,7 @@ export default function App() {
         <DialogProvider>
         <BrowserRouter>
         <ScrollToTop />
+        <AnalyticsTrackerMount />
         <Toaster position="top-right" richColors />
         <InstallPrompt />
         <Routes>

@@ -612,19 +612,32 @@ def _referrer_bucket(ref: str, utm_source: str) -> str:
 @api.post("/public/track/session")
 async def track_session(body: SessionTrackIn, request: Request):
     """Upsert an acquisition-tracking row. Idempotent per session_id.
-    Analytics is fire-and-forget: any DB write failure MUST NOT crash the
-    request (an earlier variant of this endpoint raised pymongo WriteError
-    'session_id conflict', which Cloudflare then surfaced as a 520 to the
-    user). Swallow all write errors — we can always re-track next paint."""
+    Also increments `page_views` on every ping and captures the visitor's
+    IP so we can resolve it to a country for the admin geo map.
+    """
     now = auth_iso(auth_now())
     source = _referrer_bucket(body.referrer, body.utm_source)
-    # Fingerprint user (best-effort) so we can link if they sign in later.
     user_id = None
     try:
         u = await current_user(request, db)
         user_id = u.get("user_id")
     except Exception:
         user_id = None
+
+    # Extract the first client IP from X-Forwarded-For / X-Real-IP if present
+    # (we sit behind Cloudflare + K8s ingress, so `request.client.host` is
+    # always the ingress pod IP).
+    ip = ""
+    xff = request.headers.get("x-forwarded-for") or ""
+    if xff:
+        ip = xff.split(",")[0].strip()
+    if not ip:
+        ip = (request.headers.get("cf-connecting-ip") or request.headers.get("x-real-ip") or "").strip()
+    if not ip:
+        try:
+            ip = (request.client.host if request.client else "") or ""
+        except Exception:
+            ip = ""
 
     doc = {
         "referrer": body.referrer,
@@ -637,6 +650,8 @@ async def track_session(body: SessionTrackIn, request: Request):
         "last_path": body.path,
         "last_seen_at": now,
     }
+    if ip:
+        doc["ip"] = ip
     add_user = {"user_ids": user_id} if user_id else {"user_ids": "__anon__"}
     try:
         await db.sessions.update_one(
@@ -645,13 +660,114 @@ async def track_session(body: SessionTrackIn, request: Request):
                 "$set": doc,
                 "$setOnInsert": {"first_seen_at": now},
                 "$addToSet": add_user,
+                "$inc": {"page_views": 1},
             },
             upsert=True,
         )
     except Exception as e:
-        # Non-fatal: log + move on. Analytics loss is preferable to a 5xx.
         logger.warning("track_session write failed (non-fatal): %s", e)
+
+    # Kick off geo lookup in the background — never block the request.
+    if ip and not _ip_is_private(ip):
+        asyncio.create_task(_ensure_geo_for_ip(ip))
     return {"ok": True}
+
+
+# ---- Click tracking (Bracket's own heat-map) --------------------------------
+class ClickTrackIn(_BM):
+    session_id: str = _Fd(min_length=8, max_length=64)
+    path:       str = _Fd(default="/", max_length=200)
+    # Normalized click position — x/y as a fraction of viewport [0.0, 1.0].
+    # Backend stores the fraction (device-independent) and the viewport
+    # width so the admin heat-map can rebuild a faithful scatter later.
+    x_frac:     float = _Fd(ge=0.0, le=1.0)
+    y_frac:     float = _Fd(ge=0.0, le=1.0)
+    vp_w:       int = _Fd(ge=100, le=8000)
+    vp_h:       int = _Fd(ge=100, le=8000)
+    tag:        str = _Fd(default="", max_length=40)
+
+
+@api.post("/public/track/click")
+async def track_click(body: ClickTrackIn, request: Request):
+    """Store a single click event for the admin click-density heat-map.
+    Fire-and-forget: any DB failure is swallowed."""
+    try:
+        await db.click_events.insert_one({
+            "id":          _uuid(),
+            "session_id":  body.session_id,
+            "path":        body.path,
+            "x_frac":      round(body.x_frac, 4),
+            "y_frac":      round(body.y_frac, 4),
+            "vp_w":        body.vp_w,
+            "vp_h":        body.vp_h,
+            "tag":         body.tag[:40],
+            "created_at":  auth_iso(auth_now()),
+        })
+    except Exception as e:
+        logger.warning("track_click write failed (non-fatal): %s", e)
+    return {"ok": True}
+
+
+# ---- Geo lookup helpers -----------------------------------------------------
+def _ip_is_private(ip: str) -> bool:
+    """Skip lookups for private / loopback / IPv6 link-local ranges."""
+    if not ip or ip.startswith(("127.", "10.", "0.", "192.168.", "169.254.")):
+        return True
+    if ip.startswith("172."):
+        try:
+            second = int(ip.split(".")[1])
+            if 16 <= second <= 31:
+                return True
+        except (IndexError, ValueError):
+            pass
+    if ip in {"::1", "localhost"}:
+        return True
+    if ":" in ip and ip.startswith(("fe80", "fc", "fd", "::")):
+        return True
+    return False
+
+
+async def _ensure_geo_for_ip(ip: str) -> None:
+    """Cache-first: skip if we've already resolved this IP. Otherwise hit
+    the free ip-api.com endpoint (45 req/min) and store the result."""
+    if not ip or _ip_is_private(ip):
+        return
+    try:
+        cached = await db.geoip_cache.find_one({"_id": ip}, {"_id": 1})
+        if cached:
+            return
+    except Exception:
+        return
+    try:
+        import urllib.request as _u
+        import json as _json
+        url = f"http://ip-api.com/json/{ip}?fields=status,country,countryCode,region,city,lat,lon,query"
+        # Small timeout so a slow ip-api never wedges the background task pool.
+        req = _u.Request(url, headers={"User-Agent": "bracket-analytics/1.0"})
+        with _u.urlopen(req, timeout=4) as resp:  # noqa: S310 -- http OK, free tier
+            payload = _json.loads(resp.read().decode("utf-8") or "{}")
+    except Exception as e:
+        logger.info("geoip lookup failed for %s: %s", ip, e)
+        payload = {}
+    if payload.get("status") != "success":
+        payload = {"status": "fail"}
+    try:
+        await db.geoip_cache.update_one(
+            {"_id": ip},
+            {"$set": {
+                "country":     payload.get("country", ""),
+                "countryCode": payload.get("countryCode", ""),
+                "region":      payload.get("region", ""),
+                "city":        payload.get("city", ""),
+                "lat":         payload.get("lat"),
+                "lon":         payload.get("lon"),
+                "status":      payload.get("status", "fail"),
+                "updated_at":  auth_iso(auth_now()),
+            }},
+            upsert=True,
+        )
+    except Exception as e:
+        logger.info("geoip cache write failed for %s: %s", ip, e)
 
 
 # ===========================================================================
@@ -1023,12 +1139,14 @@ async def admin_pitch_metrics(request: Request):
 
     wau = await db.users.count_documents({"last_seen_at": {"$gte": auth_iso(d7)}})
 
-    # 4-week retention — of users who signed up ≥4w ago, how many are
-    # still active in the last 4 weeks?
+    # 4-week retention — cleaner definition: of users who signed up
+    # 4+ weeks ago, what % returned in the past 7 days?
+    # Gives a real "sticky-user" number instead of the loose 28-day-in-28-day
+    # variant that inflated to 100% whenever any active user was old.
     cohort_total = await db.users.count_documents({"created_at": {"$lte": auth_iso(d28)}})
     cohort_active = await db.users.count_documents({
         "created_at":   {"$lte": auth_iso(d28)},
-        "last_seen_at": {"$gte": auth_iso(d28)},
+        "last_seen_at": {"$gte": auth_iso(d7)},
     })
     retention_4w = round((cohort_active / cohort_total) * 100, 1) if cohort_total else 0.0
 
@@ -1141,6 +1259,176 @@ async def admin_pitch_metrics_config(body: PitchMetricsConfigIn, request: Reques
         upsert=True,
     )
     return {"ok": True}
+
+
+# ===========================================================================
+# WEBSITE ANALYTICS — traffic + geo + click heatmap, all range-filterable
+# ===========================================================================
+# Range presets accepted by the analytics endpoints. "lifetime" = no filter.
+_RANGE_PRESETS = {
+    "yesterday":  1,   # rolling last 24h (calendar-yesterday variant handled in caller)
+    "7d":         7,
+    "30d":        30,
+    "90d":        90,
+    "lifetime":   None,
+}
+
+
+def _range_iso_since(range_key: str) -> Optional[str]:
+    """Convert a range preset to a lower-bound ISO timestamp, or None
+    when the range is `lifetime` (no lower bound)."""
+    from datetime import timedelta as _td
+    days = _RANGE_PRESETS.get(range_key or "lifetime")
+    if days is None:
+        return None
+    return auth_iso(auth_now() - _td(days=days))
+
+
+@api.get("/admin/website-analytics")
+async def admin_website_analytics(request: Request, range: str = "lifetime"):
+    """Traffic + geo dashboard with range filter.
+
+    Query params:
+      - range: yesterday | 7d | 30d | 90d | lifetime
+    """
+    await auth_current_admin(request, db)
+    range_key = range if range in _RANGE_PRESETS else "lifetime"
+    since = _range_iso_since(range_key)
+    match: Dict[str, Any] = {}
+    if since is not None:
+        match["last_seen_at"] = {"$gte": since}
+
+    # --- Traffic KPIs ---------------------------------------------------
+    total_sessions = await db.sessions.count_documents(match)
+    # Unique visitors — count distinct session_ids matching the range.
+    # (session_id is unique per browser install, effectively per visitor.)
+    unique_visitors = total_sessions  # session_id ↔ session doc is 1:1
+    # Page views — sum of page_views across matching sessions.
+    total_page_views = 0
+    async for row in db.sessions.aggregate([
+        {"$match": match},
+        {"$group": {"_id": None, "s": {"$sum": {"$ifNull": ["$page_views", 1]}}}},
+    ]):
+        total_page_views = int(row.get("s") or 0)
+
+    # Logged-in visits — sessions with at least one real (non-anon) user_id.
+    logged_in = await db.sessions.count_documents({
+        **match,
+        "user_ids": {"$elemMatch": {"$not": {"$regex": "^__anon__$"}}},
+    }) if match else await db.sessions.count_documents({
+        "user_ids": {"$elemMatch": {"$not": {"$regex": "^__anon__$"}}},
+    })
+
+    # --- Sessions per day (line series) ---------------------------------
+    daily = []
+    day_agg: Dict[str, int] = {}
+    async for row in db.sessions.aggregate([
+        {"$match": match} if match else {"$match": {}},
+        {"$project": {"day": {"$substr": ["$last_seen_at", 0, 10]}}},
+        {"$group": {"_id": "$day", "n": {"$sum": 1}}},
+        {"$sort": {"_id": 1}},
+    ]):
+        day_agg[row["_id"]] = row["n"]
+    for day in sorted(day_agg):
+        daily.append({"date": day, "sessions": day_agg[day]})
+
+    # --- Top pages (page views by path) --------------------------------
+    top_pages = []
+    async for row in db.sessions.aggregate([
+        {"$match": {**match, "last_path": {"$exists": True, "$ne": ""}}},
+        {"$group": {"_id": "$last_path", "sessions": {"$sum": 1}, "views": {"$sum": {"$ifNull": ["$page_views", 1]}}}},
+        {"$sort": {"views": -1}},
+        {"$limit": 15},
+    ]):
+        top_pages.append({"path": row["_id"], "sessions": row["sessions"], "views": row["views"]})
+
+    # --- Top sources / referrers ---------------------------------------
+    top_sources = []
+    async for row in db.sessions.aggregate([
+        {"$match": {**match, "source_bucket": {"$ne": ""}}},
+        {"$group": {"_id": "$source_bucket", "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+        {"$limit": 10},
+    ]):
+        top_sources.append({"source": row["_id"], "sessions": row["n"]})
+
+    # --- Geo — resolved country per session, joined via geoip_cache ----
+    # Two-step: pull the distinct IPs in-range, look up their countries.
+    ips_in_range: list = []
+    async for row in db.sessions.aggregate([
+        {"$match": {**match, "ip": {"$exists": True, "$ne": ""}}},
+        {"$group": {"_id": "$ip", "n": {"$sum": 1}}},
+    ]):
+        ips_in_range.append({"ip": row["_id"], "sessions": row["n"]})
+
+    country_counts: Dict[str, Dict[str, Any]] = {}
+    if ips_in_range:
+        ip_list = [x["ip"] for x in ips_in_range]
+        geo_by_ip: Dict[str, Dict[str, Any]] = {}
+        async for g in db.geoip_cache.find({"_id": {"$in": ip_list}}, {"_id": 1, "country": 1, "countryCode": 1, "lat": 1, "lon": 1}):
+            geo_by_ip[g["_id"]] = g
+        for item in ips_in_range:
+            g = geo_by_ip.get(item["ip"])
+            code = (g or {}).get("countryCode") or "??"
+            name = (g or {}).get("country") or ("Unknown" if code == "??" else code)
+            bucket = country_counts.setdefault(code, {
+                "code": code, "country": name, "sessions": 0, "lat": (g or {}).get("lat"), "lon": (g or {}).get("lon"),
+            })
+            bucket["sessions"] += item["sessions"]
+    countries = sorted(country_counts.values(), key=lambda x: -x["sessions"])[:50]
+    unresolved_ips = sum(1 for c in countries if c["code"] == "??")
+
+    return {
+        "range":                 range_key,
+        "since":                 since,
+        "generated_at":          auth_iso(auth_now()),
+        "traffic": {
+            "total_sessions":    total_sessions,
+            "unique_visitors":   unique_visitors,
+            "total_page_views":  total_page_views,
+            "logged_in_visits":  logged_in,
+        },
+        "daily":                 daily,
+        "top_pages":             top_pages,
+        "top_sources":           top_sources,
+        "countries":             countries,
+        "unresolved_ips":        unresolved_ips,
+    }
+
+
+@api.get("/admin/heatmap/pages")
+async def admin_heatmap_pages(request: Request, range: str = "lifetime"):
+    """List the pages that have click events, most clicks first — user
+    picks one to see its full click heatmap."""
+    await auth_current_admin(request, db)
+    since = _range_iso_since(range if range in _RANGE_PRESETS else "lifetime")
+    match: Dict[str, Any] = {}
+    if since is not None:
+        match["created_at"] = {"$gte": since}
+    pages: list = []
+    async for row in db.click_events.aggregate([
+        {"$match": match},
+        {"$group": {"_id": "$path", "clicks": {"$sum": 1}}},
+        {"$sort": {"clicks": -1}},
+        {"$limit": 30},
+    ]):
+        pages.append({"path": row["_id"] or "/", "clicks": row["clicks"]})
+    return {"pages": pages, "range": range}
+
+
+@api.get("/admin/heatmap")
+async def admin_heatmap(request: Request, path: str = "/", range: str = "lifetime"):
+    """Return every click event on a given path — the frontend renders a
+    density heatmap over a screenshot / blank canvas at 1440×900."""
+    await auth_current_admin(request, db)
+    since = _range_iso_since(range if range in _RANGE_PRESETS else "lifetime")
+    match: Dict[str, Any] = {"path": path}
+    if since is not None:
+        match["created_at"] = {"$gte": since}
+    events: list = []
+    async for row in db.click_events.find(match, {"_id": 0, "x_frac": 1, "y_frac": 1, "vp_w": 1, "vp_h": 1, "tag": 1, "created_at": 1}).sort("created_at", -1).limit(5000):
+        events.append(row)
+    return {"path": path, "range": range, "count": len(events), "events": events}
 
 
 # ===========================================================================

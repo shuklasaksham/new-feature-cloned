@@ -282,6 +282,289 @@ function ScatterTooltip({ active, payload }) {
 }
 
 // ============================================================================
+// WEBSITE ANALYTICS PANEL — traffic + geo + click heatmap with time-range
+// filter. Auto-refreshes hourly. Every section respects the range dropdown.
+// ============================================================================
+const RANGE_OPTIONS = [
+  { key: "yesterday", label: "Yesterday" },
+  { key: "7d",        label: "Last 7 days" },
+  { key: "30d",       label: "Last 30 days" },
+  { key: "90d",       label: "Last 90 days" },
+  { key: "lifetime",  label: "Lifetime" },
+];
+
+function RangePicker({ value, onChange, testid }) {
+  return (
+    <div className="inline-flex items-center gap-1 rounded-lg overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid={testid}>
+      {RANGE_OPTIONS.map((opt) => {
+        const active = value === opt.key;
+        return (
+          <button
+            key={opt.key}
+            type="button"
+            onClick={() => onChange(opt.key)}
+            className="px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] font-medium"
+            style={{
+              color: active ? "#fff" : "var(--text-3)",
+              background: active ? "var(--accent)" : "transparent",
+            }}
+            data-testid={`range-${opt.key}`}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function TrafficStatCard({ label, value, testid }) {
+  return (
+    <div className="rounded-2xl px-5 py-5" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid={testid}>
+      <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>{label}</p>
+      <p className="mt-3 font-display tabular-nums" style={{ fontSize: 34, lineHeight: 1, color: "var(--text)", letterSpacing: "-0.03em", fontWeight: 500 }}>
+        {(value ?? 0).toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+function CountryRow({ c, max }) {
+  const pct = max ? Math.max(2, Math.round((c.sessions / max) * 100)) : 0;
+  return (
+    <li className="py-2" data-testid={`country-row-${c.code}`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-[13px] font-medium" style={{ color: "var(--text)" }}>{c.country}</span>
+        <span className="text-[12px] tabular-nums" style={{ color: "var(--text-3)" }}>{c.sessions.toLocaleString()}</span>
+      </div>
+      <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #5E6AD2 0%, #22C55E 100%)" }} />
+      </div>
+    </li>
+  );
+}
+
+function ClickHeatmapCanvas({ events, vpW = 1440, vpH = 900 }) {
+  const displayW = 720;
+  const displayH = Math.round(displayW * (vpH / vpW));
+  if (!events || events.length === 0) {
+    return (
+      <div className="rounded-lg p-8 text-center text-[13px]" style={{ background: "var(--surface)", border: "1px dashed var(--hairline)", color: "var(--text-3)" }} data-testid="heatmap-empty">
+        No clicks captured on this page yet.<br/>
+        Clicks are tracked from every visit — check back after some real traffic.
+      </div>
+    );
+  }
+  return (
+    <div className="relative rounded-lg overflow-hidden" style={{ width: displayW, height: displayH, background: "#0F1114", border: "1px solid var(--hairline)" }} data-testid="heatmap-canvas">
+      {events.map((e, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            left: `${e.x_frac * 100}%`,
+            top:  `${e.y_frac * 100}%`,
+            width: 22, height: 22,
+            transform: "translate(-50%, -50%)",
+            background: "radial-gradient(circle, rgba(239,68,68,0.55) 0%, rgba(239,68,68,0.18) 45%, rgba(239,68,68,0) 75%)",
+            pointerEvents: "none",
+          }}
+        />
+      ))}
+      <p className="absolute bottom-2 right-3 text-[10.5px] uppercase tracking-[0.16em]" style={{ color: "var(--text-3)" }}>
+        {events.length.toLocaleString()} clicks
+      </p>
+    </div>
+  );
+}
+
+function WebsiteAnalyticsPanel() {
+  const [range, setRange] = useState("lifetime");
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
+  const [hmPages, setHmPages] = useState([]);
+  const [hmSelected, setHmSelected] = useState("/");
+  const [hmData, setHmData] = useState(null);
+  const [lastLoad, setLastLoad] = useState(null);
+
+  const load = async (r) => {
+    const rk = r || range;
+    try {
+      const [{ data: wd }, { data: hp }] = await Promise.all([
+        api.get(`/admin/website-analytics?range=${encodeURIComponent(rk)}`),
+        api.get(`/admin/heatmap/pages?range=${encodeURIComponent(rk)}`),
+      ]);
+      setData(wd);
+      setHmPages(hp?.pages || []);
+      if ((hp?.pages || []).length > 0) {
+        const next = hp.pages[0].path;
+        setHmSelected((prev) => hp.pages.find((p) => p.path === prev) ? prev : next);
+      }
+      setErr("");
+      setLastLoad(new Date());
+    } catch (e) {
+      setErr(formatApiError(e));
+    }
+  };
+
+  const loadHm = async (path, r) => {
+    try {
+      const { data: h } = await api.get(`/admin/heatmap?path=${encodeURIComponent(path)}&range=${encodeURIComponent(r || range)}`);
+      setHmData(h);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("heatmap load failed", e);
+      setHmData({ events: [] });
+    }
+  };
+
+  useEffect(() => { load(range); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [range]);
+  useEffect(() => {
+    if (hmSelected) loadHm(hmSelected, range);
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [hmSelected, range]);
+
+  // Hourly auto-refresh so admins see updates without action.
+  useEffect(() => {
+    const id = setInterval(() => load(range), 60 * 60 * 1000);
+    return () => clearInterval(id);
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [range]);
+
+  if (err) {
+    return <p className="text-[13px]" style={{ color: "var(--danger, #EF4444)" }}>Website analytics unavailable: {err}</p>;
+  }
+  if (!data) return null;
+
+  const t = data.traffic || {};
+  const maxCountry = Math.max(1, ...(data.countries || []).map((c) => c.sessions));
+
+  return (
+    <section className="space-y-4" data-testid="website-analytics-panel">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <span className="section-label"><span className="dot" />Website analytics</span>
+          <h2 className="mt-2 font-display text-[22px] sm:text-[24px] leading-none"
+              style={{ letterSpacing: "-0.03em", color: "var(--text)", fontWeight: 500 }}>
+            Traffic, geography &amp; click heatmap.
+          </h2>
+          <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+            All numbers respect the range filter. Refreshes hourly · last updated{" "}
+            <span className="tabular-nums" style={{ color: "var(--text)" }}>
+              {lastLoad ? lastLoad.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+            </span>
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <RangePicker value={range} onChange={setRange} testid="wa-range" />
+          <button
+            onClick={() => load(range)}
+            className="btn-ghost text-[11px] uppercase tracking-wider inline-flex items-center gap-2"
+            data-testid="wa-refresh"
+          >
+            <RefreshCcw size={12} /> Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Traffic KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="wa-kpis">
+        <TrafficStatCard label="Total sessions"      value={t.total_sessions}    testid="wa-sessions" />
+        <TrafficStatCard label="Unique visitors"     value={t.unique_visitors}   testid="wa-visitors" />
+        <TrafficStatCard label="Page views"          value={t.total_page_views}  testid="wa-pageviews" />
+        <TrafficStatCard label="Logged-in visits"    value={t.logged_in_visits}  testid="wa-loggedin" />
+      </div>
+
+      {/* Geo + Top pages side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="rounded-2xl px-5 py-5" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="wa-geo">
+          <div className="flex items-baseline justify-between">
+            <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>
+              Top countries
+            </p>
+            {data.unresolved_ips > 0 && (
+              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                {data.unresolved_ips} pending geo lookup
+              </span>
+            )}
+          </div>
+          {(data.countries || []).length === 0 ? (
+            <p className="mt-3 text-[13px]" style={{ color: "var(--text-3)" }}>
+              No geo data yet. New visitor IPs will resolve to countries within a few seconds of arrival.
+            </p>
+          ) : (
+            <ul className="mt-2 space-y-1 max-h-[300px] overflow-y-auto pr-1">
+              {data.countries.map((c) => (<CountryRow key={c.code} c={c} max={maxCountry} />))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-2xl px-5 py-5" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="wa-top-pages">
+          <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>Top pages</p>
+          {(data.top_pages || []).length === 0 ? (
+            <p className="mt-3 text-[13px]" style={{ color: "var(--text-3)" }}>No page views in this range.</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {data.top_pages.map((p, i) => (
+                <li key={i} className="flex items-baseline justify-between gap-3 py-1" style={{ borderBottom: "1px solid var(--hairline)" }}>
+                  <span className="text-[13px] truncate" style={{ color: "var(--text)" }}>{p.path}</span>
+                  <span className="text-[12px] tabular-nums" style={{ color: "var(--text-3)" }}>{p.views.toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* Top sources */}
+      <div className="rounded-2xl px-5 py-5" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="wa-sources">
+        <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>Top traffic sources</p>
+        {(data.top_sources || []).length === 0 ? (
+          <p className="mt-3 text-[13px]" style={{ color: "var(--text-3)" }}>No source data.</p>
+        ) : (
+          <ul className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-x-4">
+            {data.top_sources.map((s, i) => (
+              <li key={i} className="flex items-baseline justify-between gap-2 py-1" style={{ borderBottom: "1px solid var(--hairline)" }}>
+                <span className="text-[13px]" style={{ color: "var(--text)" }}>{s.source}</span>
+                <span className="text-[12px] tabular-nums" style={{ color: "var(--text-3)" }}>{s.sessions.toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Click heatmap */}
+      <div className="rounded-2xl px-5 py-5" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="wa-heatmap">
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>Click heatmap</p>
+          {hmPages.length > 0 && (
+            <select
+              value={hmSelected}
+              onChange={(e) => setHmSelected(e.target.value)}
+              className="text-[13px] rounded-md px-2.5 py-1.5"
+              style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+              data-testid="heatmap-page-select"
+            >
+              {hmPages.map((p) => (
+                <option key={p.path} value={p.path}>{p.path} · {p.clicks.toLocaleString()} clicks</option>
+              ))}
+            </select>
+          )}
+        </div>
+        <div className="mt-3 flex justify-center">
+          <ClickHeatmapCanvas events={hmData?.events || []} />
+        </div>
+        {hmPages.length === 0 && (
+          <p className="mt-3 text-[13px] text-center" style={{ color: "var(--text-3)" }}>
+            Click tracking is live. Data starts appearing as soon as visitors interact with any page.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ============================================================================
 // NPS DETAIL PANEL — expandable block below the pitch board. Shows:
 //   • Live progress of the currently-sending campaign (bar + counts)
 //   • Full campaign history (targeted / sent / failed / when)
@@ -1219,6 +1502,12 @@ export default function AdminAnalytics() {
 
       {/* NPS deep view — campaigns, histogram, responses, cooldown */}
       <NpsDetailPanel />
+
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid var(--hairline)" }} />
+
+      {/* Website analytics — traffic, geo, heatmap with time-range filter */}
+      <WebsiteAnalyticsPanel />
 
       {/* Divider */}
       <div style={{ borderTop: "1px solid var(--hairline)" }} />
