@@ -7,6 +7,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 import os
 import io
+import time
 import asyncio
 import logging
 from typing import List, Literal, Dict, Any, Optional
@@ -3122,16 +3123,28 @@ async def step_situation(project_id: str, body: SituationIn):
     # manually. Only runs on the FIRST Step-1 submission — re-runs after
     # framing exists stick to the fast framing-only path.
     should_try_one_shot = bool(body.raw_paste) and not project.get("framing")
+    _t0 = time.monotonic()
     if should_try_one_shot:
+        # Hard ceiling on the one-shot attempt so this endpoint's total wall
+        # time (one-shot + framing fallback) always stays under Cloudflare's
+        # ~100s edge timeout — a slow provider degrades to framing-only
+        # instead of surfacing a 502 error page.
         try:
             if want_title:
-                built, title_result = await asyncio.gather(
-                    auto_build_from_brief(body.raw_paste),
-                    _safe_generate_title(body.raw_paste),
+                built, title_result = await asyncio.wait_for(
+                    asyncio.gather(
+                        auto_build_from_brief(body.raw_paste),
+                        _safe_generate_title(body.raw_paste),
+                    ),
+                    timeout=60,
                 )
             else:
-                built = await auto_build_from_brief(body.raw_paste)
+                built = await asyncio.wait_for(
+                    auto_build_from_brief(body.raw_paste), timeout=60
+                )
                 title_result = None
+        except AIBackpressureError:
+            raise
         except Exception as e:
             logger.warning("one-shot auto-build failed, falling back to framing-only: %s", e)
             built = None
@@ -3172,11 +3185,19 @@ async def step_situation(project_id: str, body: SituationIn):
             payload["who"]      = built["situation"].get("who")      or payload.get("who", "")
             payload["unclear"]  = built["situation"].get("unclear")  or payload.get("unclear", "")
         else:
-            # Auto-build call itself failed — run just the framing.
+            # Auto-build call itself failed — run just the framing, capped to
+            # whatever budget remains before the edge timeout. If the budget
+            # runs out, emit a clean 503 the frontend silently auto-retries.
             try:
-                framing = await run_situation_framing(payload, engine)
+                framing = await asyncio.wait_for(
+                    run_situation_framing(payload, engine),
+                    timeout=max(15.0, 90.0 - (time.monotonic() - _t0)),
+                )
             except AIBackpressureError:
                 raise  # let the app-level handler emit 503 with Retry-After
+            except asyncio.TimeoutError:
+                logger.warning("framing fallback exceeded remaining budget — returning 503 for silent retry")
+                raise AIBackpressureError()
             except Exception as e:
                 logger.exception("situation framing failed")
                 raise HTTPException(status_code=502, detail=f"AI engine error: {e}")

@@ -925,11 +925,10 @@ Return JSON with EXACTLY this shape:
 }}"""
 
     async def _call(prompt):
-        try:
-            return await _run(prompt, "haiku")
-        except Exception as first_err:
-            logger.warning("auto_build call failed, retrying: %s", first_err)
-            return await _run(prompt, "haiku")
+        # _run already retries once internally (35s + 20s budgets). A second
+        # outer retry stacked worst-case wall time past Cloudflare's ~100s
+        # edge timeout, so rely on _run's built-in retry only.
+        return await _run(prompt, "haiku")
 
     data_a, data_b = await asyncio.gather(_call(prompt_a), _call(prompt_b))
 
