@@ -322,7 +322,7 @@ export default function ProjectFlow() {
           className={`mt-8 md:mt-10 ${project?.auto_advance_status === "pending" ? "ai-arrive" : ""}`}
         >
         {currentStep === 1 && (
-          <Step1 project={project} setProject={setProject} dirtyRef={dirtyRef} onDone={() => setCurrentStep(2)} />
+          <Step1 project={project} setProject={setProject} dirtyRef={dirtyRef} onDone={(nextStep) => setCurrentStep(Math.max(2, nextStep || 2))} />
         )}
         {currentStep === 2 && (
           <Step2
@@ -842,6 +842,13 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
       const { data } = await api.post(`/projects/${project.id}/situation`, payload);
       setProject(data);
       setPhase("done");
+      // Backend one-shot: if the paste was rich enough, the response comes
+      // back with step=5 (all outputs populated). Jump the user straight
+      // there instead of parking on Step 1's "continue" screen.
+      if (data?.step === 5 && data?.artifacts && data?.decision) {
+        // Small delay so the "done" checkmark flashes before the jump.
+        setTimeout(() => { try { onDone(5); } catch { /* noop */ } }, 700);
+      }
     } catch (e) {
       setError(formatApiError(e));
       setPhase(null);

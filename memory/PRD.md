@@ -646,3 +646,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Measured on preview** (support account, real paste): Step 1 **6.8s**, Step 2 **7.1s**, Step 3 **18.8s** — output quality intact ("Pass. Redesign the brief or walk." on the Goa wedding scenario).
   - Files: `backend/ai_engine.py`, `backend/server.py`. No frontend changes needed.
 
+- 2026-07-20 — **Iteration 60 — Step 1 one-shot jump to Step 5 (rich brief detection)**:
+  - **User ask**: "If the first chatbox already has all the info Bracket needs, take the user straight to Step 5. Otherwise continue with other steps."
+  - **Backend** (`server.py::step_situation`): when raw_paste is present on the FIRST Step-1 submission (no existing framing), Bracket now runs `auto_build_from_brief` (two parallel Haiku calls, ~20–27s). If the paste is genuinely rich, the response comes back with **step=5, `auto_advance_status="advanced"`, and framing / context / decision / artifacts all populated**. If not, framing is reused from the auto-build result and the user continues to Step 2 normally.
+  - **Sufficiency gate** (`ai_engine.py::auto_build_from_brief`) — stricter to prevent false positives on thin briefs: (1) all four output blocks present, (2) inputs are broad (situation + at least one of context/decision dimensions extracted from the paste — not confabulated), (3) model self-reported `clarity_score ≥ 60`. Applies to both step-1 one-shot AND the existing upload-brief flow.
+  - **Frontend** (`ProjectFlow.jsx::Step1`): after the situation POST returns, if `data.step === 5` with artifacts + decision present, `onDone(5)` fires 700ms later — user's Step-1 "done" checkmark flashes then they land directly on the locked document. Otherwise flow behaves as before (jump to Step 2).
+  - **Measured on preview**: thin brief ("redesign landing page") → clarity 15 → **step=2, 16s**. Rich brief (Goa wedding, all inputs) → clarity 72 → **step=5, 26.8s**.
+

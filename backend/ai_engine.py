@@ -857,21 +857,41 @@ Return JSON with EXACTLY this shape:
     situation = _sanitize(data_a.get("situation") or {}, ["what", "who", "unclear"], 500)
     context = _sanitize(data_a.get("context") or {}, ["requirements", "constraints", "inspirations"], 800)
     decision = _sanitize(data_a.get("decision") or {}, ["optimizing_for", "tradeoffs", "risks"], 800)
-    # Sufficiency is about OUTPUT completeness — the model already made the
-    # call, so a thin input field (e.g. no explicit trade-offs in a short
-    # brief) must not block the auto-build.
-    sufficient = bool(
+    framing = data_a.get("framing") or {}
+    # Sufficiency: only jump the user to Step 5 when the paste is genuinely
+    # rich enough that Bracket isn't confabulating downstream. Requires:
+    #   1) All four output blocks present (framing / context / decision / artifacts).
+    #   2) The model's own clarity_score on the reframing is ≥ 60 (a self-
+    #      admission that the problem is sharp, not fuzzy).
+    #   3) The user's paste captured all three input dimensions —
+    #      what/who/unclear on situation AND at least ONE of
+    #      requirements/constraints/inspirations AND at least ONE of
+    #      optimizing_for/tradeoffs/risks. (Extracted from the paste, not
+    #      invented — the extraction prompt is instructed to leave fields
+    #      empty when the brief truly doesn't mention them.)
+    try:
+        clarity = int(framing.get("clarity_score") or 0)
+    except (TypeError, ValueError):
+        clarity = 0
+    outputs_complete = bool(
         situation["what"]
-        and (data_a.get("framing") or {}).get("reframed_problem")
+        and framing.get("reframed_problem")
         and ((data_b.get("decision_out") or {}).get("recommendation") or {}).get("title")
         and ((data_b.get("artifacts_out") or {}).get("scope_doc") or {}).get("title")
     )
+    inputs_broad = bool(
+        situation["what"]
+        and (situation["who"] or situation["unclear"])
+        and (context["requirements"] or context["constraints"] or context["inspirations"])
+        and (decision["optimizing_for"] or decision["tradeoffs"] or decision["risks"])
+    )
+    sufficient = bool(outputs_complete and inputs_broad and clarity >= 60)
     return {
         "situation": situation,
         "context": context,
         "decision": decision,
         "persona": str(data_a.get("persona") or "").strip().upper()[:40],
-        "framing": data_a.get("framing") or {},
+        "framing": framing,
         "context_out": data_a.get("context_out") or {},
         "decision_out": data_b.get("decision_out") or {},
         "artifacts_out": data_b.get("artifacts_out") or {},

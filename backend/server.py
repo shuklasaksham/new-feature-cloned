@@ -1874,22 +1874,87 @@ async def step_situation(project_id: str, body: SituationIn):
     # (one LLM round-trip instead of two — saves 5-8s of latency).
     if body.raw_paste:
         payload["raw_paste"] = body.raw_paste
-    # Run framing and (optional) title regen IN PARALLEL — the title call is
-    # independent of framing output, so awaiting them concurrently shaves
-    # ~3-5s off Step 1 wall-clock.
+
     want_title = bool(body.raw_paste and project.get("name_source", "heuristic") != "user")
-    try:
-        if want_title:
-            framing, title_result = await asyncio.gather(
-                run_situation_framing(payload, engine),
-                _safe_generate_title(body.raw_paste),
-            )
-        else:
-            framing = await run_situation_framing(payload, engine)
+
+    # ONE-SHOT AUTO-BUILD: when the user pastes their brief into Step 1 AND
+    # the paste is rich enough for Bracket to produce all five step outputs,
+    # skip 2/3/4 entirely and land the user on Step 5. When the paste is
+    # thin, we fall back to just Step 1 (framing) and let them continue
+    # manually. Only runs on the FIRST Step-1 submission — re-runs after
+    # framing exists stick to the fast framing-only path.
+    should_try_one_shot = bool(body.raw_paste) and not project.get("framing")
+    if should_try_one_shot:
+        try:
+            if want_title:
+                built, title_result = await asyncio.gather(
+                    auto_build_from_brief(body.raw_paste),
+                    _safe_generate_title(body.raw_paste),
+                )
+            else:
+                built = await auto_build_from_brief(body.raw_paste)
+                title_result = None
+        except Exception as e:
+            logger.warning("one-shot auto-build failed, falling back to framing-only: %s", e)
+            built = None
             title_result = None
-    except Exception as e:
-        logger.exception("situation framing failed")
-        raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
+
+        if built and built.get("sufficient"):
+            # Complete brief — populate every step and jump the user to 5.
+            sit_input = {**built["situation"], "raw_paste": body.raw_paste}
+            ctx_input = {**built["context"], "raw_paste": body.raw_paste}
+            dec_input = {**built["decision"], "raw_paste": body.raw_paste}
+            artifacts = built.get("artifacts_out") or {}
+            update_fields = {
+                "situation_input": sit_input,
+                "framing": built["framing"],
+                "context_input": ctx_input,
+                "context": built["context_out"],
+                "decision_input": dec_input,
+                "decision": built["decision_out"],
+                "artifacts": artifacts,
+                "step": 5,
+                "status": "in_progress",
+                "auto_advance_status": "advanced",
+                "updated_at": _now_iso(),
+            }
+            if title_result and len(title_result) >= 3:
+                update_fields["name"] = title_result[:120]
+                update_fields["name_source"] = "ai"
+            await db.projects.update_one({"id": project_id}, {"$set": update_fields})
+            return await _get_project_or_404(project_id)
+
+        # Not sufficient — reuse the framing we already computed instead of
+        # re-calling the model. Fall through to the save path below.
+        if built and built.get("framing"):
+            framing = built["framing"]
+            # Also seed the extracted `situation` input fields so Step-1
+            # transformation card looks populated.
+            payload["what"]     = built["situation"].get("what")     or payload.get("what", "")
+            payload["who"]      = built["situation"].get("who")      or payload.get("who", "")
+            payload["unclear"]  = built["situation"].get("unclear")  or payload.get("unclear", "")
+        else:
+            # Auto-build call itself failed — run just the framing.
+            try:
+                framing = await run_situation_framing(payload, engine)
+            except Exception as e:
+                logger.exception("situation framing failed")
+                raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
+    else:
+        # Re-run path (framing already exists) or no raw_paste — just do framing.
+        try:
+            if want_title:
+                framing, title_result = await asyncio.gather(
+                    run_situation_framing(payload, engine),
+                    _safe_generate_title(body.raw_paste),
+                )
+            else:
+                framing = await run_situation_framing(payload, engine)
+                title_result = None
+        except Exception as e:
+            logger.exception("situation framing failed")
+            raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
+
     # Store both the extracted fields AND the original paste (for the
     # "transformation card" — needs paste word-count to reveal).
     situation_input = {**payload}
