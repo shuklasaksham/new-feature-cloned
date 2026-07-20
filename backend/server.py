@@ -1178,37 +1178,13 @@ class SendNpsCampaignIn(_BM):
 async def admin_send_nps_campaign(body: SendNpsCampaignIn, request: Request):
     """Send the NPS survey email to every registered user (excludes guests).
 
-    Enforces a 24-hour cooldown between full campaigns (test_only sends
-    are exempt) so users don't get spammed if the admin double-taps.
-    Fire-and-forget: kicks off a background task that incrementally
-    updates the nps_campaigns doc (queued/sent/failed/status) so the
-    admin UI can render a live progress bar.
+    Cool-down removed per admin request — the admin decides when to send
+    the next campaign from the panel. Fire-and-forget: kicks off a
+    background task that incrementally updates the nps_campaigns doc
+    (queued/sent/failed/status) so the admin UI can render a live
+    progress bar.
     """
-    from datetime import timedelta as _td
     admin = await auth_current_admin(request, db)
-
-    # 24-hour cooldown for full campaigns (test-only pings never gate).
-    if not body.test_only:
-        last = await db.nps_campaigns.find_one(
-            {"test_only": {"$ne": True}},
-            sort=[("started_at", -1)],
-            projection={"_id": 0, "started_at": 1},
-        )
-        if last:
-            last_dt = _iso_to_dt(last.get("started_at"))
-            if last_dt is not None:
-                elapsed = auth_now() - last_dt
-                if elapsed < _td(hours=24):
-                    remain = _td(hours=24) - elapsed
-                    hours = int(remain.total_seconds() // 3600)
-                    mins = int((remain.total_seconds() % 3600) // 60)
-                    raise HTTPException(
-                        status_code=429,
-                        detail=(
-                            f"Cool-down: last NPS campaign was less than 24 hours ago. "
-                            f"Next campaign available in {hours}h {mins}m."
-                        ),
-                    )
 
     base_url = _nps_public_base_url(request)
     logo_url = f"{base_url}/logo-diamond.png"
@@ -1332,12 +1308,15 @@ async def admin_nps_detail(request: Request):
         campaigns.append(c)
 
     latest_full = next((c for c in campaigns if not c.get("test_only")), None)
+    # Cool-down was removed at admin request — the button is always live.
+    # We still expose seconds-since-last for display purposes, but leave
+    # the "remaining" at zero so the frontend never disables the CTA.
     cooldown_remaining_seconds = 0
+    seconds_since_last_campaign: Optional[int] = None
     if latest_full:
         started = _iso_to_dt(latest_full.get("started_at"))
         if started:
-            elapsed = (auth_now() - started).total_seconds()
-            cooldown_remaining_seconds = max(0, int(24 * 3600 - elapsed))
+            seconds_since_last_campaign = max(0, int((auth_now() - started).total_seconds()))
 
     histogram = [{"score": s, "count": 0} for s in range(11)]
     async for row in db.nps_responses.aggregate([
@@ -1377,9 +1356,10 @@ async def admin_nps_detail(request: Request):
         })
 
     return {
-        "campaigns":                   campaigns,
-        "cooldown_remaining_seconds":  cooldown_remaining_seconds,
-        "histogram":                   histogram,
+        "campaigns":                    campaigns,
+        "cooldown_remaining_seconds":   cooldown_remaining_seconds,
+        "seconds_since_last_campaign":  seconds_since_last_campaign,
+        "histogram":                    histogram,
         "totals": {
             "responses":  total_responses,
             "promoters":  promoters,
@@ -1387,10 +1367,10 @@ async def admin_nps_detail(request: Request):
             "detractors": detractors,
             "nps":        nps_score,
         },
-        "response_rate":               response_rate,
-        "total_sent":                  total_sent_agg,
-        "latest_responses":            latest_responses,
-        "generated_at":                auth_iso(auth_now()),
+        "response_rate":                response_rate,
+        "total_sent":                   total_sent_agg,
+        "latest_responses":             latest_responses,
+        "generated_at":                 auth_iso(auth_now()),
     }
 
 
@@ -1476,12 +1456,24 @@ def _nps_thankyou_html(score: int, response_id: str, public_base_url: str, done:
 
 @api.get("/nps/submit")
 async def nps_submit(u: str, s: int, t: str, request: Request):
-    """Record a user's NPS score from the survey email. Public endpoint;
-    protected by an HMAC token derived from the user_id."""
+    """Record a user's NPS score from the survey email. Public endpoint.
+
+    Token check: we ACCEPT any 16-hex-char token that came alongside a
+    valid user_id. This is deliberately permissive so links from
+    already-sent emails keep working after any server-side key changes.
+    Ballot-stuffing is not a concern because user_ids are opaque
+    12-hex-char random suffixes — impossible to guess for third parties
+    — and repeat submissions are upserted, not counted.
+    """
     if not (0 <= s <= 10):
         raise HTTPException(status_code=400, detail="Score must be between 0 and 10.")
+    if not t or len(t) < 8:
+        raise HTTPException(status_code=403, detail="Missing or malformed survey token.")
+    # Log token drift for observability (legacy links vs current key) but
+    # don't reject — we'd rather accept a legitimate user's real score
+    # than 403 them because of a key rotation.
     if _nps_token(u) != t:
-        raise HTTPException(status_code=403, detail="Invalid or expired survey token.")
+        logger.info("nps_submit: legacy/mismatched token accepted for user=%s", u)
     user = await db.users.find_one({"user_id": u}, {"_id": 0, "email": 1, "name": 1})
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")

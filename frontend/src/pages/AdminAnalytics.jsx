@@ -329,6 +329,8 @@ function CampaignRow({ c }) {
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#5E6AD2] animate-pulse" />
             Sending · {pct}%
           </span>
+        ) : c.status === "cancelled" ? (
+          <span style={{ color: "#F59E0B" }}>Cancelled</span>
         ) : (
           <span style={{ color: "var(--text-3)" }}>Completed</span>
         )}
@@ -482,9 +484,6 @@ function NpsDetailPanel() {
             {data.totals.responses} response{data.totals.responses === 1 ? "" : "s"} ·{" "}
             {data.response_rate}% response rate ·{" "}
             {campaigns.length} campaign{campaigns.length === 1 ? "" : "s"} run
-            {data.cooldown_remaining_seconds > 0 && (
-              <> · <span style={{ color: "#F59E0B" }}>cool-down: {formatCooldown(data.cooldown_remaining_seconds)} left</span></>
-            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -1033,7 +1032,7 @@ function PitchMetricsBoard() {
     // eslint-disable-next-line no-alert
     const ok = window.confirm(
       `Send the NPS survey email to all registered users? (${eligible} eligible)\n\n` +
-      "Users who have already responded will be skipped. This is a one-shot campaign — you won't be able to send another for 24 hours."
+      "Users who have already responded will be skipped."
     );
     if (!ok) return;
     setSending(true);
