@@ -1541,6 +1541,19 @@ async def admin_nps_responses(request: Request, limit: int = 100):
     return {"responses": rows, "count": len(rows)}
 
 
+@api.delete("/admin/nps/responses/{response_id}")
+async def admin_delete_nps_response(response_id: str, request: Request):
+    """Delete a single NPS response (score + comment). Used to clean up
+    test scores or accidental submissions. NPS totals recompute
+    automatically on the next `/admin/pitch-metrics` and `/admin/nps/detail`
+    fetch since they're aggregate queries."""
+    await auth_current_admin(request, db)
+    r = await db.nps_responses.delete_one({"id": response_id})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Response not found.")
+    return {"ok": True, "deleted": response_id}
+
+
 @api.get("/admin/analytics")
 async def admin_analytics(request: Request):
     """Aggregate KPIs + chart series for the admin analytics dashboard.

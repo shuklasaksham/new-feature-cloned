@@ -381,7 +381,7 @@ function ScoreHistogram({ histogram = [], totals = {} }) {
   );
 }
 
-function ResponsesList({ responses = [] }) {
+function ResponsesList({ responses = [], onDelete }) {
   return (
     <div
       className="rounded-2xl px-5 py-5 sm:px-6 sm:py-6"
@@ -403,7 +403,7 @@ function ResponsesList({ responses = [] }) {
           {responses.map((r) => (
             <li
               key={r.id}
-              className="flex items-start gap-3 py-2"
+              className="flex items-start gap-3 py-2 group"
               style={{ borderBottom: "1px solid var(--hairline)" }}
               data-testid={`nps-response-${r.id}`}
             >
@@ -419,6 +419,18 @@ function ResponsesList({ responses = [] }) {
                   {r.comment || "No comment"}
                 </p>
               </div>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(r)}
+                  className="p-1.5 rounded opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-white/[0.05] transition-opacity"
+                  aria-label={`Delete response from ${r.name}`}
+                  data-testid={`nps-response-delete-${r.id}`}
+                  title="Delete this rating"
+                >
+                  <Trash2 size={13} style={{ color: "#EF4444" }} />
+                </button>
+              )}
             </li>
           ))}
         </ul>
@@ -448,7 +460,6 @@ function NpsDetailPanel() {
     }
   };
   useEffect(() => { load(); }, []);
-  // Live-poll while any campaign is running.
   useEffect(() => {
     if (!data) return undefined;
     const anyRunning = (data.campaigns || []).some((c) => c.status === "running");
@@ -456,12 +467,33 @@ function NpsDetailPanel() {
     const id = setInterval(load, 4000);
     return () => clearInterval(id);
   }, [data]);
-  // Countdown ticker for cooldown (updates once per minute).
   useEffect(() => {
     if (!data || data.cooldown_remaining_seconds <= 0) return undefined;
     const id = setInterval(load, 60000);
     return () => clearInterval(id);
   }, [data]);
+
+  const deleteResponse = async (r) => {
+    // eslint-disable-next-line no-alert
+    const ok = window.confirm(
+      `Delete ${r.name}'s rating of ${r.score}?\n\n` +
+      "This removes the response permanently and recomputes the NPS. Cannot be undone."
+    );
+    if (!ok) return;
+    try {
+      await api.delete(`/admin/nps/responses/${r.id}`);
+      // Optimistic local update so the UI feels instant, then re-fetch
+      // to refresh totals + histogram.
+      setData((prev) => prev ? {
+        ...prev,
+        latest_responses: (prev.latest_responses || []).filter((x) => x.id !== r.id),
+      } : prev);
+      load();
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      window.alert(`Delete failed: ${formatApiError(e)}`);
+    }
+  };
 
   if (err) {
     return <p className="text-[13px]" style={{ color: "var(--danger, #EF4444)" }}>{err}</p>;
@@ -538,7 +570,7 @@ function NpsDetailPanel() {
           {/* Histogram + Responses side-by-side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <ScoreHistogram histogram={data.histogram} totals={data.totals} />
-            <ResponsesList responses={data.latest_responses} />
+            <ResponsesList responses={data.latest_responses} onDelete={deleteResponse} />
           </div>
 
           {/* Campaign history table */}
