@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Loader2, RefreshCcw } from "lucide-react";
+import { Loader2, RefreshCcw, Pencil, Plus, Trash2, X } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -281,6 +281,465 @@ function ScatterTooltip({ active, payload }) {
   );
 }
 
+// ============================================================================
+// PITCH METRICS BOARD — prominent investor-headline block, rendered above the
+// analytics grid. Auto-computed numbers come from GET /admin/pitch-metrics;
+// NPS + notable users are curated via PUT /admin/pitch-metrics/config
+// (inline modal editor).
+// ============================================================================
+function PitchStat({ label, value, unit = "", tone = "lime", size = "lg", testid, sub }) {
+  const t = KPI_TONES[tone] || KPI_TONES.ghost;
+  const isDashed = tone === "ghost";
+  const numFont = size === "xl" ? 44 : size === "lg" ? 36 : 28;
+  return (
+    <div
+      className="rounded-2xl px-5 py-5 sm:px-6 sm:py-6 overflow-hidden relative"
+      style={{
+        background: t.bg,
+        color: t.text,
+        border: isDashed ? "1px dashed var(--hairline)" : "none",
+      }}
+      data-testid={testid}
+    >
+      <div className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: t.subText }}>
+        {label}
+      </div>
+      <div
+        className="mt-3 font-display"
+        style={{
+          fontSize: numFont,
+          lineHeight: 1,
+          color: t.text,
+          letterSpacing: "-0.03em",
+          fontWeight: 500,
+        }}
+      >
+        {value ?? "—"}
+        {unit && value !== null && value !== undefined && value !== "—" && (
+          <span style={{ fontSize: numFont * 0.5, color: t.subText, marginLeft: 6, fontWeight: 400 }}>
+            {unit}
+          </span>
+        )}
+      </div>
+      {sub && (
+        <div className="mt-2 text-[11px]" style={{ color: t.subText }}>
+          {sub}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrganicPaidBar({ organic_pct, paid_pct, organic, paid }) {
+  const total = organic + paid;
+  return (
+    <div
+      className="rounded-2xl px-5 py-5 sm:px-6 sm:py-6"
+      style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+      data-testid="pitch-organic-paid"
+    >
+      <div className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>
+        Organic vs Paid split
+      </div>
+      {total > 0 ? (
+        <>
+          <div className="mt-3 flex items-baseline gap-3 font-display" style={{ letterSpacing: "-0.03em" }}>
+            <span style={{ fontSize: 30, lineHeight: 1, color: "var(--text)" }}>
+              {organic_pct}
+              <span style={{ fontSize: 15, color: "var(--text-3)", marginLeft: 3 }}>%</span>
+            </span>
+            <span style={{ color: "var(--text-3)", fontSize: 15 }}>/</span>
+            <span style={{ fontSize: 30, lineHeight: 1, color: "var(--text-2)" }}>
+              {paid_pct}
+              <span style={{ fontSize: 15, color: "var(--text-3)", marginLeft: 3 }}>%</span>
+            </span>
+          </div>
+          <div className="mt-4 h-2 rounded-full overflow-hidden flex" style={{ background: "var(--hairline)" }}>
+            <div style={{ width: `${organic_pct}%`, background: "#5BE3A2" }} />
+            <div style={{ width: `${paid_pct}%`, background: "#F97316" }} />
+          </div>
+          <div className="mt-2 flex justify-between text-[11px]" style={{ color: "var(--text-3)" }}>
+            <span>Organic · {organic.toLocaleString()}</span>
+            <span>Paid · {paid.toLocaleString()}</span>
+          </div>
+        </>
+      ) : (
+        <p className="mt-3 text-[13px]" style={{ color: "var(--text-3)" }}>
+          No traffic sessions captured yet.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function NotableUsersCard({ items, onEdit }) {
+  return (
+    <div
+      className="rounded-2xl px-5 py-5 sm:px-6 sm:py-6"
+      style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+      data-testid="pitch-notable-users"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>
+          Notable users / studios
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="text-[10.5px] uppercase tracking-[0.14em] inline-flex items-center gap-1 hover:text-[var(--text)]"
+          style={{ color: "var(--text-3)" }}
+          data-testid="pitch-notable-edit"
+        >
+          <Pencil size={11} /> Edit
+        </button>
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-3 text-[13px]" style={{ color: "var(--text-3)" }}>
+          No lighthouse customers added yet. <button onClick={onEdit} className="underline">Add up to 12</button>.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2" data-testid="pitch-notable-list">
+          {items.slice(0, 6).map((n, i) => (
+            <li key={i} className="flex items-center gap-3">
+              {n.logo_url ? (
+                <img
+                  src={n.logo_url}
+                  alt=""
+                  className="w-8 h-8 rounded-full object-cover"
+                  style={{ border: "1px solid var(--hairline)" }}
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-medium"
+                  style={{ background: "var(--hairline)", color: "var(--text-2)" }}
+                >
+                  {(n.name || "?").slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium truncate" style={{ color: "var(--text)" }}>{n.name}</p>
+                {n.role && (
+                  <p className="text-[11px] truncate" style={{ color: "var(--text-3)" }}>{n.role}</p>
+                )}
+              </div>
+            </li>
+          ))}
+          {items.length > 6 && (
+            <li className="text-[11px] pt-1" style={{ color: "var(--text-3)" }}>
+              +{items.length - 6} more
+            </li>
+          )}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function NpsCard({ nps, onEdit }) {
+  const tone = nps === null || nps === undefined
+    ? "ghost"
+    : nps >= 50 ? "emerald"
+    : nps >= 30 ? "lime"
+    : nps >= 0 ? "sky"
+    : "coral";
+  const t = KPI_TONES[tone] || KPI_TONES.ghost;
+  const isDashed = tone === "ghost";
+  return (
+    <div
+      className="rounded-2xl px-5 py-5 sm:px-6 sm:py-6 relative"
+      style={{
+        background: t.bg,
+        color: t.text,
+        border: isDashed ? "1px dashed var(--hairline)" : "none",
+      }}
+      data-testid="pitch-nps"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: t.subText }}>
+          Net Promoter Score (NPS)
+        </div>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="text-[10.5px] uppercase tracking-[0.14em] inline-flex items-center gap-1 hover:opacity-100"
+          style={{ color: t.subText, opacity: 0.85 }}
+          data-testid="pitch-nps-edit"
+        >
+          <Pencil size={11} /> Edit
+        </button>
+      </div>
+      <div
+        className="mt-3 font-display"
+        style={{
+          fontSize: 44,
+          lineHeight: 1,
+          color: t.text,
+          letterSpacing: "-0.03em",
+          fontWeight: 500,
+        }}
+      >
+        {nps === null || nps === undefined ? "—" : nps}
+      </div>
+      <div className="mt-2 text-[11px]" style={{ color: t.subText }}>
+        {nps === null || nps === undefined
+          ? "Not yet measured. Collect via a 1-question survey and update here."
+          : nps >= 50 ? "World-class."
+          : nps >= 30 ? "Strong."
+          : nps >= 0  ? "Positive — room to grow."
+          : "Under-water — investigate churn drivers."}
+      </div>
+    </div>
+  );
+}
+
+// --- Editor modal ------------------------------------------------------------
+function PitchConfigModal({ open, initial, onClose, onSave }) {
+  const [nps, setNps] = useState(initial?.nps ?? "");
+  const [items, setItems] = useState(initial?.notable_users || []);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      setNps(initial?.nps ?? "");
+      setItems(initial?.notable_users || []);
+      setErr("");
+    }
+  }, [open, initial]);
+
+  if (!open) return null;
+
+  const setField = (i, k, v) => {
+    const next = items.slice();
+    next[i] = { ...next[i], [k]: v };
+    setItems(next);
+  };
+  const addRow = () => setItems([...items, { name: "", role: "", logo_url: "" }].slice(0, 12));
+  const rmRow = (i) => setItems(items.filter((_, idx) => idx !== i));
+
+  const save = async () => {
+    setSaving(true);
+    setErr("");
+    try {
+      const body = {};
+      if (nps === "" || nps === null) body.nps = null;
+      else {
+        const n = Number(nps);
+        if (Number.isNaN(n)) throw new Error("NPS must be a number.");
+        if (n < -100 || n > 100) throw new Error("NPS must be between -100 and 100.");
+        body.nps = n;
+      }
+      body.notable_users = items
+        .map((x) => ({
+          name: (x.name || "").trim(),
+          role: (x.role || "").trim(),
+          logo_url: (x.logo_url || "").trim(),
+        }))
+        .filter((x) => x.name);
+      await api.put("/admin/pitch-metrics/config", body);
+      onSave();
+    } catch (e) {
+      setErr(e?.response?.data?.detail || e.message || "Save failed.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[210] flex items-center justify-center px-4 py-8"
+      style={{ background: "rgba(0,0,0,0.6)" }}
+      role="dialog"
+      aria-modal="true"
+      data-testid="pitch-config-modal"
+    >
+      <div
+        className="w-full max-w-2xl rounded-2xl overflow-hidden"
+        style={{ background: "var(--bg-elev)", border: "1px solid var(--hairline)" }}
+      >
+        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--hairline)" }}>
+          <h2 className="text-[15px] font-medium" style={{ color: "var(--text)" }}>Edit pitch metrics</h2>
+          <button onClick={onClose} className="p-1 hover:opacity-70" aria-label="Close" data-testid="pitch-config-close">
+            <X size={16} style={{ color: "var(--text-3)" }} />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label className="text-[11px] uppercase tracking-wider" style={{ color: "var(--text-3)" }}>
+              NPS score (−100 to 100)
+            </label>
+            <input
+              type="number"
+              min={-100}
+              max={100}
+              step="0.1"
+              className="mt-1 w-32 px-3 py-2 rounded-md text-sm"
+              style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+              value={nps}
+              onChange={(e) => setNps(e.target.value)}
+              placeholder="e.g. 42"
+              data-testid="pitch-config-nps"
+            />
+            <p className="text-[11px] mt-1" style={{ color: "var(--text-3)" }}>Leave empty to show as “—”.</p>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] uppercase tracking-wider" style={{ color: "var(--text-3)" }}>
+                Notable users / studios ({items.length}/12)
+              </label>
+              {items.length < 12 && (
+                <button
+                  onClick={addRow}
+                  className="text-[11px] uppercase tracking-[0.14em] inline-flex items-center gap-1"
+                  style={{ color: "var(--accent)" }}
+                  data-testid="pitch-config-add"
+                >
+                  <Plus size={12} /> Add
+                </button>
+              )}
+            </div>
+            <div className="mt-2 space-y-2">
+              {items.length === 0 && (
+                <p className="text-[13px]" style={{ color: "var(--text-3)" }}>
+                  No entries yet. Add lighthouse customers you can name-drop in investor conversations.
+                </p>
+              )}
+              {items.map((it, i) => (
+                <div key={i} className="grid grid-cols-12 gap-2 items-center" data-testid={`pitch-config-row-${i}`}>
+                  <input
+                    className="col-span-4 px-2.5 py-1.5 rounded-md text-[13px]"
+                    style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+                    placeholder="Name (required)"
+                    value={it.name || ""}
+                    onChange={(e) => setField(i, "name", e.target.value)}
+                  />
+                  <input
+                    className="col-span-4 px-2.5 py-1.5 rounded-md text-[13px]"
+                    style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+                    placeholder="Role / company"
+                    value={it.role || ""}
+                    onChange={(e) => setField(i, "role", e.target.value)}
+                  />
+                  <input
+                    className="col-span-3 px-2.5 py-1.5 rounded-md text-[13px]"
+                    style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--hairline)" }}
+                    placeholder="Logo URL (optional)"
+                    value={it.logo_url || ""}
+                    onChange={(e) => setField(i, "logo_url", e.target.value)}
+                  />
+                  <button
+                    onClick={() => rmRow(i)}
+                    className="col-span-1 p-1.5 rounded hover:opacity-70 justify-self-end"
+                    aria-label={`Remove ${it.name || "row"}`}
+                    data-testid={`pitch-config-remove-${i}`}
+                  >
+                    <Trash2 size={14} style={{ color: "var(--text-3)" }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {err && (
+            <p className="text-[13px]" style={{ color: "var(--danger, #EF4444)" }}>{err}</p>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 py-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+          <button onClick={onClose} className="btn-ghost text-[12px]" data-testid="pitch-config-cancel">Cancel</button>
+          <button
+            onClick={save}
+            disabled={saving}
+            className="clay-signal px-3 py-1.5 t-tag inline-flex items-center gap-2 text-[12px]"
+            data-testid="pitch-config-save"
+          >
+            {saving ? <><Loader2 size={12} className="animate-spin" /> Saving…</> : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PitchMetricsBoard() {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
+  const [editing, setEditing] = useState(false);
+
+  const load = async () => {
+    try {
+      const { data: d } = await api.get("/admin/pitch-metrics");
+      setData(d);
+      setErr("");
+    } catch (e) {
+      setErr(formatApiError(e));
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  if (err) {
+    return (
+      <p className="text-[13px]" style={{ color: "var(--danger, #EF4444)" }} data-testid="pitch-metrics-error">
+        Pitch metrics unavailable: {err}
+      </p>
+    );
+  }
+  if (!data) return null;
+
+  return (
+    <section className="space-y-4" data-testid="pitch-metrics-board">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <span className="section-label"><span className="dot" />Pitch snapshot</span>
+          <h2 className="mt-2 font-display text-[26px] sm:text-[30px] leading-none"
+              style={{ letterSpacing: "-0.03em", color: "var(--text)", fontWeight: 500 }}>
+            The numbers investors care about.
+          </h2>
+          <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+            One-glance summary for pitch decks and diligence conversations.
+            Manually curated fields (NPS, notable users) are editable inline.
+          </p>
+        </div>
+        <button
+          onClick={load}
+          className="btn-ghost text-[11px] uppercase tracking-wider inline-flex items-center gap-2"
+          data-testid="pitch-metrics-refresh"
+        >
+          <RefreshCcw size={12} /> Refresh
+        </button>
+      </div>
+
+      {/* Row 1 — six auto-computed big stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" data-testid="pitch-primary-row">
+        <PitchStat label="Registered users"         value={data.registered_users}          tone="lime"    testid="pitch-registered-users" />
+        <PitchStat label="Projects created"         value={data.projects_created}          tone="violet"  testid="pitch-projects-created" />
+        <PitchStat label="Locked & shared docs"     value={data.documents_locked_shared}   tone="coral"   testid="pitch-locked-shared" />
+        <PitchStat label="Client accept rate"       value={data.client_accept_rate}  unit="%" tone="emerald" testid="pitch-accept-rate" />
+        <PitchStat label="Weekly active users"      value={data.weekly_active_users}       tone="sky"     testid="pitch-wau" />
+        <PitchStat label="4-week retention"         value={data.retention_4w}        unit="%" tone="pink"    testid="pitch-retention" />
+      </div>
+
+      {/* Row 2 — three interactive/qualitative cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="pitch-secondary-row">
+        <NpsCard nps={data.nps} onEdit={() => setEditing(true)} />
+        <OrganicPaidBar {...data.organic_paid_split} />
+        <NotableUsersCard items={data.notable_users || []} onEdit={() => setEditing(true)} />
+      </div>
+
+      <PitchConfigModal
+        open={editing}
+        initial={{ nps: data.nps, notable_users: data.notable_users }}
+        onClose={() => setEditing(false)}
+        onSave={() => { setEditing(false); load(); }}
+      />
+    </section>
+  );
+}
+
 // ---- Main page ------------------------------------------------------------
 export default function AdminAnalytics() {
   const [data, setData] = useState(null);
@@ -340,7 +799,13 @@ export default function AdminAnalytics() {
   };
 
   return (
-    <div className="space-y-5" data-testid="admin-analytics">
+    <div className="space-y-6" data-testid="admin-analytics">
+      {/* Prominent pitch-metrics snapshot — investor headline numbers. */}
+      <PitchMetricsBoard />
+
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid var(--hairline)" }} />
+
       {/* Header row */}
       <div className="flex items-center justify-between gap-3">
         <div>

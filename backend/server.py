@@ -988,6 +988,139 @@ def _iso_to_dt(s: str):
         return None
 
 
+@api.get("/admin/pitch-metrics")
+async def admin_pitch_metrics(request: Request):
+    """Prominent investor-pitch metrics block for the admin panel.
+
+    Returns nine headline numbers (registered users, projects, docs
+    shared, client accept rate, WAU, 4-week retention, NPS,
+    organic vs paid split, notable users). NPS and notable_users are
+    manually curated — read from a single admin_config document; the
+    rest are computed live from users/projects/sessions.
+    """
+    from datetime import timedelta as _td
+    await auth_current_admin(request, db)
+    now = auth_now()
+    d7  = now - _td(days=7)
+    d28 = now - _td(days=28)
+
+    # --- Computed metrics -------------------------------------------------
+    # Registered users — excludes guest accounts (is_guest True).
+    registered_users = await db.users.count_documents({
+        "$or": [{"is_guest": {"$exists": False}}, {"is_guest": {"$ne": True}}],
+    })
+    projects_created = await db.projects.count_documents({})
+    documents_locked_shared = await db.projects.count_documents({
+        "share_status": {"$exists": True, "$nin": [None, "", "none"]},
+    })
+
+    accepted = await db.projects.count_documents({"share_status": "accepted"})
+    rejected = await db.projects.count_documents({"share_status": "rejected"})
+    reviewed = accepted + rejected
+    client_accept_rate = round((accepted / reviewed) * 100, 1) if reviewed else 0.0
+
+    wau = await db.users.count_documents({"last_seen_at": {"$gte": auth_iso(d7)}})
+
+    # 4-week retention — of users who signed up ≥4w ago, how many are
+    # still active in the last 4 weeks?
+    cohort_total = await db.users.count_documents({"created_at": {"$lte": auth_iso(d28)}})
+    cohort_active = await db.users.count_documents({
+        "created_at":   {"$lte": auth_iso(d28)},
+        "last_seen_at": {"$gte": auth_iso(d28)},
+    })
+    retention_4w = round((cohort_active / cohort_total) * 100, 1) if cohort_total else 0.0
+
+    # Organic vs paid split — derived from acquisition sessions.
+    # A session is "paid" when utm_medium contains cpc/paid/ad or the
+    # source bucket is explicitly "paid_search" / "paid_social".
+    paid_sessions = await db.sessions.count_documents({
+        "$or": [
+            {"utm_medium": {"$regex": "cpc|paid|ad", "$options": "i"}},
+            {"source_bucket": {"$in": ["paid_search", "paid_social", "paid"]}},
+        ],
+    })
+    total_sessions = await db.sessions.count_documents({})
+    organic_sessions = max(total_sessions - paid_sessions, 0)
+    organic_pct = round((organic_sessions / total_sessions) * 100, 1) if total_sessions else 0.0
+    paid_pct    = round((paid_sessions / total_sessions) * 100, 1) if total_sessions else 0.0
+
+    # --- Admin-editable fields (NPS + notable users) ---------------------
+    cfg = await db.admin_config.find_one({"_id": "pitch_metrics"}) or {}
+    nps = cfg.get("nps")  # int/float or None
+    notable_users = cfg.get("notable_users") or []  # [{name, role, logo_url}]
+    # Sanitize notable users to safe shape.
+    clean_notables = []
+    for n in notable_users[:12]:
+        if not isinstance(n, dict):
+            continue
+        clean_notables.append({
+            "name":     str(n.get("name") or "").strip()[:80],
+            "role":     str(n.get("role") or "").strip()[:120],
+            "logo_url": str(n.get("logo_url") or "").strip()[:400],
+        })
+
+    return {
+        "registered_users":        registered_users,
+        "projects_created":        projects_created,
+        "documents_locked_shared": documents_locked_shared,
+        "client_accept_rate":      client_accept_rate,
+        "weekly_active_users":     wau,
+        "retention_4w":            retention_4w,
+        "nps":                     nps,
+        "organic_paid_split":      {
+            "organic_pct":     organic_pct,
+            "paid_pct":        paid_pct,
+            "organic":         organic_sessions,
+            "paid":            paid_sessions,
+            "total_sessions":  total_sessions,
+        },
+        "notable_users": clean_notables,
+        "generated_at":  auth_iso(now),
+    }
+
+
+class PitchMetricsConfigIn(_BM):
+    nps: Optional[float] = None
+    notable_users: Optional[List[Dict[str, Any]]] = None
+
+
+@api.put("/admin/pitch-metrics/config")
+async def admin_pitch_metrics_config(body: PitchMetricsConfigIn, request: Request):
+    """Save the two manually-curated pitch fields — NPS (a number the
+    founder collects out-of-band) and the notable-users list (name,
+    role/company, logo URL). All fields optional; partial updates OK."""
+    await auth_current_admin(request, db)
+    update: Dict[str, Any] = {"updated_at": auth_iso(auth_now())}
+    if body.nps is not None:
+        try:
+            n = float(body.nps)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="NPS must be a number.")
+        if not -100.0 <= n <= 100.0:
+            raise HTTPException(status_code=400, detail="NPS must be between -100 and 100.")
+        update["nps"] = round(n, 1)
+    if body.notable_users is not None:
+        clean = []
+        for n in (body.notable_users or [])[:12]:
+            if not isinstance(n, dict):
+                continue
+            name = str(n.get("name") or "").strip()[:80]
+            if not name:
+                continue
+            clean.append({
+                "name":     name,
+                "role":     str(n.get("role") or "").strip()[:120],
+                "logo_url": str(n.get("logo_url") or "").strip()[:400],
+            })
+        update["notable_users"] = clean
+    await db.admin_config.update_one(
+        {"_id": "pitch_metrics"},
+        {"$set": update},
+        upsert=True,
+    )
+    return {"ok": True}
+
+
 @api.get("/admin/analytics")
 async def admin_analytics(request: Request):
     """Aggregate KPIs + chart series for the admin analytics dashboard.
