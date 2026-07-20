@@ -12,7 +12,7 @@ import logging
 from typing import List, Literal, Dict, Any, Optional
 
 from fastapi import FastAPI, APIRouter, File, HTTPException, Query, Request, Response, UploadFile
-from fastapi.responses import PlainTextResponse, StreamingResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse, HTMLResponse
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -47,6 +47,7 @@ from emailer import (
     send_client_receipt_email,
     send_owner_reply_email,
     send_document_updated_email,
+    send_nps_survey_email,
 )
 from auth import (
     SESSION_COOKIE,
@@ -994,9 +995,10 @@ async def admin_pitch_metrics(request: Request):
 
     Returns nine headline numbers (registered users, projects, docs
     shared, client accept rate, WAU, 4-week retention, NPS,
-    organic vs paid split, notable users). NPS and notable_users are
-    manually curated — read from a single admin_config document; the
-    rest are computed live from users/projects/sessions.
+    organic vs paid split, notable users). NPS is auto-computed from
+    `nps_responses` when at least one response exists (falls back to the
+    manually-set value on `admin_config`). Notable users are always
+    curated via the admin_config document.
     """
     from datetime import timedelta as _td
     await auth_current_admin(request, db)
@@ -1044,9 +1046,9 @@ async def admin_pitch_metrics(request: Request):
     organic_pct = round((organic_sessions / total_sessions) * 100, 1) if total_sessions else 0.0
     paid_pct    = round((paid_sessions / total_sessions) * 100, 1) if total_sessions else 0.0
 
-    # --- Admin-editable fields (NPS + notable users) ---------------------
+    # --- Admin-editable fields (notable users) ---------------------------
     cfg = await db.admin_config.find_one({"_id": "pitch_metrics"}) or {}
-    nps = cfg.get("nps")  # int/float or None
+    manual_nps = cfg.get("nps")  # int/float or None
     notable_users = cfg.get("notable_users") or []  # [{name, role, logo_url}]
     # Sanitize notable users to safe shape.
     clean_notables = []
@@ -1059,6 +1061,22 @@ async def admin_pitch_metrics(request: Request):
             "logo_url": str(n.get("logo_url") or "").strip()[:400],
         })
 
+    # --- Auto-compute NPS from `nps_responses` when we have data --------
+    # NPS = %promoters (9-10) − %detractors (0-6). Passives (7-8) don't count.
+    nps_total = await db.nps_responses.count_documents({})
+    nps_promoters = await db.nps_responses.count_documents({"score": {"$gte": 9}})
+    nps_detractors = await db.nps_responses.count_documents({"score": {"$lte": 6}})
+    nps_computed: Optional[float] = None
+    if nps_total > 0:
+        nps_computed = round(
+            ((nps_promoters - nps_detractors) / nps_total) * 100, 1
+        )
+    nps = nps_computed if nps_computed is not None else manual_nps
+    nps_source = (
+        "responses" if nps_computed is not None
+        else ("manual" if manual_nps is not None else "none")
+    )
+
     return {
         "registered_users":        registered_users,
         "projects_created":        projects_created,
@@ -1067,6 +1085,10 @@ async def admin_pitch_metrics(request: Request):
         "weekly_active_users":     wau,
         "retention_4w":            retention_4w,
         "nps":                     nps,
+        "nps_source":              nps_source,       # "responses" | "manual" | "none"
+        "nps_responses_count":     nps_total,
+        "nps_promoters":           nps_promoters,
+        "nps_detractors":          nps_detractors,
         "organic_paid_split":      {
             "organic_pct":     organic_pct,
             "paid_pct":        paid_pct,
@@ -1119,6 +1141,278 @@ async def admin_pitch_metrics_config(body: PitchMetricsConfigIn, request: Reques
         upsert=True,
     )
     return {"ok": True}
+
+
+# ===========================================================================
+# NPS SURVEY CAMPAIGN
+# ===========================================================================
+NPS_SECRET_KEY = os.environ.get("JWT_SECRET") or os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or "bracket-nps-signing-key"
+
+
+def _nps_token(user_id: str) -> str:
+    """HMAC token binding a user_id to a survey click. Prevents randoms from
+    ballot-stuffing the NPS score. First 16 hex chars of HMAC-SHA256 is plenty."""
+    import hmac as _hmac
+    import hashlib as _hash
+    mac = _hmac.new(NPS_SECRET_KEY.encode(), user_id.encode(), _hash.sha256)
+    return mac.hexdigest()[:16]
+
+
+def _nps_public_base_url(request: Request) -> str:
+    """Prefer PUBLIC_BASE_URL env, fall back to the request's host so tokens
+    still land on the same origin in the preview environment."""
+    env = (os.environ.get("PUBLIC_BASE_URL") or "").strip().rstrip("/")
+    if env:
+        return env
+    return f"{request.url.scheme}://{request.url.netloc}".rstrip("/")
+
+
+class SendNpsCampaignIn(_BM):
+    # When True, sends only to the currently-signed-in admin — safe smoke test.
+    test_only: bool = False
+    # When True, re-sends to users who already have a nps_responses entry.
+    include_answered: bool = False
+
+
+@api.post("/admin/nps/send-campaign")
+async def admin_send_nps_campaign(body: SendNpsCampaignIn, request: Request):
+    """Send the NPS survey email to every registered user (excludes guests).
+
+    Fire-and-forget: kicks off a background task that iterates the users
+    collection and sends emails one at a time with a small delay so we
+    stay within Resend's rate limits. Returns the eligible target count
+    immediately.
+    """
+    admin = await auth_current_admin(request, db)
+    base_url = _nps_public_base_url(request)
+    logo_url = f"{base_url}/logo-diamond.png"
+
+    query: Dict[str, Any] = {
+        "$or": [{"is_guest": {"$exists": False}}, {"is_guest": {"$ne": True}}],
+        "email": {"$type": "string", "$ne": ""},
+    }
+    if body.test_only:
+        query["user_id"] = admin["user_id"]
+
+    # Optionally exclude users who have already responded.
+    excluded_user_ids: set = set()
+    if not body.include_answered:
+        cur = db.nps_responses.find({}, {"_id": 0, "user_id": 1})
+        async for r in cur:
+            if r.get("user_id"):
+                excluded_user_ids.add(r["user_id"])
+
+    targets: list = []
+    async for u in db.users.find(query, {"_id": 0, "user_id": 1, "email": 1, "name": 1}):
+        if u.get("user_id") in excluded_user_ids:
+            continue
+        if u.get("email"):
+            targets.append(u)
+
+    async def _campaign():
+        sent = 0
+        failed = 0
+        for u in targets:
+            try:
+                ok = await send_nps_survey_email(
+                    to_email=u["email"],
+                    name=u.get("name") or "",
+                    user_id=u["user_id"],
+                    token=_nps_token(u["user_id"]),
+                    public_base_url=base_url,
+                    logo_url=logo_url,
+                )
+                if ok:
+                    sent += 1
+                else:
+                    failed += 1
+            except Exception as e:
+                logger.warning("nps campaign send failed for %s: %s", u.get("email"), e)
+                failed += 1
+            # Gentle pacing so we don't trip Resend's per-second limits.
+            await asyncio.sleep(0.35)
+        # Persist a small campaign record for the admin timeline.
+        try:
+            await db.nps_campaigns.insert_one({
+                "started_by":   admin["email"],
+                "targeted":     len(targets),
+                "sent":         sent,
+                "failed":       failed,
+                "test_only":    body.test_only,
+                "include_answered": body.include_answered,
+                "started_at":   auth_iso(auth_now()),
+            })
+        except Exception as e:
+            logger.warning("nps campaign log insert failed: %s", e)
+        logger.info("nps campaign complete: %d sent, %d failed (of %d)", sent, failed, len(targets))
+
+    asyncio.create_task(_campaign())
+
+    return {
+        "ok": True,
+        "targeted": len(targets),
+        "test_only": body.test_only,
+        "include_answered": body.include_answered,
+        "message": (
+            f"Queued {len(targets)} email(s). Delivery runs in the background — "
+            f"check the pitch-metrics NPS card in a minute for updates."
+        ),
+    }
+
+
+@api.get("/admin/nps/campaigns")
+async def admin_list_nps_campaigns(request: Request):
+    """Recent NPS campaign runs, most recent first — for the admin UI."""
+    await auth_current_admin(request, db)
+    out = []
+    async for row in db.nps_campaigns.find({}, {"_id": 0}).sort("started_at", -1).limit(20):
+        out.append(row)
+    return {"campaigns": out}
+
+
+# ---- Public NPS submission (tap a button in the email) --------------------
+def _nps_thankyou_html(score: int, response_id: str, public_base_url: str, done: bool = False) -> str:
+    """Rendered on GET after a user taps a score in their email, and again
+    after they submit an optional comment (done=True)."""
+    if score <= 6:
+        headline_color = "#EF4444"
+        prompt = "Something's off. Tell us the one thing that would fix it."
+        chip = "Thanks for the honest read"
+    elif score <= 8:
+        headline_color = "#F59E0B"
+        prompt = "So close. What's the one thing that would push you to a 9 or 10?"
+        chip = "Noted — thank you"
+    else:
+        headline_color = "#22C55E"
+        prompt = "You made our week. What worked well for you?"
+        chip = "Thank you"
+    safe_response_id = response_id.replace("<", "&lt;").replace(">", "&gt;")
+    submit_action = f"{public_base_url}/api/nps/comment"
+    done_block = (
+        '<p style="margin:32px 0 0 0;font-size:15.5px;line-height:1.6;color:#22C55E;text-align:center;">'
+        'Got it — thank you.</p>'
+        '<p style="margin:8px 0 0 0;font-size:13px;line-height:1.6;color:#8A93A0;text-align:center;">'
+        'You can close this tab.</p>'
+        if done else
+        f'<form method="post" action="{submit_action}" style="margin-top:24px;">'
+        f'<input type="hidden" name="response_id" value="{safe_response_id}"/>'
+        f'<label style="display:block;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:10.5px;'
+        f'letter-spacing:0.18em;text-transform:uppercase;color:#8A93A0;margin-bottom:8px;">'
+        f'{prompt}</label>'
+        f'<textarea name="comment" rows="4" placeholder="Write anything… we read every one." '
+        f'style="width:100%;padding:14px 16px;background:#0F1114;color:#F4F5F7;border:1px solid #26282D;'
+        f'border-radius:12px;font-family:\'Poppins\',sans-serif;font-size:14.5px;line-height:1.55;'
+        f'outline:none;resize:vertical;box-sizing:border-box;"></textarea>'
+        f'<button type="submit" style="margin-top:12px;padding:11px 22px;background:#5E6AD2;color:#fff;'
+        f'border:0;border-radius:10px;font-family:\'Poppins\',sans-serif;font-size:13.5px;font-weight:600;'
+        f'letter-spacing:0.01em;cursor:pointer;">Send &rarr;</button>'
+        f'</form>'
+    )
+    return f"""<!doctype html>
+<html><head><meta charset="utf-8"/><title>Bracket · Thank you</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="icon" href="{public_base_url}/favicon.svg"/>
+</head>
+<body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;min-height:100vh;">
+<div style="max-width:520px;margin:0 auto;padding:64px 20px 40px 20px;">
+  <div style="text-align:center;">
+    <img src="{public_base_url}/logo-diamond.png" alt="Bracket" width="44" height="44" style="display:inline-block;"/>
+    <p style="margin:14px 0 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">
+      &lt; bracket &middot; {chip.lower()} &gt;
+    </p>
+    <div style="margin:18px 0 0 0;">
+      <span style="display:inline-block;padding:14px 22px;border-radius:14px;background:#0F1114;border:1.5px solid {headline_color};color:{headline_color};font-size:44px;font-weight:600;letter-spacing:-0.02em;line-height:1;">
+        {score}
+      </span>
+    </div>
+    <h1 style="margin:22px 0 0 0;font-size:26px;line-height:1.25;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;">
+      {chip}.
+    </h1>
+    <p style="margin:12px 0 0 0;font-size:14.5px;line-height:1.65;color:#B9BFC9;">
+      Your rating is in. This helps shape what Bracket becomes next.
+    </p>
+  </div>
+  {done_block}
+  <p style="margin:32px 0 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;text-align:center;">
+    Bracket &middot; The AI decision workspace for client projects
+  </p>
+</div>
+</body></html>"""
+
+
+@api.get("/nps/submit")
+async def nps_submit(u: str, s: int, t: str, request: Request):
+    """Record a user's NPS score from the survey email. Public endpoint;
+    protected by an HMAC token derived from the user_id."""
+    if not (0 <= s <= 10):
+        raise HTTPException(status_code=400, detail="Score must be between 0 and 10.")
+    if _nps_token(u) != t:
+        raise HTTPException(status_code=403, detail="Invalid or expired survey token.")
+    user = await db.users.find_one({"user_id": u}, {"_id": 0, "email": 1, "name": 1})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    now_iso = auth_iso(auth_now())
+    # Upsert: only the most recent tap counts (users often click twice to change).
+    existing = await db.nps_responses.find_one({"user_id": u}, {"_id": 0, "id": 1})
+    if existing:
+        response_id = existing["id"]
+        await db.nps_responses.update_one(
+            {"id": response_id},
+            {"$set": {
+                "score":       int(s),
+                "score_bucket": "detractor" if s <= 6 else ("passive" if s <= 8 else "promoter"),
+                "updated_at":  now_iso,
+            }},
+        )
+    else:
+        response_id = _uuid()
+        await db.nps_responses.insert_one({
+            "id":         response_id,
+            "user_id":    u,
+            "email":      user.get("email", ""),
+            "name":       user.get("name", ""),
+            "score":      int(s),
+            "score_bucket": "detractor" if s <= 6 else ("passive" if s <= 8 else "promoter"),
+            "comment":    "",
+            "created_at": now_iso,
+            "updated_at": now_iso,
+        })
+    base_url = _nps_public_base_url(request)
+    return HTMLResponse(_nps_thankyou_html(int(s), response_id, base_url, done=False))
+
+
+@api.post("/nps/comment")
+async def nps_comment(request: Request):
+    """Optional follow-up comment posted from the thank-you page's form.
+    Accepts application/x-www-form-urlencoded (native HTML form)."""
+    try:
+        form = await request.form()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Bad form data.")
+    response_id = (form.get("response_id") or "").strip()
+    comment = (form.get("comment") or "").strip()[:4000]
+    if not response_id:
+        raise HTTPException(status_code=400, detail="Missing response_id.")
+    resp = await db.nps_responses.find_one({"id": response_id}, {"_id": 0, "score": 1})
+    if not resp:
+        raise HTTPException(status_code=404, detail="Response not found.")
+    await db.nps_responses.update_one(
+        {"id": response_id},
+        {"$set": {"comment": comment, "updated_at": auth_iso(auth_now())}},
+    )
+    base_url = _nps_public_base_url(request)
+    return HTMLResponse(_nps_thankyou_html(int(resp["score"]), response_id, base_url, done=True))
+
+
+@api.get("/admin/nps/responses")
+async def admin_nps_responses(request: Request, limit: int = 100):
+    """Latest NPS responses (with comments) for the admin panel."""
+    await auth_current_admin(request, db)
+    limit = max(1, min(limit, 500))
+    rows = []
+    async for r in db.nps_responses.find({}, {"_id": 0}).sort("updated_at", -1).limit(limit):
+        rows.append(r)
+    return {"responses": rows, "count": len(rows)}
 
 
 @api.get("/admin/analytics")

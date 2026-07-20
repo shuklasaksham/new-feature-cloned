@@ -545,3 +545,175 @@ async def send_document_updated_email(
     except Exception as e:
         logger.exception(f"document-updated email failed for {client_email}: {e}")
         return False
+
+
+# =====================================================================
+# NPS SURVEY EMAIL
+# One-tap 0-10 rating buttons. Each button links to
+#   {public_base_url}/api/nps/submit?u={user_id}&s={score}&t={token}
+# which records the score and lands the user on a thank-you page
+# with an optional free-text comment field.
+# =====================================================================
+def _nps_button_cell(score: int, url: str) -> str:
+    """One 0-10 rating cell — bold border, hover-friendly, tap target ≥ 40px.
+    Colored by detractor (0-6) / passive (7-8) / promoter (9-10) tone."""
+    if score <= 6:
+        border = "#EF4444"; text = "#FCA5A5"
+    elif score <= 8:
+        border = "#F59E0B"; text = "#FCD34D"
+    else:
+        border = "#22C55E"; text = "#86EFAC"
+    return (
+        f'<td align="center" style="padding:0 3px;">'
+        f'<a href="{url}" '
+        f'style="display:inline-block;min-width:38px;padding:12px 6px;text-align:center;'
+        f'background:#0F1114;border:1.5px solid {border};border-radius:10px;'
+        f'font-family:\'Poppins\',\'Segoe UI\',sans-serif;font-size:16px;font-weight:600;'
+        f'color:{text};text-decoration:none;letter-spacing:-0.01em;">'
+        f'{score}'
+        f'</a>'
+        f'</td>'
+    )
+
+
+def _nps_survey_html(name: str, base_url: str, user_id: str, token: str, logo_url: str) -> str:
+    display_name = (name or "").strip() or "there"
+    # Build one 11-cell row of 0-10 rating buttons.
+    row_cells = "".join(
+        _nps_button_cell(s, f"{base_url}/api/nps/submit?u={user_id}&s={s}&t={token}")
+        for s in range(11)
+    )
+    return f"""<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#08090A;padding:44px 16px;">
+      <tr>
+        <td align="center">
+          <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
+            <!-- Logo row -->
+            <tr>
+              <td align="center" style="padding:34px 36px 0 36px;">
+                <img src="{logo_url}" alt="Bracket" width="44" height="44" style="display:block;width:44px;height:44px;border:0;outline:none;" />
+              </td>
+            </tr>
+            <!-- Chip -->
+            <tr>
+              <td align="center" style="padding:18px 36px 0 36px;">
+                <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">
+                  &lt; bracket &middot; one question &gt;
+                </p>
+              </td>
+            </tr>
+            <!-- Headline -->
+            <tr>
+              <td style="padding:14px 36px 0 36px;" align="center">
+                <h1 style="margin:0;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;text-align:center;">
+                  How likely are you to<br/>
+                  recommend <span style="color:#5E6AD2;">Bracket</span> to a friend?
+                </h1>
+              </td>
+            </tr>
+            <!-- Personal note -->
+            <tr>
+              <td style="padding:18px 36px 0 36px;">
+                <p style="margin:0 0 8px 0;font-size:15px;line-height:1.65;color:#B9BFC9;text-align:center;">
+                  Hi {display_name} — one tap, one number. Your honest read
+                  helps us shape what Bracket becomes next.
+                </p>
+              </td>
+            </tr>
+            <!-- Rating row -->
+            <tr>
+              <td style="padding:26px 20px 6px 20px;" align="center">
+                <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                  <tr>{row_cells}</tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Legend -->
+            <tr>
+              <td style="padding:6px 36px 0 36px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;margin:0 auto;">
+                  <tr>
+                    <td style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#6E7480;">Not likely</td>
+                    <td align="right" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#6E7480;">Extremely likely</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <!-- Why it matters -->
+            <tr>
+              <td style="padding:26px 36px 0 36px;">
+                <p style="margin:0;font-size:13.5px;line-height:1.7;color:#8A93A0;text-align:center;">
+                  Tapping a number is enough. If you have ~30 seconds, the
+                  next page has a small text box where you can tell us why —
+                  we read every single one.
+                </p>
+              </td>
+            </tr>
+            <!-- Footer -->
+            <tr>
+              <td style="padding:30px 36px 30px 36px;">
+                <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;text-align:center;">
+                  Bracket &middot; The AI decision workspace for client projects
+                </p>
+                <p style="margin:8px 0 0 0;font-size:12px;color:#6E7480;text-align:center;">
+                  You're receiving this because you signed up at use-bracket.com. This is a one-time survey — no follow-ups.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>"""
+
+
+def _nps_survey_text(name: str, base_url: str, user_id: str, token: str) -> str:
+    display_name = (name or "").strip() or "there"
+    lines = [f"Hi {display_name},", "",
+             "One question — how likely are you to recommend Bracket to a friend? (0 = not likely, 10 = extremely likely)",
+             ""]
+    for s in range(11):
+        lines.append(f"  {s} — {base_url}/api/nps/submit?u={user_id}&s={s}&t={token}")
+    lines += ["",
+              "Tapping a number is enough. The next page has a small text box if you want to tell us why.",
+              "",
+              "— Bracket",
+              "The AI decision workspace for client projects"]
+    return "\n".join(lines)
+
+
+async def send_nps_survey_email(
+    to_email: str,
+    name: str,
+    user_id: str,
+    token: str,
+    public_base_url: str,
+    logo_url: str,
+) -> bool:
+    """Fire-and-forget NPS survey. Returns True on success, False on failure."""
+    if not to_email:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning("RESEND_API_KEY not set; skipping NPS survey email")
+        return False
+    resend.api_key = api_key
+    base = (public_base_url or "https://use-bracket.com").rstrip("/")
+    params = {
+        "from": _sender(),
+        "to": [to_email],
+        "subject": "One tap · how likely are you to recommend Bracket?",
+        "html": _nps_survey_html(name, base, user_id, token, logo_url),
+        "text": _nps_survey_text(name, base, user_id, token),
+        "reply_to": os.environ.get("SENDER_EMAIL", ""),
+    }
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"nps-survey email sent to {to_email}: {result.get('id') if isinstance(result, dict) else result}")
+        return True
+    except Exception as e:
+        logger.exception(f"nps-survey email failed for {to_email}: {e}")
+        return False

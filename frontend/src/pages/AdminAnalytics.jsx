@@ -436,7 +436,8 @@ function NotableUsersCard({ items, onEdit }) {
   );
 }
 
-function NpsCard({ nps, onEdit }) {
+function NpsCard({ nps, source, responsesCount, onEdit, onSend, sending }) {
+  const isComputed = source === "responses";
   const tone = nps === null || nps === undefined
     ? "ghost"
     : nps >= 50 ? "emerald"
@@ -465,6 +466,7 @@ function NpsCard({ nps, onEdit }) {
           className="text-[10.5px] uppercase tracking-[0.14em] inline-flex items-center gap-1 hover:opacity-100"
           style={{ color: t.subText, opacity: 0.85 }}
           data-testid="pitch-nps-edit"
+          aria-label="Edit NPS score manually"
         >
           <Pencil size={11} /> Edit
         </button>
@@ -482,13 +484,38 @@ function NpsCard({ nps, onEdit }) {
         {nps === null || nps === undefined ? "—" : nps}
       </div>
       <div className="mt-2 text-[11px]" style={{ color: t.subText }}>
-        {nps === null || nps === undefined
-          ? "Not yet measured. Collect via a 1-question survey and update here."
-          : nps >= 50 ? "World-class."
-          : nps >= 30 ? "Strong."
-          : nps >= 0  ? "Positive — room to grow."
-          : "Under-water — investigate churn drivers."}
+        {isComputed && responsesCount > 0
+          ? `From ${responsesCount} response${responsesCount === 1 ? "" : "s"} · ${
+              nps >= 50 ? "World-class." : nps >= 30 ? "Strong." : nps >= 0 ? "Positive." : "Under-water."
+            }`
+          : nps === null || nps === undefined
+            ? "Not yet measured. Send the survey to your users below, or set manually."
+            : nps >= 50 ? "World-class."
+            : nps >= 30 ? "Strong."
+            : nps >= 0  ? "Positive — room to grow."
+            : "Under-water — investigate churn drivers."}
       </div>
+      <button
+        type="button"
+        onClick={onSend}
+        disabled={sending}
+        className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-medium"
+        style={{
+          background: isDashed ? "var(--accent)" : "rgba(255,255,255,0.14)",
+          color: isDashed ? "#fff" : t.text,
+          border: isDashed ? "none" : "1px solid rgba(255,255,255,0.22)",
+          opacity: sending ? 0.6 : 1,
+          cursor: sending ? "wait" : "pointer",
+        }}
+        data-testid="pitch-nps-send"
+        aria-label="Send NPS survey email to all registered users"
+      >
+        {sending ? (
+          <><Loader2 size={12} className="animate-spin" /> Sending…</>
+        ) : (
+          <>Send NPS survey →</>
+        )}
+      </button>
     </div>
   );
 }
@@ -668,6 +695,7 @@ function PitchMetricsBoard() {
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
   const [editing, setEditing] = useState(false);
+  const [sending, setSending] = useState(false);
 
   const load = async () => {
     try {
@@ -680,6 +708,32 @@ function PitchMetricsBoard() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const sendSurvey = async () => {
+    const eligible = data?.registered_users || 0;
+    // eslint-disable-next-line no-alert
+    const ok = window.confirm(
+      `Send the NPS survey email to all registered users? (${eligible} eligible)\n\n` +
+      "Users who have already responded will be skipped. This is a one-shot campaign — no follow-ups."
+    );
+    if (!ok) return;
+    setSending(true);
+    try {
+      const { data: r } = await api.post("/admin/nps/send-campaign", {
+        test_only: false,
+        include_answered: false,
+      });
+      // eslint-disable-next-line no-alert
+      window.alert(r.message || `Queued ${r.targeted} email(s).`);
+      // Refresh soon so responses start showing.
+      setTimeout(load, 3000);
+    } catch (e) {
+      // eslint-disable-next-line no-alert
+      window.alert(`Send failed: ${formatApiError(e)}`);
+    } finally {
+      setSending(false);
+    }
+  };
 
   if (err) {
     return (
@@ -725,7 +779,14 @@ function PitchMetricsBoard() {
 
       {/* Row 2 — three interactive/qualitative cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3" data-testid="pitch-secondary-row">
-        <NpsCard nps={data.nps} onEdit={() => setEditing(true)} />
+        <NpsCard
+          nps={data.nps}
+          source={data.nps_source}
+          responsesCount={data.nps_responses_count || 0}
+          onEdit={() => setEditing(true)}
+          onSend={sendSurvey}
+          sending={sending}
+        />
         <OrganicPaidBar {...data.organic_paid_split} />
         <NotableUsersCard items={data.notable_users || []} onEdit={() => setEditing(true)} />
       </div>
