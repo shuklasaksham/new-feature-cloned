@@ -274,9 +274,12 @@ export default function Dashboard() {
 
   // ─── FILE UPLOAD BRIEF ────────────────────────────────────────────────
   // Accept PDF / TXT / PNG / JPEG. Backend parses the file, extracts text
-  // (or OCRs images via Gemini), and (if the brief has enough info) chains
-  // Steps 1-4 in the background. We poll every 3s for up to 3 minutes and
-  // land the user on whichever step the pipeline actually reached.
+  // (or OCRs images via Gemini), and chains the whole auto-build in a
+  // background task. We show the same non-dismissable StructuringModal as
+  // the paste flow, then poll `/projects/{id}` every ~2s until Bracket
+  // settles (`auto_advance_status` !== "pending"). Then we route:
+  //    - advanced  → Step 5 (rich brief, doc ready)
+  //    - anything else → Step 1 (thin/partial — user continues manually)
   const handleFileUpload = async (file) => {
     if (!file) return;
     const okTypes = ["application/pdf", "text/plain", "image/png", "image/jpeg", "image/jpg"];
@@ -290,7 +293,9 @@ export default function Dashboard() {
       return;
     }
     setUploading(true);
-    const toastId = toast.loading("Reading your brief… Bracket is thinking.");
+    // Also flip `submitting` so the StructuringModal mounts — this is the
+    // same "Bracket is thinking" UX as the paste flow.
+    setSubmitting(true);
     let projectId = null;
     try {
       const fd = new FormData();
@@ -300,20 +305,39 @@ export default function Dashboard() {
         timeout: 90000,
       });
       projectId = data.id;
-      toast.dismiss(toastId);
-      // Land in the flow immediately — the auto-advance chain runs in the
-      // background and ProjectFlow live-follows it, filling steps in as
-      // they're generated. No more waiting on the dashboard.
-      toast.success("Brief loaded — Bracket is building your project live.");
-      navigate(`/project/${projectId}/flow`);
+
+      // Poll until the background auto-build settles. Max ~2.5 minutes.
+      const started = Date.now();
+      const MAX_MS = 150000;
+      let finalStatus = data.auto_advance_status || "pending";
+      let finalStep = data.step || 1;
+      let finalArtifacts = !!data.artifacts;
+      let finalDecision = !!data.decision;
+      while (Date.now() - started < MAX_MS) {
+        await new Promise((r) => setTimeout(r, 2000));
+        try {
+          const { data: p } = await api.get(`/projects/${projectId}`);
+          finalStatus = p.auto_advance_status || finalStatus;
+          finalStep = p.step || finalStep;
+          finalArtifacts = !!p.artifacts;
+          finalDecision = !!p.decision;
+        } catch (e) { /* transient — keep polling */ }
+        if (finalStatus && finalStatus !== "pending") break;
+      }
+      const isRich =
+        finalStatus === "advanced" ||
+        (finalStep === 5 && finalArtifacts && finalDecision);
+      const targetStep = isRich ? 5 : 1;
+      navigate(`/project/${projectId}/flow?step=${targetStep}`);
     } catch (e) {
-      toast.dismiss(toastId);
       toast.error(formatApiError(e));
-      // If the project was created before an error, still land on it.
-      if (projectId) navigate(`/project/${projectId}/flow`);
+      if (projectId) navigate(`/project/${projectId}/flow?step=1`);
+      else setSubmitting(false);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      // `submitting` intentionally stays true on success — modal remains
+      // visible until this Dashboard unmounts on navigation.
     }
   };
 

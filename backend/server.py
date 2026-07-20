@@ -2689,14 +2689,23 @@ async def upload_brief(request: Request, file: UploadFile = File(...)):
             return
         sit_input = {**built["situation"], "raw_paste": text}
         if not built.get("sufficient"):
-            # Seed whatever inputs we did get so Step 1 isn't empty.
+            # Thin brief — one-shot couldn't fill every step. Still save the
+            # framing we already computed (and any surfaced open questions)
+            # so Step 1 lands with output ready and Steps 2/3 have targeted
+            # follow-ups. Matches the paste-flow behaviour.
+            update_fields = {
+                "situation_input": sit_input,
+                "auto_advance_status": "insufficient",
+                "updated_at": _now_iso(),
+            }
+            if built.get("framing"):
+                update_fields["framing"] = built["framing"]
+                update_fields["step"] = 2
+            if built.get("open_questions"):
+                update_fields["open_questions"] = built["open_questions"]
             await db.projects.update_one(
                 {"id": doc["id"]},
-                {"$set": {
-                    "situation_input": sit_input,
-                    "auto_advance_status": "insufficient",
-                    "updated_at": _now_iso(),
-                }},
+                {"$set": update_fields},
             )
             return
         ctx_input = {**built["context"], "raw_paste": text}
