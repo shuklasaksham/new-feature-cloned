@@ -34,9 +34,6 @@ from ai_engine import (
     run_artifacts,
     run_client_pushback_suggestions,
     run_field_suggestions,
-    extract_situation_from_paste,
-    extract_context_from_paste,
-    extract_decision_from_paste,
     extract_text_from_image,
     auto_build_from_brief,
     generate_project_title,
@@ -1857,26 +1854,39 @@ async def get_project(project_id: str):
     return await _get_project_or_404(project_id)
 
 
+async def _safe_generate_title(raw_paste: str) -> str:
+    """Wraps generate_project_title so asyncio.gather doesn't blow up when the
+    title call fails. Returns '' on any error — caller ignores empty results."""
+    try:
+        return await generate_project_title(raw_paste) or ""
+    except Exception as e:
+        logger.warning("safe title regen failed: %s", e)
+        return ""
+
+
 # --- STEP 1: SITUATION FRAMING ---
 @api.post("/projects/{project_id}/situation", response_model=ProjectOut)
 async def step_situation(project_id: str, body: SituationIn):
     project = await _get_project_or_404(project_id)
     engine = project.get("engine", "claude")
     payload = body.model_dump()
-    # Paste-anything path: extract what/who/unclear from raw_paste (Haiku),
-    # then feed extracted fields into the main Sonnet framing call.
+    # Paste-anything path: fold extraction into the main framing call
+    # (one LLM round-trip instead of two — saves 5-8s of latency).
     if body.raw_paste:
-        try:
-            extracted = await extract_situation_from_paste(body.raw_paste)
-        except Exception as e:
-            logger.warning("situation extraction failed, falling back to raw paste as `what`: %s", e)
-            extracted = {"what": body.raw_paste[:2000], "who": "", "unclear": ""}
-        # Extracted fields win — legacy structured fields only used if paste is empty.
-        payload["what"] = extracted["what"] or payload.get("what", "")
-        payload["who"] = extracted["who"] or payload.get("who", "")
-        payload["unclear"] = extracted["unclear"] or payload.get("unclear", "")
+        payload["raw_paste"] = body.raw_paste
+    # Run framing and (optional) title regen IN PARALLEL — the title call is
+    # independent of framing output, so awaiting them concurrently shaves
+    # ~3-5s off Step 1 wall-clock.
+    want_title = bool(body.raw_paste and project.get("name_source", "heuristic") != "user")
     try:
-        framing = await run_situation_framing(payload, engine)
+        if want_title:
+            framing, title_result = await asyncio.gather(
+                run_situation_framing(payload, engine),
+                _safe_generate_title(body.raw_paste),
+            )
+        else:
+            framing = await run_situation_framing(payload, engine)
+            title_result = None
     except Exception as e:
         logger.exception("situation framing failed")
         raise HTTPException(status_code=502, detail=f"AI engine error: {e}")
@@ -1885,9 +1895,6 @@ async def step_situation(project_id: str, body: SituationIn):
     situation_input = {**payload}
     if body.raw_paste:
         situation_input["raw_paste"] = body.raw_paste
-    # If the project title was never set by the user (heuristic derivation
-    # from the client heuristic OR a stale name from an older create flow),
-    # re-generate it now from the paste. Skip if user has renamed it.
     update_fields = {
         "situation_input": situation_input,
         "framing": framing,
@@ -1895,14 +1902,9 @@ async def step_situation(project_id: str, body: SituationIn):
         "status": "in_progress",
         "updated_at": _now_iso(),
     }
-    if body.raw_paste and project.get("name_source", "heuristic") != "user":
-        try:
-            ai_title = await generate_project_title(body.raw_paste)
-            if ai_title and len(ai_title) >= 3:
-                update_fields["name"] = ai_title[:120]
-                update_fields["name_source"] = "ai"
-        except Exception as e:
-            logger.warning("situation-step title regen failed: %s", e)
+    if title_result and len(title_result) >= 3:
+        update_fields["name"] = title_result[:120]
+        update_fields["name_source"] = "ai"
     await db.projects.update_one(
         {"id": project_id},
         {"$set": update_fields},
@@ -1918,14 +1920,9 @@ async def step_context(project_id: str, body: ContextIn):
         raise HTTPException(status_code=400, detail="Complete Situation Framing first.")
     payload = body.model_dump()
     if body.raw_paste:
-        try:
-            extracted = await extract_context_from_paste(body.raw_paste)
-        except Exception as e:
-            logger.warning("context extraction failed, falling back to raw paste as `requirements`: %s", e)
-            extracted = {"requirements": body.raw_paste[:2000], "constraints": "", "inspirations": ""}
-        payload["requirements"] = extracted["requirements"] or payload.get("requirements", "")
-        payload["constraints"] = extracted["constraints"] or payload.get("constraints", "")
-        payload["inspirations"] = extracted["inspirations"] or payload.get("inspirations", "")
+        # Fold extraction into the main context-compression call — saves an
+        # LLM round-trip (5-8s) vs the old two-call flow.
+        payload["raw_paste"] = body.raw_paste
     try:
         compressed = await run_context_compression(payload, project["framing"], project.get("engine", "claude"))
     except Exception as e:
@@ -1956,14 +1953,9 @@ async def step_decision(project_id: str, body: DecisionIn):
         raise HTTPException(status_code=400, detail="Complete Context Compression first.")
     payload = body.model_dump()
     if body.raw_paste:
-        try:
-            extracted = await extract_decision_from_paste(body.raw_paste)
-        except Exception as e:
-            logger.warning("decision extraction failed, falling back to raw paste as `optimizing_for`: %s", e)
-            extracted = {"optimizing_for": body.raw_paste[:2000], "tradeoffs": "", "risks": ""}
-        payload["optimizing_for"] = extracted["optimizing_for"] or payload.get("optimizing_for", "")
-        payload["tradeoffs"] = extracted["tradeoffs"] or payload.get("tradeoffs", "")
-        payload["risks"] = extracted["risks"] or payload.get("risks", "")
+        # Fold extraction into the main decision-engine call — saves an
+        # LLM round-trip (5-8s) vs the old two-call flow.
+        payload["raw_paste"] = body.raw_paste
     try:
         decision = await run_decision_engine(
             payload, project["framing"], project["context"], project.get("engine", "claude")

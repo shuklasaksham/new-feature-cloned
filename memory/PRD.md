@@ -636,3 +636,13 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - 2026-06-15 — **Iteration 57 — Sidebar scroll (landscape tablet) hard lock**: `.app-shell`/`.app-shell-main`/`.app-sidebar` heights 100vh → `100dvh` + `body:has(.app-shell){height:100dvh; overflow:hidden; overscroll-behavior:none}` — the page itself can never scroll on app routes (iOS landscape 100vh > visible height caused body scroll dragging the sidebar). Verified at 1180×820: body not scrollable, scrollY stays 0, sidebar sh==ch, wheel over sidebar doesn't move it.
 
 - 2026-06-15 — **Iteration 58 — iOS splash removed** (user request): deleted all 34 `apple-touch-startup-image` links from index.html and the `/public/splash/` directory. Verified: 0 references served.
+
+- 2026-07-20 — **Iteration 59 — AI step speedup (fixes production Cloudflare 524)**:
+  - **Problem**: On live site, "Decide" (Step 3) could take 25–48s (Haiku extract 5–8s + Sonnet 4.5 step 20–40s + occasional retry) — Cloudflare 100s cutoff surfaced as "The origin web server did not respond" error.
+  - **Fix 1 — Model swap**: `MODEL_MAP["claude"]` switched from Sonnet 4.5 → **Haiku 4.5** for step outputs (3–5× faster, comparable JSON quality on structured prompts). Sonnet still available via `engine="sonnet"`.
+  - **Fix 2 — Extraction folded**: `run_situation_framing / run_context_compression / run_decision_engine` now accept optional `raw_paste` and extract+reason in a single call. Server step endpoints no longer make the separate `extract_*_from_paste` Haiku call. Saves one round-trip (~5–8s) per step.
+  - **Fix 3 — Parallelism**: Step 1 now runs `run_situation_framing` and `generate_project_title` concurrently via `asyncio.gather` (was sequential). Saves ~3–5s when a project title is being generated.
+  - **Fix 4 — Timeout tightening**: `STEP_TIMEOUT_S` 50→35s, `STEP_RETRY_TIMEOUT_S` 40→20s. Worst-case wall-clock ~56s (was ~92s) — comfortably under Cloudflare's 100s cutoff.
+  - **Measured on preview** (support account, real paste): Step 1 **6.8s**, Step 2 **7.1s**, Step 3 **18.8s** — output quality intact ("Pass. Redesign the brief or walk." on the Goa wedding scenario).
+  - Files: `backend/ai_engine.py`, `backend/server.py`. No frontend changes needed.
+

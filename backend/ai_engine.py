@@ -19,22 +19,26 @@ logger = logging.getLogger(__name__)
 
 
 DEFAULT_PROVIDER = "anthropic"
-DEFAULT_MODEL = "claude-sonnet-4-5-20250929"  # higher quality for step outputs
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"  # Haiku 4.5 — fast + high quality for step outputs
 SUGGEST_PROVIDER = "anthropic"
 SUGGEST_MODEL = "claude-haiku-4-5-20251001"  # ultra-fast for typing suggestions
 
 # Hard timeouts so a hung Anthropic call never lets Cloudflare's 100s timeout
 # fire (which surfaces as a scary 520 "malformed response" page). We return a
 # clean 502 well before that. Step calls get one automatic retry — the two
-# attempt budgets must sum to < ~95s.
-STEP_TIMEOUT_S = 50       # attempt 1 budget for Sonnet step calls
-STEP_RETRY_TIMEOUT_S = 40  # attempt 2 budget (retry on transient failures)
+# attempt budgets must sum to < ~65s (safely under Cloudflare's 100s).
+STEP_TIMEOUT_S = 35       # attempt 1 budget for step calls
+STEP_RETRY_TIMEOUT_S = 20  # attempt 2 budget (retry on transient failures)
 SUGGEST_TIMEOUT_S = 8  # Haiku typing suggestions
 
 MODEL_MAP = {
-    "claude": ("anthropic", "claude-sonnet-4-5-20250929"),
-    "haiku": ("anthropic", "claude-haiku-4-5-20251001"),
-    "gpt": ("openai", "gpt-5.2"),
+    # Default step engine is Haiku 4.5 — 3-5x faster than Sonnet 4.5 with
+    # comparable output quality for our structured JSON prompts. Users who
+    # need Sonnet can pass engine="sonnet".
+    "claude": ("anthropic", "claude-haiku-4-5-20251001"),
+    "haiku":  ("anthropic", "claude-haiku-4-5-20251001"),
+    "sonnet": ("anthropic", "claude-sonnet-4-5-20250929"),
+    "gpt":    ("openai", "gpt-5.2"),
 }
 
 
@@ -324,13 +328,26 @@ async def extract_decision_from_paste(raw_paste: str) -> dict:
 
 
 async def run_situation_framing(inputs: dict, engine: str = "claude") -> dict:
-    """Reframes the problem into crisp reality. Returns reframed_problem + clarity_score + signals."""
+    """Reframes the problem into crisp reality. Returns reframed_problem + clarity_score + signals.
+
+    When `inputs['raw_paste']` is present, the model extracts what/who/unclear
+    from the paste AND reframes in a single call — saves a full Haiku round-trip.
+    """
+    raw_paste = str(inputs.get("raw_paste") or "").strip()
+    if raw_paste:
+        intake_block = (
+            f"PROJECT INTAKE (raw paste from user — extract what/who/unclear yourself):\n---\n{raw_paste[:8000]}\n---"
+        )
+    else:
+        intake_block = (
+            "PROJECT INTAKE:\n"
+            f"- What is the project: {inputs.get('what', '')}\n"
+            f"- Who is it for: {inputs.get('who', '')}\n"
+            f"- What feels unclear or risky: {inputs.get('unclear', '')}"
+        )
     prompt = f"""A professional has submitted this raw client-project intake. Reframe it like a seasoned operator would.
 
-PROJECT INTAKE:
-- What is the project: {inputs.get('what', '')}
-- Who is it for: {inputs.get('who', '')}
-- What feels unclear or risky: {inputs.get('unclear', '')}
+{intake_block}
 
 Do these three things:
 1. Name the REAL situation (strip marketing fluff, state what's actually happening)
@@ -349,15 +366,28 @@ Return JSON with this exact shape:
 
 
 async def run_context_compression(inputs: dict, framing: dict, engine: str = "claude") -> dict:
-    """Filters noise, extracts signal from requirements/constraints/inspirations."""
+    """Filters noise, extracts signal from requirements/constraints/inspirations.
+
+    When `inputs['raw_paste']` is present, extraction is folded into this call.
+    """
+    raw_paste = str(inputs.get("raw_paste") or "").strip()
+    if raw_paste:
+        ctx_block = (
+            f"PROJECT OWNER'S RAW CONTEXT PASTE (extract requirements/constraints/inspirations yourself):\n"
+            f"---\n{raw_paste[:8000]}\n---"
+        )
+    else:
+        ctx_block = (
+            "PROJECT OWNER'S RAW CONTEXT:\n"
+            f"- Requirements: {inputs.get('requirements', '')}\n"
+            f"- Constraints: {inputs.get('constraints', '')}\n"
+            f"- Inspirations / references: {inputs.get('inspirations', '')}"
+        )
     prompt = f"""Compress the project owner's context. Remove noise. Surface only what CHANGES the decision.
 
 REFRAMED PROBLEM: {framing.get('reframed_problem', '')}
 
-PROJECT OWNER'S RAW CONTEXT:
-- Requirements: {inputs.get('requirements', '')}
-- Constraints: {inputs.get('constraints', '')}
-- Inspirations / references: {inputs.get('inspirations', '')}
+{ctx_block}
 
 Return JSON:
 {{
@@ -370,17 +400,30 @@ Return JSON:
 
 
 async def run_decision_engine(inputs: dict, framing: dict, context: dict, engine: str = "claude") -> dict:
-    """Returns recommended direction, alternatives, trade-offs, risks."""
+    """Returns recommended direction, alternatives, trade-offs, risks.
+
+    When `inputs['raw_paste']` is present, extraction is folded into this call.
+    """
+    raw_paste = str(inputs.get("raw_paste") or "").strip()
+    if raw_paste:
+        dec_block = (
+            f"PROJECT OWNER'S DECISION-THINKING PASTE (extract optimizing_for/tradeoffs/risks yourself):\n"
+            f"---\n{raw_paste[:8000]}\n---"
+        )
+    else:
+        dec_block = (
+            "PROJECT OWNER'S DECISION INPUTS:\n"
+            f"- Optimizing for: {inputs.get('optimizing_for', '')}\n"
+            f"- Known trade-offs on their mind: {inputs.get('tradeoffs', '')}\n"
+            f"- Risks they suspect: {inputs.get('risks', '')}"
+        )
     prompt = f"""Make the call. The project owner needs a recommendation, not a menu.
 
 REFRAMED PROBLEM: {framing.get('reframed_problem', '')}
 WHAT MATTERS: {context.get('what_actually_matters', '')}
 KEY SIGNALS: {json.dumps(context.get('key_signals', []))}
 
-PROJECT OWNER'S DECISION INPUTS:
-- Optimizing for: {inputs.get('optimizing_for', '')}
-- Known trade-offs on their mind: {inputs.get('tradeoffs', '')}
-- Risks they suspect: {inputs.get('risks', '')}
+{dec_block}
 
 Return JSON:
 {{
