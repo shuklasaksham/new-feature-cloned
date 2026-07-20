@@ -688,3 +688,17 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **HMAC signing** — `_nps_token(user_id)` = first 16 chars of HMAC-SHA256(JWT_SECRET, user_id). Prevents randoms from ballot-stuffing the score without needing per-invite storage.
   - **Verified end-to-end** on preview: sent test campaign (test_only=1) → 1 email queued; simulated 5 responses via signed URLs → NPS auto-updated to 80 ("From 5 responses · World-class."); thank-you page + email HTML both render on-brand with diamond logo, correct color-coded rating buttons, and promoter-specific follow-up copy.
 
+- 2026-07-20 — **Iteration 65 — NPS deep view + 24h cool-down + live campaign progress**:
+  - **User ask**: "Should be able to see the email sending queue in Admin panel, and detailed NPS view (how many mail sent/failed/queued, how many responded, etc.) and the CTA should be disabled for 24 hours after sending the mail."
+  - **24-hour cool-down** — `POST /admin/nps/send-campaign` now returns **HTTP 429** with a friendly "Next campaign available in Xh Ym" message when a full (non-test) campaign was fired < 24 h ago. `test_only=true` calls always bypass the cool-down for self-checks.
+  - **Live campaign progress** — the send task now writes progress to the `nps_campaigns` doc every 5 emails (or on the last one), updating `sent`, `failed`, `queued`, `status ("running" → "completed")`, `updated_at`, `completed_at`. Campaign doc is upserted BEFORE the task starts so the UI can poll immediately.
+  - **New detail endpoint** — `GET /admin/nps/detail` returns: `campaigns[]` (last 30 with live progress), `cooldown_remaining_seconds`, score `histogram[0-10]`, `totals { responses, promoters, passives, detractors, nps }`, `response_rate` (responses / total_sent), `total_sent`, `latest_responses[]` (last 20 with score + comment + first name, no email).
+  - **Frontend** (`AdminAnalytics.jsx`) — new `NpsDetailPanel` mounted below the pitch board:
+    - Header "NPS · deep view · Every score, every campaign, every comment." with response count, response rate, campaign count, and inline cool-down status
+    - Blue-tinted **live-progress banner** with animated gradient bar (only when a campaign is running), auto-polls every 4 s
+    - Two-column: **Score distribution histogram** (0-10 bars, promoter/passive/detractor legend, bars scaled to max) + **Latest responses list** (score badge + first name + comment/"No comment" italics)
+    - **Campaign history table** — Started / Type (Test | Full) / Targeted / Sent (green) / Failed (red if > 0) / Queued (amber) / Status (with animated pulse for running rows)
+    - Collapse / Refresh buttons; auto-poll only when a campaign is running; per-minute re-poll during cool-down so the countdown updates without user action
+  - **CTA disabled state** — `NpsCard` reads `cooldownSeconds` from the detail endpoint and swaps the label to **"Next in Xh Ym"** with `disabled=true`, `cursor: not-allowed`, and 0.5 opacity when > 0.
+  - **Verified end-to-end on preview**: full campaign fired → HTTP 200 (83 targeted) → immediate re-tap returned HTTP 429 "Next campaign available in 23h 59m" → `test_only=true` still bypassed the gate → detail endpoint showed `cooldown_remaining_seconds: 86397`, live histogram, running campaign with real-time `sent/failed/queued` counts, and CTA label flipped to "Next in 23h 58m" with `disabled=true`. Screenshots captured.
+

@@ -282,6 +282,314 @@ function ScatterTooltip({ active, payload }) {
 }
 
 // ============================================================================
+// NPS DETAIL PANEL — expandable block below the pitch board. Shows:
+//   • Live progress of the currently-sending campaign (bar + counts)
+//   • Full campaign history (targeted / sent / failed / when)
+//   • Score histogram (0-10) with promoter/passive/detractor bands
+//   • Response rate (responses / total sent across all campaigns)
+//   • Latest 20 responses with score badges + verbatim comments
+// Polls every 4s while any campaign is in "running" state so the admin
+// sees emails land in real time.
+// ============================================================================
+function ScoreBucketBadge({ score, bucket }) {
+  const b = bucket || (score >= 9 ? "promoter" : score <= 6 ? "detractor" : "passive");
+  const color = b === "promoter" ? "#22C55E" : b === "detractor" ? "#EF4444" : "#F59E0B";
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-md font-medium"
+      style={{
+        minWidth: 30, height: 26, padding: "0 6px",
+        background: "#0F1114", border: `1.5px solid ${color}`, color: color,
+        fontSize: 12.5, letterSpacing: "-0.01em",
+      }}
+    >
+      {score}
+    </span>
+  );
+}
+
+function CampaignRow({ c }) {
+  const pct = c.targeted ? Math.round(((c.sent || 0) / c.targeted) * 100) : 0;
+  const isRunning = c.status === "running";
+  const isTest = !!c.test_only;
+  const when = c.started_at ? new Date(c.started_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+  return (
+    <tr data-testid={`nps-campaign-row-${c.id || c.started_at}`} style={{ borderTop: "1px solid var(--hairline)" }}>
+      <td className="py-2.5 px-3 text-[13px]" style={{ color: "var(--text-2)" }}>{when}</td>
+      <td className="py-2.5 px-3 text-[12.5px]" style={{ color: "var(--text-3)" }}>
+        {isTest ? "Test" : "Full"}
+      </td>
+      <td className="py-2.5 px-3 text-[13px] font-medium tabular-nums" style={{ color: "var(--text)" }}>{c.targeted || 0}</td>
+      <td className="py-2.5 px-3 text-[13px] tabular-nums" style={{ color: "#5BE3A2" }}>{c.sent || 0}</td>
+      <td className="py-2.5 px-3 text-[13px] tabular-nums" style={{ color: (c.failed || 0) > 0 ? "#EF4444" : "var(--text-3)" }}>{c.failed || 0}</td>
+      <td className="py-2.5 px-3 text-[13px] tabular-nums" style={{ color: "#F59E0B" }}>{c.queued || 0}</td>
+      <td className="py-2.5 px-3 text-[12px]">
+        {isRunning ? (
+          <span className="inline-flex items-center gap-1.5" style={{ color: "#5E6AD2" }}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#5E6AD2] animate-pulse" />
+            Sending · {pct}%
+          </span>
+        ) : (
+          <span style={{ color: "var(--text-3)" }}>Completed</span>
+        )}
+      </td>
+    </tr>
+  );
+}
+
+function ScoreHistogram({ histogram = [], totals = {} }) {
+  const max = Math.max(1, ...histogram.map((b) => b.count || 0));
+  return (
+    <div
+      className="rounded-2xl px-5 py-5 sm:px-6 sm:py-6"
+      style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+      data-testid="nps-histogram"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>
+          Score distribution
+        </p>
+        <div className="flex items-center gap-3 text-[11px]" style={{ color: "var(--text-3)" }}>
+          <span><span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: "#EF4444" }} />Detractor {totals.detractors || 0}</span>
+          <span><span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: "#F59E0B" }} />Passive {totals.passives || 0}</span>
+          <span><span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ background: "#22C55E" }} />Promoter {totals.promoters || 0}</span>
+        </div>
+      </div>
+      <div className="mt-4 flex items-end gap-1.5" style={{ height: 120 }}>
+        {histogram.map((b) => {
+          const bg = b.score >= 9 ? "#22C55E" : b.score <= 6 ? "#EF4444" : "#F59E0B";
+          const h = b.count > 0 ? Math.max(4, Math.round((b.count / max) * 108)) : 3;
+          return (
+            <div key={b.score} className="flex-1 flex flex-col items-center gap-1">
+              <div className="text-[10.5px] tabular-nums" style={{ color: "var(--text-2)", opacity: b.count > 0 ? 1 : 0.35 }}>
+                {b.count}
+              </div>
+              <div
+                className="w-full rounded-t-md"
+                style={{ height: h, background: bg, opacity: b.count > 0 ? 0.92 : 0.18 }}
+                data-testid={`nps-histogram-bar-${b.score}`}
+                title={`Score ${b.score}: ${b.count} response${b.count === 1 ? "" : "s"}`}
+              />
+              <div className="text-[10px] tabular-nums" style={{ color: "var(--text-3)" }}>{b.score}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ResponsesList({ responses = [] }) {
+  return (
+    <div
+      className="rounded-2xl px-5 py-5 sm:px-6 sm:py-6"
+      style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+      data-testid="nps-responses-list"
+    >
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>
+          Latest responses
+        </p>
+        <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{responses.length} shown</span>
+      </div>
+      {responses.length === 0 ? (
+        <p className="mt-4 text-[13px]" style={{ color: "var(--text-3)" }}>
+          No responses yet. Send the survey to start collecting.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+          {responses.map((r) => (
+            <li
+              key={r.id}
+              className="flex items-start gap-3 py-2"
+              style={{ borderBottom: "1px solid var(--hairline)" }}
+              data-testid={`nps-response-${r.id}`}
+            >
+              <ScoreBucketBadge score={r.score} bucket={r.score_bucket} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-[12.5px] font-medium truncate" style={{ color: "var(--text)" }}>{r.name}</p>
+                  <p className="text-[10.5px] shrink-0" style={{ color: "var(--text-3)" }}>
+                    {r.updated_at ? new Date(r.updated_at).toLocaleDateString([], { month: "short", day: "numeric" }) : ""}
+                  </p>
+                </div>
+                <p className="mt-1 text-[13px] leading-relaxed break-words" style={{ color: r.comment ? "var(--text-2)" : "var(--text-3)", fontStyle: r.comment ? "normal" : "italic" }}>
+                  {r.comment || "No comment"}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function formatCooldown(sec) {
+  if (sec <= 0) return "";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function NpsDetailPanel() {
+  const [data, setData] = useState(null);
+  const [err, setErr] = useState("");
+  const [expanded, setExpanded] = useState(true);
+  const load = async () => {
+    try {
+      const { data: d } = await api.get("/admin/nps/detail");
+      setData(d);
+      setErr("");
+    } catch (e) {
+      setErr(formatApiError(e));
+    }
+  };
+  useEffect(() => { load(); }, []);
+  // Live-poll while any campaign is running.
+  useEffect(() => {
+    if (!data) return undefined;
+    const anyRunning = (data.campaigns || []).some((c) => c.status === "running");
+    if (!anyRunning) return undefined;
+    const id = setInterval(load, 4000);
+    return () => clearInterval(id);
+  }, [data]);
+  // Countdown ticker for cooldown (updates once per minute).
+  useEffect(() => {
+    if (!data || data.cooldown_remaining_seconds <= 0) return undefined;
+    const id = setInterval(load, 60000);
+    return () => clearInterval(id);
+  }, [data]);
+
+  if (err) {
+    return <p className="text-[13px]" style={{ color: "var(--danger, #EF4444)" }}>{err}</p>;
+  }
+  if (!data) return null;
+
+  const campaigns  = data.campaigns || [];
+  const running    = campaigns.find((c) => c.status === "running");
+
+  return (
+    <section className="space-y-4" data-testid="nps-detail-panel">
+      <div className="flex items-end justify-between gap-4 flex-wrap">
+        <div>
+          <span className="section-label"><span className="dot" />NPS · deep view</span>
+          <h2 className="mt-2 font-display text-[22px] sm:text-[24px] leading-none"
+              style={{ letterSpacing: "-0.03em", color: "var(--text)", fontWeight: 500 }}>
+            Every score, every campaign, every comment.
+          </h2>
+          <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+            {data.totals.responses} response{data.totals.responses === 1 ? "" : "s"} ·{" "}
+            {data.response_rate}% response rate ·{" "}
+            {campaigns.length} campaign{campaigns.length === 1 ? "" : "s"} run
+            {data.cooldown_remaining_seconds > 0 && (
+              <> · <span style={{ color: "#F59E0B" }}>cool-down: {formatCooldown(data.cooldown_remaining_seconds)} left</span></>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="btn-ghost text-[11px] uppercase tracking-wider inline-flex items-center gap-2"
+            data-testid="nps-detail-refresh"
+          >
+            <RefreshCcw size={12} /> Refresh
+          </button>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="btn-ghost text-[11px] uppercase tracking-wider"
+            data-testid="nps-detail-toggle"
+          >
+            {expanded ? "Collapse" : "Expand"}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <>
+          {/* Live progress banner while sending */}
+          {running && (
+            <div
+              className="rounded-2xl px-5 py-4 flex items-center gap-4"
+              style={{ background: "rgba(94,106,210,0.08)", border: "1px solid rgba(94,106,210,0.35)" }}
+              data-testid="nps-live-progress"
+            >
+              <Loader2 size={16} className="animate-spin" style={{ color: "#5E6AD2" }} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium" style={{ color: "var(--text)" }}>
+                  Sending in progress · {(running.sent || 0) + (running.failed || 0)} of {running.targeted} processed
+                </p>
+                <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div
+                    className="h-full"
+                    style={{
+                      width: `${running.targeted ? Math.min(100, Math.round(((running.sent || 0) + (running.failed || 0)) / running.targeted * 100)) : 0}%`,
+                      background: "linear-gradient(90deg, #5E6AD2 0%, #22C55E 100%)",
+                      transition: "width 0.6s ease-out",
+                    }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
+                  Sent {running.sent || 0} · Failed {running.failed || 0} · Queued {running.queued || 0}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Histogram + Responses side-by-side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <ScoreHistogram histogram={data.histogram} totals={data.totals} />
+            <ResponsesList responses={data.latest_responses} />
+          </div>
+
+          {/* Campaign history table */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+            data-testid="nps-campaigns-table"
+          >
+            <div className="px-5 py-3.5 flex items-center justify-between" style={{ borderBottom: "1px solid var(--hairline)" }}>
+              <p className="text-[10.5px] uppercase tracking-[0.16em] font-medium" style={{ color: "var(--text-3)" }}>
+                Campaign history
+              </p>
+              <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                Total emails sent (all time): <span className="tabular-nums font-medium" style={{ color: "var(--text-2)" }}>{data.total_sent}</span>
+              </p>
+            </div>
+            {campaigns.length === 0 ? (
+              <p className="p-5 text-[13px]" style={{ color: "var(--text-3)" }}>
+                No campaigns yet.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr>
+                      <th className="py-2.5 px-3 text-[10.5px] uppercase tracking-[0.14em] font-medium" style={{ color: "var(--text-3)" }}>Started</th>
+                      <th className="py-2.5 px-3 text-[10.5px] uppercase tracking-[0.14em] font-medium" style={{ color: "var(--text-3)" }}>Type</th>
+                      <th className="py-2.5 px-3 text-[10.5px] uppercase tracking-[0.14em] font-medium" style={{ color: "var(--text-3)" }}>Targeted</th>
+                      <th className="py-2.5 px-3 text-[10.5px] uppercase tracking-[0.14em] font-medium" style={{ color: "var(--text-3)" }}>Sent</th>
+                      <th className="py-2.5 px-3 text-[10.5px] uppercase tracking-[0.14em] font-medium" style={{ color: "var(--text-3)" }}>Failed</th>
+                      <th className="py-2.5 px-3 text-[10.5px] uppercase tracking-[0.14em] font-medium" style={{ color: "var(--text-3)" }}>Queued</th>
+                      <th className="py-2.5 px-3 text-[10.5px] uppercase tracking-[0.14em] font-medium" style={{ color: "var(--text-3)" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {campaigns.map((c) => (
+                      <CampaignRow key={c.id || c.started_at} c={c} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+// ============================================================================
 // PITCH METRICS BOARD — prominent investor-headline block, rendered above the
 // analytics grid. Auto-computed numbers come from GET /admin/pitch-metrics;
 // NPS + notable users are curated via PUT /admin/pitch-metrics/config
@@ -436,8 +744,10 @@ function NotableUsersCard({ items, onEdit }) {
   );
 }
 
-function NpsCard({ nps, source, responsesCount, onEdit, onSend, sending }) {
+function NpsCard({ nps, source, responsesCount, onEdit, onSend, sending, cooldownSeconds = 0 }) {
   const isComputed = source === "responses";
+  const onCooldown = cooldownSeconds > 0;
+  const disabled = sending || onCooldown;
   const tone = nps === null || nps === undefined
     ? "ghost"
     : nps >= 50 ? "emerald"
@@ -489,7 +799,7 @@ function NpsCard({ nps, source, responsesCount, onEdit, onSend, sending }) {
               nps >= 50 ? "World-class." : nps >= 30 ? "Strong." : nps >= 0 ? "Positive." : "Under-water."
             }`
           : nps === null || nps === undefined
-            ? "Not yet measured. Send the survey to your users below, or set manually."
+            ? "Not yet measured. Send the survey below."
             : nps >= 50 ? "World-class."
             : nps >= 30 ? "Strong."
             : nps >= 0  ? "Positive — room to grow."
@@ -498,20 +808,23 @@ function NpsCard({ nps, source, responsesCount, onEdit, onSend, sending }) {
       <button
         type="button"
         onClick={onSend}
-        disabled={sending}
+        disabled={disabled}
         className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[12px] font-medium"
         style={{
           background: isDashed ? "var(--accent)" : "rgba(255,255,255,0.14)",
           color: isDashed ? "#fff" : t.text,
           border: isDashed ? "none" : "1px solid rgba(255,255,255,0.22)",
-          opacity: sending ? 0.6 : 1,
-          cursor: sending ? "wait" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          cursor: disabled ? "not-allowed" : "pointer",
         }}
         data-testid="pitch-nps-send"
-        aria-label="Send NPS survey email to all registered users"
+        title={onCooldown ? `Next campaign in ${formatCooldown(cooldownSeconds)}` : ""}
+        aria-label={onCooldown ? `On cool-down. Next campaign in ${formatCooldown(cooldownSeconds)}` : "Send NPS survey email to all registered users"}
       >
         {sending ? (
           <><Loader2 size={12} className="animate-spin" /> Sending…</>
+        ) : onCooldown ? (
+          <>Next in {formatCooldown(cooldownSeconds)}</>
         ) : (
           <>Send NPS survey →</>
         )}
@@ -693,14 +1006,19 @@ function PitchConfigModal({ open, initial, onClose, onSave }) {
 
 function PitchMetricsBoard() {
   const [data, setData] = useState(null);
+  const [cooldownSec, setCooldownSec] = useState(0);
   const [err, setErr] = useState("");
   const [editing, setEditing] = useState(false);
   const [sending, setSending] = useState(false);
 
   const load = async () => {
     try {
-      const { data: d } = await api.get("/admin/pitch-metrics");
-      setData(d);
+      const [pm, nd] = await Promise.all([
+        api.get("/admin/pitch-metrics"),
+        api.get("/admin/nps/detail").catch(() => ({ data: { cooldown_remaining_seconds: 0 } })),
+      ]);
+      setData(pm.data);
+      setCooldownSec(nd.data?.cooldown_remaining_seconds || 0);
       setErr("");
     } catch (e) {
       setErr(formatApiError(e));
@@ -710,11 +1028,12 @@ function PitchMetricsBoard() {
   useEffect(() => { load(); }, []);
 
   const sendSurvey = async () => {
+    if (cooldownSec > 0) return;
     const eligible = data?.registered_users || 0;
     // eslint-disable-next-line no-alert
     const ok = window.confirm(
       `Send the NPS survey email to all registered users? (${eligible} eligible)\n\n` +
-      "Users who have already responded will be skipped. This is a one-shot campaign — no follow-ups."
+      "Users who have already responded will be skipped. This is a one-shot campaign — you won't be able to send another for 24 hours."
     );
     if (!ok) return;
     setSending(true);
@@ -725,7 +1044,6 @@ function PitchMetricsBoard() {
       });
       // eslint-disable-next-line no-alert
       window.alert(r.message || `Queued ${r.targeted} email(s).`);
-      // Refresh soon so responses start showing.
       setTimeout(load, 3000);
     } catch (e) {
       // eslint-disable-next-line no-alert
@@ -786,6 +1104,7 @@ function PitchMetricsBoard() {
           onEdit={() => setEditing(true)}
           onSend={sendSurvey}
           sending={sending}
+          cooldownSeconds={cooldownSec}
         />
         <OrganicPaidBar {...data.organic_paid_split} />
         <NotableUsersCard items={data.notable_users || []} onEdit={() => setEditing(true)} />
@@ -863,6 +1182,12 @@ export default function AdminAnalytics() {
     <div className="space-y-6" data-testid="admin-analytics">
       {/* Prominent pitch-metrics snapshot — investor headline numbers. */}
       <PitchMetricsBoard />
+
+      {/* Divider */}
+      <div style={{ borderTop: "1px solid var(--hairline)" }} />
+
+      {/* NPS deep view — campaigns, histogram, responses, cooldown */}
+      <NpsDetailPanel />
 
       {/* Divider */}
       <div style={{ borderTop: "1px solid var(--hairline)" }} />

@@ -1178,12 +1178,38 @@ class SendNpsCampaignIn(_BM):
 async def admin_send_nps_campaign(body: SendNpsCampaignIn, request: Request):
     """Send the NPS survey email to every registered user (excludes guests).
 
-    Fire-and-forget: kicks off a background task that iterates the users
-    collection and sends emails one at a time with a small delay so we
-    stay within Resend's rate limits. Returns the eligible target count
-    immediately.
+    Enforces a 24-hour cooldown between full campaigns (test_only sends
+    are exempt) so users don't get spammed if the admin double-taps.
+    Fire-and-forget: kicks off a background task that incrementally
+    updates the nps_campaigns doc (queued/sent/failed/status) so the
+    admin UI can render a live progress bar.
     """
+    from datetime import timedelta as _td
     admin = await auth_current_admin(request, db)
+
+    # 24-hour cooldown for full campaigns (test-only pings never gate).
+    if not body.test_only:
+        last = await db.nps_campaigns.find_one(
+            {"test_only": {"$ne": True}},
+            sort=[("started_at", -1)],
+            projection={"_id": 0, "started_at": 1},
+        )
+        if last:
+            last_dt = _iso_to_dt(last.get("started_at"))
+            if last_dt is not None:
+                elapsed = auth_now() - last_dt
+                if elapsed < _td(hours=24):
+                    remain = _td(hours=24) - elapsed
+                    hours = int(remain.total_seconds() // 3600)
+                    mins = int((remain.total_seconds() % 3600) // 60)
+                    raise HTTPException(
+                        status_code=429,
+                        detail=(
+                            f"Cool-down: last NPS campaign was less than 24 hours ago. "
+                            f"Next campaign available in {hours}h {mins}m."
+                        ),
+                    )
+
     base_url = _nps_public_base_url(request)
     logo_url = f"{base_url}/logo-diamond.png"
 
@@ -1194,7 +1220,6 @@ async def admin_send_nps_campaign(body: SendNpsCampaignIn, request: Request):
     if body.test_only:
         query["user_id"] = admin["user_id"]
 
-    # Optionally exclude users who have already responded.
     excluded_user_ids: set = set()
     if not body.include_answered:
         cur = db.nps_responses.find({}, {"_id": 0, "user_id": 1})
@@ -1209,9 +1234,28 @@ async def admin_send_nps_campaign(body: SendNpsCampaignIn, request: Request):
         if u.get("email"):
             targets.append(u)
 
+    # Insert campaign doc UP FRONT so the UI can immediately poll progress.
+    campaign_id = _uuid()
+    now_iso = auth_iso(auth_now())
+    await db.nps_campaigns.insert_one({
+        "id":            campaign_id,
+        "started_by":    admin["email"],
+        "targeted":      len(targets),
+        "queued":        len(targets),
+        "sent":          0,
+        "failed":        0,
+        "status":        "running" if targets else "completed",
+        "test_only":     body.test_only,
+        "include_answered": body.include_answered,
+        "started_at":    now_iso,
+        "updated_at":    now_iso,
+        "completed_at":  None if targets else now_iso,
+    })
+
     async def _campaign():
         sent = 0
         failed = 0
+        remaining = len(targets)
         for u in targets:
             try:
                 ok = await send_nps_survey_email(
@@ -1229,34 +1273,124 @@ async def admin_send_nps_campaign(body: SendNpsCampaignIn, request: Request):
             except Exception as e:
                 logger.warning("nps campaign send failed for %s: %s", u.get("email"), e)
                 failed += 1
-            # Gentle pacing so we don't trip Resend's per-second limits.
+            remaining -= 1
+            # Progress ping every 5 sends (or on the last one).
+            if remaining == 0 or (sent + failed) % 5 == 0:
+                try:
+                    await db.nps_campaigns.update_one(
+                        {"id": campaign_id},
+                        {"$set": {
+                            "sent":       sent,
+                            "failed":     failed,
+                            "queued":     max(remaining, 0),
+                            "updated_at": auth_iso(auth_now()),
+                        }},
+                    )
+                except Exception as e:
+                    logger.warning("nps campaign progress write failed: %s", e)
             await asyncio.sleep(0.35)
-        # Persist a small campaign record for the admin timeline.
         try:
-            await db.nps_campaigns.insert_one({
-                "started_by":   admin["email"],
-                "targeted":     len(targets),
-                "sent":         sent,
-                "failed":       failed,
-                "test_only":    body.test_only,
-                "include_answered": body.include_answered,
-                "started_at":   auth_iso(auth_now()),
-            })
+            await db.nps_campaigns.update_one(
+                {"id": campaign_id},
+                {"$set": {
+                    "sent":         sent,
+                    "failed":       failed,
+                    "queued":       0,
+                    "status":       "completed",
+                    "completed_at": auth_iso(auth_now()),
+                    "updated_at":   auth_iso(auth_now()),
+                }},
+            )
         except Exception as e:
-            logger.warning("nps campaign log insert failed: %s", e)
-        logger.info("nps campaign complete: %d sent, %d failed (of %d)", sent, failed, len(targets))
+            logger.warning("nps campaign final write failed: %s", e)
+        logger.info("nps campaign %s complete: %d sent, %d failed (of %d)", campaign_id, sent, failed, len(targets))
 
     asyncio.create_task(_campaign())
 
     return {
         "ok": True,
+        "campaign_id": campaign_id,
         "targeted": len(targets),
         "test_only": body.test_only,
         "include_answered": body.include_answered,
         "message": (
             f"Queued {len(targets)} email(s). Delivery runs in the background — "
-            f"check the pitch-metrics NPS card in a minute for updates."
+            f"watch the progress bar below."
         ),
+    }
+
+
+@api.get("/admin/nps/detail")
+async def admin_nps_detail(request: Request):
+    """Full NPS panel data: campaign history w/ live progress, cool-down
+    remaining, score histogram, response rate, latest comments."""
+    from datetime import timedelta as _td
+    await auth_current_admin(request, db)
+
+    campaigns: list = []
+    async for c in db.nps_campaigns.find({}, {"_id": 0}).sort("started_at", -1).limit(30):
+        campaigns.append(c)
+
+    latest_full = next((c for c in campaigns if not c.get("test_only")), None)
+    cooldown_remaining_seconds = 0
+    if latest_full:
+        started = _iso_to_dt(latest_full.get("started_at"))
+        if started:
+            elapsed = (auth_now() - started).total_seconds()
+            cooldown_remaining_seconds = max(0, int(24 * 3600 - elapsed))
+
+    histogram = [{"score": s, "count": 0} for s in range(11)]
+    async for row in db.nps_responses.aggregate([
+        {"$group": {"_id": "$score", "n": {"$sum": 1}}},
+    ]):
+        s = row.get("_id")
+        if isinstance(s, int) and 0 <= s <= 10:
+            histogram[s]["count"] = row["n"]
+
+    total_responses = sum(b["count"] for b in histogram)
+    promoters  = sum(b["count"] for b in histogram if b["score"] >= 9)
+    passives   = sum(b["count"] for b in histogram if 7 <= b["score"] <= 8)
+    detractors = sum(b["count"] for b in histogram if b["score"] <= 6)
+    nps_score = round(((promoters - detractors) / total_responses) * 100, 1) if total_responses else None
+
+    total_sent_agg = 0
+    async for row in db.nps_campaigns.aggregate([
+        {"$match": {"test_only": {"$ne": True}}},
+        {"$group": {"_id": None, "s": {"$sum": "$sent"}}},
+    ]):
+        total_sent_agg = int(row.get("s") or 0)
+    response_rate = round((total_responses / total_sent_agg) * 100, 1) if total_sent_agg else 0.0
+
+    latest_responses: list = []
+    async for r in db.nps_responses.find(
+        {}, {"_id": 0, "id": 1, "score": 1, "score_bucket": 1, "comment": 1, "name": 1, "updated_at": 1}
+    ).sort("updated_at", -1).limit(20):
+        raw_name = (r.get("name") or "").strip()
+        first = raw_name.split(" ")[0][:24] if raw_name else "Anonymous"
+        latest_responses.append({
+            "id": r.get("id"),
+            "score": r.get("score"),
+            "score_bucket": r.get("score_bucket") or "",
+            "comment": (r.get("comment") or "")[:600],
+            "name": first,
+            "updated_at": r.get("updated_at") or "",
+        })
+
+    return {
+        "campaigns":                   campaigns,
+        "cooldown_remaining_seconds":  cooldown_remaining_seconds,
+        "histogram":                   histogram,
+        "totals": {
+            "responses":  total_responses,
+            "promoters":  promoters,
+            "passives":   passives,
+            "detractors": detractors,
+            "nps":        nps_score,
+        },
+        "response_rate":               response_rate,
+        "total_sent":                  total_sent_agg,
+        "latest_responses":            latest_responses,
+        "generated_at":                auth_iso(auth_now()),
     }
 
 
