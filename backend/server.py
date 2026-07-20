@@ -108,6 +108,29 @@ async def _ai_backpressure_handler(request, exc):
     )
 
 
+# ---------------------------------------------------------------------------
+# Catch-all safety net. Any unhandled exception here would otherwise bubble
+# to Starlette's default handler which — under some circumstances (e.g. the
+# exception fires while streaming the response, or the exception itself
+# fails to serialise) — leaves Cloudflare seeing a truncated/invalid
+# response and rendering the scary "520 · invalid or incomplete response"
+# page. We always return a well-formed 500 JSON so Cloudflare has a clean
+# origin response no matter what.
+# ---------------------------------------------------------------------------
+@app.exception_handler(Exception)
+async def _catch_all_handler(request, exc):
+    if isinstance(exc, (HTTPException, AIBackpressureError)):
+        raise exc
+    logger.exception("unhandled exception on %s %s", request.method, request.url.path)
+    return _JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Something went wrong on our side. Please retry.",
+            "code": "internal_error",
+        },
+    )
+
+
 # --- health ---
 @api.get("/")
 async def root():

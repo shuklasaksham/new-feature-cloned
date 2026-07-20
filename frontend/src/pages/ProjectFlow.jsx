@@ -323,7 +323,15 @@ export default function ProjectFlow() {
           className={`mt-8 md:mt-10 ${project?.auto_advance_status === "pending" ? "ai-arrive" : ""}`}
         >
         {currentStep === 1 && (
-          <Step1 project={project} setProject={setProject} dirtyRef={dirtyRef} onDone={(nextStep) => setCurrentStep(Math.max(2, nextStep || 2))} />
+          <Step1 project={project} setProject={setProject} dirtyRef={dirtyRef} onDone={(nextStep) => {
+            // Step 1 calls onDone either with an explicit target step (from
+            // the auto-build routing) OR — critically — from the plain
+            // Continue button which forwards the React SyntheticEvent as
+            // the first arg. Coerce anything non-numeric to 2 so we don't
+            // set currentStep to NaN (which would blank the whole screen).
+            const target = typeof nextStep === "number" ? nextStep : 2;
+            setCurrentStep(Math.max(2, target));
+          }} />
         )}
         {currentStep === 2 && (
           <Step2
@@ -1077,7 +1085,7 @@ function Step1({ project, setProject, dirtyRef, onDone }) {
               )}
             </button>
             {framing && (
-              <button onClick={onDone} className="btn-ghost inline-flex items-center gap-2" data-testid="step1-continue-btn">
+              <button type="button" onClick={() => onDone()} className="btn-ghost inline-flex items-center gap-2" data-testid="step1-continue-btn">
                 Continue <ArrowRight size={13} />
               </button>
             )}
