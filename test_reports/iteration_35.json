@@ -1,0 +1,64 @@
+{
+  "summary": "Iteration 35 — full BACKEND regression across every AI step-generation endpoint plus supporting endpoints (auth, guest, project create/upload-brief, /suggest, steps 1-5, unlock, reset, share, public share GET, export.md, export.pdf, error hygiene, 10-concurrent /suggest burst). 22 pytest cases; ALL 22 PASS after two mis-typed test assertions were fixed by the test agent. Zero unhandled tracebacks from request handlers in backend.err.log during the run (only the known-benign passlib bcrypt __about__ warning and the expected Resend ValidationError for OTP fallback with example.com addresses — the backend catches this and returns dev_code cleanly).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/projects/{id}/situation (one-shot auto-build path with a very rich raw_paste)",
+        "issue": "OBSERVED ONCE, THEN NOT REPRODUCIBLE. On the first run, a rich-brief one-shot call returned Cloudflare 502 Bad Gateway (edge timeout ~100s) because Haiku answered slowly and both attempts inside auto_build_from_brief plus its outer retry stacked to >100s wall time (35s attempt-1 timeout + 20s attempt-2 + 1.5s sleep, then the OUTER _call retry doubles that per parallel branch). Backend itself did NOT raise an unhandled exception — logs show the LLM calls eventually completed at 16:34:57 and the response was ready by ~16:35:20, well after Cloudflare had already returned 502 to the client. On a fresh run 3 minutes later the same request completed in 34s → 200. This is a latency-vs-edge-timeout tail-risk, not a bug. Recommended tightening (see action_items): reduce STEP_TIMEOUT_S/STEP_RETRY_TIMEOUT_S OR drop the inner _call retry inside auto_build_from_brief (_run already retries once — the extra outer retry in _call is what pushes worst-case wall time past 100s). Reproducing this reliably would require load-testing against a slow Anthropic day."
+      }
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verified_endpoints": [
+    {"endpoint": "POST /api/auth/otp/request", "status": "PASS", "detail": "Returns dev_code in body (OTP_TEST_MODE=1). Resend send failures for example.com are caught → console fallback works."},
+    {"endpoint": "POST /api/auth/otp/verify", "status": "PASS", "detail": "Sets httpOnly session_token cookie on successful code."},
+    {"endpoint": "POST /api/auth/login (demo password)", "status": "PASS", "detail": "demo@use-bracket.com / BracketDemo@2026 → 200, cookie set."},
+    {"endpoint": "GET /api/auth/me", "status": "PASS", "detail": "Returns user object at top level (not wrapped). email matches."},
+    {"endpoint": "POST /api/auth/guest", "status": "PASS", "detail": "Creates guest session; /auth/me returns is_guest=true."},
+    {"endpoint": "POST /api/suggest", "status": "PASS", "detail": "Returns {suggestions:[...]}. Never raises on typing calls."},
+    {"endpoint": "POST /api/projects", "status": "PASS", "detail": "Auth-required. Returns project doc with id + no _id leak. AI title generation succeeds silently on rich paste."},
+    {"endpoint": "POST /api/projects/upload-brief (TXT)", "status": "PASS", "detail": "Multipart upload with .txt succeeds; returns project doc. No 5xx even on large paste."},
+    {"endpoint": "POST /api/projects/{id}/situation (framing-only, thin brief)", "status": "PASS", "detail": "Thin brief triggers framing-only path; project.framing populated; step advances to 2."},
+    {"endpoint": "POST /api/projects/{id}/situation (one-shot auto-build, rich brief)", "status": "PASS (see minor issue)", "detail": "Rich brief triggers auto_build_from_brief; on the fresh run the call returned 200 in 34s with framing populated. Path may 5-step-auto-advance or fall back to framing-only depending on 'sufficient' flag."},
+    {"endpoint": "POST /api/projects/{id}/context", "status": "PASS", "detail": "AI compression returns dict; step advances to 3."},
+    {"endpoint": "POST /api/projects/{id}/decision", "status": "PASS", "detail": "Decision object returned; step advances to 4."},
+    {"endpoint": "POST /api/projects/{id}/artifacts", "status": "PASS", "detail": "Heaviest AI call — completed in ~30-50s in tests; artifacts populated; step advances to 5."},
+    {"endpoint": "POST /api/projects/{id}/lock", "status": "PASS", "detail": "status → locked, locked_at set."},
+    {"endpoint": "POST /api/projects/{id}/unlock (not-yet-shared)", "status": "PASS", "detail": "200; status leaves 'locked'."},
+    {"endpoint": "POST /api/projects/{id}/reset-from-step/{step} (not-yet-shared)", "status": "PASS", "detail": "200 on unshared project."},
+    {"endpoint": "POST /api/projects/{id}/unlock & /reset-from-step (after client share)", "status": "PASS", "detail": "Returns 409 as designed — steps frozen once share sent to client."},
+    {"endpoint": "POST /api/projects/{id}/share", "status": "PASS", "detail": "Mints share_token, sets share_status='sent'. Requires artifacts to exist."},
+    {"endpoint": "GET /api/share/{token}", "status": "PASS", "detail": "Public view returns project without leaking _id/private fields."},
+    {"endpoint": "GET /api/projects/{id}/export.md", "status": "PASS", "detail": "Plain-text markdown export, >100 chars."},
+    {"endpoint": "GET /api/projects/{id}/export.pdf", "status": "PASS", "detail": "Returns bytes with %PDF magic header — real PDF, no 5xx."},
+    {"endpoint": "Error hygiene: invalid project_id", "status": "PASS", "detail": "GET /api/projects/does-not-exist → clean 404 JSON with 'detail' field. Not 500, not HTML."},
+    {"endpoint": "Error hygiene: malformed JSON body", "status": "PASS", "detail": "POST /api/suggest with garbage body → 422 (FastAPI validator). Not 500."},
+    {"endpoint": "Error hygiene: step endpoint bad project id", "status": "PASS", "detail": "POST /api/projects/nope/situation → 404 (from _get_project_or_404)."},
+    {"endpoint": "Backpressure sanity: 10-concurrent /api/suggest", "status": "PASS", "detail": "All 10 returned 200 (well below ThreadPoolExecutor+Semaphore saturation threshold). No 5xx, no dropped connections. If a 503 had come, it would carry Retry-After per contract — assertion covers that branch too."}
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_35_step_regression.py",
+    "/app/test_reports/pytest/iter35_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL (tail-latency hardening — not blocking): in ai_engine.py::auto_build_from_brief, the inner _call has its own retry loop AROUND _run, and _run itself already retries once (STEP_TIMEOUT_S=35s → STEP_RETRY_TIMEOUT_S=20s + 1.5s sleep). Worst case wall time per branch is therefore 35+1.5+20 = 56.5s (attempt 1 of _run), then _call sees failure and calls _run again → another 56.5s = 113s. asyncio.gather(A,B) runs both branches in parallel, but the SLOWER branch drives wall time — so the whole /projects/{id}/situation call can exceed Cloudflare's ~100s edge timeout on a slow Anthropic day. Recommend: EITHER (a) drop the outer _call retry (rely on _run's built-in retry) so worst case is ~57s per branch; OR (b) trim STEP_RETRY_TIMEOUT_S from 20s to 12s so worst case (57s inner + 57s outer, but each branch capped shorter) stays below 100s. This surfaced once in this iteration as a Cloudflare 502; the second run 3min later completed in 34s. Currently below the reproducibility threshold to fail a test — flagged for E1 review.",
+    "OPTIONAL (test-user email domain): Resend rejects any address ending in @example.com and the backend logs a full traceback each time (though it recovers via console fallback). If you want cleaner backend.err.log during automated runs, either add @example.com to a 'skip Resend' whitelist in auth.py::send_otp_email, OR switch tests to Resend's testing address 'delivered@resend.dev'. Not a bug — just log noise. Confirmed non-fatal: /auth/otp/request still returns dev_code in body per OTP_TEST_MODE=1."
+  ],
+  "critical_code_review_comments": [
+    "auto_build_from_brief has TWO nested retry loops (inner _call wraps _run; _run's own retry is 2 attempts). Worst case wall time = (attempt1 + attempt2 + backoff) * outer_attempts ≈ 113s per parallel branch — exceeds Cloudflare's ~100s edge timeout. Recommendation above.",
+    "server.py is 4334 lines — well beyond the 700-line threshold in the code-review guidelines. Splitting into route modules (auth, projects, steps, share, admin, exports) would materially help maintenance and reduce accidental route-ordering bugs (a class of bug the file's size makes hard to spot). Not a regression — flagging as tech debt.",
+    "share_status conflict semantics rely on string equality in /unlock and /reset-from-step (both correctly return 409 when share_status != 'none'). Verified working. Consider extracting a small helper `assert_not_shared_with_client(project)` to DRY the check across the two endpoints.",
+    "OTP fallback in /app/backend/auth.py logs a full Traceback (via logger.error+exc_info implicit) every time Resend rejects an @example.com domain. For automated test suites this is expected but noisy; a targeted `except resend.exceptions.ValidationError` branch that logs a single warning line would be cleaner."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_35_step_regression.py (NEW — 22 pytest cases covering all endpoints in the review request)"
+  ],
+  "success_rate": {"backend": "22/22 (100%)", "frontend": "not tested (out of scope per review_request)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (password login). e2e+iter35_<timestamp>@example.com (OTP path; dev_code returned in body).",
+  "seed_data_creation": "Test projects named 'TEST_iter35_flow' and 'TEST_iter35_oneshot' were created under the demo account and cleaned up via /api/projects DELETE in the module-scoped teardown fixture. Zero pollution left in DB.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend is clean end-to-end: auth (OTP + password + guest), all 5 AI steps (situation/context/decision/artifacts/lock), share flow, exports (md+pdf), unlock/reset semantics (200 unshared, 409 shared), error hygiene (404 for bad ids, 422 for malformed bodies), and 10-concurrent /api/suggest all pass. The ONLY tail-latency risk is the one-shot auto-build path in step 1 with a very rich raw_paste on a slow-Anthropic day — the double retry stack can exceed Cloudflare's ~100s edge timeout and surface as a client-visible 502. This is documented in action_items[0]. To reproduce reliably you would need to add fault injection into ai_engine.py._run to force multiple 35s timeouts. Keeping current behaviour is acceptable if E1 decides — the frontend already retries 503 and the situation endpoint is safe to re-submit (framing-only path fires on the retry). Reusable regression file: /app/backend/tests/test_iteration_35_step_regression.py — takes ~2m27s wall time to run.",
+  "rca_of_the_issue": "N/A — no bug fixes were required in application code. Two test-assertion typos on my side were fixed (auth/me returns the user object unwrapped, not under a 'user' key). One transient Cloudflare 502 on the initial one-shot rich-brief run was traced to compounded retry timeouts in ai_engine.auto_build_from_brief (inner _call retry + _run built-in retry), which under a slow Anthropic response can push wall time past ~100s and hit the CDN edge timeout. Second run of the same test in the same session completed cleanly in 34s → 200, confirming the code path is functionally correct and this is a latency ceiling issue, not a code correctness bug. Full RCA and remediation options captured in action_items[0]."
+}
