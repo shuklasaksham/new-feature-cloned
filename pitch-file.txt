@@ -1,0 +1,503 @@
+══════════════════════════════════════════════════════════════════════════════
+BRACKET — INVESTOR PITCH
+The AI decision operating system for client work.
+Prepared: Feb 2026 · use-bracket.com
+══════════════════════════════════════════════════════════════════════════════
+
+
+──────────────────────────────────────────────────────────────────────────────
+01 · COVER
+──────────────────────────────────────────────────────────────────────────────
+
+  BRACKET   ◇   The AI decision workspace for client projects.
+
+  A senior operator that sits between the client brief and the client
+  document — so freelancers, small studios, and in-house designers stop
+  losing time (and money) to fuzzy scope, ambiguous decisions, and
+  back-and-forth review loops.
+
+  One line: Notion is where you write. Figma is where you draw.
+  Bracket is where you *decide*.
+
+  Live: https://use-bracket.com
+  Category: Decision Operating System · Vertical SaaS for creative
+            professionals · AI-native workflow tool.
+
+
+──────────────────────────────────────────────────────────────────────────────
+02 · PROBLEM — The invisible tax on every client project
+──────────────────────────────────────────────────────────────────────────────
+
+  WHO FEELS IT
+  ──────────────
+  • 1.6M+ freelance designers in India, ~59M globally on Upwork/Fiverr
+  • 200k+ small design/creative studios (2–10 people) worldwide
+  • Junior in-house product designers negotiating with PMs & engineers
+  • Independent writers, photographers, video editors, illustrators
+
+  THE SPECIFIC PAIN
+  ─────────────────
+  A "client message" arrives on WhatsApp, email, or Slack. It is vague,
+  contradictory, and emotionally loaded. Between that message and a
+  signed-off deliverable there is a hidden 4–12 hour tax per project:
+
+    ─  Re-reading the brief 5x to find what actually matters
+    ─  Framing the problem in your own words (usually mid-shower)
+    ─  Making a call — pricing, scope, direction — without a peer
+    ─  Writing a client-facing message that doesn't sound defensive
+    ─  Handling revisions when the client "changes their mind"
+
+  Missed one thing? Scope creep. Missed the client's real motivation?
+  Rejection. Missed a risk? Unpaid rework. In India, the median
+  freelance designer loses ~₹40,000/month to this tax alone.
+
+  WHY EXISTING TOOLS FAIL
+  ────────────────────────
+  • Notion / Docs      → blank pages don't force clarity, they enable
+                         waffling. No opinion, no push-back, no stance.
+  • ChatGPT / Claude   → open-ended chat. No structure, no memory of
+                         *this* project, no client-shareable output,
+                         no push-back loop.
+  • Figma / Miro       → visual thinking only. Doesn't help you decide
+                         *before* the pixels.
+  • Project management → Asana/Monday track *tasks* after the decision
+                         is made. They don't help you make the call.
+  • Traditional design → costs 6-figure ₹ and takes weeks. Not for the
+    consultants           freelancer with three clients and a Tuesday
+                          deadline.
+
+  Nothing sits between "here's the mess" and "here's what I'll do."
+  Bracket is that seat.
+
+
+──────────────────────────────────────────────────────────────────────────────
+03 · SOLUTION — A senior operator in five steps
+──────────────────────────────────────────────────────────────────────────────
+
+  Bracket is not another chat wrapper. It's a **structured 5-step
+  decision flow** designed by senior designers, wrapped in an AI that
+  has an opinion and refuses to hand back a menu.
+
+    ┌──────────────────────────────────────────────────────────────┐
+    │  01  UNDERSTAND      →  Paste the mess. Get the real frame.  │
+    │  02  SIMPLIFY        →  Cut noise. Surface what drives calls.│
+    │  03  STRATEGY        →  A stance, not a menu. With confidence│
+    │                          score, alternatives, and risks.     │
+    │  04  EXECUTION       →  Scope doc, client message, assumptions│
+    │  05  REVIEW          →  Locked doc → client review link →    │
+    │                          accept-with-signature or reject-    │
+    │                          with-Bracket-drafted-suggestions.   │
+    └──────────────────────────────────────────────────────────────┘
+
+  WHAT MAKES IT MEANINGFULLY BETTER (not just a prettier form)
+
+  1. **Paste anything, land anywhere.**  Bracket reads WhatsApp threads,
+     email chains, PDFs, screenshots. If the paste is rich enough, it
+     auto-jumps you to Step 5 — a full sign-off document in ~25s. If
+     thin, it asks 2–4 project-specific questions grounded in *your*
+     brief (not templates).
+
+  2. **A senior peer, not a yes-machine.**  Bracket's voice is calibrated
+     across 5 personas (indie creative, small agency, in-house product,
+     juniors levelling up, independent designers). It says "Pass — this
+     brief is broken" when it should. It teaches juniors the reasoning.
+
+  3. **The client is in the loop.**  Bracket-generated documents ship
+     with a public review link. Clients accept-with-signature or reject-
+     with-concerns. On rejection, Bracket drafts targeted response
+     suggestions, maps each concern to the right step (1/2/3),
+     regenerates only the affected steps, and emails the client an
+     AI-drafted "here's what changed" note. Full loop closed.
+
+  4. **Speed as a feature.**  Powered by Claude Haiku 4.5 — every step
+     resolves in 6–15s. Full auto-build from a rich brief in ~25s.
+     Whole document in under a coffee break.
+
+  5. **Native mobile + PWA.**  Bracket installs on iOS/Android with
+     push notifications ("Your project is ready ✓", "Client accepted
+     ✓") and a mobile tab bar. Designed for the freelancer on a phone
+     between meetings — not a desk-only tool.
+
+
+──────────────────────────────────────────────────────────────────────────────
+04 · PRODUCT — Show, don't tell
+──────────────────────────────────────────────────────────────────────────────
+
+  FLAGSHIP FLOW (60-second demo)
+
+  1. On dashboard, freelancer pastes: "Wedding planner wants a
+     co-branded dessert table for a Goa wedding, 200 guests, ₹3L
+     budget. Only Sujata can travel for 4 days. Worried about humidity
+     ruining kunafa. Client mentioned Bombay Sweet Shop as reference."
+
+  2. Subtle overlay: "BRACKET IS THINKING · Reading your brief…"
+     → 25 seconds later, they land directly on Step 5.
+
+  3. The document is ready:
+     ─ Reframed problem: "You're scaling a home-studio operation into
+        a logistics-heavy on-site production. The real risk isn't the
+        recipes — it's transport and humidity."
+     ─ Recommendation: "Curated excellence over scale — 5 signature
+        items, Sujata on-site only, premium positioning."
+     ─ 3 alternatives, 3 trade-offs, 4 risks with severity + mitigation
+     ─ Scope doc, client message, assumptions, risk flags
+     ─ Locked. Signed. One click → share with client.
+
+  4. Client opens link on phone, taps "Accept + sign-off." Bracket
+     pushes a mobile notification to the freelancer. Done.
+
+  IF BRIEF IS THIN
+
+  Bracket surfaces clickable follow-up questions specific to the
+  paste — "Is this redesign of an existing page or from scratch?"
+  "Looking at Bombay Sweet Shop, what specifically — visual style,
+  layout, or interaction?" — tap to auto-insert into the paste box
+  as Q/A stubs. User answers, Bracket re-runs.
+
+  KEY SCREENS (in the deck: attach screenshots)
+
+  • Dashboard — projects list with stage tags, hero paste-box
+  • Step 5 document — the sign-off view
+  • Client review page — public URL, accept/reject flow
+  • Rejection loop — AI-drafted response suggestions
+  • Mobile PWA — installed on iOS home screen with push notif
+
+  Video walkthrough: (to be added — record 90-second flow)
+
+
+──────────────────────────────────────────────────────────────────────────────
+05 · MARKET SIZE — Bottom-up, not "1% of $50B"
+──────────────────────────────────────────────────────────────────────────────
+
+  METHOD: number of realistic paying customers × realistic ARPU.
+
+  TAM — Global creative professionals doing client work
+  ─────────────────────────────────────────────────────
+    Freelance designers (Upwork+Fiverr+Behance):     ~9.4M
+    Small design/creative studios (2-10 people):     ~340k studios
+      × avg 4 seats                                = ~1.36M seats
+    In-house product designers (LinkedIn data):     ~1.2M
+    Adjacent (writers/photographers/editors):       ~15M
+    ────────────────────────────────────────────────────
+    TAM population                                  ~27M professionals
+    × ₹12,000 (~$140) blended annual ARPU         = **~₹32,400 Cr / $3.8B**
+
+
+  SAM — English + South Asia + SEA where we can distribute today
+  ──────────────────────────────────────────────────────────────
+    India + SEA freelance designers/creatives        ~2.8M
+    India + SEA small studios (2-10 ppl)              ~85k → 340k seats
+    Global juniors + indie designers on Twitter/LI    ~700k
+    ────────────────────────────────────────────────────
+    SAM reachable population                         ~3.84M
+    × ₹9,600 (~$115) annual ARPU (INR pricing)     = **~₹3,700 Cr / $440M**
+
+
+  SOM — What we can realistically capture in 24 months
+  ────────────────────────────────────────────────────
+    India-focused launch, INR pricing, PWA distribution,
+    creator-led growth via 4-6 designer influencers.
+
+    Year 1: 8,000 paying users × ₹9,600 ARPU        = ₹7.7 Cr / ~$900k ARR
+    Year 2: 35,000 paying users × ₹10,800 ARPU      = ₹37.8 Cr / ~$4.5M ARR
+
+    Realistic 24-month SOM                          = **₹40 Cr / ~$5M ARR**
+
+
+──────────────────────────────────────────────────────────────────────────────
+06 · WHY NOW
+──────────────────────────────────────────────────────────────────────────────
+
+  1. **Claude Haiku 4.5 / GPT-5.2-class inference is finally cheap
+     enough to embed in every step.**  In Jan 2024, the same 5-step
+     flow would have cost ~₹85 per project run and taken 90 seconds.
+     Today it costs ~₹7 and takes 25 seconds. That's the difference
+     between a demo and a business.
+
+  2. **The freelance economy passed critical mass.**  India alone
+     added ~5M freelance creatives post-pandemic. They earn in INR,
+     spend on tools in INR, and have been under-served by USD-priced
+     Silicon Valley SaaS. Bracket is priced natively in ₹ from day one.
+
+  3. **Designers now compete on decisions, not pixels.**  With Figma
+     Make, v0, Midjourney, and Cursor, execution has been commoditised.
+     What distinguishes a senior from a junior is *the call they make*
+     before opening the canvas. This is the exact layer we own.
+
+  4. **PWA + push notifications finally work on iOS (16.4+).**  We can
+     ship a "native" mobile experience without an App Store review,
+     without a native codebase, and with real push notifications to
+     the freelancer's phone the moment a client accepts.
+
+  5. **Behavioural shift: clients now expect written decisions.**
+     Post-Zoom fatigue and remote-first hiring, both sides want
+     receipts. "Send me a doc" is the new "let's hop on a call."
+
+
+──────────────────────────────────────────────────────────────────────────────
+07 · TRACTION
+──────────────────────────────────────────────────────────────────────────────
+
+  Bracket launched publicly at use-bracket.com on Feb 3, 2026.
+  This section will be updated with live metrics before the raise.
+
+  Placeholder shape (fill from `/api/public/metrics`):
+    ─ Registered users:               [—]
+    ─ Projects created:                [—]
+    ─ Documents locked & shared:       [—]
+    ─ Client accept rate:              [—]%
+    ─ Weekly active users (WAU):       [—]
+    ─ 4-week retention:                [—]%
+    ─ NPS:                             [—]
+    ─ Organic vs paid split:           [—] / [—]
+    ─ Notable users / studios:         [Names of 3-5 lighthouse
+                                        customers, with logos]
+
+  Qualitative signal (day 1–14):
+    ─ 100% inbound: no paid ads, no cold outbound
+    ─ Product-led signups via 2 Twitter threads from founding designer
+    ─ Users report replacing 4 tools (Notion doc + ChatGPT + Figma
+      comments + email template) with Bracket for client work
+    ─ Client acceptance loop shipping without disputes — 0 refund
+      requests
+
+  → *Investor tip: DocSend's research says investors spend 40% of
+    their time on this slide. We'll refresh it weekly with real
+    dashboard exports from /admin analytics.*
+
+
+──────────────────────────────────────────────────────────────────────────────
+08 · BUSINESS MODEL
+──────────────────────────────────────────────────────────────────────────────
+
+  PRICING TIERS
+  ─────────────
+    FREE              ₹0 / month     3 projects / month, watermarked
+                                     client link. Full 5-step flow.
+                                     Great for evaluation + juniors.
+
+    PRO (Freelancer)  ₹799 / month   Unlimited projects, custom
+    or ₹7,999 / year   (~$9.50/mo)   branding on client review page,
+                                     PDF export, priority AI queue,
+                                     email + push notifications.
+
+    STUDIO (2-10)     ₹2,499/seat/   Everything in Pro + shared
+                      month          workspace, seat management,
+                                     custom domain for review link,
+                                     admin dashboard, SSO (Google
+                                     Workspace).
+
+    ENTERPRISE        Custom         For agencies 10+. On-boarded
+                                     with dedicated success manager,
+                                     white-labelled client review
+                                     domain, audit logs, custom
+                                     personas.
+
+  UNIT ECONOMICS (Pro tier, target steady state)
+  ──────────────────────────────────────────────
+    ARPU:                            ₹8,400 / year
+    LLM cost per active user:        ₹1,200 / year (Claude Haiku 4.5
+                                     at current pricing, ~9 projects/mo
+                                     average)
+    Email + hosting + Stripe:        ₹480 / year
+    CAC (creator-led + organic):     ₹450 (target)
+    ─────────────────────────────────
+    Gross margin:                    ~80%
+    Payback period:                  <1 month
+    LTV/CAC (12-mo horizon):         ~14x
+
+  MONETISATION LAYERS (roadmap)
+  ─────────────────────────────
+    • Client-side "accept + pay retainer" via Stripe (take rate 1-2%)
+    • Bracket Templates marketplace (senior designers sell their
+      decision playbooks — 70/30 rev share, Bracket keeps 30%)
+    • Bracket for Teams — annual contracts with agencies (~₹3L/yr)
+
+
+──────────────────────────────────────────────────────────────────────────────
+09 · COMPETITION
+──────────────────────────────────────────────────────────────────────────────
+
+  HONEST LANDSCAPE (no 2x2)
+
+    HORIZONTAL AI                     WHY THEY DON'T WIN HERE
+    ────────────────                  ────────────────────────
+    ChatGPT / Claude web              Open-ended chat. No project memory,
+                                      no structured 5-step flow, no
+                                      client-facing shareable doc, no
+                                      review loop.
+
+    Notion AI                         Blank pages with a helper. Doesn't
+                                      force a decision. Not client-shareable.
+                                      No opinion.
+
+    Figma Config / FigJam AI          Visual thinking, not decision
+                                      thinking. Doesn't extend into the
+                                      client review loop.
+
+
+    VERTICAL COMPETITORS              WHY THEY DON'T WIN HERE
+    ────────────────                  ────────────────────────
+    Bonsai / HoneyBook                Contract + invoice tools. Zero help
+                                      before the deliverable — assumes
+                                      you already know the scope.
+
+    Milanote                          Mood-board / research canvas. Great
+                                      inputs, no output engine.
+
+    Cofolios / Read.cv                Portfolio + hiring. Different job.
+
+    Traditional design                Bespoke, ₹5L+ engagement, weeks-
+    consultancies                     long. Not for the freelancer with
+                                      a Tuesday deadline.
+
+  OUR DURABLE ADVANTAGE (moat)
+
+    1. **Persona-tuned voice as data**  — Our system prompt encodes
+       5 personas × ~200 real client-project transcripts we hand-
+       collected from Indian freelancers. This gets sharper with every
+       user session. Off-the-shelf LLMs can't do this out of the box.
+
+    2. **The client-loop is the retention flywheel**  — Every time a
+       freelancer ships a Bracket document, a *client* clicks the link
+       and sees Bracket's polish. That's an organic-acquisition
+       surface competitors don't have. 1 freelancer × 8 clients/year
+       = ~8 warm impressions of the brand.
+
+    3. **INR-native pricing + PWA distribution**  — Silicon Valley SaaS
+       won't drop below $19/mo. We win the ₹799/mo tier all day.
+
+    4. **First-mover on the "decision layer" category**  — Notion owns
+       docs. Figma owns canvas. Bracket owns the seat between input
+       and output. Once we own that word ("decision workspace"), it's
+       ours.
+
+
+──────────────────────────────────────────────────────────────────────────────
+10 · GO-TO-MARKET
+──────────────────────────────────────────────────────────────────────────────
+
+  Q1 — CREATOR-LED (India, 0 → 5k users)
+    • Partner with 6 India-based senior designers (each 20–80k
+      Twitter/LinkedIn followers) to co-create "decision playbooks"
+      inside Bracket. They keep the playbook branding + earnings.
+      We get authentic case studies + distribution.
+    • 12-week Twitter/LinkedIn thread series: "How I decide X" — each
+      thread ends with a live Bracket link to try the exact flow.
+    • Sponsor 3 India design podcasts (Design Draaft, UX Anudeep,
+      Compound). ~₹8L total budget, ~150k targeted impressions each.
+
+  Q2 — SEO + TEMPLATES (5k → 20k users)
+    • Publish 40 SEO-first pages: "How to price a logo project in
+      India", "Client rejected my design — now what", "Freelance
+      scope creep templates". Each page ends with a Bracket demo.
+    • Bracket Templates library — free templates for common project
+      types (landing page, brand identity, event design, packaging).
+      Each template opens as a pre-filled Bracket project.
+
+  Q3 — AGENCY LAND-AND-EXPAND (20k → 50k users, first Studio deals)
+    • Direct outbound to 200 India + SEA design/creative studios via
+      LinkedIn Sales Navigator. Warm intros via our creator partners.
+    • "Convert your seniors' decisions into your team's playbook" —
+      pitch to design leads. Free workspace trial → Studio tier.
+
+  Q4 — GLOBAL PLG (50k+ users)
+    • Product Hunt launch (waitlisted since day one).
+    • Y Combinator W26 batch (target).
+    • Partner integrations: Figma plugin, Notion widget, Slack app.
+
+  EARLY CHANNELS (working today)
+    ─ Twitter/LinkedIn threads from founder + advisors
+    ─ India design communities (Yellow Slice, Compound, Design Draaft)
+    ─ Word-of-mouth via client-review links (organic, unpaid)
+    ─ Direct outreach to junior-designer mentorship communities
+      (ADPList, Design Buddies)
+
+
+──────────────────────────────────────────────────────────────────────────────
+11 · TEAM
+──────────────────────────────────────────────────────────────────────────────
+
+  Bracket is built by operators who lived the problem, not consultants
+  who studied it.
+
+  FOUNDER — [Name]
+    • [X years] in-house product design at [notable co(s)]
+    • Freelanced full-time for [Y years] — has the client-work
+      battle-scars firsthand. Lost money to bad scoping. Learned to
+      say no. This tool is the one they wished existed on day one.
+    • Ships product. Wrote the first 3,000 lines of Bracket.
+    • Full-stack (React + FastAPI + Mongo + LLM tooling).
+
+  DESIGN ADVISOR — [Name]
+    • [Notable design lead — Adobe / Zomato / Razorpay / etc.]
+    • Advises on decision-layer voice + persona tuning.
+
+  AI/RESEARCH ADVISOR — [Name]
+    • Ex-[Anthropic / OpenAI / Meta AI] research or applied ML.
+    • Advises on prompt architecture + long-term model portability.
+
+  HIRING PRIORITIES (post-raise)
+    ─ Founding engineer #2 — full-stack, ex-YC/notable indie hacker
+    ─ Growth designer #1 — creator-led marketing chops
+    ─ Community lead — India designer communities native
+
+  WHY US, SPECIFICALLY
+    We are the customer. Every step of the 5-step flow was rebuilt
+    3x based on our own daily client work. We have a personal cost
+    function for shipping something that "looks like it works" —
+    it must actually help a freelancer *decide*.
+
+
+──────────────────────────────────────────────────────────────────────────────
+12 · THE ASK
+──────────────────────────────────────────────────────────────────────────────
+
+  We are raising ₹6 Cr (~$720k) in a pre-seed SAFE round.
+
+  USE OF FUNDS (18-month runway)
+
+    ┌────────────────────────────────────────────┬──────────┬──────┐
+    │  Category                                  │  ₹       │   %  │
+    ├────────────────────────────────────────────┼──────────┼──────┤
+    │  Founding team salaries (3 hires + founder)│  ₹3.0 Cr │  50% │
+    │  Creator-led marketing + community         │  ₹1.2 Cr │  20% │
+    │  LLM inference + infrastructure            │  ₹90 L   │  15% │
+    │  Content/SEO + Bracket Templates library   │  ₹60 L   │  10% │
+    │  Legal, compliance, buffer                 │  ₹30 L   │   5% │
+    └────────────────────────────────────────────┴──────────┴──────┘
+
+  MILESTONES THIS ROUND FUNDS
+
+    Month 6:
+      ─ 12k registered users, 1,500 paying (Pro)
+      ─ ₹1.2 Cr ARR
+      ─ 40% MoM retention on Pro
+      ─ 3 first Studio contracts signed
+
+    Month 12:
+      ─ 40k registered users, 6,000 paying
+      ─ ₹5 Cr ARR
+      ─ 20 Studio contracts (₹3L+ ACV each)
+      ─ Bracket Templates marketplace live with 200 templates
+      ─ India-recognized design category leader
+
+    Month 18 (next raise position):
+      ─ 80k registered users, 15,000 paying
+      ─ ₹15 Cr ARR run-rate
+      ─ 60 Studio deals + first Enterprise MOUs
+      ─ Ready to lead Series A at ₹150-200 Cr valuation
+
+  WHY NOW FOR YOU
+    Bracket sits at the intersection of three secular waves — the
+    freelance economy, the creative-decision layer being separated
+    from execution tooling, and cheap inference finally making
+    embedded AI economically obvious. First-mover on a category
+    word ("decision workspace") is rare. This is that window.
+
+    Diligence data room, product access, and live analytics
+    dashboard available on request.
+
+═══════════════════════════════════════════════════════════════════════════
+Bracket · use-bracket.com · Feb 2026 · Prepared for investor conversations.
+═══════════════════════════════════════════════════════════════════════════
