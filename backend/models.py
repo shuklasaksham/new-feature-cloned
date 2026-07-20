@@ -88,3 +88,8 @@ class ProjectOut(BaseModel):
     # /projects/upload-brief. Values: pending | advanced | partial |
     # insufficient | failed. Absent for projects not created via upload.
     auto_advance_status: Optional[str] = None
+    # Targeted follow-up questions Bracket surfaced during Step-1 auto-build
+    # when the first-chatbox paste was too thin for a one-shot. Frontend
+    # renders these as numbered prompts on Steps 2 and 3 to guide the next
+    # paste. Shape: {"context": [str, ...], "decision": [str, ...]}.
+    open_questions: Optional[Dict[str, Any]] = None

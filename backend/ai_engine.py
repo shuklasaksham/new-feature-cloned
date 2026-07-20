@@ -781,6 +781,8 @@ async def auto_build_from_brief(raw_paste: str) -> dict:
 1. Extract the workflow inputs. Be honest — leave a field empty if the brief truly doesn't mention it. Do NOT invent details.
 2. Reframe the situation like a seasoned operator (strip fluff, name what's actually happening).
 3. Compress the context — surface only what changes the decision.
+4. Draft the specific FOLLOW-UP QUESTIONS Bracket still needs to make the call. These questions surface ONLY when the brief is too thin for a one-shot decision — so make them sharp, project-specific (not generic template questions), and grounded in the brief's actual gaps. Aim for 2-4 questions per step. Skip a step's questions if the brief already covers it.
+
 Also infer the user's persona: INDIE_CREATIVE | SMALL_AGENCY | INHOUSE_PRODUCT | JUNIOR | INDEPENDENT_DESIGNER.
 Be concise — lists max 3 items each.
 
@@ -807,6 +809,10 @@ Return JSON with EXACTLY this shape:
     "noise_removed": ["item 1"],
     "what_actually_matters": "One sharp paragraph naming the 1-2 things that drive this decision",
     "hidden_assumptions": ["assumption 1"]
+  }},
+  "open_questions": {{
+    "context": ["Specific question about a missing requirement / constraint / reference — grounded in the actual brief. Example: 'You said 200 guests but not the venue's kitchen access — is on-site prep even possible?' "],
+    "decision": ["Specific question about a missing trade-off / priority / risk — grounded in the actual brief. Example: 'Is protecting Sujata's 4-day window a hard cap, or would you extend if the client pays for it?' "]
   }}
 }}"""
     prompt_b = f"""The user uploaded a client brief. Make the call — a stance, not a menu — and generate the protective artifacts. Be concise — lists max 3-4 items each.
@@ -858,6 +864,31 @@ Return JSON with EXACTLY this shape:
     context = _sanitize(data_a.get("context") or {}, ["requirements", "constraints", "inspirations"], 800)
     decision = _sanitize(data_a.get("decision") or {}, ["optimizing_for", "tradeoffs", "risks"], 800)
     framing = data_a.get("framing") or {}
+
+    def _sanitize_questions(raw) -> list:
+        """Clean the follow-up question list: strings only, trimmed, ≤200 chars, max 4."""
+        if not isinstance(raw, list):
+            return []
+        out: list[str] = []
+        for q in raw:
+            if not isinstance(q, str):
+                continue
+            q = q.strip().strip('"').strip("'")
+            if not q or len(q) < 6:
+                continue
+            if not q.endswith("?"):
+                q += "?"
+            out.append(q[:200])
+            if len(out) >= 4:
+                break
+        return out
+
+    oq = data_a.get("open_questions") or {}
+    open_questions = {
+        "context":  _sanitize_questions(oq.get("context") if isinstance(oq, dict) else None),
+        "decision": _sanitize_questions(oq.get("decision") if isinstance(oq, dict) else None),
+    }
+
     # Sufficiency: only jump the user to Step 5 when the paste is genuinely
     # rich enough that Bracket isn't confabulating downstream. Requires:
     #   1) All four output blocks present (framing / context / decision / artifacts).
@@ -895,5 +926,6 @@ Return JSON with EXACTLY this shape:
         "context_out": data_a.get("context_out") or {},
         "decision_out": data_b.get("decision_out") or {},
         "artifacts_out": data_b.get("artifacts_out") or {},
+        "open_questions": open_questions,
         "sufficient": sufficient,
     }

@@ -653,3 +653,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Frontend** (`ProjectFlow.jsx::Step1`): after the situation POST returns, if `data.step === 5` with artifacts + decision present, `onDone(5)` fires 700ms later — user's Step-1 "done" checkmark flashes then they land directly on the locked document. Otherwise flow behaves as before (jump to Step 2).
   - **Measured on preview**: thin brief ("redesign landing page") → clarity 15 → **step=2, 16s**. Rich brief (Goa wedding, all inputs) → clarity 72 → **step=5, 26.8s**.
 
+- 2026-07-20 — **Iteration 61 — Targeted follow-up questions on Steps 2 and 3**:
+  - **User ask**: "After 1st chat, ask questions in step 2 and 3 which are required."
+  - **Backend** (`ai_engine.py::auto_build_from_brief`): prompt A extended to also produce `open_questions: {context, decision}` — 2–4 sharp, project-specific questions per step derived from the actual gaps in the paste (not generic templates). Sanitized (trim, ≤200 chars, force `?` suffix, cap 4).
+  - **Persistence** (`server.py::step_situation`): when the one-shot falls through to Step 2 (not-sufficient), `open_questions` is saved on the project doc. Model (`models.py::ProjectOut`) exposes the field.
+  - **Frontend** (`ProjectFlow.jsx`): new `OpenQuestions` component — subtle signal-tinted callout with numbered list. Renders above the paste input on Step 2 when `project.open_questions.context` is non-empty and Step 2 output doesn't yet exist; same for Step 3 with the `decision` list. Hides once the step generates its own output.
+  - **Verified on preview**: paste "Client wants a landing page redesign. Bombay Sweet Shop reference. No deadline yet." → Step 2 questions include "What's the client's actual business…", "When do they need this—hard deadline or exploratory?", "Looking at Bombay Sweet Shop, what specifically are they drawn to—visual style, structure, interaction?"; Step 3 questions include budget/revisions, scratch-vs-existing, and stakeholder count. Both screenshotted and rendering correctly.
+

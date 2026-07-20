@@ -760,6 +760,30 @@ function EmptyModuleHint({ title, blurb, testid }) {
   );
 }
 
+// Renders the targeted "still need to know" follow-up questions Bracket
+// surfaced when the first-chatbox paste was too thin to auto-build the whole
+// document. Numbered list, subtle callout, prompts the user to answer them
+// in the paste field below. Hidden once the step's own output exists.
+function OpenQuestions({ label = "Bracket still needs your read on", items = [], testid }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div
+      className="rounded border border-signal/40 bg-signal/[0.06] px-4 py-3.5"
+      data-testid={testid || "open-questions"}
+    >
+      <p className="mono-tag text-signal">{label}</p>
+      <ol className="mt-2 space-y-1.5 text-sm leading-relaxed" data-testid={`${testid || "open-questions"}-list`}>
+        {items.map((q, i) => (
+          <li key={i} className="flex gap-2" data-testid={`${testid || "open-questions"}-item-${i}`}>
+            <span className="mono-tag text-muted mt-[3px] shrink-0">{String(i + 1).padStart(2, "0")}</span>
+            <span>{q}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 function Step1({ project, setProject, dirtyRef, onDone }) {
   const initial = project.situation_input || { raw_paste: "", what: "", who: "", unclear: "" };
   const draftKey = `bracket:step1-draft:${project.id}`;
@@ -1281,6 +1305,13 @@ function Step2({ project, setProject, dirtyRef, onDone, onBack }) {
     >
       <div className={compressed ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
         <div className={compressed ? "space-y-3 lg:col-span-5" : "space-y-3"} data-testid="step2-form">
+          {!compressed && (project.open_questions?.context?.length > 0) && (
+            <OpenQuestions
+              testid="step2-open-questions"
+              label="Bracket still needs your read on"
+              items={project.open_questions.context}
+            />
+          )}
           <Field
             label="Paste anything about this project"
             testid="step2-paste"
@@ -1497,6 +1528,13 @@ function Step3({ project, setProject, dirtyRef, onDone, onBack }) {
     >
       <div className={decision ? "grid lg:grid-cols-12 gap-5" : "grid lg:grid-cols-2 gap-5"}>
         <div className={decision ? "space-y-3 lg:col-span-5" : "space-y-3"} data-testid="step3-form">
+          {!decision && (project.open_questions?.decision?.length > 0) && (
+            <OpenQuestions
+              testid="step3-open-questions"
+              label="Bracket still needs your read on"
+              items={project.open_questions.decision}
+            />
+          )}
           <Field
             label="Paste your thinking on this decision"
             testid="step3-paste"

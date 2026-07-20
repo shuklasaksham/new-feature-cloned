@@ -1967,6 +1967,10 @@ async def step_situation(project_id: str, body: SituationIn):
         "status": "in_progress",
         "updated_at": _now_iso(),
     }
+    # Persist the follow-up questions Bracket surfaced during auto-build so
+    # Steps 2 and 3 can show them as targeted "still need to know" prompts.
+    if should_try_one_shot and built and built.get("open_questions"):
+        update_fields["open_questions"] = built["open_questions"]
     if title_result and len(title_result) >= 3:
         update_fields["name"] = title_result[:120]
         update_fields["name_source"] = "ai"
