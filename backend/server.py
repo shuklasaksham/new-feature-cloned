@@ -1698,34 +1698,60 @@ async def admin_compare_publish(publish_id: str, request: Request, window_days: 
     before = await _metrics_in_window(db, before_start, before_end)
     after  = await _metrics_in_window(db, after_start, after_end)
 
+    # Compute exact window lengths (fractional days) — used to normalize sum
+    # metrics per-day. Without this, comparing a 60d "before" window to a 4d
+    # "after" window is meaningless. Ratios/averages stay as-is because they
+    # are already normalized by construction.
+    _b_start_dt = _iso_to_dt(before_start)
+    _b_end_dt   = _iso_to_dt(before_end)
+    _a_start_dt = _iso_to_dt(after_start)
+    _a_end_dt   = _iso_to_dt(after_end)
+    before_days = max((_b_end_dt - _b_start_dt).total_seconds() / 86400.0, 1e-6) if (_b_start_dt and _b_end_dt) else float(window_days)
+    after_days  = max((_a_end_dt - _a_start_dt).total_seconds() / 86400.0, 1e-6) if (_a_start_dt and _a_end_dt) else float(window_days)
+
+    _SUM_KEYS = {"sessions", "page_views", "new_signups", "new_projects", "docs_shared", "nps_responses"}
+
+    def _per_day(k, raw, days):
+        if k not in _SUM_KEYS:
+            return raw
+        if not isinstance(raw, (int, float)):
+            return raw
+        return round(raw / days, 2)
+
     keys_labels = [
-        ("visitor_to_signup_pct",       "Visitor → Signup (%)",           "pct"),
-        ("signup_to_first_project_pct", "Signup → First Project (%)",     "pct"),
-        ("project_to_locked_pct",       "First Project → Locked Doc (%)", "pct"),
-        ("avg_time_to_first_doc_min",   "Avg time to first doc (min)",    "lower_better"),
-        ("avg_steps_completed",         "Avg steps completed",            "num"),
-        ("sessions",                    "Sessions",                       "num"),
-        ("page_views",                  "Page views",                     "num"),
-        ("new_signups",                 "New signups",                    "num"),
-        ("new_projects",                "New projects",                   "num"),
-        ("docs_shared",                 "Docs locked & shared",           "num"),
-        ("client_accept_rate",          "Client accept rate (%)",         "pct"),
-        ("nps_responses",               "NPS responses",                  "num"),
+        ("visitor_to_signup_pct",       "Visitor → Signup (%)",             "pct"),
+        ("signup_to_first_project_pct", "Signup → First Project (%)",       "pct"),
+        ("project_to_locked_pct",       "First Project → Locked Doc (%)",   "pct"),
+        ("avg_time_to_first_doc_min",   "Avg time to first doc (min)",      "lower_better"),
+        ("avg_steps_completed",         "Avg steps completed",              "num"),
+        ("sessions",                    "Sessions / day",                   "per_day"),
+        ("page_views",                  "Page views / day",                 "per_day"),
+        ("new_signups",                 "New signups / day",                "per_day"),
+        ("new_projects",                "New projects / day",               "per_day"),
+        ("docs_shared",                 "Docs locked & shared / day",       "per_day"),
+        ("client_accept_rate",          "Client accept rate (%)",           "pct"),
+        ("nps_responses",               "NPS responses / day",              "per_day"),
     ]
-    deltas = [{
-        "key":   k,
-        "label": lbl,
-        "kind":  kind,
-        "before": before.get(k),
-        "after":  after.get(k),
-        "pct_change": _pct_change(before.get(k), after.get(k)),
-    } for (k, lbl, kind) in keys_labels]
+    deltas = []
+    for (k, lbl, kind) in keys_labels:
+        b_norm = _per_day(k, before.get(k), before_days)
+        a_norm = _per_day(k, after.get(k), after_days)
+        deltas.append({
+            "key":         k,
+            "label":       lbl,
+            "kind":        kind,
+            "before":      b_norm,
+            "after":       a_norm,
+            "before_raw":  before.get(k),
+            "after_raw":   after.get(k),
+            "pct_change":  _pct_change(b_norm, a_norm),
+        })
 
     return {
         "publish":       pub,
         "window_days":   window_days,
-        "before_window": {"start": before_start, "end": before_end},
-        "after_window":  {"start": after_start,  "end": after_end},
+        "before_window": {"start": before_start, "end": before_end, "days": round(before_days, 2)},
+        "after_window":  {"start": after_start,  "end": after_end,  "days": round(after_days, 2)},
         "before":        before,
         "after":         after,
         "deltas":        deltas,

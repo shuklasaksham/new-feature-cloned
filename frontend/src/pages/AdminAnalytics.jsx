@@ -285,7 +285,16 @@ function ScatterTooltip({ active, payload }) {
 // PUBLISH LOG — track every release + compare before/after metrics.
 // ============================================================================
 function DeltaValue({ before, after, pct, kind }) {
-  const fmt = (v) => v == null ? "—" : (typeof v === "number" ? v.toLocaleString(undefined, { maximumFractionDigits: 1 }) : String(v));
+  const fmt = (v) => {
+    if (v == null) return "—";
+    if (typeof v !== "number") return String(v);
+    // Per-day values are often small (e.g. 0.5 signups/day) — give them extra
+    // precision. Big whole-number metrics don't need decimals.
+    const digits = kind === "per_day"
+      ? (Math.abs(v) >= 10 ? 1 : 2)
+      : (Math.abs(v) >= 100 ? 0 : 1);
+    return v.toLocaleString(undefined, { maximumFractionDigits: digits });
+  };
   let arrow = "→";
   let color = "var(--text-3)";
   if (typeof pct === "number") {
@@ -383,6 +392,10 @@ function PublishLogPanel() {
             Log each release. Compare visitor→signup, activation, and locked-doc rates
             {" "}<b>{windowDays}</b> days before vs after.
             <span style={{ color: "var(--text-3)" }}> Recommended min 14d to smooth noise.</span>
+          </p>
+          <p className="mt-1 text-[11.5px]" style={{ color: "var(--text-3)" }}>
+            Sum metrics (sessions, signups, projects…) are shown{" "}
+            <b style={{ color: "var(--text-2)" }}>per day</b> so windows of unequal length compare fairly.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -519,10 +532,16 @@ function PublishLogPanel() {
                     {new Date(comparison.before_window.start).toLocaleDateString([], { month: "short", day: "numeric" })}
                     {" → "}
                     {new Date(comparison.before_window.end).toLocaleDateString([], { month: "short", day: "numeric" })}
+                    {comparison.before_window.days != null && (
+                      <span style={{ color: "var(--text-3)" }}> ({comparison.before_window.days}d)</span>
+                    )}
                     {"  vs  "}
                     {new Date(comparison.after_window.start).toLocaleDateString([], { month: "short", day: "numeric" })}
                     {" → "}
                     {new Date(comparison.after_window.end).toLocaleDateString([], { month: "short", day: "numeric" })}
+                    {comparison.after_window.days != null && (
+                      <span style={{ color: "var(--text-3)" }}> ({comparison.after_window.days}d)</span>
+                    )}
                   </p>
                 </div>
                 <table className="w-full text-left">
