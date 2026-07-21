@@ -347,10 +347,99 @@ function Hero() {
           </p>
         </motion.div>
 
+        {/* Product Hunt featured badge — dark theme, matches the stage */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1, duration: 0.7 }}
+          className="mt-8"
+        >
+          <a
+            href="https://www.producthunt.com/products/bracket-2027?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-bracket-2027"
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="hero-producthunt-badge"
+            className="inline-block rounded-[10px] transition-transform duration-300 hover:-translate-y-0.5"
+            style={{ filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.35))" }}
+          >
+            <img
+              alt="Bracket - Stop Guessing. Start Deciding. | Product Hunt"
+              width="250"
+              height="54"
+              loading="lazy"
+              src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1201782&theme=dark&t=1784615169393"
+            />
+          </a>
+        </motion.div>
+
         {/* Live metrics micro-strip */}
         <HeroMetrics />
       </div>
     </section>
+  );
+}
+
+// ─── PRODUCT HUNT EMBED CARD (Bracket-styled) ────────────────────────────
+function ProductHuntCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.7, delay: 0.3 }}
+      className="mx-auto mt-14 max-w-[500px] rounded-2xl p-5 sm:p-6 text-left"
+      data-testid="producthunt-card"
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        backdropFilter: "blur(16px)",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.35)",
+      }}
+    >
+      <div className="flex items-center gap-4">
+        <img
+          alt="Bracket on Product Hunt"
+          src="https://ph-files.imgix.net/e047fa31-e8b0-48de-8636-46381e6c91a0.png?auto=compress,format&codec=mozjpeg&cs=strip&fit=crop&h=80&w=80"
+          loading="lazy"
+          className="w-14 h-14 rounded-xl object-cover shrink-0"
+          style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+        />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="m-0 font-display font-semibold text-[17px] text-[var(--text)] truncate">
+              Bracket
+            </h3>
+            <span
+              className="mono-tag text-[9.5px] px-2 py-[3px] rounded-full shrink-0"
+              style={{
+                background: "rgba(255,97,84,0.10)",
+                color: "#FF6154",
+                border: "1px solid rgba(255,97,84,0.25)",
+              }}
+            >
+              LIVE ON PRODUCT HUNT
+            </span>
+          </div>
+          <p className="mt-1 text-[13.5px] text-[var(--text-2)] leading-snug truncate">
+            Stop Guessing. Start Deciding.
+          </p>
+        </div>
+      </div>
+      <a
+        href="https://www.producthunt.com/products/bracket-2027?embed=true&utm_source=embed&utm_medium=post_embed"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="producthunt-card-cta"
+        className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13.5px] font-semibold text-white transition-transform duration-300 hover:-translate-y-0.5"
+        style={{
+          background: "#FF6154",
+          boxShadow: "0 8px 24px rgba(255,97,84,0.25)",
+        }}
+      >
+        <span>Check it out on Product Hunt</span>
+        <ArrowUpRight size={14} />
+      </a>
+    </motion.div>
   );
 }
 
@@ -1573,6 +1662,9 @@ function FinalCTA() {
         <p className="mt-6 text-[11px] text-[var(--text-3)] mono-tag">
           FREE DURING EARLY ACCESS · NO CREDIT CARD · UNDER 60 SECONDS
         </p>
+
+        {/* Product Hunt embed — restyled as a Bracket dark card */}
+        <ProductHuntCard />
       </div>
     </section>
   );
