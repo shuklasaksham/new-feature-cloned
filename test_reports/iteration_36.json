@@ -1,0 +1,24 @@
+{
+  "summary": "Iteration 36 — Full Connect Work review. 18/18 backend pytest tests PASSED (providers directory, real token validation for figma/github/notion returning 400 for garbage tokens, DB-seeded preview → establish pipeline, connections/memory/activity endpoints, memory confirm/ignore actions, real Claude Haiku Ask Bracket answering with sources, sync-without-account returning needs_attention, disconnect flow with SOURCE_DISCONNECTED event, and auth boundaries: 401 for unauth /providers, 404 for other-user preview, 403 for other-user project). Frontend E2E via Playwright: demo password login → dashboard, sidebar Connect Work nav + dashboard Connect work button both present and route to /app/connect; connect-work-page renders with 11 provider cards; search filter narrows to only 'connect-app-github' when typing 'git'; clicking Figma opens connect-token-panel with help link; existing project overview still shows the 5-step grid untouched AND now shows ConnectedWorkPanel with 'Connected sources' empty state and 'Connect a source' link. Seeded a preview → established via API → visited the new project: ConnectedWorkPanel renders source row with sync + disconnect buttons, project-memory-card with 3 items, live-activity-card with SOURCE_CONNECTED event, and Ask Bracket returned a grounded answer citing GitHub sources ('Yes. The client approved the homepage hero (source: github issue #8, closed)...'). Regression: existing project overview, 5-step grid, rename, status pills all intact.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_36_connect_work.py",
+    "/app/test_reports/pytest/iteration_36.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "connectors.py _sync_connection: the fallback event insertion path uses `if not ev_docs and (mem_docs or True):` which is always true — the `or True` makes the condition redundant/misleading. Consider removing `or True` so a no-op sync (no digest change already handled earlier) truly doesn't emit noise events. Not a functional bug in current flow but a code-quality wart.",
+    "connectors.py list_providers uses `async for a in db.integration_accounts.find(...)` inside a dict comprehension using `{a['provider']: a async for a in ...}` — correct in Python 3.11, but note the resulting dict is over-fetched (no projection benefits realized because tokens are excluded but full docs still shipped).",
+    "OTP email delivery to @example.com fails against Resend in prod (ValidationError logged). OTP_TEST_MODE=1 still returns dev_code so tests work, but log noise is high. Consider suppressing the Resend send when OTP_TEST_MODE=1 to keep logs clean.",
+    "passlib bcrypt.__about__ AttributeError startup warning is pre-existing (per review instructions to ignore); worth a bcrypt/passlib pin bump in future."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration_36_connect_work.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (password path). OTP dev_code returned by /api/auth/otp/request (OTP_TEST_MODE=1) for second test user.",
+  "seed_data_creation": "Test seeds a connect_previews doc directly into MongoDB per review request; establish creates a TEST_-prefixed project which is cleaned up in the session teardown (projects/source_connections/project_memory/source_events all deleted). UI test also cleans up its own seeded project.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file: /app/backend/tests/test_iteration_36_connect_work.py — reuse it. It reads REACT_APP_BACKEND_URL from env OR falls back to /app/frontend/.env, so runs standalone. Ask Bracket test hits real Claude Haiku (~3-10s). Provider token validation tests hit real Figma/GitHub/Notion APIs with garbage tokens expecting 400 — leave as is. No 5xx observed on any Connect Work endpoint during the run.",
+  "rca of the issue": "N/A — no bugs found."
+}

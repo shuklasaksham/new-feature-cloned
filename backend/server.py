@@ -4202,6 +4202,15 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
 # --- Mount router ---
 app.include_router(api)
 
+# --- Connect Work (source connections) router + background poller ---
+import connectors as _connectors  # noqa: E402
+app.include_router(_connectors.router)
+
+
+@app.on_event("startup")
+async def _start_connector_poller():
+    asyncio.create_task(_connectors.poller_loop())
+
 _cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
 if _cors_env in ("", "*"):
     app.add_middleware(

@@ -14,6 +14,7 @@ import {
   ClipboardPaste,
   Paperclip,
   Pencil,
+  Plug,
   Square,
   CheckSquare,
   Trash2,
@@ -583,6 +584,15 @@ export default function Dashboard() {
                       <Paperclip size={12} /> Attach file
                     </>
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/app/connect")}
+                  className="clay-ghost px-3 py-2 t-tag press inline-flex items-center gap-1.5"
+                  data-testid="dashboard-connect-work-btn"
+                  title="Bring a conversation, design or file into Bracket"
+                >
+                  <Plug size={12} /> Connect work
                 </button>
                 <button
                   type="button"

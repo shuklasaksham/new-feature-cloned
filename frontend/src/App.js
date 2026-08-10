@@ -24,6 +24,7 @@ import AuthCallback from "./pages/AuthCallback";
 import Onboarding from "./pages/Onboarding";
 import ClaimProjects from "./pages/ClaimProjects";
 import Dashboard from "./pages/Dashboard";
+import ConnectWork from "./pages/ConnectWork";
 import Settings from "./pages/Settings";
 import ProjectFlow from "./pages/ProjectFlow";
 import ProjectOverview from "./pages/ProjectOverview";
@@ -75,6 +76,7 @@ export default function App() {
           {/* Tool (auth required) — wrapped in AppShell w/ collapsible sidebar */}
           <Route path="/app" element={<ProtectedRoute><AppShell><Dashboard /></AppShell></ProtectedRoute>} />
           <Route path="/app/new" element={<ProtectedRoute><AppShell><Dashboard /></AppShell></ProtectedRoute>} />
+          <Route path="/app/connect" element={<ProtectedRoute><AppShell><ConnectWork /></AppShell></ProtectedRoute>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
           <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />
           <Route path="/project/:id" element={<ProtectedRoute><AppShell><ProjectOverview /></AppShell></ProtectedRoute>} />

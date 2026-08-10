@@ -5,6 +5,7 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeft,
+  Plug,
   ShieldCheck,
   Settings as SettingsIcon,
   HelpCircle,
@@ -136,6 +137,14 @@ export default function AppSidebar() {
           collapsed={collapsed}
           active={isProjectsActive}
           dataTestId="sidebar-nav-dashboard"
+        />
+        <NavItem
+          to="/app/connect"
+          icon={Plug}
+          label="Connect Work"
+          collapsed={collapsed}
+          active={path.startsWith("/app/connect")}
+          dataTestId="sidebar-nav-connect"
         />
       </nav>
 

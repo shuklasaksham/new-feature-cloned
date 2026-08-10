@@ -16,6 +16,7 @@ import { api, formatApiError } from "../lib/api";
 import { useDialog } from "../components/Dialog";
 import ClientReviewModal from "../components/ClientReviewModal";
 import ApplyingChangesOverlay from "../components/ApplyingChangesOverlay";
+import ConnectedWorkPanel from "../components/ConnectedWorkPanel";
 
 const STEPS = [
   {
@@ -581,6 +582,9 @@ export default function ProjectOverview() {
             })}
           </div>
         </section>
+
+        {/* Connected work — sources, memory, live activity, ask bracket */}
+        <ConnectedWorkPanel projectId={id} />
 
         {/* Hint when locked / shared */}
         {(isLocked || isFrozen) && (
