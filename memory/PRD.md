@@ -69,6 +69,13 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-08-12 — **Legal pages** (screenshot-verified): `/privacy` + `/terms` added to the public marketing layout (Privacy.jsx, Terms.jsx). Privacy covers the source-level integration boundary (Gmail/Figma/GitHub/Notion/Slack), no-AI-training commitment, encrypted token storage, retention/deletion, and the **Google API Services Limited Use disclosure** (required for Gmail OAuth verification). Terms cover connected-source responsibilities, read-only access, AI-output disclaimers, acceptable use, liability. Footer now links Privacy + Terms (footer-privacy-link / footer-terms-link).
+- 2026-08-10 (later) — **One-click OAuth rework + Figma ACTIVATED** (testing agent iteration_37: 18/18 backend + frontend, 100%):
+  - Token-paste UI removed entirely; end users only sign in with the provider (popup → callback → postMessage → source modal). OAuth app creds are admin env vars: FIGMA_/GITHUB_/NOTION_/SLACK_CLIENT_ID+SECRET, GOOGLE_OAUTH_CLIENT_ID/SECRET. Unconfigured providers show SETUP REQUIRED. Guide: /app/OAUTH_SETUP.md.
+  - **Figma credentials configured in preview .env — figma:available, popup reaches figma.com/login.** Redirect URI derives from request host (preview + production both work if both URIs registered in the provider app).
+  - Multi-select sources (up to 5) in a searchable modal; preview analyzes all in parallel; establish creates one connection per source. Figma team-link browsing (projects→files) + file-link paste; Slack adapter (channels/DMs via user-token scopes) built and env-gated.
+  - Real brand logos via simple-icons CDN with lucide fallback (providersMeta.js).
+  - WhatsApp: no consumer OAuth exists (Meta policy) — stays Coming Soon pending user's decision on WhatsApp Business Platform.
 - 2026-08-10 — **CONNECT WORK (Phase 1-3) — contextual integrations layer** (testing agent: 18/18 backend + frontend E2E, 100%):
   - New `/app/connect` directory (11 providers, 4 categories, search, honest statuses: figma/github/notion=available, gmail=setup_required until GOOGLE_OAUTH_CLIENT_ID/SECRET env, rest coming_soon). Sidebar "Connect Work" nav + dashboard "Connect work" button.
   - Universal flow: choose app → token connect (Fernet-encrypted in `integration_accounts`, key CONNECT_TOKEN_KEY in .env) → select specific source (Figma: paste file URL; GitHub: repo list; Notion: page search; Gmail: OAuth + thread list, ready when creds exist) → AI preview (counts + suggested project + existing-project match ≥55% confidence) → create new project OR attach to existing.

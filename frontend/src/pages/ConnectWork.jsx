@@ -1,14 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ExternalLink,
-  KeyRound,
+  CheckSquare,
   Loader2,
   Search,
   Sparkles,
+  Square,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,102 +27,52 @@ function Chip({ status }) {
   return <span className="mono-tag px-2 py-0.5 rounded text-[9.5px]" style={c.style}>{c.label}</span>;
 }
 
-// ─── Directory card ────────────────────────────────────────────────────────
-function AppCard({ p, onPick }) {
+function AppCard({ p, onPick, busy }) {
   const clickable = p.status === "connected" || p.status === "available";
   return (
     <button
       type="button"
       onClick={() => onPick(p)}
-      disabled={!clickable && p.status !== "setup_required"}
+      disabled={p.status === "coming_soon" || busy === p.key}
       className="card-linear card-linear--solid p-4 text-left w-full transition-transform duration-200 hover:-translate-y-0.5 disabled:opacity-45 disabled:hover:translate-y-0"
       data-testid={`connect-app-${p.key}`}
     >
       <div className="flex items-start justify-between gap-2">
         <ProviderIcon provider={p.key} size={17} />
-        <Chip status={p.status} />
+        {busy === p.key ? <Loader2 size={13} className="animate-spin text-signal" /> : <Chip status={p.status} />}
       </div>
       <p className="mt-3 font-display font-semibold text-[14.5px] text-[var(--text)]">{p.label}</p>
       <p className="mt-1 text-[11.5px] text-[var(--text-3)] leading-snug">{p.desc}</p>
       {p.status === "connected" && p.account_label && (
         <p className="mt-2 mono-tag text-[9.5px] text-signal truncate">{p.account_label}</p>
       )}
+      {clickable && p.status === "available" && (
+        <p className="mt-2 text-[10px] text-[var(--text-3)]">One click — sign in with {p.label}, then pick your source.</p>
+      )}
     </button>
   );
 }
 
-// ─── Step: connect account (token) ─────────────────────────────────────────
-function TokenConnect({ provider, onDone, onBack }) {
-  const [token, setToken] = useState("");
-  const [saving, setSaving] = useState(false);
-  const save = async () => {
-    if (token.trim().length < 8) return toast.error("Paste a valid token first.");
-    setSaving(true);
-    try {
-      const { data } = await api.post("/connect/accounts", { provider: provider.key, token: token.trim() });
-      toast.success(`${provider.label} connected — ${data.label}`);
-      onDone();
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-  return (
-    <div className="card-linear card-linear--solid p-5 sm:p-6 max-w-[560px]" data-testid="connect-token-panel">
-      <div className="flex items-center gap-3">
-        <ProviderIcon provider={provider.key} size={18} />
-        <div>
-          <p className="font-display font-semibold text-[16px] text-[var(--text)]">Connect {provider.label}</p>
-          <p className="text-[11.5px] text-[var(--text-3)]">Bracket only reads the specific source you select — never your whole account.</p>
-        </div>
-      </div>
-      <p className="mt-4 text-[12.5px] text-[var(--text-2)] leading-relaxed">{provider.help}</p>
-      {provider.help_url && (
-        <a href={provider.help_url} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-[11.5px] text-signal hover:underline" data-testid="connect-token-help-link">
-          Open {provider.label} token settings <ExternalLink size={11} />
-        </a>
-      )}
-      <div className="mt-4 flex flex-col sm:flex-row gap-2">
-        <input
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && save()}
-          placeholder={`Paste your ${provider.label} token…`}
-          className="dashboard-search-input flex-1"
-          style={{ height: 38 }}
-          data-testid="connect-token-input"
-          autoFocus
-        />
-        <button onClick={save} disabled={saving} className="clay-signal px-4 py-2 t-tag press inline-flex items-center justify-center gap-2 disabled:opacity-40" data-testid="connect-token-save">
-          {saving ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />} Connect
-        </button>
-      </div>
-      <p className="mt-3 text-[10.5px] text-[var(--text-3)] inline-flex items-center gap-1.5">
-        <KeyRound size={10} /> Stored encrypted. Disconnect anytime.
-      </p>
-      <button onClick={onBack} className="mt-4 mono-tag text-muted hover:text-[var(--text)] text-[10px] inline-flex items-center gap-1" data-testid="connect-token-back">
-        <ArrowLeft size={11} /> BACK
-      </button>
-    </div>
-  );
-}
-
-// ─── Step: select the specific source ──────────────────────────────────────
-function SourceSelect({ provider, onSelect, onBack }) {
+// ─── Source selection popup — searchable, multi-select ─────────────────────
+function SourceModal({ provider, onConfirm, onClose }) {
   const [q, setQ] = useState("");
   const [url, setUrl] = useState("");
   const [sources, setSources] = useState([]);
-  const [loading, setLoading] = useState(provider.select_mode !== "url");
+  const [selected, setSelected] = useState({});
+  const [loading, setLoading] = useState(false);
+  const isFigma = provider.select_mode === "figma";
+  const autoList = !isFigma || provider.has_team;
 
-  const fetchSources = async (query = "", fileUrl = "") => {
+  const fetchSources = async (query = "", link = "") => {
     setLoading(true);
     try {
-      const { data } = await api.get(`/connect/${provider.key}/sources`, { params: { q: query, url: fileUrl } });
-      setSources(data.sources || []);
-      if (fileUrl && (data.sources || []).length === 1) onSelect(data.sources[0]);
-      else if (fileUrl && !(data.sources || []).length) toast.error("Couldn't resolve that link.");
+      const { data } = await api.get(`/connect/${provider.key}/sources`, { params: { q: query, url: link } });
+      const rows = data.sources || [];
+      setSources(rows);
+      if (link && FIG_FILE_RE.test(link) && rows.length === 1) {
+        setSelected((s) => ({ ...s, [rows[0].id]: rows[0] }));
+      }
+      if (link && !rows.length) toast.error("Nothing found for that link.");
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -131,92 +81,123 @@ function SourceSelect({ provider, onSelect, onBack }) {
   };
 
   useEffect(() => {
-    if (provider.select_mode !== "url") fetchSources();
+    if (autoList) fetchSources();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider.key]);
 
-  return (
-    <div className="max-w-[640px]" data-testid="connect-source-select">
-      <p className="mono-label">{"< select the source >"}</p>
-      <h2 className="mt-2 font-display font-semibold tracking-[-0.02em] text-[22px] text-[var(--text)]">
-        {provider.key === "gmail" ? "Select a conversation" : provider.key === "figma" ? "Select a design file" : `Select the ${provider.label} source`}
-      </h2>
-      <p className="mt-1 text-[12.5px] text-[var(--text-3)]">{provider.select_hint || "Choose the specific work you want Bracket to understand."}</p>
+  const toggle = (s) => {
+    setSelected((cur) => {
+      const next = { ...cur };
+      if (next[s.id]) delete next[s.id];
+      else if (Object.keys(next).length >= 5) { toast.info("You can connect up to 5 sources at once."); return cur; }
+      else next[s.id] = s;
+      return next;
+    });
+  };
 
-      {provider.select_mode === "url" ? (
-        <div className="mt-4 flex flex-col sm:flex-row gap-2">
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && url.trim() && fetchSources("", url.trim())}
-            placeholder="https://www.figma.com/design/…"
-            className="dashboard-search-input flex-1"
-            style={{ height: 38 }}
-            data-testid="connect-source-url-input"
-            autoFocus
-          />
-          <button
-            onClick={() => url.trim() && fetchSources("", url.trim())}
-            disabled={loading || !url.trim()}
-            className="clay-signal px-4 py-2 t-tag press inline-flex items-center justify-center gap-2 disabled:opacity-40"
-            data-testid="connect-source-url-go"
-          >
-            {loading ? <Loader2 size={13} className="animate-spin" /> : <ArrowRight size={13} />} Find file
-          </button>
+  const picked = Object.values(selected);
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" data-testid="source-modal">
+      <div className="absolute inset-0" style={{ background: "rgba(4,5,6,0.75)", backdropFilter: "blur(6px)" }} onClick={onClose} />
+      <div className="relative card-linear card-linear--solid w-full max-w-[620px] max-h-[82vh] flex flex-col p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <ProviderIcon provider={provider.key} size={17} />
+            <div className="min-w-0">
+              <p className="font-display font-semibold text-[16px] text-[var(--text)]">
+                {provider.key === "gmail" ? "Select a conversation" : provider.key === "figma" ? "Select design files" : `Select ${provider.label} sources`}
+              </p>
+              <p className="text-[11px] text-[var(--text-3)] truncate">{provider.select_hint}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="flow-header-action" data-testid="source-modal-close" aria-label="Close"><X size={12} /></button>
         </div>
-      ) : (
-        <div className="mt-4 dashboard-search relative max-w-[380px]">
+
+        {isFigma && (
+          <div className="mt-4 flex gap-2">
+            <input
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && url.trim() && fetchSources("", url.trim())}
+              placeholder="Paste a Figma file link or team link…"
+              className="dashboard-search-input flex-1"
+              style={{ height: 36 }}
+              data-testid="source-modal-url-input"
+            />
+            <button onClick={() => url.trim() && fetchSources("", url.trim())} disabled={loading || !url.trim()} className="flow-header-action" data-testid="source-modal-url-go">
+              {loading ? <Loader2 size={11} className="animate-spin" /> : <ArrowRight size={11} />}
+            </button>
+          </div>
+        )}
+
+        <div className={`${isFigma ? "mt-2" : "mt-4"} dashboard-search relative`}>
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && fetchSources(q)}
-            placeholder={provider.key === "gmail" ? "Search emails…" : "Search…"}
+            placeholder={provider.key === "gmail" ? "Search emails… (press Enter)" : "Search… (press Enter)"}
             className="dashboard-search-input w-full"
-            data-testid="connect-source-search"
+            data-testid="source-modal-search"
           />
         </div>
-      )}
 
-      {loading && provider.select_mode !== "url" ? (
-        <div className="mt-5 flex items-center gap-2 text-[12px] text-[var(--text-3)]"><Loader2 size={13} className="animate-spin" /> Loading sources…</div>
-      ) : (
-        <div className="mt-4 flex flex-col gap-2">
-          {sources.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => onSelect(s)}
-              className="card-linear card-linear--solid p-3.5 text-left flex items-center gap-3 transition-transform duration-200 hover:-translate-y-0.5"
-              data-testid={`connect-source-item-${s.id}`}
-            >
-              <ProviderIcon provider={provider.key} size={15} />
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-medium text-[var(--text)] truncate">{s.name}</p>
-                <p className="text-[11px] text-[var(--text-3)] truncate">
-                  {s.meta?.detail || ""}{s.meta?.extra ? ` · ${s.meta.extra}` : ""}{s.meta?.updated ? ` · ${timeAgo(s.meta.updated)}` : ""}
-                </p>
-              </div>
-              <ArrowRight size={13} className="text-[var(--text-3)] shrink-0" />
-            </button>
-          ))}
-          {!loading && provider.select_mode !== "url" && sources.length === 0 && (
-            <p className="text-[12px] text-[var(--text-3)] mt-2">Nothing found. {provider.key === "notion" ? "Make sure the page is shared with your integration." : "Try a different search."}</p>
+        <div className="mt-3 flex-1 min-h-0 overflow-y-auto flex flex-col gap-1.5" data-testid="source-modal-list">
+          {loading && <div className="flex items-center gap-2 text-[12px] text-[var(--text-3)] py-3"><Loader2 size={13} className="animate-spin" /> Loading…</div>}
+          {!loading && sources.map((s) => {
+            const on = !!selected[s.id];
+            return (
+              <button
+                key={s.id}
+                onClick={() => toggle(s)}
+                className="p-3 text-left flex items-center gap-3 rounded-lg transition-colors"
+                style={{ background: on ? "rgba(94,106,210,0.10)" : "rgba(255,255,255,0.02)", border: `1px solid ${on ? "rgba(94,106,210,0.4)" : "var(--hairline)"}` }}
+                data-testid={`source-modal-item-${s.id}`}
+              >
+                {on ? <CheckSquare size={15} className="text-signal shrink-0" /> : <Square size={15} className="text-[var(--text-3)] shrink-0" />}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-medium text-[var(--text)] truncate">{s.name}</p>
+                  <p className="text-[10.5px] text-[var(--text-3)] truncate">
+                    {s.meta?.detail || ""}{s.meta?.extra ? ` · ${s.meta.extra}` : ""}{s.meta?.updated ? ` · ${timeAgo(s.meta.updated)}` : ""}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+          {!loading && !sources.length && (
+            <p className="text-[12px] text-[var(--text-3)] py-3">
+              {isFigma ? "Paste a Figma file or team link above to browse your files." : "Nothing found. Try a different search."}
+            </p>
           )}
         </div>
-      )}
-      <button onClick={onBack} className="mt-5 mono-tag text-muted hover:text-[var(--text)] text-[10px] inline-flex items-center gap-1" data-testid="connect-source-back">
-        <ArrowLeft size={11} /> BACK
-      </button>
+
+        <div className="mt-4 pt-4 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+          <p className="text-[11px] text-[var(--text-3)]">
+            {picked.length ? `${picked.length} selected` : provider.multi ? "Select one or more sources" : "Select a source"}
+            {" · "}Bracket only reads what you select.
+          </p>
+          <button
+            onClick={() => onConfirm(picked)}
+            disabled={!picked.length}
+            className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-2 disabled:opacity-40"
+            data-testid="source-modal-confirm"
+          >
+            Connect {picked.length > 1 ? `${picked.length} sources` : "source"} <ArrowRight size={13} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── Step: preview + create/attach ─────────────────────────────────────────
+const FIG_FILE_RE = /figma\.com\/(file|design|board|proto)\//;
+
+// ─── Preview + create/attach ────────────────────────────────────────────────
 const COUNT_LABELS = { requirements: "requirements", decisions: "decisions", deliverables: "deliverables", deadlines: "deadlines", open_questions: "open questions" };
 
-function SourcePreview({ provider, source, attachProjectId, onDone, onBack }) {
-  const navigate = useNavigate();
-  const [phase, setPhase] = useState("analyzing"); // analyzing | ready | creating
+function SourcePreview({ provider, sources, attachProjectId, onDone, onBack }) {
+  const [phase, setPhase] = useState("analyzing");
   const [preview, setPreview] = useState(null);
   const [projects, setProjects] = useState([]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -227,13 +208,15 @@ function SourcePreview({ provider, source, attachProjectId, onDone, onBack }) {
       try {
         const [{ data }, projRes] = await Promise.all([
           api.post("/connect/preview", {
-            provider: provider.key, source_id: source.id, source_name: source.name, source_url: source.url || "",
+            provider: provider.key,
+            sources: sources.map((s) => ({ id: s.id, name: s.name, url: s.url || "" })),
           }),
           api.get("/projects").catch(() => ({ data: [] })),
         ]);
         if (cancelled) return;
         setPreview(data);
         setProjects(Array.isArray(projRes.data) ? projRes.data : projRes.data?.projects || []);
+        if (data.failed) toast.warning(`${data.failed} source(s) couldn't be read and were skipped.`);
         setPhase("ready");
       } catch (e) {
         if (!cancelled) { toast.error(formatApiError(e)); onBack(); }
@@ -258,8 +241,8 @@ function SourcePreview({ provider, source, attachProjectId, onDone, onBack }) {
     return (
       <div className="card-linear card-linear--solid p-8 max-w-[560px] text-center" data-testid="connect-analyzing">
         <Loader2 size={22} className="animate-spin mx-auto text-signal" />
-        <p className="mt-4 font-display font-semibold text-[16px] text-[var(--text)]">Bracket is reading this source…</p>
-        <p className="mt-1.5 text-[12px] text-[var(--text-3)]">{source.name}</p>
+        <p className="mt-4 font-display font-semibold text-[16px] text-[var(--text)]">Bracket is reading {sources.length > 1 ? `${sources.length} sources` : "this source"}…</p>
+        <p className="mt-1.5 text-[12px] text-[var(--text-3)]">{sources.map((s) => s.name).join(" · ").slice(0, 120)}</p>
         <p className="mt-3 text-[11.5px] text-[var(--text-3)]">Extracting requirements, decisions, deliverables and deadlines. ~30 seconds.</p>
       </div>
     );
@@ -272,14 +255,18 @@ function SourcePreview({ provider, source, attachProjectId, onDone, onBack }) {
 
   return (
     <div className="max-w-[640px]" data-testid="connect-preview">
-      <p className="mono-label">{"< review this source >"}</p>
+      <p className="mono-label">{"< review — we found your project >"}</p>
       <div className="mt-3 card-linear card-linear--solid p-5">
-        <div className="flex items-center gap-3">
-          <ProviderIcon provider={provider.key} size={17} />
-          <div className="min-w-0">
-            <p className="font-display font-semibold text-[15.5px] text-[var(--text)] truncate">{source.name}</p>
-            <p className="text-[11px] text-[var(--text-3)]">{PROVIDER_META[provider.key]?.label}{source.meta?.extra ? ` · ${source.meta.extra}` : ""}</p>
-          </div>
+        <div className="flex flex-col gap-2.5">
+          {(preview?.sources || []).map((s) => (
+            <div key={s.id} className="flex items-center gap-3">
+              <ProviderIcon provider={provider.key} size={15} />
+              <div className="min-w-0">
+                <p className="text-[13.5px] font-medium text-[var(--text)] truncate">{s.name}</p>
+                <p className="text-[10.5px] text-[var(--text-3)]">{PROVIDER_META[provider.key]?.label}</p>
+              </div>
+            </div>
+          ))}
         </div>
         <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--hairline)" }}>
           <p className="mono-tag text-signal text-[10px] inline-flex items-center gap-1.5"><Sparkles size={11} /> BRACKET DETECTED</p>
@@ -344,7 +331,7 @@ function SourcePreview({ provider, source, attachProjectId, onDone, onBack }) {
         )}
       </div>
       <button onClick={onBack} className="mt-5 mono-tag text-muted hover:text-[var(--text)] text-[10px] inline-flex items-center gap-1" data-testid="connect-preview-back">
-        <ArrowLeft size={11} /> CHOOSE A DIFFERENT SOURCE
+        <ArrowLeft size={11} /> CHOOSE DIFFERENT SOURCES
       </button>
     </div>
   );
@@ -360,23 +347,49 @@ export default function ConnectWork() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
-  const [view, setView] = useState("directory"); // directory | token | select | preview | done
+  const [view, setView] = useState("directory"); // directory | preview | done
   const [active, setActive] = useState(null);
-  const [source, setSource] = useState(null);
+  const [modalProvider, setModalProvider] = useState(null);
+  const [sources, setSources] = useState([]);
   const [doneProject, setDoneProject] = useState(null);
+  const [busy, setBusy] = useState(null);
+  const pendingOAuth = useRef(null);
 
   const loadProviders = async () => {
     try {
       const { data } = await api.get("/connect/providers");
       setProviders(data.providers || []);
       setCategories(data.categories || []);
+      return data.providers || [];
     } catch (e) {
       toast.error(formatApiError(e));
+      return [];
     } finally {
       setLoading(false);
     }
   };
   useEffect(() => { loadProviders(); }, []);
+
+  // OAuth popup completion — the callback page posts "bracket-oauth:{key}:{ok|error}"
+  useEffect(() => {
+    const onMsg = async (e) => {
+      if (typeof e.data !== "string" || !e.data.startsWith("bracket-oauth:")) return;
+      const [, key, result] = e.data.split(":");
+      if (result === "ok") {
+        toast.success(`${PROVIDER_META[key]?.label || key} connected.`);
+        const fresh = await loadProviders();
+        const p = fresh.find((x) => x.key === key);
+        if (p) setModalProvider(p);
+      } else {
+        toast.error("Authorization didn't complete — please try again.");
+      }
+      pendingOAuth.current = null;
+      setBusy(null);
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -387,19 +400,28 @@ export default function ConnectWork() {
   const pick = async (p) => {
     if (p.status === "coming_soon") return;
     if (p.status === "setup_required") {
-      toast.info(`${p.label} needs one-time setup (OAuth app credentials). It'll light up automatically once configured.`);
+      toast.info(`${p.label} isn't enabled yet — it needs one-time admin configuration.`);
       return;
     }
     setActive(p);
-    if (p.key === "gmail" && p.status === "available") {
-      try {
-        const { data } = await api.get("/connect/gmail/auth-url");
-        window.open(data.url, "_blank", "width=520,height=640");
-        toast.info("Authorize Gmail in the popup, then come back here.");
-      } catch (e) { toast.error(formatApiError(e)); }
+    if (p.status === "connected") {
+      setModalProvider(p);
       return;
     }
-    setView(p.status === "connected" ? "select" : "token");
+    // One-click OAuth: open the popup synchronously (popup-blocker safe),
+    // then point it at the provider's login screen.
+    const popup = window.open("about:blank", "bracket-oauth", "width=560,height=680");
+    setBusy(p.key);
+    try {
+      const { data } = await api.get(`/connect/${p.key}/auth-url`);
+      if (popup) popup.location = data.url;
+      else window.open(data.url, "_blank");
+      pendingOAuth.current = p.key;
+    } catch (e) {
+      if (popup) popup.close();
+      setBusy(null);
+      toast.error(formatApiError(e));
+    }
   };
 
   return (
@@ -448,7 +470,7 @@ export default function ConnectWork() {
                   <section key={cat} data-testid={`connect-category-${cat.toLowerCase().replace(/[^a-z]+/g, "-")}`}>
                     <p className="mono-tag text-muted text-[10px] mb-3">{cat.toUpperCase()}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {apps.map((p) => <AppCard key={p.key} p={p} onPick={pick} />)}
+                      {apps.map((p) => <AppCard key={p.key} p={p} onPick={pick} busy={busy} />)}
                     </div>
                   </section>
                 );
@@ -457,28 +479,12 @@ export default function ConnectWork() {
           </>
         )}
 
-        {view === "token" && active && (
-          <TokenConnect
-            provider={active}
-            onBack={() => { setActive(null); setView("directory"); }}
-            onDone={async () => { await loadProviders(); setView("select"); }}
-          />
-        )}
-
-        {view === "select" && active && (
-          <SourceSelect
-            provider={active}
-            onBack={() => { setActive(null); setView("directory"); }}
-            onSelect={(s) => { setSource(s); setView("preview"); }}
-          />
-        )}
-
-        {view === "preview" && active && source && (
+        {view === "preview" && active && sources.length > 0 && (
           <SourcePreview
             provider={active}
-            source={source}
+            sources={sources}
             attachProjectId={attachProjectId}
-            onBack={() => { setSource(null); setView("select"); }}
+            onBack={() => { setSources([]); setView("directory"); setModalProvider(active); }}
             onDone={(projectId, mode) => { setDoneProject({ id: projectId, mode }); setView("done"); }}
           />
         )}
@@ -489,10 +495,10 @@ export default function ConnectWork() {
               <Check size={20} style={{ color: "#22C55E" }} />
             </span>
             <p className="mt-4 font-display font-semibold text-[18px] text-[var(--text)]">
-              {doneProject.mode === "new" ? "Your project is ready" : "Source connected"}
+              {doneProject.mode === "new" ? "Your project is ready" : "Sources connected"}
             </p>
             <p className="mt-2 text-[12.5px] text-[var(--text-3)]">
-              Bracket will continue to understand this connected source as it evolves.
+              Bracket will continue to understand this connected work as it evolves.
             </p>
             <button
               onClick={() => navigate(`/project/${doneProject.id}`)}
@@ -504,6 +510,19 @@ export default function ConnectWork() {
           </div>
         )}
       </main>
+
+      {modalProvider && (
+        <SourceModal
+          provider={modalProvider}
+          onClose={() => setModalProvider(null)}
+          onConfirm={(picked) => {
+            setModalProvider(null);
+            setActive(modalProvider);
+            setSources(picked);
+            setView("preview");
+          }}
+        />
+      )}
     </div>
   );
 }

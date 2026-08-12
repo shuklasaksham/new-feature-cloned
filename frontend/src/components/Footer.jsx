@@ -67,7 +67,11 @@ export default function Footer() {
       <div className="border-t border-[var(--hairline)]">
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-8 py-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
           <p className="text-[12px] text-[var(--text-3)]">© {new Date().getFullYear()} Bracket. All rights reserved.</p>
-          <p className="text-[11px] font-mono tracking-[0.08em] uppercase text-[var(--text-3)]">{"< designed to decide >"}</p>
+          <div className="flex items-center gap-5">
+            <Link to="/privacy" className="text-[12px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors" data-testid="footer-privacy-link">Privacy</Link>
+            <Link to="/terms" className="text-[12px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors" data-testid="footer-terms-link">Terms</Link>
+            <p className="text-[11px] font-mono tracking-[0.08em] uppercase text-[var(--text-3)]">{"< designed to decide >"}</p>
+          </div>
         </div>
       </div>
     </footer>

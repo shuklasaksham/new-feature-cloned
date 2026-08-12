@@ -1,0 +1,30 @@
+{
+  "summary": "Iteration 37 Connect Work multi-source rewrite: 18/18 backend pytest tests passed and full frontend regression passed. Verified providers directory (5 setup_required OAuth + 6 coming_soon), auth-url 400/401 behavior for unconfigured providers, Figma OAuth env activation smoke (auth URL construction with client_id/redirect_uri/scope/state + bogus-state callback returns 400 HTML) with clean .env restoration, multi-source seeded preview → establish creates 1 project + 2 github connections + 3 memory items + 2 SOURCE_CONNECTED events, duplicate detection returns 409, Ask Bracket returns grounded answer with sources, memory confirm/ignore work, disconnect leaves the other connection intact and logs SOURCE_DISCONNECTED. Frontend /app/connect renders 11 cards with real simple-icons CDN <img> logos (gmail/figma/github/notion loaded naturalWidth=150), SETUP_REQUIRED chips on 5 OAuth providers, coming_soon cards disabled, clicking Figma shows the admin-config info toast and NO token/PAT input appears anywhere, search filter works. Project overview regression shows ConnectedWorkPanel with both source rows, memory items with Confirm/Keep as context/Ignore buttons, and Ask Bracket input. No 5xx or unexpected tracebacks in backend logs.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/app/connect", "issues": ["Slack simple-icons CDN image failed to load in the test run (naturalWidth=0), lucide Slack fallback icon rendered instead. Gmail/Figma/GitHub/Notion loaded fine. Likely a transient CDN hiccup — the onError fallback works correctly so users still see a valid icon. Not blocking."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_37_connect_multi.py",
+    "/app/test_reports/pytest/iter37.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "connectors.py is 1090+ lines — consider splitting into provider-specific modules (figma.py, github.py, notion.py, slack.py, gmail.py) plus a shared oauth.py/routes.py; well past the 700-line guideline.",
+    "OAUTH_CONF is evaluated at import time from os.environ, so admins toggling env vars must restart backend (working as designed — documented behavior).",
+    "PROVIDER_META.slack has slug 'slack' but CDN load failed on one run; consider preloading logos or shipping local SVGs to avoid CDN dependency for a production UX.",
+    "Establish route deletes preview after use — good; back-compat path for legacy flat previews preserved (nice)."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration_37_connect_multi.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (as documented)",
+  "seed_data_creation": "Test file seeds and cleans up its own connect_previews. Frontend regression seeded one project (7ef50c0c-...) which was deleted after the run — DB is clean.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 37 fully passed. Test file at /app/backend/tests/test_iteration_37_connect_multi.py is idempotent — it temporarily appends 2 lines to /app/backend/.env for the Figma smoke test then removes them and restarts backend. Backend .env verified restored (22 lines, no FIGMA_*). Safe to run repeatedly.",
+  "rca of the issue": "N/A — no failures."
+}

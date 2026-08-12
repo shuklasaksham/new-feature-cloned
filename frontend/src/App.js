@@ -18,6 +18,8 @@ import UseCases from "./pages/UseCases";
 import Pricing from "./pages/Pricing";
 import CaseStudies from "./pages/CaseStudies";
 import FAQ from "./pages/FAQ";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
@@ -64,6 +66,8 @@ export default function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/case-studies" element={<CaseStudies />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
           </Route>
 
           {/* Auth flow */}
