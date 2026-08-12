@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 38 — tested 4 new Connect Work features (Change Digest, Notification Bell, Cross-Source Ask, Connection Health). Backend: 10/10 pytest passed (1 health test skipped — demo user has no source_connections seeded so the health payload path is only exercised through code review; connections endpoint attaches health via _connection_health per code). Frontend: full flow works — bell badge shows unread=1 with seed scope_creep alert, panel opens showing 'Client asked for a testimonials section · Nordwind Premium Packaging Redesign', badge disappears after open (POST /api/notifications/read fires), Change Digest panel renders with title '3 changes across 1 project' and all 6 count tiles (DECISIONS=1, DEADLINES=1, SCOPE CHANGES=1, REQUIREMENTS=0, DELIVERABLES=0, OPEN QUESTIONS=0), 24h→7d toggle hits GET /api/connect/digest?window=7d (network verified), Ask Bracket modal opens/closes via close button and Escape, typing + submit calls POST /api/ask/all and renders a real grounded answer ('One scope creep to watch: Nordwind asked for a testimonials section...' 706 chars) inside data-testid=global-ask-answer. ONE BUG FOUND — suggestion chip click does not submit the question (stale closure).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "GlobalAskModal",
+        "issue": "Clicking a suggestion chip fills the input but does NOT submit — POST /api/ask/all is never fired. Root cause: /app/frontend/src/components/GlobalAskModal.jsx:121 uses `onClick={() => { setQ(s); setTimeout(submit, 20); }}` but `submit` is a closure that reads `q` from React state at render time. After setQ(s), the component hasn't re-rendered yet, so submit's closure still sees q='' and returns early at `if (question.length < 3 || asking) return;`. Fix: call submit with an explicit value, e.g. `const submit = async (override) => { const question = (override ?? q).trim(); ... }` and `onClick={() => { setQ(s); submit(s); }}`. Requirement in the review request: 'clicking a suggestion chip inside the ask modal also submits the question'.",
+        "selector": "[data-testid='global-ask-suggestions'] button",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_38_connect_features.py",
+    "/app/test_reports/pytest/iter38.xml"
+  ],
+  "action_items": [
+    "Fix GlobalAskModal.jsx suggestion-chip stale closure — pass the chosen string into submit() directly instead of relying on state update + setTimeout."
+  ],
+  "critical_code_review_comments": [
+    "connectors.py is now 1289 lines — still past the 700-line guideline; consider splitting the new digest/notifications/ask-all block into a `dashboard_feed.py` module.",
+    "GET /api/connect/digest and /api/notifications rely on user's projects being owner_user_id-scoped — good. Digest silently returns an empty payload for users with no projects (200) which is correct.",
+    "_connection_health() has clean traffic-light logic (green>7d, amber<=7d, red expired) with a gmail-refresh-token fast-path (auto-refresh reported as green even when access token is dead) — sensible.",
+    "GlobalAskModal chip closure bug (see frontend_issues). Also `setTimeout(submit, 20)` pattern smells; prefer an effect that watches q or an explicit argument.",
+    "NotificationBell polls every 45s — reasonable. Consider passing an AbortController to avoid stale POST /notifications/read races if the user closes the panel mid-fetch (minor).",
+    "Cross-source ask limits memory to 120 rows and digests to 6 sources hard-coded — fine for MVP but should be configurable per plan tier in future."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_38_connect_features.py"
+  ],
+  "success_rate": {"backend": "100% (10/10, 1 skipped due to no seeded source_connections for demo user)", "frontend": "93% (13/14 review checkpoints; suggestion-chip submit fails)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (password login).",
+  "seed_data_creation": "Did not create new seed data. Reset the existing scope_creep notification to read:false at the start and end of the run so subsequent runs still see unread=1.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file: /app/backend/tests/test_iteration_38_connect_features.py — includes an autouse fixture that resets the seed notification to unread=false before the run. TestConnectionHealth is skipped for the demo user because there are no source_connections seeded; to exercise it, seed one via the /api/connect/establish flow (see test_iteration_37_connect_multi.py) — the endpoint /api/projects/{id}/connections is verified in code review to call _connection_health() for every returned connection and attach a `health` dict. Frontend suggestion-chip bug is the only outstanding item; typed submit works fine.",
+  "rca of the issue": "GlobalAskModal.jsx line 121: `onClick={() => { setQ(s); setTimeout(submit, 20); }}`. Because `submit` is defined inline in the component body, its closure captures the current render's `q` (which is ''). setQ(s) schedules a re-render, but the setTimeout fires the previously-captured `submit` reference whose `q` is still '' — `question.trim().length < 3` short-circuits and the fetch is never issued. Reproducible 100%: open Ask modal → click any chip → input fills, but no POST /api/ask/all is sent. Mitigation: `const submit = async (override) => { const question = (typeof override === 'string' ? override : q).trim(); ... }` and `onClick={() => { setQ(s); submit(s); }}`."
+}

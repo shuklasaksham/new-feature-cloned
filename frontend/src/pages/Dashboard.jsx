@@ -23,6 +23,7 @@ import {
   FolderOpen,
   Lock,
   CircleDot,
+  Sparkles,
   X,
   LogOut,
 } from "lucide-react";
@@ -32,6 +33,9 @@ import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
 import { useDialog } from "../components/Dialog";
 import StructuringModal from "../components/StructuringModal";
+import NotificationBell from "../components/NotificationBell";
+import ChangeDigestPanel from "../components/ChangeDigestPanel";
+import GlobalAskModal from "../components/GlobalAskModal";
 
 // Quick-start seed briefs — one click drops a realistic messy paste in the
 // hero input so a curious user can watch Bracket work without typing a word.
@@ -155,6 +159,7 @@ export default function Dashboard() {
   const [submitting, setSubmitting] = useState(false);
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [askOpen, setAskOpen] = useState(false);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   // ─── Multi-select bulk-delete ─────────────────────────────────────
@@ -448,6 +453,7 @@ export default function Dashboard() {
           while we run the situation-framing pass. Hides itself once we
           navigate to /project/:id/flow. */}
       <StructuringModal open={submitting} />
+      <GlobalAskModal open={askOpen} onClose={() => setAskOpen(false)} />
 
       {/* Cinematic dark backdrop — dimmer version of the marketing ambient. */}
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
@@ -478,17 +484,25 @@ export default function Dashboard() {
               </p>
             </div>
             {/* Mobile-only sign out — the sidebar (and its logout) is hidden on phones. */}
-            <button
-              type="button"
-              onClick={async () => { await logout(); navigate("/", { replace: true }); }}
-              className="md:hidden shrink-0 self-center inline-flex items-center justify-center w-10 h-10 rounded-full border border-[var(--hairline)] text-[var(--text-3)] active:text-[var(--text)]"
-              aria-label="Sign out"
-              data-testid="dashboard-mobile-logout"
-            >
-              <LogOut size={16} strokeWidth={1.75} />
-            </button>
+            <div className="flex items-center gap-2 shrink-0 self-center">
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={async () => { await logout(); navigate("/", { replace: true }); }}
+                className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full border border-[var(--hairline)] text-[var(--text-3)] active:text-[var(--text)]"
+                aria-label="Sign out"
+                data-testid="dashboard-mobile-logout"
+              >
+                <LogOut size={16} strokeWidth={1.75} />
+              </button>
+            </div>
           </div>
         </motion.header>
+
+        {/* Change Digest — hidden entirely when there's nothing to show */}
+        <motion.div variants={item} data-testid="dashboard-change-digest-wrap">
+          <ChangeDigestPanel />
+        </motion.div>
 
         {/* Stat pills — only show when the user has projects. */}
         {hasProjects && (
@@ -593,6 +607,15 @@ export default function Dashboard() {
                   title="Bring a conversation, design or file into Bracket"
                 >
                   <Plug size={12} /> Connect work
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAskOpen(true)}
+                  className="clay-ghost px-3 py-2 t-tag press inline-flex items-center gap-1.5"
+                  data-testid="dashboard-ask-bracket-btn"
+                  title="Ask Bracket across every connected source"
+                >
+                  <Sparkles size={12} /> Ask Bracket
                 </button>
                 <button
                   type="button"

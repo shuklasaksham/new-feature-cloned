@@ -189,6 +189,48 @@ async def _get_account(user_id: str, provider: str) -> dict:
     return acc
 
 
+def _connection_health(account: Optional[dict]) -> Dict[str, Any]:
+    """Traffic-light health for a source's OAuth token.
+
+    green:  ok           — > 7 days remaining, or provider issues non-expiring tokens.
+    amber:  warning      — ≤ 7 days remaining (or ≤ 3d for gmail's hourly tokens).
+    red:    expired      — token already dead, or no account row at all.
+    """
+    if not account:
+        return {"level": "red", "state": "expired", "expires_at": None, "days_left": None,
+                "message": "Reconnect needed"}
+    try:
+        blob = _read_blob(account)
+    except Exception:
+        return {"level": "red", "state": "expired", "expires_at": None, "days_left": None,
+                "message": "Reconnect needed"}
+    provider = account.get("provider", "")
+    exp = blob.get("expires_at")
+    # Gmail refresh tokens keep the account alive even when access tokens expire hourly.
+    # For providers without expiry data (slack/github/notion) treat as always-ok.
+    if not exp:
+        return {"level": "green", "state": "ok", "expires_at": None, "days_left": None,
+                "message": "Healthy"}
+    now = time.time()
+    if exp <= now:
+        # For gmail, an expired access token but a refresh token means we'll silently refresh.
+        if provider == "gmail" and blob.get("refresh_token"):
+            return {"level": "green", "state": "ok", "expires_at": exp, "days_left": None,
+                    "message": "Auto-refreshing"}
+        return {"level": "red", "state": "expired", "expires_at": exp, "days_left": 0,
+                "message": "Token expired — reconnect"}
+    days_left = max(0.0, (exp - now) / 86400.0)
+    warn_days = 3 if provider == "gmail" else 7
+    if days_left <= warn_days:
+        if provider == "gmail" and blob.get("refresh_token"):
+            return {"level": "green", "state": "ok", "expires_at": exp, "days_left": days_left,
+                    "message": "Auto-refreshing"}
+        return {"level": "amber", "state": "warning", "expires_at": exp, "days_left": days_left,
+                "message": f"Reconnect in {int(days_left)}d"}
+    return {"level": "green", "state": "ok", "expires_at": exp, "days_left": days_left,
+            "message": "Healthy"}
+
+
 # ---------------------------------------------------------------------------
 # OAuth flow — generic start + per-provider callback exchange
 # ---------------------------------------------------------------------------
@@ -912,6 +954,8 @@ async def project_connections(project_id: str, request: Request):
     await _owned_project(project_id, request)
     conns = []
     async for c in db.source_connections.find({"project_id": project_id, "status": {"$ne": "disconnected"}}, {"_id": 0, "content_cache": 0}):
+        account = await db.integration_accounts.find_one({"user_id": c["user_id"], "provider": c["provider"]}, {"_id": 0})
+        c["health"] = _connection_health(account)
         conns.append(c)
     return {"connections": conns}
 
@@ -956,6 +1000,10 @@ async def memory_action(memory_id: str, body: MemoryActionIn, request: Request):
 
 @router.post("/projects/{project_id}/ask")
 async def ask_project(project_id: str, body: AskIn, request: Request):
+    # Alias: `/api/projects/all/ask` is equivalent to `/api/ask/all` so
+    # callers can use the same URL shape everywhere.
+    if project_id == "all":
+        return await ask_across_projects(body, request)
     project = await _owned_project(project_id, request)
     memory = []
     async for m in db.project_memory.find({"project_id": project_id, "status": {"$ne": "ignored"}}, {"_id": 0}).sort("created_at", -1).limit(80):
@@ -1020,6 +1068,19 @@ async def _sync_connection(conn: dict) -> dict:
         })
     if mem_docs:
         await db.project_memory.insert_many(mem_docs)
+    # Notifications — surface scope-creep items so risky client asks pop up.
+    scope_items = [d for d in mem_docs if d["category"] == "scope_change"]
+    if scope_items:
+        project_name = (project or {}).get("name", "") or "your project"
+        notif_docs = [{
+            "id": _uuid(), "user_id": conn["user_id"], "project_id": conn["project_id"],
+            "project_name": project_name, "connection_id": conn["id"],
+            "provider": conn["provider"], "source_label": conn["source_name"],
+            "memory_id": s["id"], "type": "scope_creep",
+            "title": s["title"], "detail": s.get("detail", ""),
+            "read": False, "created_at": now,
+        } for s in scope_items[:6]]
+        await db.notifications.insert_many(notif_docs)
     ev_docs = []
     for ev in events[:8]:
         if not isinstance(ev, dict) or not ev.get("summary"):
@@ -1069,6 +1130,130 @@ async def disconnect(connection_id: str, request: Request):
         "occurred_at": now, "created_at": now,
     })
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Change Digest — "what changed" across every project the user owns.
+# ---------------------------------------------------------------------------
+_WINDOW_HOURS = {"24h": 24, "7d": 24 * 7}
+_DIGEST_CATS = ("decision", "deadline", "scope_change", "requirement", "deliverable", "question")
+
+
+@router.get("/connect/digest")
+async def change_digest(request: Request, window: str = "24h"):
+    """Roll-up of new memory + activity across every project the user owns
+    inside the selected window. Feeds the dashboard 'what changed' panel."""
+    user = await current_user(request, db)
+    hours = _WINDOW_HOURS.get(window, 24)
+    since = (datetime.now(timezone.utc).timestamp() - hours * 3600)
+    since_iso = datetime.fromtimestamp(since, tz=timezone.utc).isoformat()
+
+    # Only look inside projects owned by this user.
+    project_ids: List[str] = []
+    projects_by_id: Dict[str, dict] = {}
+    async for p in db.projects.find({"owner_user_id": user["user_id"]}, {"_id": 0, "id": 1, "name": 1, "client_name": 1}):
+        project_ids.append(p["id"])
+        projects_by_id[p["id"]] = p
+    if not project_ids:
+        return {"window": window, "counts": {c: 0 for c in _DIGEST_CATS},
+                "total": 0, "items": [], "projects_with_changes": 0,
+                "scope_alerts": 0, "generated_at": _now_iso()}
+
+    q = {"project_id": {"$in": project_ids}, "created_at": {"$gte": since_iso},
+         "status": {"$ne": "ignored"}}
+    counts = {c: 0 for c in _DIGEST_CATS}
+    items: List[dict] = []
+    proj_touched = set()
+    scope_alerts = 0
+    async for m in db.project_memory.find(q, {"_id": 0}).sort("created_at", -1).limit(200):
+        cat = m.get("category", "")
+        if cat in counts:
+            counts[cat] += 1
+        if cat == "scope_change":
+            scope_alerts += 1
+        proj_touched.add(m["project_id"])
+        proj = projects_by_id.get(m["project_id"], {})
+        if len(items) < 12:
+            items.append({
+                "id": m["id"], "project_id": m["project_id"],
+                "project_name": proj.get("name", ""),
+                "client_name": proj.get("client_name", ""),
+                "category": cat, "title": m.get("title", ""),
+                "detail": m.get("detail", ""), "status": m.get("status", "detected"),
+                "provider": m.get("provider", ""), "source_label": m.get("source_label", ""),
+                "created_at": m.get("created_at", ""),
+            })
+    total = sum(counts.values())
+    return {"window": window, "counts": counts, "total": total,
+            "items": items, "projects_with_changes": len(proj_touched),
+            "scope_alerts": scope_alerts, "generated_at": _now_iso()}
+
+
+# ---------------------------------------------------------------------------
+# Notifications — scope creep + other AI-detected risks. In-app bell only.
+# ---------------------------------------------------------------------------
+class MarkReadIn(BaseModel):
+    ids: Optional[List[str]] = None  # None = mark all read
+
+
+@router.get("/notifications")
+async def list_notifications(request: Request, limit: int = 30):
+    user = await current_user(request, db)
+    limit = max(1, min(int(limit), 100))
+    items = []
+    async for n in db.notifications.find({"user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).limit(limit):
+        items.append(n)
+    unread = await db.notifications.count_documents({"user_id": user["user_id"], "read": False})
+    return {"items": items, "unread": unread}
+
+
+@router.post("/notifications/read")
+async def mark_notifications_read(body: MarkReadIn, request: Request):
+    user = await current_user(request, db)
+    q: Dict[str, Any] = {"user_id": user["user_id"], "read": False}
+    if body.ids:
+        q["id"] = {"$in": body.ids[:200]}
+    r = await db.notifications.update_many(q, {"$set": {"read": True, "read_at": _now_iso()}})
+    return {"ok": True, "updated": r.modified_count}
+
+
+# ---------------------------------------------------------------------------
+# Cross-source Ask — answer using memory + digests from ALL user's projects.
+# ---------------------------------------------------------------------------
+@router.post("/ask/all")
+async def ask_across_projects(body: AskIn, request: Request):
+    user = await current_user(request, db)
+    proj_names: Dict[str, str] = {}
+    async for p in db.projects.find({"owner_user_id": user["user_id"]}, {"_id": 0, "id": 1, "name": 1}):
+        proj_names[p["id"]] = p.get("name", "")
+    if not proj_names:
+        raise HTTPException(422, "Connect a source first — Bracket answers from connected work only.")
+
+    memory = []
+    async for m in db.project_memory.find(
+        {"project_id": {"$in": list(proj_names.keys())}, "status": {"$ne": "ignored"}},
+        {"_id": 0},
+    ).sort("created_at", -1).limit(120):
+        # Stamp the project label so citations show which project a claim came from.
+        m["source_label"] = f'{proj_names.get(m["project_id"], "")} · {m.get("source_label", "")}'.strip(" ·")
+        memory.append(m)
+
+    digests = []
+    async for c in db.source_connections.find(
+        {"project_id": {"$in": list(proj_names.keys())}, "status": {"$ne": "disconnected"}},
+        {"_id": 0, "source_name": 1, "provider": 1, "content_cache": 1, "project_id": 1},
+    ).sort("last_activity_at", -1).limit(6):
+        label = f'{proj_names.get(c["project_id"], "")} · {c.get("source_name", "")}'.strip(" ·")
+        digests.append({"label": label, "provider": c.get("provider", ""), "content": c.get("content_cache", "")})
+
+    if not memory and not digests:
+        raise HTTPException(422, "Connect a source first — Bracket answers from connected work only.")
+    try:
+        result = await answer_project_question("all your projects", body.question, memory, digests)
+    except Exception as e:
+        logger.warning("cross-source ask failed: %s", e)
+        raise HTTPException(502, "Bracket couldn't answer right now — please try again.")
+    return result
 
 
 # ---------------------------------------------------------------------------

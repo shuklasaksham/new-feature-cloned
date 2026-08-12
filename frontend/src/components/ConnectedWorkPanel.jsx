@@ -24,6 +24,13 @@ const CONN_STATUS = {
   error:           { label: "ERROR",      dot: "#EF4444" },
 };
 
+// Traffic-light styling for OAuth token freshness (backend `conn.health`).
+const HEALTH_STYLE = {
+  green: { dot: "#22C55E", label: "HEALTHY" },
+  amber: { dot: "#FFB84C", label: "EXPIRING SOON" },
+  red:   { dot: "#EF4444", label: "RECONNECT" },
+};
+
 const MEM_STATUS = {
   confirmed: { label: "CONFIRMED", style: { background: "rgba(94,106,210,0.12)", color: "#8B95E8", border: "1px solid rgba(94,106,210,0.3)" } },
   detected:  { label: "DETECTED",  style: { background: "rgba(255,184,76,0.10)", color: "#FFB84C", border: "1px solid rgba(255,184,76,0.25)" } },
@@ -42,14 +49,34 @@ const CATEGORIES = [
 
 function SourceRow({ conn, onSync, onDisconnect, syncing }) {
   const st = CONN_STATUS[conn.status] || CONN_STATUS.connected;
+  const health = conn.health || null;
+  const hs = health ? (HEALTH_STYLE[health.level] || null) : null;
   return (
     <div className="flex items-center gap-3 py-2.5" style={{ borderBottom: "1px solid var(--hairline)" }} data-testid={`source-row-${conn.id}`}>
       <ProviderIcon provider={conn.provider} size={15} />
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-medium text-[var(--text)] truncate">{conn.source_name}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-[13px] font-medium text-[var(--text)] truncate">{conn.source_name}</p>
+          {hs && health.level !== "green" && (
+            <span
+              className="mono-tag px-1.5 py-0.5 rounded text-[9px] inline-flex items-center gap-1"
+              style={{
+                color: hs.dot,
+                background: `${hs.dot}14`,
+                border: `1px solid ${hs.dot}55`,
+              }}
+              title={health.message || hs.label}
+              data-testid={`source-health-${conn.id}`}
+            >
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: hs.dot }} />
+              {hs.label}
+            </span>
+          )}
+        </div>
         <p className="text-[10.5px] text-[var(--text-3)] inline-flex items-center gap-1.5">
           <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: st.dot }} />
           {st.label} · Last synced {timeAgo(conn.last_synced_at)}
+          {health?.message && health.level !== "green" ? ` · ${health.message}` : ""}
         </p>
       </div>
       <button onClick={() => onSync(conn.id)} disabled={syncing === conn.id} className="flow-header-action" title="Sync now" data-testid={`source-sync-${conn.id}`}>

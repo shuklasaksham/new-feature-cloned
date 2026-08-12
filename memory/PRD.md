@@ -786,3 +786,26 @@ Brand promise: "Designers don't need more tools. They need better decisions."
   - **Backend** (`server.py::admin_compare_publish`): compute fractional-day length of each window (`before_days`, `after_days`) from the ISO timestamps. New helper `_per_day(k, raw, days)` divides sum-based metrics (`sessions`, `page_views`, `new_signups`, `new_projects`, `docs_shared`, `nps_responses`) by their respective window's days. Rates (`*_pct`, `client_accept_rate`) and averages (`avg_time_to_first_doc_min`, `avg_steps_completed`) are already normalized and pass through untouched. Response now includes `before_window.days`, `after_window.days`, and per-delta `before_raw`/`after_raw` for transparency. Delta labels updated to "Sessions / day", "Page views / day", etc., and given new `kind: "per_day"`. `pct_change` is computed on the normalized values so the direction is mathematically honest.
   - **Frontend** (`AdminAnalytics.jsx::PublishLogPanel`): sub-header explains that sum metrics are shown per day so unequal windows compare fairly. Comparison card header now shows `(14d)` / `(5.02d)` next to each date range. `DeltaValue` fmt gives per-day values extra precision (2 decimals when < 10, 1 decimal 10–100, 0 above 100).
   - **Verified on preview**: 14-day window comparison for `v0.9.4 · NPS launch` now displays "Sessions / day 13 → 2.79 (-78.5%)" and "NPS responses / day 0 → 1 (+100.0%)" — apples-to-apples across a 14d "before" and a 5.02d "after" window. Screenshot captured.
+
+
+- 2026-08-12 — **Iteration 74 — Figma OAuth granular scopes**:
+  - Figma OAuth was failing with `Invalid scopes for app` (HTTP 400) because `connectors.py` still requested the deprecated `file_read` scope.
+  - **Fix** (`backend/connectors.py::_auth_url`): replaced `scope=file_read` with the four granular scopes now required by Figma: `current_user:read,file_content:read,file_metadata:read,file_comments:read`. Verified — hitting the generated authorize URL now returns HTTP 200 (Figma login) instead of the previous 400. Redirect URI derivation via `x-forwarded-host` remains untouched so preview + production callbacks both continue to work.
+
+- 2026-08-12 — **Iteration 75 — Connect Work "intelligence layer" — 4 dashboard features**:
+  - **User ask**: Ship Change Digest, Scope Creep Alerts (in-app only), Cross-Source Ask (both `/api/ask/all` and per-project `/api/projects/all/ask` alias), Connection Health (tiered green > 7d / amber ≤ 7d / red expired).
+  - **Backend** (`backend/connectors.py`):
+    - `_connection_health(account)` — traffic-light computation on OAuth token expiry. Gmail refresh-token holders are reported green even when the access token is dead (auto-refresh path).
+    - `GET /api/connect/digest?window=24h|7d` — aggregates `project_memory` across every owned project inside the window. Returns `{counts, total, items, projects_with_changes, scope_alerts, generated_at}`.
+    - `GET /api/notifications` + `POST /api/notifications/read` — in-app bell backed by a `notifications` collection.
+    - Scope-creep notifications are now auto-inserted inside `_sync_connection` whenever a new `project_memory` item has `category == "scope_change"` (up to 6 per sync).
+    - `POST /api/ask/all` and `POST /api/projects/all/ask` (alias) — answers a single question stitched across every connected source in every owned project, with per-project labelled citations.
+    - `GET /api/projects/{id}/connections` now attaches `health` on every connection.
+  - **Frontend** (`frontend/src/`):
+    - `components/NotificationBell.jsx` — bell in dashboard header, 45s poll (paused when tab hidden), unread badge, outside-click / Escape to close, mark-read on open.
+    - `components/ChangeDigestPanel.jsx` — new panel on dashboard with 24h / 7d toggle, 6-category count strip, and up to 6 recent items. Panel hides itself entirely when there are no changes so first-time users don't see an empty card.
+    - `components/GlobalAskModal.jsx` — "Ask Bracket" modal (opened from a new button in the composer footer). Suggestion chips submit inline. Renders answer + confidence + labelled sources.
+    - `components/ConnectedWorkPanel.jsx` — `SourceRow` now shows an amber/red health badge next to the source name when the token needs attention.
+    - `pages/Dashboard.jsx` — wired the bell, digest, and Ask Bracket button; kept the mobile logout in the same header cluster.
+  - **Testing** (iteration_38.json): 10/10 backend pytest passing. Frontend: bell + digest + modal + suggestion-chip all verified end-to-end. Fixed one MEDIUM bug caught by the tester (stale closure on suggestion-chip submit) by passing the override string explicitly into `submit()`. Screenshot confirms modal now fires POST `/api/ask/all` on chip click and renders a grounded AI answer with Figma source citation for the seeded scope-change memory item.
+
