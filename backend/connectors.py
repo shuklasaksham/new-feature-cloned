@@ -88,9 +88,13 @@ def _redirect_uri(provider: str, request: Optional[Request] = None) -> str:
     """Derive from the requesting host so OAuth works on preview AND production
     (both callback URLs must be registered in the provider's OAuth app)."""
     base = PUBLIC_BASE
-    if request is not None and request.headers.get("host"):
-        proto = request.headers.get("x-forwarded-proto", "https")
-        base = f"{proto}://{request.headers['host']}"
+    if request is not None:
+        host = request.headers.get("x-forwarded-host") or ""
+        if not host:
+            host = request.headers.get("host") or ""
+        if host and "cluster" not in host and "localhost" not in host:
+            proto = request.headers.get("x-forwarded-proto", "https")
+            base = f"{proto}://{host}"
     return f"{base}/api/connect/{provider}/callback"
 
 
