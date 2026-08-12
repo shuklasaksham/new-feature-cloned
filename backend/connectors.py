@@ -199,7 +199,8 @@ def _auth_url_for(provider: str, state: str, ru: str) -> str:
     conf = OAUTH_CONF[provider]
     if provider == "figma":
         return "https://www.figma.com/oauth?" + urlencode({
-            "client_id": conf["id"], "redirect_uri": ru, "scope": "file_read",
+            "client_id": conf["id"], "redirect_uri": ru,
+            "scope": "current_user:read,file_content:read,file_metadata:read,file_comments:read",
             "state": state, "response_type": "code"})
     if provider == "gmail":
         return "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
