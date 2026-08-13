@@ -1,0 +1,315 @@
+import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X, Loader2, Copy, Mail, Slack, Check, AlertTriangle,
+  Sparkles, TrendingUp, ArrowRight, Trash2, ThumbsDown,
+} from "lucide-react";
+import { toast } from "sonner";
+import { api, formatApiError } from "../lib/api";
+import { ProviderIcon, timeAgo } from "../lib/providersMeta";
+import { CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
+
+/**
+ * ChangeActionDrawer — Bracket's signature interaction.
+ * When the user clicks a "detected" memory item, we open a right-side drawer
+ * that shows: (1) what changed, (2) the AI-drafted client reply, (3) the
+ * concrete impacts (scope/time/cost/risk), (4) the memory updates Bracket
+ * will apply on confirm, and (5) one-click Copy / Gmail / Slack targets.
+ *
+ * The user always stays in control — Bracket recommends, never auto-sends.
+ */
+export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [acting, setActing] = useState(null); // 'confirm' | 'dismiss' | 'not_a_change'
+
+  // Fetch AI suggestion once the drawer opens on a new item.
+  useEffect(() => {
+    if (!open || !item) return;
+    setResult(null);
+    if (item.status !== "detected" && item.status !== "review") return; // Only detected items need a suggested reply
+    setLoading(true);
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await api.post(`/connect/memory/${item.id}/suggest-reply`);
+        if (!cancelled) setResult(data);
+      } catch (e) {
+        if (!cancelled) toast.error(formatApiError(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, item]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!item) return null;
+  const cat = CATEGORY_BY_KEY[item.display_category] || CATEGORY_BY_KEY.requirement;
+  const status = STATUS_META[item.status] || STATUS_META.detected;
+
+  const copyReply = async () => {
+    if (!result?.reply) return;
+    try {
+      await navigator.clipboard.writeText(result.reply);
+      toast.success("Reply copied to clipboard");
+    } catch {
+      toast.error("Couldn't access clipboard — select the text manually.");
+    }
+  };
+
+  const doAction = async (action) => {
+    setActing(action);
+    try {
+      await api.post(`/connect/memory/${item.id}/action`, { action });
+      const msg = {
+        confirm: "Confirmed — memory updated",
+        dismiss: "Dismissed",
+        not_a_change: "Marked as not a change",
+      }[action] || "Updated";
+      toast.success(msg);
+      onChanged?.(item.id, action);
+      onClose?.();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const isChange = item.status === "detected" || item.status === "review";
+  const priorityMeta = {
+    high:   { label: "HIGH IMPACT",   color: "#DC2626", bg: "rgba(220,38,38,0.10)" },
+    medium: { label: "MEDIUM IMPACT", color: "#D97706", bg: "rgba(217,119,6,0.10)" },
+    low:    { label: "LOW IMPACT",    color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
+  }[result?.priority || "medium"] || {};
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            key="overlay"
+            className="fixed inset-0 z-[70]"
+            style={{ background: "rgba(15,18,38,0.35)", backdropFilter: "blur(4px)" }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose}
+            data-testid="change-action-drawer-overlay"
+          />
+          <motion.aside
+            key="drawer"
+            className="fixed right-0 top-0 bottom-0 w-full sm:w-[520px] lg:w-[600px] z-[71] overflow-y-auto"
+            style={{
+              background: "var(--surface)",
+              borderLeft: "1px solid var(--hairline)",
+              boxShadow: "-24px 0 60px rgba(15,18,38,0.10)",
+            }}
+            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            data-testid="change-action-drawer"
+          >
+            {/* Header */}
+            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
+                 style={{ background: "var(--surface)", borderBottom: "1px solid var(--hairline)" }}>
+              <div className="flex items-center gap-2 min-w-0">
+                <cat.icon size={14} style={{ color: cat.color }} />
+                <span className="mono-tag text-[10px]" style={{ color: cat.color }}>{cat.label.toUpperCase()}</span>
+                {item.is_scope_change && (
+                  <span className="mono-tag px-1.5 py-0.5 rounded text-[9px]"
+                        style={{ color: "#DC2626", background: "rgba(220,38,38,0.10)", border: "1px solid rgba(220,38,38,0.2)" }}>
+                    <AlertTriangle size={9} className="inline mr-0.5" /> SCOPE CREEP
+                  </span>
+                )}
+              </div>
+              <button
+                type="button" onClick={onClose}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full"
+                style={{ border: "1px solid var(--hairline)", color: "var(--text-3)" }}
+                aria-label="Close" data-testid="change-action-drawer-close"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-6">
+              {/* WHAT changed */}
+              <section>
+                <p className="mono-tag text-[9.5px] mb-1.5" style={{ color: "var(--text-3)" }}>WHAT CHANGED</p>
+                <h2 className="text-[19px] font-semibold tracking-[-0.02em] leading-snug" style={{ color: "var(--text)" }}>
+                  {item.title}
+                </h2>
+                {item.detail && (
+                  <p className="mt-1.5 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>{item.detail}</p>
+                )}
+                <div className="mt-2.5 flex items-center gap-2 flex-wrap text-[11px]" style={{ color: "var(--text-3)" }}>
+                  <ProviderIcon provider={item.provider} size={12} />
+                  <span>{item.source_label}</span>
+                  <span>·</span>
+                  <span>{timeAgo(item.created_at)}</span>
+                  <span className="mono-tag px-1.5 py-0.5 rounded text-[9px]"
+                        style={{ color: status.color, background: status.bg, border: `1px solid ${status.color}33` }}>
+                    {status.label}
+                  </span>
+                </div>
+              </section>
+
+              {isChange && (
+                <>
+                  {/* IMPACT */}
+                  <section>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="mono-tag text-[9.5px] inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
+                        <TrendingUp size={10} /> IMPACT
+                      </p>
+                      {result?.priority && (
+                        <span className="mono-tag px-1.5 py-0.5 rounded text-[9px]"
+                              style={{ color: priorityMeta.color, background: priorityMeta.bg, border: `1px solid ${priorityMeta.color}33` }}>
+                          {priorityMeta.label}
+                        </span>
+                      )}
+                    </div>
+                    {loading && (
+                      <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-3)" }}>
+                        <Loader2 size={12} className="animate-spin" /> Bracket is reading the project…
+                      </div>
+                    )}
+                    {result?.impacts?.length > 0 && (
+                      <ul className="space-y-2" data-testid="change-action-impacts">
+                        {result.impacts.map((imp, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+                            <ArrowRight size={13} className="mt-0.5 shrink-0" style={{ color: cat.color }} />
+                            <div>
+                              <span className="mono-tag text-[9px] mr-1.5" style={{ color: "var(--text-3)" }}>{String(imp.kind).toUpperCase()}</span>
+                              {imp.detail}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+
+                  {/* SUGGESTED REPLY */}
+                  <section>
+                    <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
+                      <Sparkles size={10} /> SUGGESTED RESPONSE
+                    </p>
+                    <div className="rounded-xl p-4"
+                         style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}>
+                      {loading ? (
+                        <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-3)" }}>
+                          <Loader2 size={12} className="animate-spin" /> Drafting a reply for you…
+                        </div>
+                      ) : result?.reply ? (
+                        <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text)" }} data-testid="change-action-reply">
+                          {result.reply}
+                        </p>
+                      ) : (
+                        <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
+                          No suggested reply — this item didn&apos;t need one.
+                        </p>
+                      )}
+                      {result?.reply && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button type="button" onClick={copyReply}
+                                  className="clay-signal px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
+                                  data-testid="change-action-copy">
+                            <Copy size={11} /> Copy
+                          </button>
+                          <a href={result.deep_links?.gmail_web} target="_blank" rel="noreferrer"
+                             className="clay-ghost px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
+                             data-testid="change-action-gmail">
+                            <Mail size={11} /> Send in Gmail
+                          </a>
+                          <a href={result.deep_links?.mailto}
+                             className="clay-ghost px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
+                             data-testid="change-action-mailto">
+                            <Mail size={11} /> Open in default mail
+                          </a>
+                          <a href={result.deep_links?.slack_web}
+                             className="clay-ghost px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
+                             data-testid="change-action-slack">
+                            <Slack size={11} /> Open Slack
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+
+                  {/* MEMORY UPDATES */}
+                  {result?.memory_updates?.length > 0 && (
+                    <section>
+                      <p className="mono-tag text-[9.5px] mb-2" style={{ color: "var(--text-3)" }}>MEMORY UPDATES ON CONFIRM</p>
+                      <ul className="space-y-1.5" data-testid="change-action-memory-updates">
+                        {result.memory_updates.map((u, i) => {
+                          const c = CATEGORY_BY_KEY[u.category] || cat;
+                          const actionColor = u.action === "add" ? "#16A34A" : u.action === "remove" ? "#DC2626" : "#4F46E5";
+                          return (
+                            <li key={i}
+                                className="flex items-start gap-2 text-[12.5px] rounded-lg px-2.5 py-2"
+                                style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}>
+                              <c.icon size={12} className="mt-0.5" style={{ color: c.color }} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="mono-tag text-[9px]" style={{ color: c.color }}>{c.label.toUpperCase()}</span>
+                                  <span className="mono-tag text-[9px]" style={{ color: actionColor }}>{String(u.action).toUpperCase()}</span>
+                                </div>
+                                <p className="mt-0.5 font-medium leading-snug" style={{ color: "var(--text)" }}>{u.title}</p>
+                                {u.detail && <p className="text-[11.5px]" style={{ color: "var(--text-3)" }}>{u.detail}</p>}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
+                </>
+              )}
+
+              {/* DECISION ROW */}
+              <section className="pt-2" style={{ borderTop: "1px solid var(--hairline)" }}>
+                <p className="mono-tag text-[9.5px] mb-2" style={{ color: "var(--text-3)" }}>{isChange ? "YOUR CALL" : "MEMORY ITEM"}</p>
+                <div className="flex flex-wrap gap-2">
+                  {isChange && (
+                    <button
+                      type="button" onClick={() => doAction("confirm")} disabled={acting !== null}
+                      className="clay-signal px-4 py-2 text-[12.5px] inline-flex items-center gap-1.5"
+                      data-testid="change-action-confirm"
+                    >
+                      {acting === "confirm" ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                      Confirm & update memory
+                    </button>
+                  )}
+                  {isChange && (
+                    <button
+                      type="button" onClick={() => doAction("not_a_change")} disabled={acting !== null}
+                      className="clay-ghost px-3 py-2 text-[12px] inline-flex items-center gap-1.5"
+                      data-testid="change-action-not-change"
+                    >
+                      <ThumbsDown size={11} /> Not a change
+                    </button>
+                  )}
+                  <button
+                    type="button" onClick={() => doAction("dismiss")} disabled={acting !== null}
+                    className="clay-ghost px-3 py-2 text-[12px] inline-flex items-center gap-1.5"
+                    data-testid="change-action-dismiss"
+                  >
+                    <Trash2 size={11} /> {isChange ? "Ignore" : "Dismiss"}
+                  </button>
+                </div>
+                <p className="mt-2 text-[10.5px]" style={{ color: "var(--text-3)" }}>
+                  Bracket never sends messages on your behalf. Nothing goes out until you click Send in your email or chat app.
+                </p>
+              </section>
+            </div>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

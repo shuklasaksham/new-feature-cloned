@@ -30,7 +30,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 
 from auth import current_user
-from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates
+from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, suggest_reply_for_change
 
 logger = logging.getLogger("bracket")
 ROOT_DIR = Path(__file__).parent
@@ -199,6 +199,10 @@ def _connection_health(account: Optional[dict]) -> Dict[str, Any]:
     if not account:
         return {"level": "red", "state": "expired", "expires_at": None, "days_left": None,
                 "message": "Reconnect needed"}
+    # Demo sources short-circuit — no real token to check.
+    if account.get("is_demo"):
+        return {"level": "green", "state": "ok", "expires_at": None, "days_left": None,
+                "message": "Demo source"}
     try:
         blob = _read_blob(account)
     except Exception:
@@ -717,7 +721,20 @@ class EstablishIn(BaseModel):
 
 
 class MemoryActionIn(BaseModel):
-    action: str  # confirm | context | ignore
+    action: str  # confirm | context | ignore | not_a_change | review | dismiss
+
+
+class MemoryEditIn(BaseModel):
+    title: Optional[str] = Field(default=None, max_length=200)
+    detail: Optional[str] = Field(default=None, max_length=800)
+    category: Optional[str] = Field(default=None, max_length=32)
+
+
+class MemoryCreateIn(BaseModel):
+    category: str = Field(min_length=1, max_length=32)
+    title: str = Field(min_length=1, max_length=200)
+    detail: str = Field(default="", max_length=800)
+    status: str = Field(default="confirmed", max_length=16)
 
 
 class AskIn(BaseModel):
@@ -954,19 +971,52 @@ async def project_connections(project_id: str, request: Request):
     await _owned_project(project_id, request)
     conns = []
     async for c in db.source_connections.find({"project_id": project_id, "status": {"$ne": "disconnected"}}, {"_id": 0, "content_cache": 0}):
-        account = await db.integration_accounts.find_one({"user_id": c["user_id"], "provider": c["provider"]}, {"_id": 0})
-        c["health"] = _connection_health(account)
+        if c.get("is_demo"):
+            c["health"] = {"level": "green", "state": "ok", "expires_at": None,
+                           "days_left": None, "message": "Demo source"}
+        else:
+            account = await db.integration_accounts.find_one({"user_id": c["user_id"], "provider": c["provider"]}, {"_id": 0})
+            c["health"] = _connection_health(account)
         conns.append(c)
     return {"connections": conns}
 
 
+MEMORY_CATEGORIES = [
+    "scope", "deliverable", "decision", "requirement",
+    "timeline", "risk", "assumption", "commercial", "question",
+]
+# Legacy AI-emitted categories that need to be normalised into the 9-bucket UI:
+_LEGACY_CAT_MAP = {
+    "deadline": "timeline",       # deadlines are timeline events
+    "scope_change": "scope",      # scope changes are scope items, kept as detected
+}
+
+
+def _canonical_category(cat: str) -> str:
+    return _LEGACY_CAT_MAP.get((cat or "").lower(), (cat or "requirement").lower())
+
+
 @router.get("/projects/{project_id}/memory")
 async def project_memory(project_id: str, request: Request):
+    """Return every project-memory item grouped into the 9 canonical categories.
+
+    Legacy AI-emitted categories (deadline, scope_change) are mapped to their
+    canonical bucket (timeline, scope) so the UI always sees the same 9 keys.
+    """
     await _owned_project(project_id, request)
-    items = []
-    async for m in db.project_memory.find({"project_id": project_id, "status": {"$ne": "ignored"}}, {"_id": 0}).sort("created_at", -1).limit(200):
-        items.append(m)
-    return {"items": items}
+    grouped: Dict[str, list] = {c: [] for c in MEMORY_CATEGORIES}
+    async for m in db.project_memory.find(
+        {"project_id": project_id, "status": {"$ne": "ignored"}},
+        {"_id": 0},
+    ).sort("created_at", -1).limit(500):
+        # Stamp `is_scope_change` so the UI can flag scope-creep items even
+        # after they get folded into the Scope bucket.
+        m["is_scope_change"] = (m.get("category") == "scope_change")
+        m["display_category"] = _canonical_category(m.get("category"))
+        grouped.setdefault(m["display_category"], []).append(m)
+    counts = {k: len(v) for k, v in grouped.items()}
+    total = sum(counts.values())
+    return {"grouped": grouped, "counts": counts, "total": total, "categories": MEMORY_CATEGORIES}
 
 
 @router.get("/projects/{project_id}/activity")
@@ -987,7 +1037,11 @@ async def memory_action(memory_id: str, body: MemoryActionIn, request: Request):
     project = await db.projects.find_one({"id": mem["project_id"]}, {"_id": 0, "owner_user_id": 1})
     if project and project.get("owner_user_id") and project["owner_user_id"] != user["user_id"]:
         raise HTTPException(403, "Not your project")
-    new_status = {"confirm": "confirmed", "context": "context", "ignore": "ignored"}.get(body.action)
+    status_map = {
+        "confirm": "confirmed", "context": "context", "ignore": "ignored",
+        "dismiss": "ignored", "not_a_change": "not_a_change", "review": "review",
+    }
+    new_status = status_map.get(body.action)
     if not new_status:
         raise HTTPException(400, "Unknown action")
     await db.project_memory.update_one(
@@ -996,6 +1050,132 @@ async def memory_action(memory_id: str, body: MemoryActionIn, request: Request):
          "$push": {"history": {"from": mem.get("status"), "to": new_status, "at": _now_iso()}}},
     )
     return {"ok": True, "status": new_status}
+
+
+@router.patch("/connect/memory/{memory_id}")
+async def memory_edit(memory_id: str, body: MemoryEditIn, request: Request):
+    """Inline-edit a memory item. Category can be re-classified; title/detail
+    can be corrected. Every change is recorded in `history` so the user can
+    see who moved what."""
+    user = await current_user(request, db)
+    mem = await db.project_memory.find_one({"id": memory_id}, {"_id": 0})
+    if not mem:
+        raise HTTPException(404, "Memory item not found")
+    project = await db.projects.find_one({"id": mem["project_id"]}, {"_id": 0, "owner_user_id": 1})
+    if project and project.get("owner_user_id") and project["owner_user_id"] != user["user_id"]:
+        raise HTTPException(403, "Not your project")
+    updates: Dict[str, Any] = {}
+    diff: Dict[str, Any] = {}
+    if body.title is not None and body.title.strip() and body.title.strip() != mem.get("title"):
+        updates["title"] = body.title.strip(); diff["title"] = [mem.get("title"), updates["title"]]
+    if body.detail is not None and body.detail != mem.get("detail", ""):
+        updates["detail"] = body.detail.strip(); diff["detail"] = [mem.get("detail"), updates["detail"]]
+    if body.category:
+        canon = _canonical_category(body.category)
+        if canon not in MEMORY_CATEGORIES:
+            raise HTTPException(400, "Unknown category")
+        if canon != mem.get("category"):
+            updates["category"] = canon; diff["category"] = [mem.get("category"), canon]
+    if not updates:
+        return {"ok": True, "updated": False}
+    updates["updated_at"] = _now_iso()
+    await db.project_memory.update_one(
+        {"id": memory_id},
+        {"$set": updates,
+         "$push": {"history": {"edit": diff, "by": user["user_id"], "at": _now_iso()}}},
+    )
+    return {"ok": True, "updated": True, "diff": diff}
+
+
+@router.post("/projects/{project_id}/memory")
+async def memory_create(project_id: str, body: MemoryCreateIn, request: Request):
+    """Manually add a memory item (e.g. from a phone call the client didn't
+    write down). No source_id required — provider is 'manual'."""
+    await _owned_project(project_id, request)
+    canon = _canonical_category(body.category)
+    if canon not in MEMORY_CATEGORIES:
+        raise HTTPException(400, f"Unknown category {body.category}")
+    now = _now_iso()
+    doc = {
+        "id": _uuid(), "project_id": project_id, "connection_id": "manual",
+        "provider": "manual", "source_label": "Added by you",
+        "category": canon, "title": body.title.strip(), "detail": (body.detail or "").strip(),
+        "status": body.status if body.status in ("confirmed", "detected", "review") else "confirmed",
+        "occurred_at": now, "created_at": now, "updated_at": now,
+        "history": [{"created": True, "by": (await current_user(request, db))["user_id"], "at": now}],
+    }
+    await db.project_memory.insert_one(doc)
+    doc.pop("_id", None)
+    return {"item": doc}
+
+
+@router.delete("/connect/memory/{memory_id}")
+async def memory_delete(memory_id: str, request: Request):
+    user = await current_user(request, db)
+    mem = await db.project_memory.find_one({"id": memory_id}, {"_id": 0})
+    if not mem:
+        raise HTTPException(404, "Memory item not found")
+    project = await db.projects.find_one({"id": mem["project_id"]}, {"_id": 0, "owner_user_id": 1})
+    if project and project.get("owner_user_id") and project["owner_user_id"] != user["user_id"]:
+        raise HTTPException(403, "Not your project")
+    await db.project_memory.update_one(
+        {"id": memory_id},
+        {"$set": {"status": "ignored", "updated_at": _now_iso()},
+         "$push": {"history": {"deleted": True, "by": user["user_id"], "at": _now_iso()}}},
+    )
+    return {"ok": True}
+
+
+@router.post("/connect/memory/{memory_id}/suggest-reply")
+async def memory_suggest_reply(memory_id: str, request: Request):
+    """AI-generates a suggested client reply for a detected change, plus a
+    concrete impact list and memory-update plan the UI can visualise. Also
+    returns deep-link URLs for Gmail (mailto/compose) and Slack so the user
+    can send from one click (no autonomous send — user is always in the loop)."""
+    user = await current_user(request, db)
+    mem = await db.project_memory.find_one({"id": memory_id}, {"_id": 0})
+    if not mem:
+        raise HTTPException(404, "Memory item not found")
+    project = await db.projects.find_one({"id": mem["project_id"]}, {"_id": 0, "id": 1, "name": 1, "client_name": 1, "owner_user_id": 1})
+    if not project or (project.get("owner_user_id") and project["owner_user_id"] != user["user_id"]):
+        raise HTTPException(403, "Not your project")
+    related: List[dict] = []
+    async for m in db.project_memory.find(
+        {"project_id": mem["project_id"], "status": {"$ne": "ignored"}, "id": {"$ne": memory_id}},
+        {"_id": 0, "category": 1, "title": 1, "detail": 1},
+    ).sort("created_at", -1).limit(30):
+        related.append(m)
+    try:
+        result = await suggest_reply_for_change(
+            project.get("name", ""), project.get("client_name", ""), mem, related
+        )
+    except Exception as e:
+        logger.warning("suggest_reply failed: %s", e)
+        raise HTTPException(502, "Bracket couldn't draft a reply right now.")
+
+    reply = result.get("reply", "") or ""
+    subject = f"Re: {project.get('name', 'your project')}"
+    # Compose deep links — safe, opens the provider's compose window prefilled.
+    mailto = "mailto:?subject={s}&body={b}".format(
+        s=_urlq(subject), b=_urlq(reply),
+    )
+    gmail_web = "https://mail.google.com/mail/?view=cm&fs=1&su={s}&body={b}".format(
+        s=_urlq(subject), b=_urlq(reply),
+    )
+    # Slack has no universal prefilled-message deep link; we point at the workspace app.
+    slack_web = "slack://open"
+    return {
+        "reply": reply,
+        "impacts": result.get("impacts", []),
+        "priority": result.get("priority", "medium"),
+        "memory_updates": result.get("memory_updates", []),
+        "deep_links": {"mailto": mailto, "gmail_web": gmail_web, "slack_web": slack_web},
+    }
+
+
+def _urlq(s: str) -> str:
+    from urllib.parse import quote
+    return quote(s or "", safe="")
 
 
 @router.post("/projects/{project_id}/ask")
@@ -1254,6 +1434,202 @@ async def ask_across_projects(body: AskIn, request: Request):
         logger.warning("cross-source ask failed: %s", e)
         raise HTTPException(502, "Bracket couldn't answer right now — please try again.")
     return result
+
+
+# ---------------------------------------------------------------------------
+# Demo project seed — one coherent Acme Dashboard Redesign story so first-time
+# users see the product alive from second one. Idempotent per user.
+# ---------------------------------------------------------------------------
+_DEMO_TAG = "demo:acme_dashboard_redesign"
+
+
+def _demo_project_doc(user: dict) -> dict:
+    now = _now_iso()
+    return {
+        "id": _uuid(),
+        "owner_user_id": user["user_id"],
+        "creator_name": user.get("name", ""),
+        "creator_email": user.get("email", ""),
+        "name": "Acme Dashboard Redesign",
+        "client_name": "Acme Corp",
+        "project_type": "Dashboard Design",
+        "engine": "claude",
+        "status": "in_progress",
+        "step": 5,
+        "is_demo": True,
+        "demo_tag": _DEMO_TAG,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+
+def _demo_memory(project_id: str) -> List[dict]:
+    """One coherent story: analytics moved from P1→P2, mobile dashboard added,
+    launch pushed to May 31. Every screen (Change → Action → Memory) can be
+    demoed from these items alone."""
+    now_ts = time.time()
+    def _at(mins_ago: int, iso: bool = True):
+        ts = now_ts - mins_ago * 60
+        return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat() if iso else ts
+    common = {"project_id": project_id, "connection_id": "demo", "history": []}
+    return [
+        # Scope items
+        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Project brief",
+         "category": "scope", "title": "Dashboard redesign — 6 core screens",
+         "detail": "Overview, Analytics, Users, Billing, Settings, Reports. Analytics in Phase 1.",
+         "status": "confirmed", "occurred_at": _at(60*24*10), "created_at": _at(60*24*10), "updated_at": _at(60*24*10),
+         "is_scope_change": False, "display_category": "scope"},
+        {**common, "id": _uuid(), "provider": "slack", "source_label": "#project-acme",
+         "category": "scope_change", "title": "Client asked to add a mobile dashboard",
+         "detail": "Sam: \"Let's add a mobile dashboard instead\" — not in original scope.",
+         "status": "detected", "occurred_at": _at(45), "created_at": _at(45), "updated_at": _at(45),
+         "is_scope_change": True, "display_category": "scope"},
+        # Deliverables
+        {**common, "id": _uuid(), "provider": "figma", "source_label": "Acme Dashboard.fig",
+         "category": "deliverable", "title": "6 Screens, Design System, Handoff",
+         "detail": "Overview + Analytics + Users + Billing + Settings + Reports, plus a shared design system and a Zeplin/Handoff pack.",
+         "status": "confirmed", "occurred_at": _at(60*24*7), "created_at": _at(60*24*7), "updated_at": _at(60*24*7),
+         "is_scope_change": False, "display_category": "deliverable"},
+        {**common, "id": _uuid(), "provider": "figma", "source_label": "Acme Mobile Dashboard.fig",
+         "category": "deliverable", "title": "Mobile dashboard added",
+         "detail": "New file created by client — 4 mobile screens sketched.",
+         "status": "detected", "occurred_at": _at(30), "created_at": _at(30), "updated_at": _at(30),
+         "is_scope_change": False, "display_category": "deliverable"},
+        # Decisions
+        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Kickoff notes",
+         "category": "decision", "title": "Web app first, mobile later",
+         "detail": "Confirmed on kickoff: ship web first, mobile in a follow-up phase.",
+         "status": "confirmed", "occurred_at": _at(60*24*9), "created_at": _at(60*24*9), "updated_at": _at(60*24*9),
+         "is_scope_change": False, "display_category": "decision"},
+        {**common, "id": _uuid(), "provider": "slack", "source_label": "#design-team",
+         "category": "decision", "title": "Dark mode approved for Web App",
+         "detail": "Approved by client. Charts using Recharts.",
+         "status": "confirmed", "occurred_at": _at(60*24*3), "created_at": _at(60*24*3), "updated_at": _at(60*24*3),
+         "is_scope_change": False, "display_category": "decision"},
+        # Requirements
+        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Requirements doc",
+         "category": "requirement", "title": "Guest login supported",
+         "detail": "Public share view of a single report — no signup required.",
+         "status": "confirmed", "occurred_at": _at(60*24*4), "created_at": _at(60*24*4), "updated_at": _at(60*24*4),
+         "is_scope_change": False, "display_category": "requirement"},
+        # Timeline
+        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Kickoff",
+         "category": "timeline", "title": "Original launch — May 24",
+         "detail": "Design: 2 weeks · Handoff: 3 days · Launch: May 24.",
+         "status": "confirmed", "occurred_at": _at(60*24*10), "created_at": _at(60*24*10), "updated_at": _at(60*24*10),
+         "is_scope_change": False, "display_category": "timeline"},
+        {**common, "id": _uuid(), "provider": "slack", "source_label": "#project-acme",
+         "category": "deadline", "title": "Launch may push to May 31",
+         "detail": "With the added mobile dashboard, timeline needs +3-4 design days.",
+         "status": "detected", "occurred_at": _at(25), "created_at": _at(25), "updated_at": _at(25),
+         "is_scope_change": False, "display_category": "timeline"},
+        # Risks
+        {**common, "id": _uuid(), "provider": "figma", "source_label": "Acme Dashboard.fig · Comments",
+         "category": "risk", "title": "3 dependencies could delay launch",
+         "detail": "Waiting on brand refresh, copy for the new dashboard, and dark-mode chart palette.",
+         "status": "detected", "occurred_at": _at(60*2), "created_at": _at(60*2), "updated_at": _at(60*2),
+         "is_scope_change": False, "display_category": "risk"},
+        # Assumptions
+        {**common, "id": _uuid(), "provider": "manual", "source_label": "Kickoff assumption",
+         "category": "assumption", "title": "Content will be finalised before Phase 2 kick",
+         "detail": "Assumption: client provides copy for the new dashboard 1 week before Phase 2 begins.",
+         "status": "confirmed", "occurred_at": _at(60*24*8), "created_at": _at(60*24*8), "updated_at": _at(60*24*8),
+         "is_scope_change": False, "display_category": "assumption"},
+        # Commercials
+        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · SOW",
+         "category": "commercial", "title": "SOW — fixed $24,000 for Phase 1",
+         "detail": "Milestones: 40% kickoff, 30% design review, 30% handoff.",
+         "status": "confirmed", "occurred_at": _at(60*24*10), "created_at": _at(60*24*10), "updated_at": _at(60*24*10),
+         "is_scope_change": False, "display_category": "commercial"},
+        # Open questions
+        {**common, "id": _uuid(), "provider": "slack", "source_label": "#project-acme",
+         "category": "question", "title": "Copy for the new mobile dashboard?",
+         "detail": "Client hasn't confirmed who writes the copy.",
+         "status": "detected", "occurred_at": _at(20), "created_at": _at(20), "updated_at": _at(20),
+         "is_scope_change": False, "display_category": "question"},
+    ]
+
+
+async def _seed_demo_for_user(user: dict) -> Optional[dict]:
+    """Idempotent — a user only ever gets one demo project. Returns the project
+    document on first seed, None if it already exists."""
+    existing = await db.projects.find_one(
+        {"owner_user_id": user["user_id"], "demo_tag": _DEMO_TAG},
+        {"_id": 0, "id": 1, "name": 1},
+    )
+    if existing:
+        return None
+    proj = _demo_project_doc(user)
+    await db.projects.insert_one(proj)
+    mem = _demo_memory(proj["id"])
+    # Sync connection stubs so Connected Sources panel is populated.
+    now = _now_iso()
+    conns = [
+        {"id": _uuid(), "project_id": proj["id"], "user_id": user["user_id"],
+         "provider": "gmail", "source_id": "demo-gmail", "source_name": "Acme Corp · Project thread",
+         "status": "connected", "last_synced_at": now, "last_activity_at": now,
+         "content_cache": "Demo thread — analytics moved to Phase 2, mobile dashboard added.",
+         "created_at": now, "updated_at": now, "is_demo": True},
+        {"id": _uuid(), "project_id": proj["id"], "user_id": user["user_id"],
+         "provider": "slack", "source_id": "demo-slack", "source_name": "#project-acme",
+         "status": "connected", "last_synced_at": now, "last_activity_at": now,
+         "content_cache": "Demo Slack channel — 2 changes today.",
+         "created_at": now, "updated_at": now, "is_demo": True},
+        {"id": _uuid(), "project_id": proj["id"], "user_id": user["user_id"],
+         "provider": "figma", "source_id": "demo-figma", "source_name": "Acme Dashboard.fig",
+         "status": "connected", "last_synced_at": now, "last_activity_at": now,
+         "content_cache": "Demo Figma file — 6 core screens + 4 new mobile screens.",
+         "created_at": now, "updated_at": now, "is_demo": True},
+    ]
+    await db.source_connections.insert_many(conns)
+    if mem:
+        await db.project_memory.insert_many(mem)
+    # One in-app scope-creep notification so the bell has something in it.
+    scope_creep = next((m for m in mem if m.get("is_scope_change")), None)
+    if scope_creep:
+        await db.notifications.insert_one({
+            "id": _uuid(), "user_id": user["user_id"], "project_id": proj["id"],
+            "project_name": proj["name"], "connection_id": "demo",
+            "provider": scope_creep["provider"], "source_label": scope_creep["source_label"],
+            "memory_id": scope_creep["id"], "type": "scope_creep",
+            "title": scope_creep["title"], "detail": scope_creep["detail"],
+            "read": False, "created_at": now,
+        })
+    return proj
+
+
+@router.post("/demo/seed")
+async def demo_seed(request: Request):
+    """Idempotent demo seed. Called by the dashboard on first mount so a brand
+    new user immediately sees Bracket alive with the Acme Dashboard story.
+    Returns {seeded: true, project_id} on first call and {seeded: false} after."""
+    user = await current_user(request, db)
+    proj = await _seed_demo_for_user(user)
+    if not proj:
+        existing = await db.projects.find_one(
+            {"owner_user_id": user["user_id"], "demo_tag": _DEMO_TAG},
+            {"_id": 0, "id": 1},
+        )
+        return {"seeded": False, "project_id": (existing or {}).get("id")}
+    return {"seeded": True, "project_id": proj["id"]}
+
+
+@router.delete("/demo/reset")
+async def demo_reset(request: Request):
+    """Delete the demo project + its memory + connections (used by the 'Delete demo'
+    button on the project page)."""
+    user = await current_user(request, db)
+    proj = await db.projects.find_one(
+        {"owner_user_id": user["user_id"], "demo_tag": _DEMO_TAG}, {"_id": 0, "id": 1},
+    )
+    if not proj:
+        return {"ok": True, "deleted": False}
+    pid = proj["id"]
+    await db.project_memory.delete_many({"project_id": pid})
+    await db.source_connections.delete_many({"project_id": pid})
+    await db.notifications.delete_many({"project_id": pid})
+    await db.projects.delete_one({"id": pid})
+    return {"ok": True, "deleted": True}
 
 
 # ---------------------------------------------------------------------------

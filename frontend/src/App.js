@@ -28,6 +28,7 @@ import ClaimProjects from "./pages/ClaimProjects";
 import Dashboard from "./pages/Dashboard";
 import ConnectWork from "./pages/ConnectWork";
 import Settings from "./pages/Settings";
+import ProjectMemory from "./pages/ProjectMemory";
 import ProjectFlow from "./pages/ProjectFlow";
 import ProjectOverview from "./pages/ProjectOverview";
 import ProjectDocument from "./pages/ProjectDocument";
@@ -83,7 +84,8 @@ export default function App() {
           <Route path="/app/connect" element={<ProtectedRoute><AppShell><ConnectWork /></AppShell></ProtectedRoute>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
           <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />
-          <Route path="/project/:id" element={<ProtectedRoute><AppShell><ProjectOverview /></AppShell></ProtectedRoute>} />
+          <Route path="/project/:id" element={<ProtectedRoute><AppShell><ProjectMemory /></AppShell></ProtectedRoute>} />
+          <Route path="/project/:id/legacy" element={<ProtectedRoute><AppShell><ProjectOverview /></AppShell></ProtectedRoute>} />
           <Route path="/project/:id/flow" element={<ProtectedRoute><AppShell><ProjectFlow /></AppShell></ProtectedRoute>} />
           <Route path="/project/:id/document" element={<ProtectedRoute><AppShell><ProjectDocument /></AppShell></ProtectedRoute>} />
 

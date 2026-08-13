@@ -205,6 +205,11 @@ export default function Dashboard() {
     (async () => {
       setLoading(true);
       try {
+        // First mount: idempotently seed the Acme demo project so a brand-new
+        // dashboard is never empty. Backend guarantees it runs exactly once
+        // per user, so calling it on every mount is safe (returns seeded:false
+        // after the first time).
+        try { await api.post("/demo/seed"); } catch { /* non-blocking */ }
         const { data } = await api.get("/projects");
         setProjects(Array.isArray(data) ? data : []);
       } catch (e) {

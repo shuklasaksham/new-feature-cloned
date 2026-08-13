@@ -9,87 +9,92 @@
    BRACKET — Linear-grade Design System v3
    ============================================================ */
 :root {
-  /* Surface stack — near-black w/ subtle warmth */
-  --bg:        #08090A;
-  --surface:   #0E0F12;
-  --surface-2: #16181D;
-  --surface-3: #1F2128;
+  /* -------- LIGHT THEME (Feb 2026 pivot — "premium intelligence system") --------
+     White paper + soft lavender surfaces + navy ink. Bracket-blue accent stays.
+     All variables below are the ONLY theme source of truth — never hard-code. */
 
-  /* Translucent hairlines — the secret sauce of Linear's calm look */
-  --hairline:        rgba(255, 255, 255, 0.07);
-  --hairline-strong: rgba(255, 255, 255, 0.10);
-  --hairline-hover:  rgba(255, 255, 255, 0.16);
+  /* Surface stack — paper white → soft lavender → deeper lavender */
+  --bg:        #FBFAFE;
+  --surface:   #FFFFFF;
+  --surface-1: #FFFFFF;
+  --surface-2: #F3F1FB;
+  --surface-3: #E9E5F7;
 
-  /* Text — pure neutral, no color anywhere */
-  --text:    #F7F7F8;
-  --text-2:  #A0A0AB;
-  --text-3:  #70707B;
-  --text-4:  #52525B;
+  /* Hairlines — thin cool-grey rules */
+  --hairline:        rgba(30, 27, 75, 0.09);
+  --hairline-strong: rgba(30, 27, 75, 0.14);
+  --hairline-hover:  rgba(30, 27, 75, 0.20);
 
-  /* Accent — used ONLY on icons, dots, charts, decorative elements. Never on text. */
+  /* Text — deep navy on paper */
+  --text:    #0F1226;
+  --text-2:  #4B5063;
+  --text-3:  #7A7F92;
+  --text-4:  #A4A7B6;
+
+  /* Bracket accent — kept from dark theme so brand recognition survives */
   --accent:       #5E6AD2;
   --accent-2:     #1E4AEB;
   --accent-soft:  rgba(94, 106, 210, 0.10);
   --accent-glow:  rgba(94, 106, 210, 0.20);
 
-  /* Semantic (icons + dots only) */
-  --success:        #22C55E;
-  --success-soft:   rgba(34, 197, 94, 0.12);
-  --warning:        #F59E0B;
-  --warning-soft:   rgba(245, 158, 11, 0.12);
-  --danger:         #EF4444;
-  --danger-soft:    rgba(239, 68, 68, 0.12);
+  /* Semantic — a hint stronger on paper */
+  --success:        #16A34A;
+  --success-soft:   rgba(22, 163, 74, 0.10);
+  --warning:        #D97706;
+  --warning-soft:   rgba(217, 119, 6, 0.12);
+  --danger:         #DC2626;
+  --danger-soft:    rgba(220, 38, 38, 0.10);
 
-  /* Primary CTA — white pill (Get started reference) */
-  --primary-bg:     #FFFFFF;
-  --primary-fg:     #08090A;
-  --primary-bg-hov: #EAEAEB;
+  /* Primary CTA — Bracket blue pill on paper */
+  --primary-bg:     #4F46E5;
+  --primary-fg:     #FFFFFF;
+  --primary-bg-hov: #4338CA;
 
-  /* Secondary CTA — dark pill (Contact sales reference) */
-  --secondary-bg:     #1A1B1F;
-  --secondary-fg:     #FAFAFA;
-  --secondary-bg-hov: #25272C;
+  /* Secondary CTA — soft lavender pill */
+  --secondary-bg:     #EDEBF9;
+  --secondary-fg:     #1E1B4B;
+  --secondary-bg-hov: #DED9F3;
 
-  /* Coral — "Create / Start a new project" CTA (new project empty state) */
-  --coral:        #FF7A6B;
-  --coral-2:      #FF5C4D;
-  --coral-soft:   rgba(255, 122, 107, 0.14);
+  /* Coral — new-project accent (unchanged, still pops on paper) */
+  --coral:        #F97066;
+  --coral-2:      #DC2626;
+  --coral-soft:   rgba(249, 112, 102, 0.14);
 
-  /* Decision step indicators (Workflow) */
-  --step-done:   #22C55E;  /* green for completed */
-  --step-active: #5E6AD2;  /* signal-blue for current — matches brand accent */
-  --step-pending:#3F3F46;  /* zinc for pending */
+  /* Step indicators */
+  --step-done:   #16A34A;
+  --step-active: #5E6AD2;
+  --step-pending:#CBCFD9;
 
-  /* Legacy aliases — keep existing JSX working */
+  /* Legacy aliases */
   --paper:  var(--bg);
   --ink:    var(--text);
   --signal: var(--accent);
   --muted:  var(--text-2);
   --faint:  var(--hairline);
-  --radius: 8px;
+  --radius: 10px;
 
-  /* shadcn semantic vars (HSL) — kept under --sc-* namespace so they don't collide */
-  --sc-background:      0 0% 0%;
-  --sc-foreground:      240 5% 97%;
-  --sc-card:            240 8% 6%;
-  --sc-card-foreground: 240 5% 97%;
-  --sc-popover:         240 7% 8%;
-  --sc-popover-foreground: 240 5% 97%;
-  --sc-primary:         240 5% 97%;
-  --sc-primary-foreground: 0 0% 0%;
-  --sc-secondary:       240 6% 11%;
-  --sc-secondary-foreground: 240 5% 97%;
-  --sc-muted:           240 6% 11%;
-  --sc-muted-foreground: 240 5% 65%;
-  --sc-accent:          252 100% 68%;
-  --sc-accent-foreground: 240 5% 97%;
-  --sc-destructive:     0 100% 68%;
-  --sc-destructive-foreground: 240 5% 97%;
-  --sc-border:          0 0% 100% / 0.08;
-  --sc-input:           240 6% 11%;
-  --sc-ring:            252 100% 68%;
+  /* shadcn semantic vars (HSL) — light-theme */
+  --sc-background:      252 40% 99%;
+  --sc-foreground:      240 43% 12%;
+  --sc-card:            0 0% 100%;
+  --sc-card-foreground: 240 43% 12%;
+  --sc-popover:         0 0% 100%;
+  --sc-popover-foreground: 240 43% 12%;
+  --sc-primary:         243 75% 59%;
+  --sc-primary-foreground: 0 0% 100%;
+  --sc-secondary:       246 55% 95%;
+  --sc-secondary-foreground: 243 42% 20%;
+  --sc-muted:           246 55% 95%;
+  --sc-muted-foreground: 231 12% 45%;
+  --sc-accent:          252 68% 60%;
+  --sc-accent-foreground: 0 0% 100%;
+  --sc-destructive:     0 72% 51%;
+  --sc-destructive-foreground: 0 0% 100%;
+  --sc-border:          232 30% 88%;
+  --sc-input:           246 55% 95%;
+  --sc-ring:            243 75% 59%;
 
-  /* Motion */
+  /* Motion — unchanged */
   --ease-out:        cubic-bezier(0, 0, 0.2, 1);
   --ease-spring:     cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-spring: cubic-bezier(0.16, 1, 0.3, 1);
@@ -119,8 +124,8 @@ html, body, #root {
 /* Scrollbar — minimal */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.06); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.12); border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb { background: rgba(15, 18, 38, 0.10); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15, 18, 38, 0.20); border: 2px solid transparent; background-clip: padding-box; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 

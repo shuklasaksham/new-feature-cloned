@@ -111,3 +111,50 @@ Return STRICT JSON only:
 }}"""
     data = await _run(prompt, "haiku")
     return data if isinstance(data, dict) else {"answer": "I couldn't analyze this right now.", "confidence": "low", "sources": []}
+
+
+async def suggest_reply_for_change(project_name: str, client_name: str, change: dict,
+                                   related_memory: list) -> dict:
+    """For a single detected change (scope shift, new requirement, deadline change, …),
+    generate a short, professional client-facing reply the user can copy/send.
+    Also enumerate the impacts and the recommended memory updates so the UI can
+    show 'here's what changed, here's what I'll do, here's what you should say'."""
+    context = "\n".join(
+        f'- [{m.get("category","?").upper()}] {m.get("title","")}' for m in related_memory[:20]
+    ) or "- (nothing relevant yet)"
+    prompt = f"""You are Bracket, helping a designer respond to a client for project "{project_name}"
+(client: {client_name or "the client"}).
+
+A change was just detected in the connected work:
+- Category: {change.get("category", "requirement")}
+- Title:    {change.get("title", "")}
+- Detail:   {change.get("detail", "")}
+- Source:   {change.get("source_label", "?")} ({change.get("provider", "?")})
+
+Related project memory:
+{context}
+
+Write a short (2-4 sentence) reply the designer could send to the client. It must:
+- Acknowledge the request clearly.
+- State what the designer will do next (concrete, not vague).
+- If the change likely expands scope or shifts the timeline, say so professionally — never combative.
+- No jargon, no filler. First-person "I".
+
+Also enumerate the concrete IMPACTS this change has on the project (scope, time, cost, risk) and the
+memory updates Bracket should apply if the designer accepts.
+
+Return STRICT JSON only:
+{{
+  "reply": "the copy-ready reply text",
+  "impacts": [
+    {{"kind": "scope|timeline|effort|cost|risk", "detail": "1 short sentence, quantified when possible"}}
+  ],
+  "priority": "low|medium|high",
+  "memory_updates": [
+    {{"category": "scope|deliverable|timeline|decision|risk|assumption|commercial|requirement", "action": "add|update|remove", "title": "short", "detail": "1 sentence"}}
+  ]
+}}"""
+    data = await _run(prompt, "haiku")
+    if not isinstance(data, dict):
+        return {"reply": "", "impacts": [], "priority": "medium", "memory_updates": []}
+    return data

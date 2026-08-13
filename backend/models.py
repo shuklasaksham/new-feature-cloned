@@ -93,3 +93,8 @@ class ProjectOut(BaseModel):
     # renders these as numbered prompts on Steps 2 and 3 to guide the next
     # paste. Shape: {"context": [str, ...], "decision": [str, ...]}.
     open_questions: Optional[Dict[str, Any]] = None
+    # Bracket "Client Operating System" fields — project memory era (Feb 2026).
+    client_name: Optional[str] = None
+    project_type: Optional[str] = None
+    is_demo: Optional[bool] = None
+    demo_tag: Optional[str] = None

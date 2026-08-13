@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 39 — Project Memory pivot. Backend: 12/12 pytest passed (demo seed idempotency, memory grouping with all 9 categories & 13 items, suggest-reply with impacts/priority/memory_updates/deep_links, PATCH title+diff, POST manual memory, all 5 memory actions, 3 demo connections green, DELETE demo/reset idempotent). Frontend: light/lavender theme confirmed (body bg rgb(251,250,254), heading rgb(15,18,38)), Acme card visible, ProjectMemory page renders, all 9 rail counts match spec exactly (Scope 2, Deliverables 2, Decisions 2, Requirements 1, Timeline 2, Risks 1, Assumptions 1, Commercials 1, Open Questions 1), 3 connected sources with green dots, Deliverables filter works, detected filter reduces to 1, mobile-dashboard row opens ChangeActionDrawer, AI reply/impacts(5)/memory_updates(5)/Copy/Gmail/Slack buttons render, Copy click doesn't crash, Escape closes drawer, Confirm closes drawer and moves item from DETECTED→CONFIRMED, Review CTA jumps to first category with detected items and applies detected filter. ONE BUG: DEMO tag missing and Client/Project meta not shown because backend ProjectOut model excludes is_demo/client_name/project_type/project_type/demo_tag fields.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/projects/{id}", "issue": "ProjectOut Pydantic model does not include `is_demo`, `client_name`, or `project_type` — so ProjectMemory.jsx cannot render the DEMO tag or the 'Acme Corp · Dashboard Design' subtitle (both fall back to 'Client · Project'). The demo project has all three fields in Mongo but they get filtered out by ProjectOut's `extra='ignore'`."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ProjectMemory header", "issue": "DEMO tag never renders because backend ProjectOut model filters out is_demo. Requirement in review: 'shows... DEMO tag'. Fix: add `is_demo: Optional[bool]=None`, `client_name: Optional[str]=None`, `project_type: Optional[str]=None` (and ideally `demo_tag`) to ProjectOut in /app/backend/models.py.", "selector": "[data-testid='project-memory-demo-tag']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_39_project_memory.py",
+    "/app/test_reports/pytest/iter39.xml"
+  ],
+  "action_items": [
+    "Add is_demo, client_name, project_type (and demo_tag) fields to ProjectOut in /app/backend/models.py so ProjectMemory.jsx can render the DEMO tag and Client · ProjectType subtitle."
+  ],
+  "critical_code_review_comments": [
+    "connectors.py is now 1665 lines — well past the 700-line guideline. Split the demo seed (~200 lines) and cross-source ask/notifications block into separate modules.",
+    "DELETE /api/demo/reset — the review request called for POST /api/demo/reset. The implementation uses DELETE. Works fine but naming/verb mismatches the spec.",
+    "ProjectOut model uses extra='ignore' which silently drops fields the UI needs — every new project field must be added to ProjectOut or it won't reach the client (this is the root cause of the DEMO-tag bug).",
+    "_demo_memory() emits one item with category='scope_change' and one with category='deadline' — those are legacy categories that go through _canonical_category(). Works but the seed should ideally use the canonical categories directly (scope, timeline).",
+    "ChangeActionDrawer.jsx cleanup: navigator.clipboard fallback is silent-friendly (good), Escape handler cleaned up on unmount (good)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_39_project_memory.py"
+  ],
+  "success_rate": {"backend": "100% (12/12)", "frontend": "95% (all flow checkpoints pass except DEMO tag)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (password login via /login → 'I have a password →').",
+  "seed_data_creation": "Used existing demo seed (POST /api/demo/seed) — idempotent. Backend TestDemoReset deletes+re-seeds. UI test confirmed the mobile-dashboard scope_change item; my Confirm action left it as 'confirmed' but the seed is easy to reset via POST /api/demo/seed after a DELETE /api/demo/reset.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file: /app/backend/tests/test_iteration_39_project_memory.py (12 tests, ~10s). Frontend login flow requires clicking [data-testid='login-toggle-password'] via page.evaluate (the toggle button is behind the page-loader in the first ~3s — either wait 4s or dispatch click via JS). ProjectMemory rail testids are project-memory-rail-{scope|deliverable|decision|requirement|timeline|risk|assumption|commercial|question}. Status filter testids: project-memory-filter-{all|detected|confirmed}. Suggested reply takes ~10-20s (real Claude Haiku). Confirmed mobile-dashboard scope_change item persists as 'confirmed' after test — call POST /api/demo/seed → DELETE /api/demo/reset → POST /api/demo/seed to reset. The only outstanding bug is the ProjectOut missing fields (see backend_issues).",
+  "rca of the issue": "DEMO tag missing: ProjectMemory.jsx line 109 renders `{project?.is_demo && <span data-testid='project-memory-demo-tag'>DEMO</span>}`. The `project` state comes from `api.get('/projects/${id}')` which returns a ProjectOut Pydantic model. ProjectOut (models.py:50-96) declares neither `is_demo` nor `client_name` nor `project_type`, and its ConfigDict(extra='ignore') silently drops these fields even though they exist on the demo project in Mongo. Fix: add `is_demo: Optional[bool] = None`, `client_name: Optional[str] = None`, `project_type: Optional[str] = None`, `demo_tag: Optional[str] = None` to ProjectOut in /app/backend/models.py. Reproduction: login as demo user → open Acme project → header shows 'Client · Project' instead of 'Acme Corp · Dashboard Design' and no DEMO tag. Backend verified via curl: GET /api/projects/{id} does NOT include is_demo/client_name (dropped by model)."
+}

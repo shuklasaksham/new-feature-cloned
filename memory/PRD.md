@@ -809,3 +809,25 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     - `pages/Dashboard.jsx` — wired the bell, digest, and Ask Bracket button; kept the mobile logout in the same header cluster.
   - **Testing** (iteration_38.json): 10/10 backend pytest passing. Frontend: bell + digest + modal + suggestion-chip all verified end-to-end. Fixed one MEDIUM bug caught by the tester (stale closure on suggestion-chip submit) by passing the override string explicitly into `submit()`. Screenshot confirms modal now fires POST `/api/ask/all` on chip click and renders a grounded AI answer with Figma source citation for the seeded scope-change memory item.
 
+
+- 2026-08-13 — **Iteration 76 — Client Operating System pivot (Project Memory)**:
+  - **Positioning shift** — Bracket is now framed as an AI-native Client OS: "Your client talks. Bracket remembers." The 5-step decision flow at /project/:id is superseded by a new **Project Memory** page. Legacy flow moved to /project/:id/legacy so no data is lost.
+  - **Theme flip** — every :root token in `frontend/src/index.css` rewritten for a white-paper + soft-lavender + navy-ink light theme (bg #FBFAFE, surface white, hairlines cool-grey, accent Bracket-blue #4F46E5). Scrollbar re-coloured. shadcn HSL vars updated. Every existing component that uses CSS variables adapts automatically.
+  - **9 canonical memory categories** — Scope, Deliverables, Decisions, Requirements, Timeline, Risks, Assumptions, Commercials, Open Questions. Legacy AI-emitted categories (`deadline`, `scope_change`) are normalised into their canonical bucket at read time so existing memory rows keep flowing. Source of truth: `frontend/src/lib/memoryCategories.js`.
+  - **Backend** (`connectors.py`):
+    - `GET /api/projects/{id}/memory` — grouped by 9 canonical categories + counts + total. Every row is stamped `is_scope_change` so the UI can still flag scope-creep items even after they land in the Scope bucket.
+    - `PATCH /api/connect/memory/{id}` — inline edit title / detail / category with a `history` diff.
+    - `POST /api/projects/{id}/memory` — manual add for "the phone call the client didn't write down".
+    - `DELETE /api/connect/memory/{id}` — soft delete (status → ignored, kept for audit).
+    - `POST /api/connect/memory/{id}/action` — extended to accept `dismiss` / `not_a_change` / `review` alongside the existing `confirm` / `context` / `ignore`.
+    - `POST /api/connect/memory/{id}/suggest-reply` — new signature interaction. Calls Haiku via `suggest_reply_for_change(project_name, client_name, change, related_memory)` and returns `{reply, impacts[], priority, memory_updates[], deep_links{mailto, gmail_web, slack_web}}`. Zero autonomous send — user is always in the loop.
+    - `POST /api/demo/seed` (idempotent) + `DELETE /api/demo/reset` — seeds/removes the "Acme Dashboard Redesign" demo project with 13 memory items telling one coherent story (analytics moved P1→P2, mobile dashboard added, launch pushed to May 31), 3 demo `source_connections` (Gmail/Slack/Figma with `is_demo: true`), and one scope-creep notification. The dashboard calls `POST /api/demo/seed` on first mount so a brand-new user never lands on an empty product.
+  - **`connect_ai.py`** — added `suggest_reply_for_change` (project-aware Haiku prompt returning strict JSON).
+  - **`models.py`** — `ProjectOut` extended with `client_name`, `project_type`, `is_demo`, `demo_tag` so the new UI can render the DEMO tag and client subtitle. (Root-caused by testing agent — `ConfigDict(extra="ignore")` was silently dropping the new fields.)
+  - **Frontend**:
+    - `pages/ProjectMemory.jsx` (new) — split layout: 240px left rail w/ 9 categories + a compact "Connected sources" widget → main pane w/ status filter (All / New-detected / Confirmed) and memory rows.
+    - `components/ChangeActionDrawer.jsx` (new) — right-side drawer opened on any detected memory row. Shows What Changed, Impact list (kind + quantified detail), AI-suggested Response with Copy / Send in Gmail / Open in default mail / Open Slack, Memory Updates preview (colour-coded add/update/remove per category), and a "Confirm & update memory" / "Not a change" / "Ignore" decision row. Never sends anything on the user's behalf.
+    - `lib/memoryCategories.js` (new) — 9-category metadata + STATUS_META.
+    - `App.js` — `/project/:id` → ProjectMemory, `/project/:id/legacy` → old ProjectOverview.
+    - `pages/Dashboard.jsx` — idempotent demo-seed on first mount.
+  - **Testing** (iteration_39.json): 12/12 backend pytest (`/app/backend/tests/test_iteration_39_project_memory.py`) + all frontend flow checkpoints. One MEDIUM bug caught (ProjectOut missing fields) — fixed before finish. Verified end-to-end: login → dashboard (light theme) → Acme project → 9 categories with correct counts → click detected scope-change row → drawer opens with AI reply (5 impacts, 5 memory updates, deep links) → Copy button doesn't crash → Confirm moves item from DETECTED→CONFIRMED.
