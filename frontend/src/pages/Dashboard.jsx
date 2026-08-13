@@ -36,6 +36,7 @@ import StructuringModal from "../components/StructuringModal";
 import NotificationBell from "../components/NotificationBell";
 import ChangeDigestPanel from "../components/ChangeDigestPanel";
 import GlobalAskModal from "../components/GlobalAskModal";
+import NewProjectComposer from "../components/NewProjectComposer";
 
 // Quick-start seed briefs — one click drops a realistic messy paste in the
 // hero input so a curious user can watch Bracket work without typing a word.
@@ -205,11 +206,8 @@ export default function Dashboard() {
     (async () => {
       setLoading(true);
       try {
-        // First mount: idempotently seed the Acme demo project so a brand-new
-        // dashboard is never empty. Backend guarantees it runs exactly once
-        // per user, so calling it on every mount is safe (returns seeded:false
-        // after the first time).
-        try { await api.post("/demo/seed"); } catch { /* non-blocking */ }
+        // Remove any legacy demo project (silent, one-shot cleanup after the pivot).
+        try { await api.delete("/demo/reset"); } catch { /* non-blocking */ }
         const { data } = await api.get("/projects");
         setProjects(Array.isArray(data) ? data : []);
       } catch (e) {
@@ -460,13 +458,9 @@ export default function Dashboard() {
       <StructuringModal open={submitting} />
       <GlobalAskModal open={askOpen} onClose={() => setAskOpen(false)} />
 
-      {/* Cinematic dark backdrop — dimmer version of the marketing ambient. */}
+      {/* Ambient dot pattern — subtle depth on paper. Colours come from CSS
+          tokens (see .hero-ambient--dashboard) so this respects the theme. */}
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10"
-        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
-      />
 
       <motion.main
         variants={container}
@@ -518,130 +512,12 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* ─── Composer — always the primary path. Big paste target. ──── */}
+        {/* ─── New composer: intent-first onboarding, no textbox. ────── */}
         <motion.section variants={item} data-testid="dashboard-composer-section">
-          <div
-            className="dashboard-paste-panel liquid-glass relative overflow-hidden"
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false); }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setDragOver(false);
-              const f = e.dataTransfer.files?.[0];
-              if (f) handleFileUpload(f);
-            }}
-            data-testid="dashboard-dropzone"
-          >
-            {dragOver && (
-              <div
-                className="absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] border-2 border-dashed pointer-events-none"
-                style={{ borderColor: "#5E6AD2", background: "rgba(94,106,210,0.10)", backdropFilter: "blur(2px)" }}
-                data-testid="dashboard-drop-overlay"
-              >
-                <p className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text)]">
-                  <Paperclip size={14} /> Drop your brief — PDF, TXT, PNG or JPEG
-                </p>
-              </div>
-            )}
-            <div
-              aria-hidden="true"
-              className="absolute -top-20 -right-20 h-[220px] w-[220px] rounded-full blur-[80px] opacity-[0.08] pointer-events-none"
-              style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
-            />
-            <textarea
-              ref={inputRef}
-              rows={3}
-              value={paste}
-              onChange={(e) => setPaste(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && canSubmit) {
-                  e.preventDefault();
-                  structureBrief();
-                }
-              }}
-              placeholder={"Paste your client's message here… An email. A WhatsApp thread. Kickoff notes. Whatever they sent you — Bracket reads the mess."}
-              className="dashboard-paste-textarea"
-              data-testid="dashboard-hero-paste-input"
-            />
-            <div className="dashboard-paste-footer">
-              <div className="text-[11.5px] text-[var(--text-3)] flex items-center gap-3 flex-wrap">
-                <span className="inline-flex items-center gap-1.5">
-                  <ClipboardPaste size={12} /> Paste anything
-                </span>
-                {paste.trim() && (
-                  <span data-testid="dashboard-hero-word-count">
-                    {wordCount} word{wordCount === 1 ? "" : "s"}
-                  </span>
-                )}
-                <span className="hidden md:inline text-[var(--text-3)]">
-                  or drag &amp; drop a file here
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.txt,.png,.jpg,.jpeg,application/pdf,text/plain,image/png,image/jpeg"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(e.target.files?.[0])}
-                  data-testid="dashboard-file-input"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading || submitting}
-                  className="clay-ghost px-3 py-2 t-tag press inline-flex items-center gap-1.5 disabled:opacity-40"
-                  data-testid="dashboard-hero-upload-btn"
-                  title="Upload a PDF, TXT, PNG or JPEG brief"
-                >
-                  {uploading ? (
-                    <>
-                      <Loader2 size={12} className="animate-spin" /> Reading…
-                    </>
-                  ) : (
-                    <>
-                      <Paperclip size={12} /> Attach file
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate("/app/connect")}
-                  className="clay-ghost px-3 py-2 t-tag press inline-flex items-center gap-1.5"
-                  data-testid="dashboard-connect-work-btn"
-                  title="Bring a conversation, design or file into Bracket"
-                >
-                  <Plug size={12} /> Connect work
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAskOpen(true)}
-                  className="clay-ghost px-3 py-2 t-tag press inline-flex items-center gap-1.5"
-                  data-testid="dashboard-ask-bracket-btn"
-                  title="Ask Bracket across every connected source"
-                >
-                  <Sparkles size={12} /> Ask Bracket
-                </button>
-                <button
-                  type="button"
-                  onClick={structureBrief}
-                  disabled={!canSubmit}
-                  className="clay-signal px-4 py-2 t-tag press inline-flex items-center gap-2 disabled:opacity-40"
-                  data-testid="dashboard-hero-structure-btn"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 size={13} className="animate-spin" /> Setting up…
-                    </>
-                  ) : (
-                    <>
-                      Structure this brief <ArrowUp size={13} />
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+          <NewProjectComposer
+            onAskOpen={() => setAskOpen(true)}
+            hasProjects={hasProjects}
+          />
         </motion.section>
 
         {/* ─── With projects: projects list. Without: onboarding tiles. ─ */}
@@ -786,60 +662,30 @@ export default function Dashboard() {
             </motion.div>
           </>
         ) : (
-          // ─── Empty state (first-time user) — teach the product. ───────
-          <>
-            <motion.div variants={item} data-testid="dashboard-quickstart-wrap">
-              <div className="flex items-baseline justify-between mb-3">
-                <p className="mono-tag text-muted text-[10px]">START FROM AN EXAMPLE</p>
-                <p className="text-[10.5px] text-[var(--text-3)]">1-click populates the box</p>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {QUICK_STARTS.map((t) => {
-                  const Icon = t.icon;
-                  return (
-                    <button
-                      key={t.key}
-                      type="button"
-                      onClick={() => applyTemplate(t)}
-                      className="example-card group text-left"
-                      data-testid={`dashboard-quickstart-${t.key}`}
-                    >
-                      <span className="example-card-arrow" aria-hidden="true">
-                        <ArrowRight size={11} />
-                      </span>
-                      <span className="example-card-icon">
-                        <Icon size={16} />
-                      </span>
-                      <p className="mt-3 text-[13.5px] font-medium leading-tight">{t.label}</p>
-                      <p className="mt-1 text-[11px] text-[var(--text-3)] leading-snug">{t.kicker}</p>
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-
-            <motion.div variants={item} data-testid="dashboard-outputs-wrap">
-              <div className="flex items-baseline justify-between mb-3">
-                <p className="mono-tag text-muted text-[10px]">WHAT BRACKET PRODUCES</p>
-                <p className="text-[10.5px] text-[var(--text-3)]">the full client-ready package</p>
-              </div>
-              <div className="produces-manifest">
-                {AI_OUTPUTS.map((o) => {
-                  const Icon = o.icon;
-                  return (
-                    <div key={o.label} className="produces-manifest-row">
-                      <span className="produces-manifest-check" aria-hidden="true">
-                        <Check size={11} />
-                      </span>
-                      <Icon size={13} className="text-[var(--text-3)] shrink-0" />
-                      <p className="text-[12.5px] font-medium text-[var(--text)]">{o.label}</p>
-                      <p className="text-[11px] text-[var(--text-3)] hidden md:block truncate">{o.hint}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </>
+          // ─── Empty state — the NewProjectComposer above already handles
+          // the intent-first CTA. Show a subtle "what Bracket produces"
+          // marketing note so first-time users know what to expect.
+          <motion.div variants={item} data-testid="dashboard-outputs-wrap">
+            <div className="flex items-baseline justify-between mb-3">
+              <p className="mono-tag text-muted text-[10px]">WHAT BRACKET DOES</p>
+              <p className="text-[10.5px] text-[var(--text-3)]">once a tool is connected</p>
+            </div>
+            <div className="produces-manifest">
+              {AI_OUTPUTS.map((o) => {
+                const Icon = o.icon;
+                return (
+                  <div key={o.label} className="produces-manifest-row">
+                    <span className="produces-manifest-check" aria-hidden="true">
+                      <Check size={11} />
+                    </span>
+                    <Icon size={13} className="text-[var(--text-3)] shrink-0" />
+                    <p className="text-[12.5px] font-medium text-[var(--text)]">{o.label}</p>
+                    <p className="text-[11px] text-[var(--text-3)] hidden md:block truncate">{o.hint}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
         )}
       </motion.main>
     </div>

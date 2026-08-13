@@ -370,6 +370,19 @@ export default function ConnectWork() {
   };
   useEffect(() => { loadProviders(); }, []);
 
+  // Deep-link support — /app/connect?tool=gmail auto-opens that provider's
+  // source-picker once providers finish loading, so the dashboard chips can
+  // drop the user straight into the flow.
+  useEffect(() => {
+    const tool = searchParams.get("tool");
+    if (!loading && tool && providers.length && !modalProvider) {
+      const p = providers.find((x) => x.key === tool);
+      if (p && p.status === "connected") setModalProvider(p);
+      else if (p) setActive(p);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, providers]);
+
   // OAuth popup completion — the callback page posts "bracket-oauth:{key}:{ok|error}"
   useEffect(() => {
     const onMsg = async (e) => {

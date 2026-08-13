@@ -1,0 +1,40 @@
+{
+  "summary": "Iteration 40 — Bracket dashboard redesign (light theme + NewProjectComposer + demo cleanup). Backend: 8/8 pytest passed (DELETE /api/demo/reset returns deleted:true after seed, deleted:false on subsequent calls, idempotent x3; GET /api/projects has no project named 'Acme Dashboard Redesign' after reset; iter39 regression: memory grouped shape has 9 canonical categories, suggest-reply returns valid JSON with reply/impacts). Frontend: dashboard renders on light theme (body bg rgb(251,250,254), dashboard-root transparent), no Acme card visible, NewProjectComposer present with title 'Where does your client talk?', all 5 tool chips (gmail/slack/figma/github/notion), Start CTA and Ask Bracket + Connect work pills legible (color rgb(75,80,99) on white bg), stat cards on white with hairline border rgba(30,27,75,0.09), project cards on white with same hairline border, OLD paste input [data-testid='dashboard-hero-paste-input'] confirmed REMOVED. Deep-link works: gmail chip → /app/connect?tool=gmail (Gmail detail auto-opens), Start CTA → /app/connect (no query). Project open still routes to /project/:id, ProjectMemory renders on light theme (body bg rgb(251,250,254)) with all 9 category rails and memory items.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/projects", "issue": "ProjectOut model still strips demo_tag/is_demo/client_name/project_type (carried over from iter39). Test had to match by name 'Acme Dashboard Redesign' instead of demo_tag. Not blocking iter40 spec since reset removes the project entirely, but the field-stripping bug from iter39 is still open."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_40_bracket_redesign.py",
+    "/app/test_reports/pytest/iter40.xml"
+  ],
+  "action_items": [
+    "(Leftover from iter39) Add is_demo/client_name/project_type/demo_tag to ProjectOut in /app/backend/models.py — still not fixed and affects any test/UI that wants to identify the demo project without hard-coding its name."
+  ],
+  "critical_code_review_comments": [
+    "Dashboard.jsx lines 461-467: dark backdrop divs (`hero-ambient hero-ambient--dashboard` + inline linear-gradient(180deg, #08090A 0%, #06070A ..., #050506)) are still rendered even on the light theme. They're currently hidden/tinted by the light CSS override so the page reads as white, but the DOM still ships the dark gradient. This is dead visual weight — should be removed or gated on a theme prop.",
+    "Dashboard.jsx still imports (unused after redesign): ClipboardPaste, Paperclip, ArrowUp, Sparkles, X, etc. and keeps state `paste`, `dragOver`, `submitting` file-upload flow, `structureBrief`, `handleFileUpload`, `applyTemplate`, `focusComposer`, QUICK_STARTS array — none of these are wired to any rendered element after the paste box was removed. ~200 lines of dead code. Should be pruned.",
+    "Dashboard.jsx line 223-230: useEffect that auto-focuses `inputRef.current` — inputRef is never attached to any element (paste box gone), so the effect is a no-op. Safe to remove.",
+    "ConnectWork.jsx auto-open useEffect (lines 376-384) uses `providers` in deps but ignores lint via eslint-disable — fine but the check `!modalProvider` means if the user manually closes the modal and searchParams still has ?tool=, it won't reopen. Acceptable UX.",
+    "connectors.py still 1665 lines — split recommended (repeat from iter39).",
+    "connectors.py DELETE /api/demo/reset — verb DELETE for an idempotent 'reset' is fine but the review request in earlier iterations mentioned POST; current DELETE works and is consistent with the frontend call.",
+    "The Dashboard.jsx dashboard-root has explicit dark-gradient overlays but the .dashboard-root class was made transparent — this creates fragile CSS coupling. Better: remove the JSX overlay entirely."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_40_bracket_redesign.py"
+  ],
+  "success_rate": {"backend": "100% (8/8)", "frontend": "100% (all iter40 checkpoints pass)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (password login via /login → 'I have a password →').",
+  "seed_data_creation": "Backend test seeds+resets demo project. Final teardown leaves demo removed. UI test triggers dashboard mount which auto-resets demo, so the Acme project is confirmed removed after login.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file: /app/backend/tests/test_iteration_40_bracket_redesign.py (8 tests, ~9s). Frontend: dashboard testids stable — dashboard-new-project-composer, dashboard-new-project-title, dashboard-new-project-tool-{gmail|slack|figma|github|notion}, dashboard-new-project-start, dashboard-connect-work-btn, dashboard-ask-bracket-btn. Old paste testid (dashboard-hero-paste-input) is gone. ConnectWork reads ?tool= and auto-opens the modal for connected providers or the detail card for unconnected — verified for gmail. ProjectOut still strips demo_tag/is_demo (iter39 bug open). Dashboard.jsx has ~200 lines of dead code (paste flow, QUICK_STARTS, file upload) — cleanup recommended but doesn't block release.",
+  "rca of the issue": "N/A — no functional regressions in iteration 40. All spec items pass. Only outstanding issue is the iter39 ProjectOut field-stripping bug (backend/models.py: add is_demo, client_name, project_type, demo_tag as Optional fields)."
+}

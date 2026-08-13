@@ -312,21 +312,37 @@ body::before {
 .clay-signal:active:not(:disabled) { transform: scale(0.98); }
 .clay-signal:disabled { background: var(--surface-2); color: var(--text-3); border-color: var(--hairline); cursor: not-allowed; }
 
+/* Ghost pill — used on the composer footer and elsewhere as a subtle CTA */
+.clay-ghost {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--hairline);
+  border-radius: 9999px;
+  height: 40px;
+  padding: 0 16px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: "Poppins", sans-serif; font-size: 13px; font-weight: 500;
+  letter-spacing: -0.005em; cursor: pointer;
+  transition: background var(--d-fast) var(--ease-out),
+              border-color var(--d-fast) var(--ease-out),
+              transform var(--d-fast) var(--ease-out);
+}
+.clay-ghost:hover:not(:disabled) { background: var(--surface-2); border-color: var(--hairline-hover); }
+.clay-ghost:active:not(:disabled) { transform: scale(0.98); }
+.clay-ghost:disabled { color: var(--text-3); background: var(--surface-2); cursor: not-allowed; }
+
 /* ============================================================
-   Cards — Weekly Pulse pattern: subtle surface, fine hairline, soft inner glow
+   Cards — Weekly Pulse pattern: paper surface, cool-grey rule, gentle drop
    ============================================================ */
 .card-brut,
 .card-linear {
   position: relative;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
   border-radius: 12px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 1px 0 rgba(0, 0, 0, 0.4),
-    0 20px 40px -24px rgba(0, 0, 0, 0.6);
+    0 1px 0 rgba(30, 27, 75, 0.02),
+    0 8px 24px -16px rgba(30, 27, 75, 0.10);
   transition: border-color var(--d-base) var(--ease-out),
               background var(--d-base) var(--ease-out),
               transform var(--d-base) var(--ease-out);
@@ -468,15 +484,12 @@ body::before {
    OutputCards and other elevated content surfaces. */
 .liquid-glass {
   position: relative;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
   border-radius: 14px;
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 1px 0 rgba(0, 0, 0, 0.4),
-    0 24px 56px -28px rgba(0, 0, 0, 0.7);
+    0 1px 0 rgba(30, 27, 75, 0.02),
+    0 24px 56px -32px rgba(30, 27, 75, 0.12);
   overflow: hidden;
   transition: border-color var(--d-base) var(--ease-out),
               background var(--d-base) var(--ease-out),
@@ -489,8 +502,8 @@ body::before {
   border-radius: inherit;
   pointer-events: none;
   background: linear-gradient(180deg,
-    rgba(255, 255, 255, 0.06) 0%,
-    rgba(255, 255, 255, 0) 35%);
+    rgba(94, 106, 210, 0.05) 0%,
+    rgba(94, 106, 210, 0) 45%);
   padding: 1px;
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -500,16 +513,16 @@ body::before {
   z-index: 1;
 }
 .liquid-glass:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.14);
+  background: var(--surface);
+  border-color: var(--hairline-strong);
 }
 
-/* Glass / sticky chrome — frosted nav bar (stronger blur) */
+/* Glass / sticky chrome — frosted nav bar on paper */
 .glass,
 .glass-panel {
-  background: rgba(8, 9, 10, 0.55);
-  backdrop-filter: saturate(180%) blur(28px);
-  -webkit-backdrop-filter: saturate(180%) blur(28px);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
   border-bottom: 1px solid var(--hairline);
 }
 
@@ -1198,8 +1211,8 @@ body::before {
   .testimonial-track { animation: none; }
 }
 .blueprint-bg {
-  background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(30,27,75,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(30,27,75,0.03) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -1230,11 +1243,11 @@ body::before {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.14) 1.1px, transparent 1.1px);
+  background-image: radial-gradient(rgba(30,27,75,0.08) 1.1px, transparent 1.1px);
   background-size: 26px 26px;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 30%, transparent 90%);
   -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 35%, #000 30%, transparent 90%);
-  opacity: 1;
+  opacity: 0.7;
 }
 @keyframes heroPulse {
   from { opacity: 0.65; transform: scale(1); }
@@ -2935,9 +2948,9 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 .dashboard-paste-panel:focus-within {
   border-color: rgba(94, 106, 210, 0.4);
   box-shadow:
-    0 0 0 1px rgba(94, 106, 210, 0.28) inset,
-    0 30px 80px -32px rgba(94, 106, 210, 0.35),
-    0 12px 40px -12px rgba(0, 0, 0, 0.55);
+    0 0 0 1px rgba(94, 106, 210, 0.20) inset,
+    0 20px 60px -24px rgba(94, 106, 210, 0.28),
+    0 8px 32px -8px rgba(30, 27, 75, 0.10);
 }
 .dashboard-paste-textarea {
   width: 100%;
@@ -2960,22 +2973,19 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px 16px 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.055);
+  border-top: 1px solid var(--hairline);
   flex-wrap: wrap;
 }
 
-/* Tiles — quickstart + output. Glass card with subtle hover lift. */
+/* Tiles — quickstart + output. Paper card with subtle hover lift. */
 .dashboard-tile {
   position: relative;
   border-radius: 14px;
   padding: 16px 16px 18px 16px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.038) 0%, rgba(255,255,255,0.012) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(8px) saturate(140%);
-  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
   color: var(--text);
-  transition: transform 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+  transition: transform 0.35s ease, border-color 0.35s ease, background 0.35s ease, box-shadow 0.35s ease;
   min-height: 92px;
   cursor: pointer;
 }
@@ -2985,25 +2995,22 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 .dashboard-tile:hover {
   transform: translateY(-2px);
   border-color: rgba(94, 106, 210, 0.32);
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.055) 0%, rgba(255,255,255,0.018) 100%);
+  box-shadow: 0 12px 32px -20px rgba(30, 27, 75, 0.14);
 }
 
-/* Recent project card — glass, with animated progress fill. */
+/* Recent project card — paper card, animated progress fill. */
 .dashboard-recent-card {
   position: relative;
   border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.012) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  transition: transform 0.35s ease, border-color 0.35s ease;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
   overflow: hidden;
 }
 .dashboard-recent-card:hover {
   transform: translateY(-2px);
   border-color: rgba(94, 106, 210, 0.34);
+  box-shadow: 0 16px 40px -24px rgba(30, 27, 75, 0.16);
 }
 .dashboard-recent-card a { color: inherit; }
 
@@ -3011,10 +3018,8 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 .dashboard-stat-card {
   border-radius: 12px;
   padding: 12px 14px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.028) 0%, rgba(255,255,255,0.008) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.055);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
 }
 
 /* ─── Search + filter tabs — top-right on projects list ────────────── */
@@ -3026,16 +3031,17 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   min-width: 200px;
   padding: 0 10px 0 30px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
   color: var(--text);
   font-size: 12.5px;
   outline: none;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 .dashboard-search-input:focus {
-  border-color: rgba(94, 106, 210, 0.36);
-  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(94, 106, 210, 0.4);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 .dashboard-search-input::placeholder {
   color: var(--text-3);
@@ -3046,8 +3052,8 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   gap: 2px;
   padding: 3px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
 }
 .dashboard-filter-tab {
   padding: 5px 10px;
@@ -3064,28 +3070,27 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   color: var(--text);
 }
 .dashboard-filter-tab.active {
-  color: var(--text);
-  background: rgba(94, 106, 210, 0.12);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
-/* ─── Project card — glass, action bar always visible under the card ─ */
+/* ─── Project card — paper card, action bar always visible under the card ─ */
 .dashboard-project-card {
   position: relative;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.012) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
-  transition: transform 0.35s ease, border-color 0.35s ease;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
   overflow: hidden;
 }
 .dashboard-project-card:hover {
   transform: translateY(-2px);
   border-color: rgba(94, 106, 210, 0.32);
+  box-shadow: 0 16px 40px -24px rgba(30, 27, 75, 0.14);
 }
 .dashboard-project-card.is-selected {
   border-color: rgba(94, 106, 210, 0.55);
-  background: linear-gradient(180deg, rgba(94,106,210,0.10) 0%, rgba(94,106,210,0.02) 100%);
+  background: linear-gradient(180deg, rgba(94,106,210,0.06) 0%, rgba(94,106,210,0.01) 100%);
   box-shadow: 0 0 0 1px rgba(94, 106, 210, 0.35) inset;
 }
 /* Selection checkbox — hidden by default, appears on card hover OR
@@ -3530,11 +3535,11 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
     radial-gradient(500px 380px at 88% 100%, rgba(124, 213, 255, 0.03), transparent 65%);
 }
 .hero-ambient--dashboard::after {
-  background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(30,27,75,0.06) 1px, transparent 1px);
   background-size: 30px 30px;
   mask-image: radial-gradient(ellipse 100% 90% at 50% 40%, #000 45%, transparent 90%);
   -webkit-mask-image: radial-gradient(ellipse 100% 90% at 50% 40%, #000 45%, transparent 90%);
-  opacity: 0.9;
+  opacity: 0.6;
 }
 
 
