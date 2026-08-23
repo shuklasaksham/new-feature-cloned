@@ -11,17 +11,16 @@ import {
  * Keep this file the single source of truth for category display — DO NOT
  * inline colours or labels in feature components.
  */
+// UI exposes only the six primary categories requested for v1 — Risks,
+// Assumptions, Commercials and Open Questions still live in the data model
+// (backend still writes them from the extractor) and can be surfaced later.
 export const MEMORY_CATEGORIES = [
-  { key: "scope",       label: "Scope",         plural: "Scope items",       icon: Target,         color: "#4F46E5" },
   { key: "deliverable", label: "Deliverables",  plural: "Deliverables",      icon: Package,        color: "#8B5CF6" },
-  { key: "decision",    label: "Decisions",     plural: "Decisions",         icon: Check,          color: "#16A34A" },
-  { key: "requirement", label: "Requirements",  plural: "Requirements",      icon: ListChecks,     color: "#0EA5E9" },
-  { key: "timeline",    label: "Timeline",      plural: "Timeline events",   icon: CalendarClock,  color: "#D97706" },
-  { key: "deadline",    label: "Deadlines",     plural: "Deadlines",         icon: CalendarClock,  color: "#EA580C" },
-  { key: "risk",        label: "Risks",         plural: "Risks",             icon: AlertTriangle,  color: "#DC2626" },
-  { key: "assumption",  label: "Assumptions",   plural: "Assumptions",       icon: Compass,        color: "#0891B2" },
-  { key: "commercial",  label: "Commercials",   plural: "Commercials",       icon: DollarSign,     color: "#059669" },
-  { key: "question",    label: "Open Questions",plural: "Open questions",    icon: HelpCircle,     color: "#7A7F92" },
+  { key: "scope",       label: "Scope",         plural: "Scope items",       icon: Target,         color: "#3B82F6" },
+  { key: "timeline",    label: "Timeline",      plural: "Timeline events",   icon: CalendarClock,  color: "#F59E0B" },
+  { key: "requirement", label: "Requirements",  plural: "Requirements",      icon: ListChecks,     color: "#22D3EE" },
+  { key: "decision",    label: "Decisions",     plural: "Decisions",         icon: Check,          color: "#4ADE80" },
+  { key: "deadline",    label: "Deadlines",     plural: "Deadlines",         icon: CalendarClock,  color: "#F87171" },
 ];
 
 export const CATEGORY_BY_KEY = MEMORY_CATEGORIES.reduce((acc, c) => {

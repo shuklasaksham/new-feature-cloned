@@ -30,7 +30,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 
 from auth import current_user
-from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, suggest_reply_for_change
+from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, suggest_reply_for_change, suggest_project_reply
 
 logger = logging.getLogger("bracket")
 ROOT_DIR = Path(__file__).parent
@@ -996,6 +996,69 @@ _LEGACY_CAT_MAP = {
 
 def _canonical_category(cat: str) -> str:
     return _LEGACY_CAT_MAP.get((cat or "").lower(), (cat or "requirement").lower())
+
+
+@router.post("/projects/{project_id}/suggest-reply")
+async def project_suggest_reply(project_id: str, request: Request):
+    """PROJECT-LEVEL suggested reply — ONE draft per project.
+
+    Grounds the reply in (a) the most recent inbound message from the client
+    across every connected source and (b) the full project memory. Displayed
+    on the Overview page. Never sends autonomously — the returned text is a
+    draft the user copies/edits/sends via their own tool.
+    """
+    project = await _owned_project(project_id, request)
+
+    # Latest inbound client "message" — the newest memory item detected from a
+    # non-manual source. This is the closest we have to "what did the client
+    # last say" without owning the raw thread. If none exists we still return
+    # a friendly ack reply so the Overview never looks broken.
+    latest_msg = None
+    async for m in db.project_memory.find(
+        {"project_id": project_id, "provider": {"$nin": ["manual", ""]}, "status": {"$ne": "ignored"}},
+        {"_id": 0},
+    ).sort("created_at", -1).limit(1):
+        latest_msg = m
+
+    # Memory context — one line per item, capped at 40 so the prompt stays lean.
+    memory_items: List[dict] = []
+    async for m in db.project_memory.find(
+        {"project_id": project_id, "status": {"$ne": "ignored"}},
+        {"_id": 0, "category": 1, "title": 1, "detail": 1},
+    ).sort("created_at", -1).limit(40):
+        memory_items.append(m)
+
+    try:
+        result = await suggest_project_reply(
+            project.get("name", ""), project.get("client_name", ""),
+            latest_msg or {}, memory_items,
+        )
+    except Exception as e:
+        logger.warning("project suggest-reply failed: %s", e)
+        raise HTTPException(502, "Bracket couldn't draft a reply right now.")
+
+    reply = result.get("reply", "") or ""
+    subject = f"Re: {project.get('name', 'your project')}"
+    gmail_web = "https://mail.google.com/mail/?view=cm&fs=1&su={s}&body={b}".format(
+        s=_urlq(subject), b=_urlq(reply),
+    )
+    mailto = "mailto:?subject={s}&body={b}".format(
+        s=_urlq(subject), b=_urlq(reply),
+    )
+    slack_web = "slack://open"
+
+    return {
+        "reply": reply,
+        "confidence": result.get("confidence", "medium"),
+        "grounded_in": result.get("grounded_in", []),
+        "based_on": (latest_msg or None) and {
+            "id": latest_msg["id"], "title": latest_msg.get("title", ""),
+            "provider": latest_msg.get("provider", ""),
+            "source_label": latest_msg.get("source_label", ""),
+            "created_at": latest_msg.get("created_at", ""),
+        },
+        "deep_links": {"mailto": mailto, "gmail_web": gmail_web, "slack_web": slack_web},
+    }
 
 
 @router.get("/projects/{project_id}/memory")

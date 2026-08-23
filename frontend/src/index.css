@@ -10,65 +10,65 @@
    ============================================================ */
 :root {
   /* ==========================================================
-     BRACKET Design System — Feb 2026
-     Poppins on paper. JetBrains Mono for the data layer.
-     Palette owned by /docs Design System (§02, §03, §05, §06).
+     BRACKET Design System — Dark v2 (Notion-inspired)
+     Paper: charcoal. Ink: near-white. Brand: Bracket blue.
+     Every visual value in the app comes from a token here — never inline.
      ========================================================== */
 
-  /* --- Core surfaces --------------------------------------- */
-  --bg:            #FFFFFF;   /* Main background            */
-  --surface:       #FFFFFF;   /* Card / panel default        */
-  --surface-1:     #FFFFFF;
-  --surface-2:     #F8F8F7;   /* Secondary surface           */
-  --surface-3:     #F2F2F0;   /* Hover state                 */
-  --surface-hover: #F2F2F0;
-  --surface-active:#EBEBE8;
+  /* --- Core surfaces (dark) -------------------------------- */
+  --bg:            #191919;   /* Main background            */
+  --surface:       #1E1E1E;   /* Card / panel default        */
+  --surface-1:     #1E1E1E;
+  --surface-2:     #232323;   /* Hover / sub-surface        */
+  --surface-3:     #2A2A2A;   /* Active                      */
+  --surface-hover: #232323;
+  --surface-active:#2A2A2A;
 
-  /* --- Borders --------------------------------------------- */
-  --hairline:        #E6E6E3; /* Default border              */
-  --hairline-strong: #D4D4D0; /* Emphasised border           */
-  --hairline-hover:  #B5B5AF;
+  /* --- Borders (thin, always token'd) ---------------------- */
+  --hairline:        rgba(255, 255, 255, 0.07);
+  --hairline-strong: rgba(255, 255, 255, 0.11);
+  --hairline-hover:  rgba(255, 255, 255, 0.18);
 
   /* --- Text ------------------------------------------------ */
-  --text:    #151515;         /* Primary text                */
-  --text-2:  #5F5F5B;         /* Secondary text              */
-  --text-3:  #8A8A84;         /* Metadata                    */
-  --text-4:  #B5B5AF;         /* Disabled                    */
+  --text:    #EDEDED;         /* Primary text                */
+  --text-2:  #B4B3B0;         /* Secondary text              */
+  --text-3:  #7A7975;         /* Metadata                    */
+  --text-4:  #4F4E49;         /* Disabled                    */
 
-  /* --- Brand (Bracket blue) -------------------------------- */
-  --accent:       #3157FF;
-  --accent-2:     #2449E8;
-  --accent-soft:  #EEF1FF;
-  --accent-glow:  rgba(49, 87, 255, 0.12);
-  --brand-border: #C9D2FF;
+  /* --- Brand (Bracket blue on dark) ------------------------ */
+  --accent:       #3B82F6;
+  --accent-2:     #2563EB;
+  --accent-soft:  rgba(59, 130, 246, 0.14);
+  --accent-glow:  rgba(59, 130, 246, 0.28);
+  --brand-border: rgba(59, 130, 246, 0.35);
 
-  /* --- Semantic -------------------------------------------- */
-  --success:        #18864B;
-  --success-soft:   #EAF7F0;
-  --warning:        #A56200;
-  --warning-soft:   #FFF5E5;
-  --danger:         #C62828;
-  --danger-soft:    #FDECEC;
-  --info:           #3157FF;
-  --info-soft:      #EEF1FF;
+  /* --- Semantic (dark-tuned) ------------------------------- */
+  --success:        #4ADE80;
+  --success-soft:   rgba(74, 222, 128, 0.14);
+  --warning:        #F59E0B;
+  --warning-soft:   rgba(245, 158, 11, 0.14);
+  --danger:         #F87171;
+  --danger-soft:    rgba(248, 113, 113, 0.14);
+  --info:           #3B82F6;
+  --info-soft:      rgba(59, 130, 246, 0.14);
 
   /* --- CTAs ------------------------------------------------ */
-  --primary-bg:     #3157FF;
+  --primary-bg:     #3B82F6;
   --primary-fg:     #FFFFFF;
-  --primary-bg-hov: #2449E8;
-  --primary-bg-act: #193BCC;
+  --primary-bg-hov: #2563EB;
+  --primary-bg-act: #1D4ED8;
 
-  --secondary-bg:     #FFFFFF;
-  --secondary-fg:     #151515;
-  --secondary-bg-hov: #F8F8F7;
+  --secondary-bg:     #232323;
+  --secondary-fg:     #EDEDED;
+  --secondary-bg-hov: #2A2A2A;
 
   --coral:      #F97066;
   --coral-2:    #DC2626;
   --coral-soft: rgba(249, 112, 102, 0.14);
 
-  --step-done:   #18864B;
-  --step-active: #3157FF;
-  --step-pending:#D4D4D0;
+  --step-done:   #4ADE80;
+  --step-active: #3B82F6;
+  --step-pending:rgba(255, 255, 255, 0.14);
 
   /* --- Radius --------------------------------------------- */
   --radius-xs:   4px;
@@ -78,22 +78,22 @@
   --radius-xl:   16px;
   --radius-2xl:  20px;
   --radius-full: 999px;
-  --radius:      var(--radius-md); /* legacy alias */
+  --radius:      var(--radius-md);
 
-  /* --- Elevation ------------------------------------------ */
-  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --elev-2: 0 4px 16px rgba(0, 0, 0, 0.06);
-  --elev-3: 0 12px 32px rgba(0, 0, 0, 0.10);
+  /* --- Elevation (soft on dark) --------------------------- */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --elev-2: 0 4px 16px rgba(0, 0, 0, 0.40);
+  --elev-3: 0 12px 32px rgba(0, 0, 0, 0.50);
 
   /* --- Motion --------------------------------------------- */
   --ease-out:        cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring:     cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-out-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-snap:       cubic-bezier(0.2, 0.8, 0.2, 1);
-  --d-fast:    120ms;   /* hover / icon states                */
-  --d-base:    180ms;   /* menus / buttons / tabs             */
-  --d-medium:  240ms;   /* cards / drawers                    */
-  --d-slow:    320ms;   /* modals / page transitions          */
+  --d-fast:    120ms;
+  --d-base:    180ms;
+  --d-medium:  240ms;
+  --d-slow:    320ms;
   --d-ambient: 4000ms;
 
   /* --- Legacy aliases ------------------------------------- */
@@ -103,26 +103,26 @@
   --muted:  var(--text-2);
   --faint:  var(--hairline);
 
-  /* --- shadcn HSL bridge (kept for shadcn components) ----- */
-  --sc-background:      0 0% 100%;
-  --sc-foreground:      0 0% 8%;
-  --sc-card:            0 0% 100%;
-  --sc-card-foreground: 0 0% 8%;
-  --sc-popover:         0 0% 100%;
-  --sc-popover-foreground: 0 0% 8%;
-  --sc-primary:         227 100% 60%;
+  /* --- shadcn HSL bridge (dark-tuned) --------------------- */
+  --sc-background:      0 0% 10%;
+  --sc-foreground:      0 0% 93%;
+  --sc-card:            0 0% 12%;
+  --sc-card-foreground: 0 0% 93%;
+  --sc-popover:         0 0% 12%;
+  --sc-popover-foreground: 0 0% 93%;
+  --sc-primary:         217 91% 60%;
   --sc-primary-foreground: 0 0% 100%;
-  --sc-secondary:       60 5% 96%;
-  --sc-secondary-foreground: 0 0% 8%;
-  --sc-muted:           60 5% 96%;
-  --sc-muted-foreground: 60 4% 45%;
-  --sc-accent:          227 100% 60%;
+  --sc-secondary:       0 0% 14%;
+  --sc-secondary-foreground: 0 0% 93%;
+  --sc-muted:           0 0% 14%;
+  --sc-muted-foreground: 40 3% 55%;
+  --sc-accent:          217 91% 60%;
   --sc-accent-foreground: 0 0% 100%;
-  --sc-destructive:     0 66% 47%;
+  --sc-destructive:     0 72% 65%;
   --sc-destructive-foreground: 0 0% 100%;
-  --sc-border:          60 5% 90%;
-  --sc-input:           60 5% 96%;
-  --sc-ring:            227 100% 60%;
+  --sc-border:          0 0% 100% / 0.08;
+  --sc-input:           0 0% 14%;
+  --sc-ring:            217 91% 60%;
 }
 
 * { border-color: var(--hairline); }
@@ -1338,8 +1338,8 @@ body:has(.app-shell) {
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  /* Design-system sidebar (§10): white surface, thin right hairline, 16px pad. */
-  background: var(--surface);
+  /* Dark sidebar — subtle surface w/ hairline right rule. */
+  background: var(--bg);
   border-right: 1px solid var(--hairline);
   padding: 16px 12px;
   z-index: 20;

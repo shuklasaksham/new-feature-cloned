@@ -158,3 +158,58 @@ Return STRICT JSON only:
     if not isinstance(data, dict):
         return {"reply": "", "impacts": [], "priority": "medium", "memory_updates": []}
     return data
+
+
+async def suggest_project_reply(project_name: str, client_name: str,
+                                latest_client_message: dict,
+                                memory_items: list) -> dict:
+    """PROJECT-LEVEL suggested reply — ONE reply for the whole project.
+
+    Grounded in:
+      - The most recent inbound client message across all connected sources.
+      - The full project memory (six canonical categories).
+
+    Bracket surfaces the reply on the Overview page; the user reviews / edits
+    / regenerates / approves and sends via their own tool. No autonomous send.
+    """
+    mem = "\n".join(
+        f'- [{m.get("category","?").upper()}] {m.get("title","")}'
+        for m in memory_items[:40]
+    ) or "- (project memory is empty)"
+    if not latest_client_message:
+        client_line = "(no client message received yet)"
+    else:
+        client_line = (
+            f'From: {latest_client_message.get("source_label","?")} '
+            f'({latest_client_message.get("provider","?")})\n'
+            f'"{(latest_client_message.get("detail") or latest_client_message.get("title") or "").strip()[:800]}"'
+        )
+    prompt = f"""You are Bracket, drafting ONE short, professional client-facing reply for the
+project "{project_name}" (client: {client_name or 'the client'}).
+
+Ground it in:
+1. The most recent inbound message from the client:
+{client_line}
+
+2. What Bracket already knows about the project (memory):
+{mem}
+
+The reply must:
+- Directly respond to the latest client message (do NOT invent context).
+- Reflect what Bracket already knows — reference the correct scope, deliverables or deadlines when relevant.
+- Concrete: state the next concrete step the designer will take.
+- 3-5 sentences maximum. No jargon, no filler. First-person "I".
+- If nothing new to reply to, produce a brief acknowledgement of the current status.
+
+Return STRICT JSON only:
+{{
+  "reply": "the copy-ready reply text",
+  "grounded_in": [
+    {{"source": "gmail|slack|figma|github|manual", "label": "short — thread / channel / file name", "why": "1 short sentence"}}
+  ],
+  "confidence": "high|medium|low"
+}}"""
+    data = await _run(prompt, "haiku")
+    if not isinstance(data, dict):
+        return {"reply": "", "grounded_in": [], "confidence": "low"}
+    return data

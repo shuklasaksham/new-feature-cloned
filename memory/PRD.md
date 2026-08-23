@@ -873,3 +873,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     - New **LIVE · SYNCS EVERY 10s** indicator (pulsing green dot) on the project subtitle.
   - **Verified**: 11-second Playwright window captured exactly 2 API calls (`/memory` + `/connections`) confirming 10-second polling is active; visual regression check on dashboard + project memory confirms every design-system token now surfaces (brand blue CTA, paper white sidebar, clean hairlines, 12px card radii).
 
+- 2026-08-23 — **Iteration 80 — Dark Notion-minimal + Overview + one project-level reply**:
+  - **Dark theme v2** (`index.css :root`): bg `#191919`, surface `#1E1E1E`, hairlines `rgba(255,255,255,0.07)`, text `#EDEDED`/`#B4B3B0`/`#7A7975`, brand `#3B82F6`. Every legacy component picks up the new palette from the tokens — no per-component rewrites. Sidebar re-tokenised to match (dark surface + subtle right hairline).
+  - **6 canonical categories in UI** (`lib/memoryCategories.js`): Deliverables · Scope · Timeline · Requirements · Decisions · Deadlines. Risks / Assumptions / Commercials / Open Questions still live in the data model and backend extractor — just hidden from v1 UI (surface later if needed).
+  - **Horizontal pill navigation** replaces the vertical rail. Overview tab is the default landing; the six category pills sit next to it under the header, with an animated `layoutId` underline for the active tab.
+  - **New Overview view**:
+    - **ONE project-level Suggested Response** panel — draws from the newest inbound client message across every connected source and the full project memory. Editable, Regenerate, Reset-to-AI, Copy reply, Send in Gmail, Open in default mail, Open Slack. Trust rule preserved — Bracket never sends, only drafts.
+    - Category snapshot: 6 tiles with counts, click to jump into that category view.
+    - Right rail: connected sources (compact).
+  - **Backend** (`connectors.py` + `connect_ai.py`):
+    - New `POST /api/projects/{id}/suggest-reply` — grounds a single project-level draft in the latest non-manual memory item (proxy for "latest client message") + the full memory context. Returns `{reply, confidence, grounded_in, based_on {…}, deep_links}`.
+    - New `connect_ai.suggest_project_reply(project_name, client_name, latest_client_message, memory_items)` — strict-JSON Haiku prompt, 3-5 sentence output, first-person, no fabricated context.
+  - **Verified**: dark palette across dashboard + project page; horizontal pills switch instantly (layout animation); overview surfaces a real reply grounded in the seeded scope-change item ("Great — thanks for the green light on v2..."); backend endpoint returns confidence:high with a `based_on` chip pointing at the correct source; 10-second live polling still active.
+
