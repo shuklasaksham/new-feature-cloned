@@ -464,19 +464,17 @@ body::before {
   .bracket-dialog-overlay, .bracket-dialog { animation: none; }
 }
 
-/* Frosted variant — glass panel matching the top-nav recipe. Used for
-   surfaces that overlay the ambient dot-grid (login, admin login) where
-   we want the same premium translucency the navbar has. */
+/* Solid variant — used for provider cards on Connect Work etc. On paper
+   this is a slightly more elevated surface (lavender wash) so the card
+   still reads as "content" against the ambient dot-grid. */
 .card-linear--solid,
 .card-brut--solid {
-  background: rgba(8, 9, 10, 0.72);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  background: var(--surface);
 }
 .card-brut-hover:hover,
 .card-linear-hover:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--hairline-hover);
+  background: var(--surface-2);
 }
 
 /* Liquid-glass — matches the "How it works" ghost CTA on Landing:
@@ -1320,10 +1318,8 @@ body:has(.app-shell) {
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  /* Same glassy translucent surface as the marketing top-nav. */
-  background: rgba(8, 9, 10, 0.72);
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  /* Paper sidebar — subtle lavender wash, hairline rule on the right. */
+  background: linear-gradient(180deg, #FCFBFE 0%, #F6F4FC 100%);
   border-right: none;
   padding: 12px 10px;
   z-index: 20;
@@ -1332,14 +1328,13 @@ body:has(.app-shell) {
   overflow: hidden;
   isolation: isolate;
 }
-/* Cinematic hairline on the right edge — vertical version of the
-   `.cinema-nav-border` gradient used by the top navbar. */
+/* Right-edge hairline — vertical cool-grey rule to separate the rail. */
 .app-sidebar::after {
   content: "";
   position: absolute;
   top: 0; bottom: 0; right: 0;
   width: 1px;
-  background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.16) 50%, transparent 100%);
+  background: linear-gradient(180deg, transparent 0%, rgba(30,27,75,0.10) 50%, transparent 100%);
   pointer-events: none;
 }
 .app-sidebar.is-collapsed { padding: 12px 6px; }

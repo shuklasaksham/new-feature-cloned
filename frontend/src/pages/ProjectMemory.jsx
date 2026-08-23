@@ -3,12 +3,13 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Loader2, Plus, ExternalLink, AlertTriangle, MoreHorizontal,
-  Pencil, Check, Trash2, RefreshCw, Sparkles,
+  Pencil, Check, Trash2, RefreshCw, Sparkles, History,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import Seo from "../components/Seo";
 import ChangeActionDrawer from "../components/ChangeActionDrawer";
+import HistoryDrawer from "../components/HistoryDrawer";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, timeAgo } from "../lib/providersMeta";
 
@@ -36,6 +37,7 @@ export default function ProjectMemory() {
   const [category, setCategory] = useState("scope");
   const [statusFilter, setStatusFilter] = useState("all");
   const [drawerItem, setDrawerItem] = useState(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -152,6 +154,15 @@ export default function ProjectMemory() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHistoryOpen(true)}
+                  className="clay-ghost px-3 py-2 text-[12px] inline-flex items-center gap-1.5"
+                  title="See every decision and change on this project"
+                  data-testid="project-memory-history-cta"
+                >
+                  <History size={11} /> History
+                </button>
                 {detectedCount > 0 && (
                   <button
                     type="button"
@@ -280,6 +291,22 @@ export default function ProjectMemory() {
         open={drawerItem !== null}
         onClose={() => setDrawerItem(null)}
         onChanged={handleChanged}
+      />
+      <HistoryDrawer
+        projectId={id}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onJumpToItem={(memoryId) => {
+          // Find the item across all buckets and open the change drawer on it.
+          for (const bucket of Object.values(memory.grouped || {})) {
+            const found = (bucket || []).find((m) => m.id === memoryId);
+            if (found) {
+              setDrawerItem(found);
+              setHistoryOpen(false);
+              return;
+            }
+          }
+        }}
       />
     </div>
   );

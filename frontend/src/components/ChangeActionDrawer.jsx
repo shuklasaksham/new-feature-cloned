@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Loader2, Copy, Mail, Slack, Check, AlertTriangle,
   Sparkles, TrendingUp, ArrowRight, Trash2, ThumbsDown,
+  Pencil, RefreshCw, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -12,28 +13,39 @@ import { CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 /**
  * ChangeActionDrawer — Bracket's signature interaction.
  * When the user clicks a "detected" memory item, we open a right-side drawer
- * that shows: (1) what changed, (2) the AI-drafted client reply, (3) the
- * concrete impacts (scope/time/cost/risk), (4) the memory updates Bracket
- * will apply on confirm, and (5) one-click Copy / Gmail / Slack targets.
+ * that shows: (1) what changed, (2) an EDITABLE AI-drafted client reply
+ * (regenerate + revert supported), (3) the concrete impacts, (4) the memory
+ * updates Bracket will apply on confirm, and (5) Copy / Gmail / Slack
+ * hand-offs.
  *
- * The user always stays in control — Bracket recommends, never auto-sends.
+ * Trust model: Bracket recommends, the user approves. Nothing ever sends
+ * without an explicit click. When the user hits Copy or a deep-link, the
+ * final send happens in the user's own tool — Bracket cannot post anywhere
+ * on its own (read-only OAuth scopes today).
  */
 export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [acting, setActing] = useState(null); // 'confirm' | 'dismiss' | 'not_a_change'
+  const [regenerating, setRegenerating] = useState(false);
+  // Local editable reply text — seeded from the AI, edits are user's own.
+  const [replyDraft, setReplyDraft] = useState("");
+  const [editing, setEditing] = useState(false);
+  const textareaRef = useRef(null);
 
   // Fetch AI suggestion once the drawer opens on a new item.
   useEffect(() => {
     if (!open || !item) return;
     setResult(null);
+    setReplyDraft("");
+    setEditing(false);
     if (item.status !== "detected" && item.status !== "review") return; // Only detected items need a suggested reply
     setLoading(true);
     let cancelled = false;
     (async () => {
       try {
         const { data } = await api.post(`/connect/memory/${item.id}/suggest-reply`);
-        if (!cancelled) setResult(data);
+        if (!cancelled) { setResult(data); setReplyDraft(data?.reply || ""); }
       } catch (e) {
         if (!cancelled) toast.error(formatApiError(e));
       } finally {
@@ -42,6 +54,39 @@ export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
     })();
     return () => { cancelled = true; };
   }, [open, item]);
+
+  // Regenerate — new suggestion from the AI, keeps user's edits recoverable
+  // via `RESET TO AI DRAFT` (revertToAI below).
+  const regenerate = async () => {
+    if (regenerating || !item) return;
+    setRegenerating(true);
+    try {
+      const { data } = await api.post(`/connect/memory/${item.id}/suggest-reply`);
+      setResult(data);
+      setReplyDraft(data?.reply || "");
+      setEditing(false);
+      toast.success("Bracket re-drafted the reply");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  const revertToAI = () => {
+    if (!result?.reply) return;
+    setReplyDraft(result.reply);
+    setEditing(false);
+  };
+
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      textareaRef.current.focus();
+      // Position caret at end so a user can just keep typing.
+      const end = textareaRef.current.value.length;
+      textareaRef.current.setSelectionRange(end, end);
+    }
+  }, [editing]);
 
   useEffect(() => {
     if (!open) return;
@@ -55,14 +100,26 @@ export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
   const status = STATUS_META[item.status] || STATUS_META.detected;
 
   const copyReply = async () => {
-    if (!result?.reply) return;
+    const text = (replyDraft || "").trim();
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(result.reply);
-      toast.success("Reply copied to clipboard");
+      await navigator.clipboard.writeText(text);
+      toast.success("Reply copied — paste it in your tool to send.");
     } catch {
       toast.error("Couldn't access clipboard — select the text manually.");
     }
   };
+
+  // Deep links always reflect the LATEST draft, not the original AI reply.
+  const encodedDraft = encodeURIComponent(replyDraft || "");
+  const encodedSubject = encodeURIComponent(
+    result?.deep_links?.gmail_web
+      ? new URL(result.deep_links.gmail_web).searchParams.get("su") || "Re: your project"
+      : "Re: your project"
+  );
+  const liveGmailWeb = `https://mail.google.com/mail/?view=cm&fs=1&su=${encodedSubject}&body=${encodedDraft}`;
+  const liveMailto = `mailto:?subject=${encodedSubject}&body=${encodedDraft}`;
+  const liveSlack = result?.deep_links?.slack_web || "slack://open";
 
   const doAction = async (action) => {
     setActing(action);
@@ -194,11 +251,41 @@ export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
                     )}
                   </section>
 
-                  {/* SUGGESTED REPLY */}
+                  {/* SUGGESTED REPLY — editable + regenerate */}
                   <section>
-                    <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
-                      <Sparkles size={10} /> SUGGESTED RESPONSE
-                    </p>
+                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                      <p className="mono-tag text-[9.5px] inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
+                        <Sparkles size={10} /> SUGGESTED RESPONSE
+                      </p>
+                      {result?.reply && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={regenerate}
+                            disabled={regenerating}
+                            className="inline-flex items-center gap-1 text-[10.5px] px-2 py-1 rounded-full disabled:opacity-40"
+                            style={{ border: "1px solid var(--hairline)", background: "var(--surface)", color: "var(--text-2)" }}
+                            data-testid="change-action-regenerate"
+                            title="Regenerate — Bracket writes a fresh draft"
+                          >
+                            {regenerating ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
+                            Regenerate
+                          </button>
+                          {replyDraft !== result.reply && (
+                            <button
+                              type="button"
+                              onClick={revertToAI}
+                              className="inline-flex items-center gap-1 text-[10.5px] px-2 py-1 rounded-full"
+                              style={{ border: "1px solid var(--hairline)", background: "var(--surface)", color: "var(--text-3)" }}
+                              data-testid="change-action-revert"
+                              title="Discard your edits — restore the original AI draft"
+                            >
+                              <RotateCcw size={10} /> Reset
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <div className="rounded-xl p-4"
                          style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}>
                       {loading ? (
@@ -206,32 +293,70 @@ export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
                           <Loader2 size={12} className="animate-spin" /> Drafting a reply for you…
                         </div>
                       ) : result?.reply ? (
-                        <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text)" }} data-testid="change-action-reply">
-                          {result.reply}
-                        </p>
+                        editing ? (
+                          <>
+                            <textarea
+                              ref={textareaRef}
+                              value={replyDraft}
+                              onChange={(e) => setReplyDraft(e.target.value)}
+                              rows={Math.max(4, Math.min(12, (replyDraft.match(/\n/g) || []).length + 4))}
+                              className="w-full resize-y bg-transparent outline-none text-[13.5px] leading-relaxed"
+                              style={{ color: "var(--text)", minHeight: 100 }}
+                              placeholder="Write your reply…"
+                              data-testid="change-action-reply-editor"
+                            />
+                            <div className="mt-2 flex items-center justify-between text-[10.5px]" style={{ color: "var(--text-3)" }}>
+                              <span>Edits are yours — Bracket won&apos;t overwrite them.</span>
+                              <button
+                                type="button"
+                                onClick={() => setEditing(false)}
+                                className="inline-flex items-center gap-1"
+                                style={{ color: "var(--accent)" }}
+                                data-testid="change-action-reply-done"
+                              >
+                                <Check size={10} /> Done editing
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="relative group">
+                            <p className="text-[13.5px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text)" }} data-testid="change-action-reply">
+                              {replyDraft || result.reply}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setEditing(true)}
+                              className="absolute -top-2 -right-2 inline-flex items-center gap-1 text-[10.5px] px-2 py-1 rounded-full transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100"
+                              style={{ border: "1px solid var(--hairline)", background: "var(--surface)", color: "var(--text-2)" }}
+                              data-testid="change-action-reply-edit"
+                            >
+                              <Pencil size={10} /> Edit
+                            </button>
+                          </div>
+                        )
                       ) : (
                         <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
                           No suggested reply — this item didn&apos;t need one.
                         </p>
                       )}
-                      {result?.reply && (
+                      {result?.reply && !editing && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           <button type="button" onClick={copyReply}
                                   className="clay-signal px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
                                   data-testid="change-action-copy">
-                            <Copy size={11} /> Copy
+                            <Copy size={11} /> Copy reply
                           </button>
-                          <a href={result.deep_links?.gmail_web} target="_blank" rel="noreferrer"
+                          <a href={liveGmailWeb} target="_blank" rel="noreferrer"
                              className="clay-ghost px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
                              data-testid="change-action-gmail">
                             <Mail size={11} /> Send in Gmail
                           </a>
-                          <a href={result.deep_links?.mailto}
+                          <a href={liveMailto}
                              className="clay-ghost px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
                              data-testid="change-action-mailto">
                             <Mail size={11} /> Open in default mail
                           </a>
-                          <a href={result.deep_links?.slack_web}
+                          <a href={liveSlack}
                              className="clay-ghost px-3 py-1.5 text-[11.5px] inline-flex items-center gap-1.5"
                              data-testid="change-action-slack">
                             <Slack size={11} /> Open Slack

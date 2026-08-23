@@ -983,11 +983,13 @@ async def project_connections(project_id: str, request: Request):
 
 MEMORY_CATEGORIES = [
     "scope", "deliverable", "decision", "requirement",
-    "timeline", "risk", "assumption", "commercial", "question",
+    "timeline", "deadline", "risk", "assumption", "commercial", "question",
 ]
-# Legacy AI-emitted categories that need to be normalised into the 9-bucket UI:
+# Legacy AI-emitted categories that need to be normalised into the canonical
+# UI buckets. `deadline` used to fold under `timeline` — no longer, since the
+# spec asks for Deadlines as a discrete bucket alongside Timeline. Only
+# `scope_change` still folds into `scope` (kept as a "detected" scope item).
 _LEGACY_CAT_MAP = {
-    "deadline": "timeline",       # deadlines are timeline events
     "scope_change": "scope",      # scope changes are scope items, kept as detected
 }
 
@@ -998,10 +1000,10 @@ def _canonical_category(cat: str) -> str:
 
 @router.get("/projects/{project_id}/memory")
 async def project_memory(project_id: str, request: Request):
-    """Return every project-memory item grouped into the 9 canonical categories.
+    """Return every project-memory item grouped into the canonical categories.
 
-    Legacy AI-emitted categories (deadline, scope_change) are mapped to their
-    canonical bucket (timeline, scope) so the UI always sees the same 9 keys.
+    Legacy AI-emitted categories are mapped to their canonical bucket
+    (scope_change → scope) so the UI always sees the same keys.
     """
     await _owned_project(project_id, request)
     grouped: Dict[str, list] = {c: [] for c in MEMORY_CATEGORIES}
@@ -1017,6 +1019,75 @@ async def project_memory(project_id: str, request: Request):
     counts = {k: len(v) for k, v in grouped.items()}
     total = sum(counts.values())
     return {"grouped": grouped, "counts": counts, "total": total, "categories": MEMORY_CATEGORIES}
+
+
+@router.get("/projects/{project_id}/history")
+async def project_history(project_id: str, request: Request, limit: int = 60):
+    """Unified decision-and-change history for a project.
+
+    Fuses two existing signals so the UI can answer 'why is this project like
+    this?':
+      - `source_events` — connection lifecycle + poller-detected changes
+      - `project_memory.history` — every confirm / dismiss / edit stamped on
+        the memory item itself.
+    Returned in reverse-chronological order, newest first. Never invents
+    anything — every entry has a real `source` (memory item + provider).
+    """
+    project = await _owned_project(project_id, request)
+    limit = max(1, min(int(limit), 200))
+    entries: List[dict] = []
+
+    # 1) Source events (SOURCE_CONNECTED, SOURCE_UPDATED, etc.)
+    async for e in db.source_events.find(
+        {"project_id": project_id}, {"_id": 0},
+    ).sort("created_at", -1).limit(limit):
+        entries.append({
+            "id": e["id"], "kind": e.get("event_type", "SOURCE_EVENT"),
+            "title": e.get("summary", ""),
+            "provider": e.get("provider", ""), "source_label": e.get("source_label", ""),
+            "at": e.get("occurred_at") or e.get("created_at"),
+            "memory_id": None, "category": None, "detail": "",
+        })
+
+    # 2) Memory item history entries.
+    async for m in db.project_memory.find(
+        {"project_id": project_id}, {"_id": 0},
+    ).sort("updated_at", -1).limit(limit):
+        canon = _canonical_category(m.get("category"))
+        for h in (m.get("history") or []):
+            if h.get("edit"):
+                title = f"Edited '{m.get('title','')}'"
+                kind = "EDITED"
+                detail = ", ".join(f"{k}: {v[0]!r} → {v[1]!r}" for k, v in (h["edit"] or {}).items())
+            elif h.get("deleted"):
+                title = f"Removed '{m.get('title','')}'"
+                kind = "REMOVED"; detail = ""
+            elif h.get("created"):
+                title = f"Added '{m.get('title','')}'"
+                kind = "CREATED"; detail = m.get("detail", "")
+            elif h.get("to"):
+                verb_map = {"confirmed": "Confirmed", "ignored": "Dismissed",
+                            "not_a_change": "Marked as not a change",
+                            "review": "Sent to review", "context": "Kept as context"}
+                verb = verb_map.get(h.get("to"), f"→ {h.get('to')}")
+                title = f"{verb}: {m.get('title','')}"
+                kind = "STATUS_CHANGE"
+                detail = f"from {h.get('from', '?')} to {h.get('to')}"
+            else:
+                title = m.get("title", ""); kind = "HISTORY"; detail = ""
+            entries.append({
+                "id": f'{m["id"]}:{h.get("at","")}', "kind": kind, "title": title,
+                "provider": m.get("provider", ""), "source_label": m.get("source_label", ""),
+                "at": h.get("at") or m.get("updated_at"),
+                "memory_id": m["id"], "category": canon, "detail": detail,
+            })
+
+    # Sort merged stream by timestamp desc and clip to limit.
+    def _key(e):
+        return e.get("at") or ""
+    entries.sort(key=_key, reverse=True)
+    return {"project_id": project_id, "project_name": project.get("name", ""),
+            "count": len(entries[:limit]), "entries": entries[:limit]}
 
 
 @router.get("/projects/{project_id}/activity")

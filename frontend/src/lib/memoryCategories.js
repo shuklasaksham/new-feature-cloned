@@ -17,6 +17,7 @@ export const MEMORY_CATEGORIES = [
   { key: "decision",    label: "Decisions",     plural: "Decisions",         icon: Check,          color: "#16A34A" },
   { key: "requirement", label: "Requirements",  plural: "Requirements",      icon: ListChecks,     color: "#0EA5E9" },
   { key: "timeline",    label: "Timeline",      plural: "Timeline events",   icon: CalendarClock,  color: "#D97706" },
+  { key: "deadline",    label: "Deadlines",     plural: "Deadlines",         icon: CalendarClock,  color: "#EA580C" },
   { key: "risk",        label: "Risks",         plural: "Risks",             icon: AlertTriangle,  color: "#DC2626" },
   { key: "assumption",  label: "Assumptions",   plural: "Assumptions",       icon: Compass,        color: "#0891B2" },
   { key: "commercial",  label: "Commercials",   plural: "Commercials",       icon: DollarSign,     color: "#059669" },
