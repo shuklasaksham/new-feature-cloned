@@ -1704,9 +1704,12 @@ async def demo_reset(request: Request):
 
 
 # ---------------------------------------------------------------------------
-# Background poller — every 5 minutes, re-sync stale connections (max 4/cycle)
+# Background poller — cadence tuned to feel "live" (60s per-connection sync,
+# up to 8 stale connections per cycle) while respecting provider rate limits.
+# Frontend polls the DB every 10s so the perceived refresh cadence is short.
 # ---------------------------------------------------------------------------
-POLL_INTERVAL_S = 300
+POLL_INTERVAL_S = 60
+POLL_BATCH = 8
 
 
 async def poller_loop():
@@ -1715,7 +1718,7 @@ async def poller_loop():
             await asyncio.sleep(POLL_INTERVAL_S)
             cutoff = datetime.now(timezone.utc).timestamp() - POLL_INTERVAL_S
             count = 0
-            async for conn in db.source_connections.find({"status": "connected"}, {"_id": 0}).sort("last_synced_at", 1).limit(20):
+            async for conn in db.source_connections.find({"status": "connected"}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
                 try:
                     last = datetime.fromisoformat(conn.get("last_synced_at", "").replace("Z", "+00:00")).timestamp()
                 except Exception:
@@ -1727,7 +1730,7 @@ async def poller_loop():
                 except Exception as e:
                     logger.warning("poll sync failed for %s: %s", conn.get("id"), e)
                 count += 1
-                if count >= 4:
+                if count >= POLL_BATCH:
                     break
         except asyncio.CancelledError:
             return

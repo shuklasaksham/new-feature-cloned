@@ -39,8 +39,8 @@ export default function ProjectMemory() {
   const [drawerItem, setDrawerItem] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
+  const load = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
     try {
       const [projRes, memRes] = await Promise.all([
         api.get(`/projects/${id}`),
@@ -49,13 +49,26 @@ export default function ProjectMemory() {
       setProject(projRes.data.project || projRes.data);
       setMemory(memRes.data);
     } catch (e) {
-      toast.error(formatApiError(e));
+      if (!silent) toast.error(formatApiError(e));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { load(); }, [id]);
+
+  // Auto-refresh every 10 seconds while the tab is visible so the memory
+  // and detected-change counts feel live. Silent refetches never toggle the
+  // full-page spinner and never surface transient errors as toasts.
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    const tick = () => { if (!document.hidden && !cancelled) load({ silent: true }); };
+    const iv = setInterval(tick, 10_000);
+    const onVis = () => { if (!document.hidden && !cancelled) load({ silent: true }); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => { cancelled = true; clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
+  }, [id]);
 
   // Pick the first non-empty category on first load so the pane isn't empty.
   useEffect(() => {
@@ -151,6 +164,13 @@ export default function ProjectMemory() {
                       </span>
                     </>
                   )}
+                  <span className="ml-2 mono-tag text-[9.5px] inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }} data-testid="project-memory-live-indicator">
+                    <span className="relative inline-flex w-1.5 h-1.5">
+                      <span className="absolute inset-0 rounded-full opacity-60 animate-ping" style={{ background: "var(--success)" }} />
+                      <span className="relative inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--success)" }} />
+                    </span>
+                    LIVE · SYNCS EVERY 10s
+                  </span>
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -381,14 +401,18 @@ function MemoryRow({ item, cat, onOpen }) {
 function ConnectedSourcesCompact({ projectId }) {
   const [conns, setConns] = useState(null);
   useEffect(() => {
+    if (!projectId) return;
     let cancelled = false;
-    (async () => {
+    const fetchOnce = async () => {
       try {
         const { data } = await api.get(`/projects/${projectId}/connections`);
         if (!cancelled) setConns(data.connections || []);
-      } catch { if (!cancelled) setConns([]); }
-    })();
-    return () => { cancelled = true; };
+      } catch { if (!cancelled) setConns((prev) => prev ?? []); }
+    };
+    fetchOnce();
+    // Auto-refresh every 10s so "Last synced" moves in near-real-time.
+    const iv = setInterval(() => { if (!document.hidden) fetchOnce(); }, 10_000);
+    return () => { cancelled = true; clearInterval(iv); };
   }, [projectId]);
 
   if (conns === null) return null;

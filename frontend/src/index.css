@@ -9,100 +9,120 @@
    BRACKET — Linear-grade Design System v3
    ============================================================ */
 :root {
-  /* -------- LIGHT THEME (Feb 2026 pivot — "premium intelligence system") --------
-     White paper + soft lavender surfaces + navy ink. Bracket-blue accent stays.
-     All variables below are the ONLY theme source of truth — never hard-code. */
+  /* ==========================================================
+     BRACKET Design System — Feb 2026
+     Poppins on paper. JetBrains Mono for the data layer.
+     Palette owned by /docs Design System (§02, §03, §05, §06).
+     ========================================================== */
 
-  /* Surface stack — paper white → soft lavender → deeper lavender */
-  --bg:        #FBFAFE;
-  --surface:   #FFFFFF;
-  --surface-1: #FFFFFF;
-  --surface-2: #F3F1FB;
-  --surface-3: #E9E5F7;
+  /* --- Core surfaces --------------------------------------- */
+  --bg:            #FFFFFF;   /* Main background            */
+  --surface:       #FFFFFF;   /* Card / panel default        */
+  --surface-1:     #FFFFFF;
+  --surface-2:     #F8F8F7;   /* Secondary surface           */
+  --surface-3:     #F2F2F0;   /* Hover state                 */
+  --surface-hover: #F2F2F0;
+  --surface-active:#EBEBE8;
 
-  /* Hairlines — thin cool-grey rules */
-  --hairline:        rgba(30, 27, 75, 0.09);
-  --hairline-strong: rgba(30, 27, 75, 0.14);
-  --hairline-hover:  rgba(30, 27, 75, 0.20);
+  /* --- Borders --------------------------------------------- */
+  --hairline:        #E6E6E3; /* Default border              */
+  --hairline-strong: #D4D4D0; /* Emphasised border           */
+  --hairline-hover:  #B5B5AF;
 
-  /* Text — deep navy on paper */
-  --text:    #0F1226;
-  --text-2:  #4B5063;
-  --text-3:  #7A7F92;
-  --text-4:  #A4A7B6;
+  /* --- Text ------------------------------------------------ */
+  --text:    #151515;         /* Primary text                */
+  --text-2:  #5F5F5B;         /* Secondary text              */
+  --text-3:  #8A8A84;         /* Metadata                    */
+  --text-4:  #B5B5AF;         /* Disabled                    */
 
-  /* Bracket accent — kept from dark theme so brand recognition survives */
-  --accent:       #5E6AD2;
-  --accent-2:     #1E4AEB;
-  --accent-soft:  rgba(94, 106, 210, 0.10);
-  --accent-glow:  rgba(94, 106, 210, 0.20);
+  /* --- Brand (Bracket blue) -------------------------------- */
+  --accent:       #3157FF;
+  --accent-2:     #2449E8;
+  --accent-soft:  #EEF1FF;
+  --accent-glow:  rgba(49, 87, 255, 0.12);
+  --brand-border: #C9D2FF;
 
-  /* Semantic — a hint stronger on paper */
-  --success:        #16A34A;
-  --success-soft:   rgba(22, 163, 74, 0.10);
-  --warning:        #D97706;
-  --warning-soft:   rgba(217, 119, 6, 0.12);
-  --danger:         #DC2626;
-  --danger-soft:    rgba(220, 38, 38, 0.10);
+  /* --- Semantic -------------------------------------------- */
+  --success:        #18864B;
+  --success-soft:   #EAF7F0;
+  --warning:        #A56200;
+  --warning-soft:   #FFF5E5;
+  --danger:         #C62828;
+  --danger-soft:    #FDECEC;
+  --info:           #3157FF;
+  --info-soft:      #EEF1FF;
 
-  /* Primary CTA — Bracket blue pill on paper */
-  --primary-bg:     #4F46E5;
+  /* --- CTAs ------------------------------------------------ */
+  --primary-bg:     #3157FF;
   --primary-fg:     #FFFFFF;
-  --primary-bg-hov: #4338CA;
+  --primary-bg-hov: #2449E8;
+  --primary-bg-act: #193BCC;
 
-  /* Secondary CTA — soft lavender pill */
-  --secondary-bg:     #EDEBF9;
-  --secondary-fg:     #1E1B4B;
-  --secondary-bg-hov: #DED9F3;
+  --secondary-bg:     #FFFFFF;
+  --secondary-fg:     #151515;
+  --secondary-bg-hov: #F8F8F7;
 
-  /* Coral — new-project accent (unchanged, still pops on paper) */
-  --coral:        #F97066;
-  --coral-2:      #DC2626;
-  --coral-soft:   rgba(249, 112, 102, 0.14);
+  --coral:      #F97066;
+  --coral-2:    #DC2626;
+  --coral-soft: rgba(249, 112, 102, 0.14);
 
-  /* Step indicators */
-  --step-done:   #16A34A;
-  --step-active: #5E6AD2;
-  --step-pending:#CBCFD9;
+  --step-done:   #18864B;
+  --step-active: #3157FF;
+  --step-pending:#D4D4D0;
 
-  /* Legacy aliases */
+  /* --- Radius --------------------------------------------- */
+  --radius-xs:   4px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
+  --radius-full: 999px;
+  --radius:      var(--radius-md); /* legacy alias */
+
+  /* --- Elevation ------------------------------------------ */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --elev-2: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --elev-3: 0 12px 32px rgba(0, 0, 0, 0.10);
+
+  /* --- Motion --------------------------------------------- */
+  --ease-out:        cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring:     cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-out-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-snap:       cubic-bezier(0.2, 0.8, 0.2, 1);
+  --d-fast:    120ms;   /* hover / icon states                */
+  --d-base:    180ms;   /* menus / buttons / tabs             */
+  --d-medium:  240ms;   /* cards / drawers                    */
+  --d-slow:    320ms;   /* modals / page transitions          */
+  --d-ambient: 4000ms;
+
+  /* --- Legacy aliases ------------------------------------- */
   --paper:  var(--bg);
   --ink:    var(--text);
   --signal: var(--accent);
   --muted:  var(--text-2);
   --faint:  var(--hairline);
-  --radius: 10px;
 
-  /* shadcn semantic vars (HSL) — light-theme */
-  --sc-background:      252 40% 99%;
-  --sc-foreground:      240 43% 12%;
+  /* --- shadcn HSL bridge (kept for shadcn components) ----- */
+  --sc-background:      0 0% 100%;
+  --sc-foreground:      0 0% 8%;
   --sc-card:            0 0% 100%;
-  --sc-card-foreground: 240 43% 12%;
+  --sc-card-foreground: 0 0% 8%;
   --sc-popover:         0 0% 100%;
-  --sc-popover-foreground: 240 43% 12%;
-  --sc-primary:         243 75% 59%;
+  --sc-popover-foreground: 0 0% 8%;
+  --sc-primary:         227 100% 60%;
   --sc-primary-foreground: 0 0% 100%;
-  --sc-secondary:       246 55% 95%;
-  --sc-secondary-foreground: 243 42% 20%;
-  --sc-muted:           246 55% 95%;
-  --sc-muted-foreground: 231 12% 45%;
-  --sc-accent:          252 68% 60%;
+  --sc-secondary:       60 5% 96%;
+  --sc-secondary-foreground: 0 0% 8%;
+  --sc-muted:           60 5% 96%;
+  --sc-muted-foreground: 60 4% 45%;
+  --sc-accent:          227 100% 60%;
   --sc-accent-foreground: 0 0% 100%;
-  --sc-destructive:     0 72% 51%;
+  --sc-destructive:     0 66% 47%;
   --sc-destructive-foreground: 0 0% 100%;
-  --sc-border:          232 30% 88%;
-  --sc-input:           246 55% 95%;
-  --sc-ring:            243 75% 59%;
-
-  /* Motion — unchanged */
-  --ease-out:        cubic-bezier(0, 0, 0.2, 1);
-  --ease-spring:     cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-out-spring: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-snap:       cubic-bezier(0.16, 1, 0.3, 1);
-  --d-fast:    150ms;
-  --d-base:    300ms;
-  --d-slow:    600ms;
-  --d-ambient: 4000ms;
+  --sc-border:          60 5% 90%;
+  --sc-input:           60 5% 96%;
+  --sc-ring:            227 100% 60%;
 }
 
 * { border-color: var(--hairline); }
@@ -1318,25 +1338,17 @@ body:has(.app-shell) {
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  /* Paper sidebar — subtle lavender wash, hairline rule on the right. */
-  background: linear-gradient(180deg, #FCFBFE 0%, #F6F4FC 100%);
-  border-right: none;
-  padding: 12px 10px;
+  /* Design-system sidebar (§10): white surface, thin right hairline, 16px pad. */
+  background: var(--surface);
+  border-right: 1px solid var(--hairline);
+  padding: 16px 12px;
   z-index: 20;
   transition: width var(--d-base) var(--ease-spring);
   flex-shrink: 0;
   overflow: hidden;
   isolation: isolate;
 }
-/* Right-edge hairline — vertical cool-grey rule to separate the rail. */
-.app-sidebar::after {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0; right: 0;
-  width: 1px;
-  background: linear-gradient(180deg, transparent 0%, rgba(30,27,75,0.10) 50%, transparent 100%);
-  pointer-events: none;
-}
+.app-sidebar::after { display: none; }
 .app-sidebar.is-collapsed { padding: 12px 6px; }
 
 .sidebar-brand {

@@ -855,3 +855,21 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     - `pages/ProjectMemory.jsx` — new **History** button in the project header opens the timeline drawer. `HistoryDrawer.onJumpToItem` re-uses the existing `ChangeActionDrawer` — zero new drawers.
   - **Verified**: `GET /api/projects/{id}/memory` now returns 10 canonical categories inc `deadline`; `GET /api/projects/{id}/history` returns fused events; confirming a detected item creates a `STATUS_CHANGE` entry surfaced in the drawer.
   - **Deferred (needs OAuth re-consent)**: send-through-source via `gmail.send` / Slack `chat:write` scopes — today the user still copies or opens a deep-link so send happens in their own tool. Trust rule preserved: Bracket never posts autonomously.
+- 2026-08-23 — **Iteration 79 — Design System v1 + 10-second auto-refresh**:
+  - **Design System v1** (`index.css :root`) — rebased every token to the spec supplied by the user:
+    - Core: bg `#FFFFFF`, surface `#F8F8F7`, hairline `#E6E6E3`, text-primary `#151515`, secondary `#5F5F5B`, tertiary `#8A8A84`.
+    - Brand: `#3157FF` primary, `#2449E8` hover, `#193BCC` active, `#EEF1FF` soft, `#C9D2FF` brand-border.
+    - Semantic: success `#18864B`, warning `#A56200`, danger `#C62828`, info `#3157FF` (each with soft variant).
+    - Radii: xs 4, sm 6, md 8, lg 12, xl 16, 2xl 20, full 999.
+    - Elevation: 3-level ladder (0/1/2/3) with `--elev-*` tokens.
+    - Motion: fast 120 / base 180 / medium 240 / slow 320 with `cubic-bezier(0.2, 0.8, 0.2, 1)` easing.
+    - Sidebar: swapped the lavender gradient for the DS §10 spec — white surface, right hairline, 16px padding, no shadow.
+    - shadcn HSL bridge re-derived from the new palette so every shadcn component adopts the new brand automatically.
+  - **10-second auto-refresh** — perceived-live cadence without hammering provider APIs:
+    - Backend `poller_loop` tightened from 300s → 60s per cycle, batch bumped from 4 → 8 stale connections. This keeps provider-side syncs frequent while staying inside typical rate limits.
+    - Frontend `ProjectMemory.jsx` — silent 10s poll on `/projects/:id` + `/projects/:id/memory` (pauses when tab hidden, resumes on visibility change, no full-page spinner and no error toasts on transient failures).
+    - `ConnectedSourcesCompact` widget re-polls `/projects/:id/connections` every 10s so "Last synced" and health dots move in near-real-time.
+    - `NotificationBell` cadence dropped from 45s → 10s.
+    - New **LIVE · SYNCS EVERY 10s** indicator (pulsing green dot) on the project subtitle.
+  - **Verified**: 11-second Playwright window captured exactly 2 API calls (`/memory` + `/connections`) confirming 10-second polling is active; visual regression check on dashboard + project memory confirms every design-system token now surfaces (brand blue CTA, paper white sidebar, clean hairlines, 12px card radii).
+

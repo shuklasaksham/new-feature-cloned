@@ -10,7 +10,7 @@ import { ProviderIcon, timeAgo } from "../lib/providersMeta";
  * connected sources). Poll every 45s so the badge stays fresh while the tab is
  * open, and stops polling when the tab is hidden to save quota.
  */
-const POLL_MS = 45_000;
+const POLL_MS = 10_000;
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
