@@ -5,6 +5,7 @@ import {
   ArrowLeft, Loader2, ExternalLink, AlertTriangle,
   Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
+  Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -760,6 +761,7 @@ const JIRA_OPT_COLS = [
 ];
 
 function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
+  const dialog = useDialog();
   const isTimeline = cat.key === "timeline";
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState(() => {
@@ -771,12 +773,44 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
     catch { return ["status", "source", "date"]; }
   });
   const [colMenu, setColMenu] = useState(false);
+  // Global row density (shared across all categories).
+  const [density, setDensity] = useState(() => {
+    try { return localStorage.getItem("bracket.density") || "comfortable"; } catch { return "comfortable"; }
+  });
+  // Saved views — filter + columns + sort combos, scoped per category.
+  const [views, setViews] = useState(() => {
+    try { const v = JSON.parse(localStorage.getItem(`bracket.views.${cat.key}`)); return Array.isArray(v) ? v : []; }
+    catch { return []; }
+  });
+  const [viewsMenu, setViewsMenu] = useState(false);
 
   useEffect(() => { try { localStorage.setItem(`bracket.sort.${cat.key}`, JSON.stringify(sort)); } catch { /* ignore */ } }, [sort, cat.key]);
   useEffect(() => { try { localStorage.setItem(`bracket.cols.${cat.key}`, JSON.stringify(visibleCols)); } catch { /* ignore */ } }, [visibleCols, cat.key]);
+  useEffect(() => { try { localStorage.setItem("bracket.density", density); } catch { /* ignore */ } }, [density]);
+  useEffect(() => { try { localStorage.setItem(`bracket.views.${cat.key}`, JSON.stringify(views)); } catch { /* ignore */ } }, [views, cat.key]);
 
   const toggleSort = (col) => setSort((s) => s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: col === "date" ? "desc" : "asc" });
   const toggleCol = (key) => setVisibleCols((cols) => cols.includes(key) ? cols.filter((c) => c !== key) : [...JIRA_OPT_COLS.map((c) => c.key).filter((k) => cols.includes(k) || k === key)]);
+
+  const saveView = async () => {
+    const name = (await dialog.prompt({
+      title: "Save this view",
+      message: "Save the current filter, visible columns and sort as a named view for this category.",
+      placeholder: "e.g. Open scope, newest first",
+    }))?.trim();
+    if (!name) return;
+    setViews((cur) => [...cur.filter((v) => v.name !== name), { name, statusFilter, visibleCols, sort }]);
+    setViewsMenu(false);
+    toast.success(`View “${name}” saved`);
+  };
+  const applyView = (v) => {
+    setStatusFilter(v.statusFilter || "all");
+    if (Array.isArray(v.visibleCols)) setVisibleCols(v.visibleCols);
+    if (v.sort) setSort(v.sort);
+    setViewsMenu(false);
+    toast.success(`Applied “${v.name}”`);
+  };
+  const deleteView = (name) => setViews((cur) => cur.filter((v) => v.name !== name));
 
   const shownOpt = JIRA_OPT_COLS.filter((c) => visibleCols.includes(c.key));
   const gridTemplate = `30px minmax(0,1fr)${shownOpt.map((c) => ` ${c.w}`).join("")}`;
@@ -863,6 +897,76 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
                 </>
               )}
             </div>
+            {/* Saved views — apply / save / delete filter+column combos (per category) */}
+            <div className="relative">
+              <button type="button" onClick={() => setViewsMenu((v) => !v)}
+                      className="jira-cols-btn inline-flex items-center gap-1.5" data-testid="jira-views-btn" title="Saved views">
+                <Bookmark size={12} /> Views
+                {views.length > 0 && (
+                  <span className="mono-tag text-[9px] px-1 rounded" style={{ background: "var(--surface-3)", color: "var(--text-3)" }}>{views.length}</span>
+                )}
+                <ChevronDown size={11} />
+              </button>
+              {viewsMenu && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setViewsMenu(false)} />
+                  <div className="absolute right-0 mt-1.5 z-40 rounded-xl p-1.5 min-w-[220px]"
+                       style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.7)" }}
+                       data-testid="jira-views-menu">
+                    {views.length === 0 ? (
+                      <p className="px-2.5 py-2 text-[11.5px]" style={{ color: "var(--text-3)" }} data-testid="jira-views-empty">
+                        No saved views yet. Save your current filter + columns below.
+                      </p>
+                    ) : (
+                      views.map((v) => (
+                        <div key={v.name}
+                             className="group w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px]"
+                             style={{ color: "var(--text-2)" }}
+                             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+                             onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                             data-testid={`jira-view-${v.name}`}>
+                          <button type="button" onClick={() => applyView(v)}
+                                  className="flex-1 text-left inline-flex items-center gap-2 min-w-0"
+                                  data-testid={`jira-view-apply-${v.name}`}>
+                            <Bookmark size={11} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                            <span className="truncate">{v.name}</span>
+                          </button>
+                          <button type="button" onClick={() => deleteView(v.name)}
+                                  className="shrink-0 opacity-50 hover:opacity-100 transition-opacity"
+                                  style={{ color: "var(--danger)" }}
+                                  title={`Delete “${v.name}”`}
+                                  data-testid={`jira-view-delete-${v.name}`}>
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                    <div className="my-1" style={{ borderTop: "1px solid var(--hairline)" }} />
+                    <button type="button" onClick={saveView}
+                            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] transition-colors text-left"
+                            style={{ color: "var(--accent)" }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            data-testid="jira-view-save">
+                      <BookmarkPlus size={12} /> Save current view
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+            {/* Row density toggle — global across categories */}
+            <div className="density-toggle" data-testid="jira-density-toggle">
+              <button type="button" onClick={() => setDensity("comfortable")}
+                      data-active={density === "comfortable" ? "true" : "false"}
+                      title="Comfortable rows" data-testid="jira-density-comfortable">
+                <Rows3 size={13} />
+              </button>
+              <button type="button" onClick={() => setDensity("compact")}
+                      data-active={density === "compact" ? "true" : "false"}
+                      title="Compact rows" data-testid="jira-density-compact">
+                <AlignJustify size={13} />
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -878,7 +982,7 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
           </p>
         </div>
       ) : (
-        <div className="jira-table rounded-xl overflow-hidden" data-testid="project-memory-items">
+        <div className="jira-table rounded-xl overflow-hidden" data-density={density} data-testid="project-memory-items">
           <div className="jira-row jira-head" style={{ gridTemplateColumns: gridTemplate }}>
             <span></span>
             <SortHead col="summary" label="Summary" />
@@ -992,9 +1096,16 @@ function TimelineCalendar({ items, cat, onOpen }) {
   const clickDay = (d, dayItems) => {
     if (!dayItems.length) return;
     const k = keyOf(d);
-    if (dayItems.length === 1) { onOpen(dayItems[0]); return; }
-    setSelectedKey((cur) => (cur === k ? null : k));  // multi-event: expand the day in the side list
+    // Clicking a day swaps the side panel to show that day's events inline
+    // (toggle off if it's already the selected day). Range list returns on clear.
+    setSelectedKey((cur) => (cur === k ? null : k));
   };
+
+  const selectedDateLabel = useMemo(() => {
+    if (!selectedKey) return null;
+    const [y, m, dd] = selectedKey.split("-").map(Number);
+    return new Date(y, m, dd).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }, [selectedKey]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5 items-start" data-testid="timeline-calendar">
@@ -1064,14 +1175,16 @@ function TimelineCalendar({ items, cat, onOpen }) {
         </div>
       </div>
 
-      {/* Events list — selected day, else the whole visible range */}
-      <div>
+      {/* Events list — selected day panel, else the whole visible range */}
+      <div data-testid="timeline-day-panel">
         <div className="flex items-center justify-between mb-2">
-          <p className="mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>
-            {selectedKey ? "SELECTED DAY" : (mode === "month" ? "THIS MONTH" : "THIS WEEK")} · {listItems.length}
+          <p className="mono-tag text-[9px]" style={{ color: selectedKey ? "var(--accent)" : "var(--text-3)" }}>
+            {selectedKey ? selectedDateLabel.toUpperCase() : (mode === "month" ? "THIS MONTH" : "THIS WEEK")} · {listItems.length}
           </p>
           {selectedKey && (
-            <button type="button" onClick={() => setSelectedKey(null)} className="mono-tag text-[9px]" style={{ color: "var(--accent)" }} data-testid="timeline-clear-day">CLEAR</button>
+            <button type="button" onClick={() => setSelectedKey(null)} className="mono-tag text-[9px] inline-flex items-center gap-1" style={{ color: "var(--text-3)" }} data-testid="timeline-clear-day">
+              <RotateCcw size={9} /> BACK
+            </button>
           )}
         </div>
         {listItems.length === 0 ? (

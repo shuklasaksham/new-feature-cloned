@@ -69,6 +69,12 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v16 — row density toggle + saved views + calendar day panel; self-verified via browser, no app console errors) —
+  - **Row density toggle (global)**: category tables have a compact/comfortable toggle (`jira-density-toggle`) beside Columns/Views; compact tightens row padding + icon size. Persisted per-user in `localStorage bracket.density` (applies across all categories since one category view is mounted at a time).
+  - **Saved views (per category)**: a "Views" dropdown (`jira-views-btn`) saves the current status filter + visible columns + sort as a named view (dialog prompt), lists saved views with apply + delete, and shows a count badge. Persisted per category in `localStorage bracket.views.{cat.key}`. Verified: save → apply restores filter/cols/sort → persists across reload → delete.
+  - **Calendar day panel**: clicking any day with events in the Timeline calendar swaps the right-side list to show ONLY that day's events inline, with a dated header ("SUN, AUG 2 · N") and a BACK button to return to the range list (THIS MONTH/WEEK). Kept the existing hover popover + range list.
+  - Files: `ProjectMemory.jsx` (CategoryView density/views state + toolbar controls, TimelineCalendar clickDay/panel header), `index.css` (`.density-toggle`, `.jira-table[data-density="compact"]`).
+
 - 2026-06 (design v15 — decluttered tables + multi-source attach + column config + calendar popover; testing agent iteration_50 100% frontend, no console errors) —
   - **Decluttered category tables**: memory rows now show a single-line title only (detail moved to the drawer), and scope-creep is a small red dot instead of a text badge — far less overwhelming.
   - **Multi-source attach**: the inline connect picker has checkboxes to select several sources at once, an "Attach N" button, and per-source sync status (spinner → check/error). (Only reachable after real OAuth — verified up to the popup opening.)

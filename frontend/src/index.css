@@ -4331,3 +4331,24 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
   border: 5px solid transparent; border-top-color: var(--surface);
 }
 @media (prefers-reduced-motion: reduce) { .jira-cols-btn { transition: none !important; } }
+
+/* Row density toggle */
+.density-toggle {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px; border-radius: 8px;
+  background: var(--surface-2); border: 1px solid var(--hairline);
+  height: 30px;
+}
+.density-toggle button {
+  width: 30px; height: 24px; border-radius: 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-3);
+  transition: background .15s var(--ease-out), color .15s var(--ease-out);
+}
+.density-toggle button:hover { color: var(--text-2); }
+.density-toggle button[data-active="true"] {
+  background: var(--accent-soft); color: var(--accent);
+}
+.jira-table[data-density="compact"] .jira-row { padding-top: 6px; padding-bottom: 6px; gap: 8px; }
+.jira-table[data-density="compact"] .jira-key { width: 22px; height: 22px; border-radius: 6px; }
+@media (prefers-reduced-motion: reduce) { .density-toggle button { transition: none !important; } }
