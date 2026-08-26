@@ -256,7 +256,7 @@ def _auth_url_for(provider: str, state: str, ru: str) -> str:
     if provider == "slack":
         return "https://slack.com/oauth/v2/authorize?" + urlencode({
             "client_id": conf["id"], "redirect_uri": ru, "state": state,
-            "user_scope": "channels:read,channels:history,groups:read,groups:history,im:read,im:history,mpim:read,mpim:history,users:read"})
+            "user_scope": "channels:read,channels:history,groups:read,groups:history,im:read,im:history,mpim:read,mpim:history,users:read,chat:write"})
     if provider == "github":
         return "https://github.com/login/oauth/authorize?" + urlencode({
             "client_id": conf["id"], "redirect_uri": ru, "scope": "repo", "state": state})
@@ -1087,6 +1087,99 @@ async def project_suggest_reply(project_id: str, request: Request):
         },
         "deep_links": {"mailto": mailto, "gmail_web": gmail_web, "slack_web": slack_web},
     }
+
+
+@router.get("/projects/{project_id}/send-targets")
+async def project_send_targets(project_id: str, request: Request):
+    """Which channels can this project's reply be sent through — one entry per
+    connected channel. Gmail entries carry a pre-populated client recipient
+    (derived from the connected thread); Slack entries carry the channel."""
+    await _owned_project(project_id, request)
+    user = await current_user(request, db)
+    targets = []
+    gmail_done = False
+    async for c in db.source_connections.find(
+        {"project_id": project_id, "status": {"$ne": "disconnected"}}, {"_id": 0}
+    ):
+        prov = c.get("provider")
+        if prov == "gmail" and not gmail_done:
+            gmail_done = True
+            to = ""
+            if not c.get("is_demo"):
+                try:
+                    account = await _get_account(user["user_id"], "gmail")
+                    to = await _gmail_client_email(account, c.get("source_id", ""))
+                except Exception:
+                    to = ""
+            targets.append({"provider": "gmail", "label": "Send email", "to": to})
+        elif prov == "slack":
+            targets.append({
+                "provider": "slack",
+                "label": f"Send to {c.get('source_name') or 'Slack'}",
+                "channel_id": c.get("source_id"),
+                "channel_name": c.get("source_name"),
+                "is_demo": bool(c.get("is_demo")),
+            })
+    return {"targets": targets}
+
+
+async def _gmail_client_email(account: dict, thread_id: str) -> str:
+    """Best-effort: the other party's email on the connected Gmail thread."""
+    if not thread_id:
+        return ""
+    at = await _access_token(account)
+    own = (account.get("account_label") or "").lower()
+    async with await _http() as c:
+        r = await c.get(
+            f"https://gmail.googleapis.com/gmail/v1/users/me/threads/{thread_id}",
+            headers={"Authorization": f"Bearer {at}"},
+            params={"format": "metadata", "metadataHeaders": ["From"]},
+        )
+    if r.status_code != 200:
+        return ""
+    for m in r.json().get("messages", []):
+        hdrs = {h["name"]: h["value"] for h in ((m.get("payload") or {}).get("headers") or [])}
+        mt = re.search(r"[\w.+-]+@[\w-]+\.[\w.-]+", hdrs.get("From", "") or "")
+        addr = mt.group(0) if mt else ""
+        if addr and addr.lower() != own:
+            return addr
+    return ""
+
+
+@router.post("/projects/{project_id}/send-slack")
+async def project_send_slack(project_id: str, request: Request):
+    """Post the reply to the connected Slack channel directly — no redirect."""
+    await _owned_project(project_id, request)
+    user = await current_user(request, db)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    channel = (body.get("channel_id") or "").strip()
+    text = (body.get("body") or "").strip()
+    if not channel:
+        raise HTTPException(400, "No Slack channel to post to.")
+    if not text:
+        raise HTTPException(400, "Nothing to send — the reply is empty.")
+
+    account = await _get_account(user["user_id"], "slack")
+    token = await _access_token(account)
+    async with await _http() as c:
+        r = await c.post(
+            "https://slack.com/api/chat.postMessage",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"},
+            json={"channel": channel, "text": text},
+        )
+    data = r.json() if r.status_code == 200 else {}
+    if not data.get("ok"):
+        err = data.get("error", "")
+        if err in ("missing_scope", "not_allowed_token_type", "no_permission"):
+            raise HTTPException(400, "Bracket can read this Slack but isn't allowed to post yet. Disconnect and reconnect Slack to grant posting permission.")
+        if err in ("not_in_channel", "channel_not_found"):
+            raise HTTPException(400, "Bracket isn't a member of that Slack channel — add it, then try again.")
+        logger.warning("slack send failed %s: %s", r.status_code, data)
+        raise HTTPException(502, f"Slack wouldn't post the message ({err or r.status_code}).")
+    return {"sent": True}
 
 
 @router.post("/projects/{project_id}/send-email")

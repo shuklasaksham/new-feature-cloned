@@ -1543,6 +1543,17 @@ body:has(.app-shell) {
 
 .sidebar-spacer { flex: 1; }
 
+.ask-input-box {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  transition: border-color .12s var(--ease-out), box-shadow .12s var(--ease-out);
+}
+.ask-input-box:focus-within {
+  border-color: var(--brand-border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 .sidebar-legal {
   display: flex;
   align-items: center;

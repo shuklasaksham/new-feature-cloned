@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Loader2, ExternalLink, AlertTriangle,
-  Sparkles, History, Copy, Mail, Pencil, RefreshCw,
+  Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown,
 } from "lucide-react";
@@ -367,7 +367,7 @@ function OverviewView({ project, projectId, recentItems, connections, onConnecti
 
       {/* Right — subtle Ask Bracket + connected sources */}
       <aside className="min-w-0 flex flex-col gap-5 lg:sticky lg:top-24">
-        <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} />
+        <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
         <ConnectedSourcesCompact
           projectId={projectId}
           connections={connections}
@@ -385,7 +385,7 @@ const REPLY_QUICK_PROMPTS = [
   "Ask for the missing details we still need.",
 ];
 
-function SuggestedReplyChat({ projectId, clientName }) {
+function SuggestedReplyChat({ projectId, clientName, connections }) {
   const storeKey = `bracket.askThread.${projectId}`;
   // Each turn: { role: 'user'|'assistant', content: string, meta?: {...} }
   const [thread, setThread] = useState(() => {
@@ -396,8 +396,19 @@ function SuggestedReplyChat({ projectId, clientName }) {
   const [copiedId, setCopiedId] = useState(null);
   const [editingIdx, setEditingIdx] = useState(-1);
   const [editingDraft, setEditingDraft] = useState("");
+  const [sendTargets, setSendTargets] = useState([]);
   const bottomRef = useRef(null);
   const editRef = useRef(null);
+
+  // Which channels this reply can be sent through (Gmail / Slack), driven by
+  // the sources actually connected to this project.
+  useEffect(() => {
+    let alive = true;
+    api.get(`/projects/${projectId}/send-targets`)
+      .then((r) => { if (alive) setSendTargets(r.data.targets || []); })
+      .catch(() => { if (alive) setSendTargets([]); });
+    return () => { alive = false; };
+  }, [projectId, connections]);
 
   // Persist the conversation so "previous interactions" survive navigation/reload.
   useEffect(() => {
@@ -556,6 +567,7 @@ function SuggestedReplyChat({ projectId, clientName }) {
             turn={t}
             projectId={projectId}
             clientName={clientName}
+            sendTargets={sendTargets}
             editing={editingIdx === i}
             editingDraft={editingDraft}
             editRef={editRef}
@@ -581,7 +593,7 @@ function SuggestedReplyChat({ projectId, clientName }) {
       <div className="px-4 py-3" style={{ borderTop: "1px solid var(--hairline)" }}>
         <form
           onSubmit={(e) => { e.preventDefault(); send(prompt); }}
-          className="flex items-end gap-2"
+          className="ask-input-box flex items-end gap-2 p-2"
           data-testid="suggested-reply-form"
         >
           <textarea
@@ -591,10 +603,10 @@ function SuggestedReplyChat({ projectId, clientName }) {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(prompt); }
             }}
             placeholder={thread.length === 0
-              ? "Ask Bracket…"
+              ? "Ask Bracket to draft a reply…"
               : "Refine or ask for another angle…"}
             rows={2}
-            className="flex-1 resize-none bg-transparent outline-none text-[13px] leading-relaxed"
+            className="flex-1 resize-none bg-transparent outline-none text-[13px] leading-relaxed px-1.5 py-1"
             style={{ color: "var(--text)" }}
             data-testid="suggested-reply-input"
           />
@@ -618,23 +630,36 @@ function SuggestedReplyChat({ projectId, clientName }) {
 }
 
 function ChatTurn({
-  idx, turn, projectId, clientName, editing, editingDraft, editRef,
+  idx, turn, projectId, clientName, sendTargets, editing, editingDraft, editRef,
   onEdit, onEditChange, onEditSave, onEditCancel,
   onCopy, copied, onRegenerate,
 }) {
-  const [showSend, setShowSend] = useState(false);
+  // Channel-aware send: a modal (matching the connect-source modal) opens for
+  // the chosen channel. Gmail pre-populates the client's email.
+  const [sendChannel, setSendChannel] = useState(null); // the selected target
   const [to, setTo] = useState("");
   const [subject, setSubject] = useState(clientName ? `Re: ${clientName}` : "Re: your project");
   const [sending, setSending] = useState(false);
 
-  const sendEmail = async () => {
-    if (!to.trim() || sending) return;
+  const openSend = (target) => {
+    setSendChannel(target);
+    if (target.provider === "gmail") setTo(target.to || "");
+  };
+  const closeSend = () => { if (!sending) setSendChannel(null); };
+
+  const doSend = async () => {
+    if (sending || !sendChannel) return;
     setSending(true);
     try {
-      await api.post(`/projects/${projectId}/send-email`, { to: to.trim(), subject: subject.trim(), body: turn.content });
-      toast.success(`Email sent to ${to.trim()}`);
-      setShowSend(false);
-      setTo("");
+      if (sendChannel.provider === "gmail") {
+        if (!to.trim()) { toast.error("Enter the client's email address to send."); setSending(false); return; }
+        await api.post(`/projects/${projectId}/send-email`, { to: to.trim(), subject: subject.trim(), body: turn.content });
+        toast.success(`Email sent to ${to.trim()}`);
+      } else if (sendChannel.provider === "slack") {
+        await api.post(`/projects/${projectId}/send-slack`, { channel_id: sendChannel.channel_id, body: turn.content });
+        toast.success(`Posted to ${sendChannel.channel_name || "Slack"}`);
+      }
+      setSendChannel(null);
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -740,54 +765,72 @@ function ChatTurn({
                           data-testid={`chat-turn-regenerate-${idx}`}>
                     <RefreshCw size={10} /> Regenerate
                   </button>
-                  <button type="button" onClick={() => setShowSend((v) => !v)}
-                          className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md font-medium"
-                          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
-                          data-testid={`chat-turn-send-${idx}`}>
-                    <Mail size={10} /> Send email
-                  </button>
+                  {/* One send CTA per connected channel */}
+                  {(sendTargets || []).map((tg) => (
+                    <button key={tg.provider + (tg.channel_id || "")} type="button" onClick={() => openSend(tg)}
+                            className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md font-medium"
+                            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+                            data-testid={`chat-turn-send-${tg.provider}-${idx}`}>
+                      {tg.provider === "slack" ? <Slack size={10} /> : <Mail size={10} />} {tg.label}
+                    </button>
+                  ))}
                 </div>
 
-                {showSend && (
-                  <div className="mt-2 rounded-md p-2.5 flex flex-col gap-2"
-                       style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}
-                       data-testid={`chat-turn-send-form-${idx}`}>
-                    <input
-                      type="email"
-                      value={to}
-                      onChange={(e) => setTo(e.target.value)}
-                      placeholder="Client email — e.g. client@company.com"
-                      className="jira-filter-input"
-                      style={{ width: "100%" }}
-                      data-testid={`chat-turn-send-to-${idx}`}
-                    />
-                    <input
-                      type="text"
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      placeholder="Subject"
-                      className="jira-filter-input"
-                      style={{ width: "100%" }}
-                      data-testid={`chat-turn-send-subject-${idx}`}
-                    />
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={sendEmail} disabled={sending || !to.trim()}
-                              className="inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-md font-medium disabled:opacity-40"
-                              style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
-                              data-testid={`chat-turn-send-confirm-${idx}`}>
-                        {sending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                        {sending ? "Sending…" : "Send from Gmail"}
-                      </button>
-                      <button type="button" onClick={() => setShowSend(false)}
-                              className="text-[11px] px-2.5 py-1.5 rounded-md"
-                              style={{ background: "transparent", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                              data-testid={`chat-turn-send-cancel-${idx}`}>
-                        Cancel
-                      </button>
+                {sendChannel && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                       style={{ background: "rgba(0,0,0,0.6)" }}
+                       onClick={closeSend}
+                       data-testid={`chat-turn-send-modal-${idx}`}>
+                    <div className="w-full max-w-[440px] rounded-2xl overflow-hidden"
+                         style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "0 40px 120px -30px rgba(0,0,0,0.8)" }}
+                         onClick={(e) => e.stopPropagation()}>
+                      <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--hairline)" }}>
+                        <ProviderIcon provider={sendChannel.provider} size={13} />
+                        <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>
+                          {sendChannel.provider === "slack"
+                            ? `Post to ${sendChannel.channel_name || "Slack"}`
+                            : "Send email to your client"}
+                        </p>
+                      </div>
+                      <div className="px-5 py-4 flex flex-col gap-3">
+                        {sendChannel.provider === "gmail" && (
+                          <>
+                            <div>
+                              <label className="mono-tag text-[9px] block mb-1" style={{ color: "var(--text-3)" }}>TO</label>
+                              <input type="email" value={to} onChange={(e) => setTo(e.target.value)}
+                                     placeholder="client@company.com" className="jira-filter-input" style={{ width: "100%" }}
+                                     data-testid={`chat-turn-send-to-${idx}`} />
+                            </div>
+                            <div>
+                              <label className="mono-tag text-[9px] block mb-1" style={{ color: "var(--text-3)" }}>SUBJECT</label>
+                              <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)}
+                                     placeholder="Subject" className="jira-filter-input" style={{ width: "100%" }}
+                                     data-testid={`chat-turn-send-subject-${idx}`} />
+                            </div>
+                          </>
+                        )}
+                        <div>
+                          <label className="mono-tag text-[9px] block mb-1" style={{ color: "var(--text-3)" }}>MESSAGE</label>
+                          <div className="text-[12.5px] leading-relaxed rounded-lg p-3 max-h-[180px] overflow-y-auto whitespace-pre-wrap"
+                               style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}>
+                            {turn.content}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="px-5 py-3 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+                        <button type="button" onClick={closeSend} className="text-[12px]" style={{ color: "var(--text-2)" }}
+                                data-testid={`chat-turn-send-cancel-${idx}`}>Cancel</button>
+                        <button type="button" onClick={doSend} disabled={sending || (sendChannel.provider === "gmail" && !to.trim())}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-medium disabled:opacity-40"
+                                style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+                                data-testid={`chat-turn-send-confirm-${idx}`}>
+                          {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                          {sending
+                            ? "Sending…"
+                            : (sendChannel.provider === "slack" ? "Post to Slack" : "Send from Gmail")}
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
-                      Sends directly through your connected Gmail — the client gets it as a normal email.
-                    </p>
                   </div>
                 )}
               </>
@@ -1426,28 +1469,35 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
         </ul>
       )}
       {/* One-click connect — starts OAuth in a popup right here; never leaves the page. */}
-      <div className="mt-3">
-        <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
-        <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
-          {["gmail", "slack", "figma", "github"].map((p) => {
-            const meta = PROVIDER_META[p] || {};
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => quickConnect(p)}
-                disabled={!!connecting}
-                className="quick-connect-chip inline-flex items-center gap-1.5 disabled:opacity-45"
-                title={`Connect ${meta.label || p}`}
-                data-testid={`project-memory-quick-connect-${p}`}
-              >
-                {connecting === p ? <Loader2 size={13} className="animate-spin" /> : <ProviderIcon provider={p} size={14} bare />}
-                {meta.label || p}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {(() => {
+        const connectedProviders = new Set(conns.map((c) => c.provider));
+        const addable = ["gmail", "slack", "figma", "github"].filter((p) => !connectedProviders.has(p));
+        if (addable.length === 0) return null;
+        return (
+          <div className="mt-3">
+            <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
+            <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
+              {addable.map((p) => {
+                const meta = PROVIDER_META[p] || {};
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => quickConnect(p)}
+                    disabled={!!connecting}
+                    className="quick-connect-chip inline-flex items-center gap-1.5 disabled:opacity-45"
+                    title={`Connect ${meta.label || p}`}
+                    data-testid={`project-memory-quick-connect-${p}`}
+                  >
+                    {connecting === p ? <Loader2 size={13} className="animate-spin" /> : <ProviderIcon provider={p} size={14} bare />}
+                    {meta.label || p}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       <Link to={`/app/connect?project=${projectId}`} className="text-[11px] mt-3 inline-flex items-center gap-1"
             style={{ color: "var(--accent)" }} data-testid="project-memory-sources-manage">
         Manage connections <ExternalLink size={10} />
