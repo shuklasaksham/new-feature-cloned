@@ -853,6 +853,18 @@ async def preview_sources(body: PreviewIn, request: Request):
     }
 
 
+def _extract_client_email(digest: str, own_email: str) -> str:
+    """Pull the client's email out of an already-fetched Gmail digest — the
+    first address that isn't the connected user's own."""
+    own = (own_email or "").lower()
+    for m in re.finditer(r"[\w.+-]+@[\w-]+\.[\w.-]+", digest or ""):
+        addr = m.group(0)
+        low = addr.lower()
+        if low != own and not low.endswith(("@google.com", "@googlemail.com")):
+            return addr
+    return ""
+
+
 def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str, analysis: dict) -> List[dict]:
     now = _now_iso()
     docs = []
@@ -926,10 +938,12 @@ async def establish_connection(body: EstablishIn, request: Request):
             continue
         conn_id = _uuid()
         analysis = it.get("analysis") or {}
+        client_email = _extract_client_email(it.get("digest", ""), user["email"]) if provider == "gmail" else ""
         await db.source_connections.insert_one({
             "id": conn_id, "project_id": project_id, "user_id": user["user_id"],
             "provider": provider, "source_type": provider,
             "source_id": src["id"], "source_name": src.get("name") or src["id"], "source_url": src.get("url", ""),
+            "client_email": client_email,
             "status": "connected", "content_hash": _hash(it.get("digest", "")),
             "content_cache": (it.get("digest") or "")[:20000],
             "extracted_stats": {k: len(analysis.get(k) or []) for k in ("requirements", "decisions", "deliverables", "deadlines", "open_questions")},
@@ -1104,8 +1118,8 @@ async def project_send_targets(project_id: str, request: Request):
         prov = c.get("provider")
         if prov == "gmail" and not gmail_done:
             gmail_done = True
-            to = ""
-            if not c.get("is_demo"):
+            to = c.get("client_email") or ""
+            if not to and not c.get("is_demo"):
                 try:
                     account = await _get_account(user["user_id"], "gmail")
                     to = await _gmail_client_email(account, c.get("source_id", ""))

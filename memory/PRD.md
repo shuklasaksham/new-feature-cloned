@@ -69,6 +69,12 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v21 — account-level source reuse + picker search + client-email prefill) —
+  - **Source picker search box**: the inline source picker now has a debounced search input that re-queries `GET /connect/{provider}/sources?q=` — users filter their chats/files/emails instead of scanning a flat list. Already-attached sources are filtered out of the list.
+  - **No re-auth when the account is already linked**: "Add a source" chips now call `openSourcePicker` which lists the account's sources directly (account-level). OAuth only fires if the account isn't connected yet (`/sources` → 400 → connect). Connecting an account associates it with the Bracket account (integration_account); attaching to a project is a separate step. All four provider chips are always shown so users can add more sources.
+  - **Send-email TO pre-populated with the extracted client email**: at attach time we persist `client_email` on the Gmail `source_connection` (`_extract_client_email` from the digest); `GET /send-targets` returns it so the Send modal's TO is pre-filled (verified on demo: `anna@nordwind.co`). Falls back to a live thread lookup when not stored.
+  - NOTE: the picker+search and no-reauth flows need a live connected account to demo end-to-end (the demo account has seeded sources but no real OAuth token, so listing correctly falls back to OAuth). Verified via code + endpoints; TO prefill verified visually.
+
 - 2026-06 (design v20 — add-source filter + Ask Bracket textbox + channel-aware direct send) —
   - **Add a source shows only unconnected providers**: `ConnectedSourcesCompact` filters the quick-connect chips against the project's active connections; the whole "ADD A SOURCE" block hides when everything is connected.
   - **Ask Bracket input looks like a real textbox**: wrapped the composer in a bordered `.ask-input-box` (surface-2, 6px, accent focus-within ring).

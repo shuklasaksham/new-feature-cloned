@@ -5,7 +5,7 @@ import {
   ArrowLeft, Loader2, ExternalLink, AlertTriangle,
   Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
-  Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown,
+  Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown, Search,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -1316,6 +1316,8 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
   const [attaching, setAttaching] = useState(false);
   const [selected, setSelected] = useState([]);         // selected source ids
   const [sourceStatus, setSourceStatus] = useState({}); // { id: 'attaching'|'done'|'error' }
+  const [pickerQuery, setPickerQuery] = useState("");   // source search box
+  const [pickerLoading, setPickerLoading] = useState(false);
   const pendingRef = useRef(null);
   const popupRef = useRef(null);
 
@@ -1369,6 +1371,47 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
       toast.error(formatApiError(e));
     }
   };
+
+  // Open the source list for a provider. If the account is already linked we
+  // list their chats/files/emails straight away (with search) — no re-auth.
+  // Only if the account isn't connected yet do we kick off OAuth.
+  const openSourcePicker = async (providerKey) => {
+    if (connecting) return;
+    setConnecting(providerKey);
+    try {
+      const { data } = await api.get(`/connect/${providerKey}/sources`);
+      const sources = data?.sources || [];
+      setPicker({ provider: providerKey, sources });
+      setPickerQuery("");
+      setSelected([]);
+      setSourceStatus({});
+      setConnecting(null);
+    } catch (e) {
+      if (e?.response?.status === 400) {
+        // Account not linked yet — connect it (OAuth), then the list opens.
+        quickConnect(providerKey);
+      } else {
+        setConnecting(null);
+        toast.error(formatApiError(e));
+      }
+    }
+  };
+
+  // Re-query the source list as the user types in the picker search box.
+  useEffect(() => {
+    if (!picker) return;
+    const prov = picker.provider;
+    const t = setTimeout(async () => {
+      setPickerLoading(true);
+      try {
+        const { data } = await api.get(`/connect/${prov}/sources`, { params: { q: pickerQuery } });
+        setPicker((cur) => (cur && cur.provider === prov ? { ...cur, sources: data?.sources || [] } : cur));
+      } catch { /* keep previous list */ }
+      finally { setPickerLoading(false); }
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickerQuery]);
 
   // Attach the selected sources to THIS project (preview -> establish), one by
   // one, updating per-source sync status as they land.
@@ -1468,36 +1511,30 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
           })}
         </ul>
       )}
-      {/* One-click connect — starts OAuth in a popup right here; never leaves the page. */}
-      {(() => {
-        const connectedProviders = new Set(conns.map((c) => c.provider));
-        const addable = ["gmail", "slack", "figma", "github"].filter((p) => !connectedProviders.has(p));
-        if (addable.length === 0) return null;
-        return (
-          <div className="mt-3">
-            <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
-            <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
-              {addable.map((p) => {
-                const meta = PROVIDER_META[p] || {};
-                return (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => quickConnect(p)}
-                    disabled={!!connecting}
-                    className="quick-connect-chip inline-flex items-center gap-1.5 disabled:opacity-45"
-                    title={`Connect ${meta.label || p}`}
-                    data-testid={`project-memory-quick-connect-${p}`}
-                  >
-                    {connecting === p ? <Loader2 size={13} className="animate-spin" /> : <ProviderIcon provider={p} size={14} bare />}
-                    {meta.label || p}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
+      {/* Add a source — opens the source list (search). Connects the account
+          only if it isn't linked yet; never re-authorizes an existing account. */}
+      <div className="mt-3">
+        <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
+        <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
+          {["gmail", "slack", "figma", "github"].map((p) => {
+            const meta = PROVIDER_META[p] || {};
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => openSourcePicker(p)}
+                disabled={!!connecting}
+                className="quick-connect-chip inline-flex items-center gap-1.5 disabled:opacity-45"
+                title={`Add a source from ${meta.label || p}`}
+                data-testid={`project-memory-quick-connect-${p}`}
+              >
+                {connecting === p ? <Loader2 size={13} className="animate-spin" /> : <ProviderIcon provider={p} size={14} bare />}
+                {meta.label || p}
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <Link to={`/app/connect?project=${projectId}`} className="text-[11px] mt-3 inline-flex items-center gap-1"
             style={{ color: "var(--accent)" }} data-testid="project-memory-sources-manage">
         Manage connections <ExternalLink size={10} />
@@ -1519,33 +1556,63 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
               </p>
               <span className="ml-auto mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>{selected.length} SELECTED</span>
             </div>
-            <ul className="max-h-[340px] overflow-y-auto p-2">
-              {picker.sources.map((s) => {
-                const on = selected.includes(s.id);
-                const st = sourceStatus[s.id];
+            {/* Search box — filter the list of chats / files / emails */}
+            <div className="px-4 pt-3 pb-1">
+              <div className="ask-input-box flex items-center gap-2 px-2.5" style={{ height: 34 }}>
+                <Search size={13} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                <input
+                  type="text"
+                  value={pickerQuery}
+                  onChange={(e) => setPickerQuery(e.target.value)}
+                  placeholder={`Search your ${PROVIDER_META[picker.provider]?.label || picker.provider}…`}
+                  className="flex-1 bg-transparent outline-none text-[12.5px]"
+                  style={{ color: "var(--text)" }}
+                  data-testid="inline-connect-search"
+                  autoFocus
+                />
+                {pickerLoading && <Loader2 size={12} className="animate-spin" style={{ color: "var(--accent)" }} />}
+              </div>
+            </div>
+            {(() => {
+              const attachedIds = new Set(conns.filter((c) => c.provider === picker.provider).map((c) => c.source_id));
+              const available = (picker.sources || []).filter((s) => !attachedIds.has(s.id));
+              if (available.length === 0) {
                 return (
-                  <li key={s.id}>
-                    <button type="button" onClick={() => !attaching && toggleSelect(s.id)} disabled={attaching}
-                            className="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 transition-colors disabled:opacity-70"
-                            onMouseEnter={(e) => { if (!attaching) e.currentTarget.style.background = "var(--surface-2)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                            data-testid={`inline-connect-source-${s.id}`}>
-                      <span className="inline-flex items-center justify-center w-4 h-4 rounded shrink-0"
-                            style={{ background: on ? "var(--accent)" : "transparent", border: on ? "none" : "1px solid var(--hairline-strong)", color: "#fff" }}>
-                        {on && <Check size={11} />}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="font-medium truncate block text-[13px]" style={{ color: "var(--text)" }}>{s.name}</span>
-                        {s.subtitle && <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{s.subtitle}</span>}
-                      </span>
-                      {st === "attaching" && <Loader2 size={13} className="animate-spin shrink-0" style={{ color: "var(--accent)" }} data-testid={`inline-connect-status-${s.id}`} />}
-                      {st === "done" && <Check size={13} className="shrink-0" style={{ color: "var(--success, #22C55E)" }} data-testid={`inline-connect-status-${s.id}`} />}
-                      {st === "error" && <AlertTriangle size={12} className="shrink-0" style={{ color: "var(--danger)" }} data-testid={`inline-connect-status-${s.id}`} />}
-                    </button>
-                  </li>
+                  <div className="px-5 py-8 text-center text-[12.5px]" style={{ color: "var(--text-3)" }} data-testid="inline-connect-empty">
+                    {pickerLoading ? "Searching…" : (pickerQuery ? "No matches — try another search." : "Everything here is already attached.")}
+                  </div>
                 );
-              })}
-            </ul>
+              }
+              return (
+                <ul className="max-h-[320px] overflow-y-auto p-2">
+                  {available.map((s) => {
+                    const on = selected.includes(s.id);
+                    const st = sourceStatus[s.id];
+                    return (
+                      <li key={s.id}>
+                        <button type="button" onClick={() => !attaching && toggleSelect(s.id)} disabled={attaching}
+                                className="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 transition-colors disabled:opacity-70"
+                                onMouseEnter={(e) => { if (!attaching) e.currentTarget.style.background = "var(--surface-2)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                                data-testid={`inline-connect-source-${s.id}`}>
+                          <span className="inline-flex items-center justify-center w-4 h-4 rounded shrink-0"
+                                style={{ background: on ? "var(--accent)" : "transparent", border: on ? "none" : "1px solid var(--hairline-strong)", color: "#fff" }}>
+                            {on && <Check size={11} />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="font-medium truncate block text-[13px]" style={{ color: "var(--text)" }}>{s.name}</span>
+                            {(s.subtitle || s.meta?.detail) && <span className="text-[11px] truncate block" style={{ color: "var(--text-3)" }}>{s.subtitle || s.meta?.detail}</span>}
+                          </span>
+                          {st === "attaching" && <Loader2 size={13} className="animate-spin shrink-0" style={{ color: "var(--accent)" }} data-testid={`inline-connect-status-${s.id}`} />}
+                          {st === "done" && <Check size={13} className="shrink-0" style={{ color: "var(--success, #22C55E)" }} data-testid={`inline-connect-status-${s.id}`} />}
+                          {st === "error" && <AlertTriangle size={12} className="shrink-0" style={{ color: "var(--danger)" }} data-testid={`inline-connect-status-${s.id}`} />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              );
+            })()}
             <div className="px-5 py-3 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--hairline)" }}>
               <button type="button" onClick={() => !attaching && setPicker(null)}
                       className="text-[12px]" style={{ color: "var(--text-2)" }}
