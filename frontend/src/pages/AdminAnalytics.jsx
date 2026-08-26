@@ -54,7 +54,7 @@ const CustomTooltip = ({ active, payload, label, unit = "" }) => {
         background: "#0A0B0F",
         borderColor: COLORS.cardBorder,
         color: "#F7F7F8",
-        fontFamily: "'Poppins', sans-serif",
+        fontFamily: "'Geist', sans-serif",
         fontSize: 12,
       }}
     >
@@ -185,7 +185,7 @@ function Heatmap({ data }) {
             y={12}
             fill={COLORS.axisLabel}
             fontSize={9}
-            fontFamily="'Poppins', sans-serif"
+            fontFamily="'Geist', sans-serif"
             textAnchor="middle"
             opacity={h % 3 === 0 ? 1 : 0}
           >
@@ -200,7 +200,7 @@ function Heatmap({ data }) {
               y={cell - 3}
               fill={COLORS.axisLabel}
               fontSize={10}
-              fontFamily="'Poppins', sans-serif"
+              fontFamily="'Geist', sans-serif"
             >
               {row.day}
             </text>
@@ -270,7 +270,7 @@ function ScatterTooltip({ active, payload }) {
         background: "#0A0B0F",
         borderColor: COLORS.cardBorder,
         color: "var(--text)",
-        fontFamily: "'Poppins', sans-serif",
+        fontFamily: "'Geist', sans-serif",
         fontSize: 12,
       }}
     >
@@ -1830,7 +1830,7 @@ export default function AdminAnalytics() {
   const gridProps = { strokeDasharray: "3 3", stroke: COLORS.grid, vertical: false };
   const axisProps = {
     stroke: COLORS.axis,
-    tick: { fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'Poppins', sans-serif" },
+    tick: { fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'Geist', sans-serif" },
     tickLine: false,
     axisLine: false,
   };
@@ -2015,7 +2015,7 @@ export default function AdminAnalytics() {
                   return label.length > 14 ? label.slice(0, 12) + "…" : label;
                 }}
                 stroke={COLORS.axis}
-                tick={{ fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'Poppins', sans-serif" }}
+                tick={{ fill: COLORS.axisLabel, fontSize: 10, fontFamily: "'Geist', sans-serif" }}
                 tickLine={false}
                 axisLine={false}
               />

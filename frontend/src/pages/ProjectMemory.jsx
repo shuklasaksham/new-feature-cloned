@@ -719,8 +719,8 @@ function ChatTurn({
         ) : (
           <>
             <div
-              className="rounded-lg p-3.5 text-[13.5px] leading-relaxed whitespace-pre-wrap"
-              style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text)" }}
+              className="text-[13.5px] leading-relaxed whitespace-pre-wrap pl-3.5 py-0.5"
+              style={{ borderLeft: "2px solid var(--brand-border)", color: "var(--text)" }}
               data-testid={`chat-turn-body-${idx}`}
             >
               {turn.content || <span style={{ color: "var(--text-3)" }}>(Bracket returned an empty reply — try a different instruction.)</span>}
@@ -800,7 +800,7 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-xl p-8 text-center"
+        <div className="rounded-xl p-10 text-center"
              style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}
              data-testid="project-memory-empty">
           <p className="text-[13px]" style={{ color: "var(--text-3)" }}>
@@ -808,7 +808,9 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-2" data-testid="project-memory-items">
+        <ul className="flex flex-col rounded-xl overflow-hidden"
+            style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)" }}
+            data-testid="project-memory-items">
           {items.map((m) => <MemoryRow key={m.id} item={m} cat={cat} onOpen={onOpen} />)}
         </ul>
       )}
@@ -822,39 +824,32 @@ function MemoryRow({ item, cat, onOpen }) {
   return (
     <li>
       <button type="button" onClick={() => onOpen(item)}
-              className="w-full text-left rounded-lg px-4 py-3 transition-colors"
-              style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--hairline-strong)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--hairline)"; }}
+              className="memory-ledger-row group w-full text-left flex items-start gap-3.5 px-5 py-3.5"
               data-testid={`project-memory-row-${item.id}`}>
-        <div className="flex items-start gap-3">
-          <cat.icon size={13} style={{ color: cat.color, marginTop: 3 }} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="mono-tag px-1.5 py-0.5 rounded text-[9px]"
-                    style={{ color: status.color, background: status.bg, border: `1px solid ${status.color}33` }}>
-                {status.label}
-              </span>
-              {item.is_scope_change && (
-                <span className="mono-tag px-1.5 py-0.5 rounded text-[9px]"
-                      style={{ color: "var(--danger)", background: "var(--danger-soft)", border: "1px solid var(--danger)33" }}>
-                  <AlertTriangle size={9} className="inline mr-0.5" /> SCOPE CREEP
-                </span>
-              )}
-              <span className="text-[10.5px]" style={{ color: "var(--text-3)" }}>
-                <ProviderIcon provider={item.provider} size={10} className="inline mr-1 align-middle" />
-                {item.source_label} · {timeAgo(item.created_at)}
-              </span>
-            </div>
-            <p className="mt-1 text-[13.5px] font-medium leading-snug" style={{ color: "var(--text)" }}>{item.title}</p>
-            {item.detail && (
-              <p className="mt-0.5 text-[12px] leading-snug line-clamp-1" style={{ color: "var(--text-2)" }}>{item.detail}</p>
-            )}
-          </div>
-          {isChange && (
-            <span className="shrink-0 mono-tag text-[9px] mt-1" style={{ color: "var(--accent)" }}>REVIEW →</span>
+        <cat.icon size={14} style={{ color: cat.color, marginTop: 2, flexShrink: 0 }} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[13.5px] font-medium leading-snug" style={{ color: "var(--text)" }}>{item.title}</p>
+          {item.detail && (
+            <p className="mt-0.5 text-[12px] leading-snug line-clamp-1" style={{ color: "var(--text-2)" }}>{item.detail}</p>
           )}
+          <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+            <span className="mono-tag text-[9px]" style={{ color: status.color }}>
+              {status.label}
+            </span>
+            {item.is_scope_change && (
+              <span className="mono-tag text-[9px] inline-flex items-center gap-0.5" style={{ color: "var(--danger)" }}>
+                <AlertTriangle size={9} /> SCOPE CREEP
+              </span>
+            )}
+            <span className="text-[10.5px] inline-flex items-center gap-1" style={{ color: "var(--text-3)" }}>
+              <ProviderIcon provider={item.provider} size={10} className="align-middle" />
+              {item.source_label} · {timeAgo(item.created_at)}
+            </span>
+          </div>
         </div>
+        {isChange && (
+          <span className="shrink-0 mono-tag text-[9px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--accent)" }}>REVIEW →</span>
+        )}
       </button>
     </li>
   );

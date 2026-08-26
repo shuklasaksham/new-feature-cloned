@@ -37,9 +37,9 @@ module.exports = {
         hairline:  "#262A36",
       },
       fontFamily: {
-        display: ["'Poppins'", "sans-serif"],
-        body:    ["'Poppins'", "sans-serif"],
-        mono:    ["'JetBrains Mono'", "ui-monospace", "monospace"],
+        display: ["'Geist'", "sans-serif"],
+        body:    ["'Geist'", "sans-serif"],
+        mono:    ["'Geist Mono'", "ui-monospace", "monospace"],
       },
       borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "8px", lg: "10px", xl: "14px", "2xl": "18px" },
       boxShadow: {

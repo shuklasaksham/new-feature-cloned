@@ -19,7 +19,7 @@ export default function Avatar({ size = 32, initial = "B", className = "" }) {
         color: "#0A0A0C",
         borderRadius: "9999px",
         border: "1px solid rgba(255, 255, 255, 0.08)",
-        fontFamily: "'Poppins', sans-serif",
+        fontFamily: "'Geist', sans-serif",
         fontSize: Math.round(size * 0.44),
         fontWeight: 600,
         letterSpacing: "-0.01em",

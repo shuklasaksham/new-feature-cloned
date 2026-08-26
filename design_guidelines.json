@@ -1,124 +1,198 @@
 {
-  "brand": {
-    "name": "Bracket",
-    "promise": "Designers don't need more tools. They need better decisions.",
-    "archetype": "High-End SaaS / Linear-Grade (Swiss + Minimalist Dark)",
-    "theme": "Dark"
+  "typography": {
+    "primary_font": "Geist Sans",
+    "mono_font": "Geist Mono",
+    "rationale": "Geist delivers the ultra-clean, technical, yet premium 'Linear' feel. It eliminates the generic template look of Poppins while retaining legibility at small sizes.",
+    "headings": {
+      "style": "font-medium tracking-tighter text-white",
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-[1.1]",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-[1.15]",
+      "h3": "text-xl sm:text-2xl tracking-tight text-white/90"
+    },
+    "body": {
+      "style": "font-normal leading-relaxed text-white/70",
+      "base": "text-base",
+      "sm": "text-sm",
+      "xs": "text-xs tracking-wide uppercase text-white/50"
+    },
+    "mono": {
+      "style": "font-mono text-[0.85em] tracking-tight",
+      "usage": "Use strictly for the 6 memory categories tags, code snippets, timestamps, and metadata tags."
+    }
   },
-  "design_tokens": {
-    "colors": {
-      "background": "#000000",
-      "surface_1": "#0D0D12",
-      "surface_2": "#17181D",
-      "surface_3": "#22242B",
-      "hairline": "rgba(255, 255, 255, 0.08)",
-      "hairline_hover": "rgba(255, 255, 255, 0.16)",
-      "text_primary": "#F7F7F8",
-      "text_secondary": "#A0A0AB",
-      "text_tertiary": "#70707B",
-      "accent_primary": "#7C5CFF",
-      "accent_glow": "rgba(124, 92, 255, 0.15)",
-      "danger": "#FF5C5C",
-      "success": "#4ade80"
+  "colors": {
+    "theme": "Dark Mode Only",
+    "backgrounds": {
+      "bg": "#191919",
+      "surface_1": "#1E1E1E",
+      "surface_2": "#232323",
+      "surface_3": "#2A2A2A"
     },
-    "typography": {
-      "primary_font": "Inter, sans-serif (features: cv11, ss01, ss03)",
-      "mono_font": "JetBrains Mono, monospace",
-      "scale": {
-        "h1": "text-5xl tracking-[-0.03em] font-medium leading-tight",
-        "h2": "text-3xl tracking-[-0.02em] font-medium leading-snug",
-        "h3": "text-xl tracking-[-0.01em] font-medium",
-        "body": "text-[14px] leading-relaxed tracking-normal font-normal",
-        "label_mono": "text-[11px] uppercase tracking-[0.1em] font-medium",
-        "step_motif": "text-[12px] text-text_tertiary tracking-widest font-mono"
-      }
+    "borders": {
+      "hairline": "rgba(255,255,255,0.07)",
+      "focus": "rgba(255,255,255,0.15)"
     },
-    "spacing_and_radii": {
-      "page_padding": "px-6 md:px-12 lg:px-24 py-12 md:py-24",
-      "section_gap": "gap-24 md:gap-32",
-      "element_gap": "gap-4 md:gap-6",
-      "radius_sm": "rounded-[4px]",
-      "radius_md": "rounded-[8px]",
-      "radius_lg": "rounded-[12px]",
-      "radius_xl": "rounded-[16px]",
-      "radius_full": "rounded-full"
+    "accents": {
+      "primary": "#3B82F6",
+      "primary_hover": "#2563EB",
+      "primary_glow": "rgba(59, 130, 246, 0.15)"
     },
+    "status": {
+      "success": "#22C55E",
+      "warning": "#F59E0B",
+      "danger": "#EF4444"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "rgba(255, 255, 255, 0.7)",
+      "tertiary": "rgba(255, 255, 255, 0.4)"
+    },
+    "rules": [
+      "No full-screen gradients. Use deep dark solid backgrounds.",
+      "Strictly ONE accent color (#3B82F6). Remove all violet/purple.",
+      "Never use pure black or pure #808080. Adhere to the provided hex scale.",
+      "Use 'hairline' borders (border-white/5 or border-[#ffffff12]) for structural separation."
+    ]
+  },
+  "visual_enhancers": {
     "shadows": {
-      "none": "none",
-      "glow": "0 0 40px -10px var(--accent-glow)",
-      "dropdown": "0 12px 32px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08)"
+      "ambient": "shadow-[0_4px_24px_rgba(0,0,0,0.2)]",
+      "inset": "shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+      "glow": "shadow-[0_0_24px_rgba(59,130,246,0.1)]"
+    },
+    "surfaces": {
+      "cards": "bg-[#1E1E1E] border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] rounded-xl",
+      "glass": "bg-[#191919]/70 backdrop-blur-xl border border-white/5",
+      "pills": "bg-[#232323] hover:bg-[#2A2A2A] transition-colors border border-transparent hover:border-white/5 rounded-full"
+    },
+    "textures": [
+      "Apply extremely subtle noise texture overlay (opacity 1-2%) globally to remove digital flatness."
+    ]
+  },
+  "components": {
+    "Cards": {
+      "description": "Minimalist containers, never purely flat. Always include an inset shadow to simulate a 1px top highlight.",
+      "classes": "bg-[var(--surface)] rounded-xl border border-[var(--hairline)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] p-6"
+    },
+    "Buttons": {
+      "primary": "bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]",
+      "secondary": "bg-[#232323] hover:bg-[#2A2A2A] text-white/90 rounded-lg px-4 py-2 text-sm font-medium border border-white/5 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+    },
+    "Inputs": {
+      "classes": "bg-[#191919] border border-white/10 rounded-lg px-3 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]"
+    },
+    "Tabs": {
+      "description": "Horizontal pill nav. Inactive tabs are text-white/50. Active tab has bg-[#232323] + text-white. Underline is a framer-motion layoutId.",
+      "classes": "relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+    },
+    "Memory_Rows": {
+      "description": "Data rows for the 6 categories. Should look like highly polished ledger entries, not Kanban tasks. Emphasize timestamps and typography over container boxes.",
+      "classes": "group flex items-center justify-between py-3 border-b border-[var(--hairline)] hover:bg-[#1E1E1E]/50 transition-colors cursor-pointer"
+    },
+    "Chat_Turns": {
+      "user": "bg-[#2A2A2A] text-white/90 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[85%] self-end",
+      "assistant": "bg-transparent text-white/80 pr-4 py-3 max-w-[90%] self-start border-l-2 border-blue-500/30 pl-4"
     }
   },
-  "motion_language": {
-    "easings": {
-      "spring": "cubic-bezier(0.16, 1, 0.3, 1)",
-      "out": "cubic-bezier(0.0, 0.0, 0.2, 1)"
+  "grids": {
+    "marketing_bento": "grid grid-cols-1 md:grid-cols-12 gap-6. Hero tile spans col-span-12 lg:col-span-8. Supporting tiles span col-span-4.",
+    "app_dashboard": "grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4. Dense, highly optimized for scanning."
+  },
+  "layouts": {
+    "spacing": "Generous spacing. Use p-8 or p-12 for major section padding. Within cards, use p-5 or p-6. Never cramp text.",
+    "sidebar": "w-64 fixed left-0 top-0 h-screen bg-[#191919] border-r border-[var(--hairline)] flex flex-col z-40",
+    "main_content": "ml-64 min-h-screen bg-[#191919] text-white"
+  },
+  "motion": {
+    "philosophy": "Cinematic but quiet. No bouncy spring animations. Use ease-out for entrances, ease-in for exits.",
+    "page_load": "opacity-0 to opacity-100, translateY(10px) to translateY(0) with duration 0.4s and ease [0.22, 1, 0.36, 1].",
+    "stagger": "List items (Memory rows, dashboard tiles) should stagger reveal with 0.05s delay increments.",
+    "interactions": "Buttons scale down slightly on active (scale: 0.98). Hover states transition color in 0.15s."
+  },
+  "accessibility": {
+    "contrast": "Ensure text-white/50 meets 4.5:1 ratio against #191919. (Use text-white/60 if necessary).",
+    "focus": "All interactive elements MUST have a visible focus ring (focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#191919]).",
+    "data_testid": "MANDATORY on all links, buttons, inputs, tabs, and major view containers (e.g., data-testid='nav-dashboard-link', data-testid='ask-bracket-submit')."
+  },
+  "media": {
+    "images": "Use monochromatic or deeply tinted images. Opacity overlays must not exceed 50%. Let the image content breathe."
+  },
+  "3d_libraries": {
+    "recommendation": "Use framer-motion for 2.5D depth on marketing scroll. Avoid heavy WebGL/Three.js unless specifically building the 'Connected Sources' hero visualization.",
+    "visual_data": "For activity digests, use simple Recharts with custom tooltips (bg-[#1E1E1E], 1px border), matching the dark UI exactly."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1735948055457-8d816fb80a87?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwZGFyayUyMHdvcmtzcGFjZXxlbnwwfHx8fDE3ODc3MzA2MjR8MA&ixlib=rb-4.1.0&q=85",
+      "category": "marketing_hero_background",
+      "description": "Minimalist dark workspace desk, to be used with a radial gradient fade for the marketing hero section."
     },
-    "durations": {
-      "fast": "150ms",
-      "base": "300ms",
-      "slow": "600ms",
-      "ambient": "4000ms"
-    },
-    "choreography": {
-      "page_enter": {
-        "initial": { "opacity": 0, "y": 8, "filter": "blur(4px)" },
-        "animate": { "opacity": 1, "y": 0, "filter": "blur(0px)" },
-        "transition": { "duration": 0.6, "ease": [0.16, 1, 0.3, 1], "stagger": 0.05 }
-      },
-      "hover_micro_interaction": "Scale to 0.98 on press, border color shifts to hairline_hover, slight bg brighten. 150ms ease-out."
+    {
+      "url": "https://images.pexels.com/photos/880989/pexels-photo-880989.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "category": "marketing_bento_tile",
+      "description": "Dimly lit workspace, perfect for the 'Late Night Sync' or 'Background Activity' bento box illustration."
     }
-  },
-  "component_refinements": {
-    "card-brut": "Rename/Refine to `.card-linear`: bg-surface_1, border border-hairline, rounded-lg, overflow-hidden, no box-shadow.",
-    "liquid-glass": "Refine to `.glass-panel`: bg-[#000000]/60, backdrop-blur-xl, border-b border-hairline.",
-    "btn-brut": "Refine to `.btn-primary`: bg-accent_primary text-white rounded-md px-4 py-2 font-medium text-[13px] transition-all hover:brightness-110 active:scale-[0.98] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]",
-    "btn-ghost": "Refine to `.btn-ghost`: bg-transparent text-text_secondary hover:text-text_primary hover:bg-surface_2 rounded-md transition-all active:scale-[0.98]",
-    "input-line": "Refine to `.input-linear`: bg-surface_1 border border-hairline rounded-md px-3 py-2 text-[14px] text-text_primary focus:border-accent_primary focus:ring-1 focus:ring-accent_primary/30 outline-none transition-all",
-    "textarea-brut": "Refine to `.textarea-linear`: same as input-linear but min-h-[120px] resize-none leading-relaxed",
-    "suggest-chip": "Refine to `.suggest-chip`: border border-hairline bg-surface_1 text-text_secondary text-[12px] px-3 py-1.5 rounded-full hover:bg-surface_2 hover:text-text_primary cursor-pointer transition-all",
-    "status-pill": "Refine to `.status-pill`: flex items-center gap-2 text-[12px] font-medium px-2.5 py-1 rounded-full border border-hairline bg-surface_1.",
-    "icon-tile": "Refine to `.icon-tile`: w-8 h-8 rounded-md bg-surface_2 border border-hairline flex items-center justify-center text-text_secondary",
-    "app-shell": "Sidebar 240px expanded / 64px collapsed. bg-background. border-r border-hairline. Content area bg-surface_1 (slightly lifted from pure black).",
-    "nav-item": "text-[13px] font-medium text-text_secondary hover:text-text_primary hover:bg-surface_2 px-2 py-1.5 rounded-md flex items-center gap-2 transition-colors",
-    "step-pipeline": "flex items-center gap-2 overflow-x-auto no-scrollbar py-4 border-b border-hairline. Nodes are 24px circles, connected by 1px hairline lines. Active step gets border-accent_primary."
-  },
-  "page_blueprints": {
-    "Marketing_Header": "Fixed top, w-full, z-50, `.glass-panel`. Left: {B} Bracket. Right: Ghost button (Login), Primary button (Get Started). Height: 60px.",
-    "Landing_Page": {
-      "Hero": "Centered. Ambient mesh gradient background behind hero (subtle). H1 (text-5xl), Subtitle (text-lg text-text_secondary max-w-2xl). CTA group. Staggered fade-up entry.",
-      "Problem_Walkthrough": "Bento-box grid structure. Cards with `border-hairline`. Asymmetric layout.",
-      "Social_Proof": "Mono logos at 40% opacity, hover to 100%. Single row marquee or grid.",
-      "Pricing": "3-column grid. Middle card has 1px solid accent_primary border and subtle accent_glow. Features listed with 14px text and crisp check icons."
-    },
-    "Auth": "Centered card (max-w-md), bg-surface_1, border-hairline. Clean typography. Minimalist input-linear. 'Back to home' ghost link.",
-    "App_Dashboard": "Top header: Breadcrumb or Greeting. Action bar: 'New Project' button right-aligned. Grid of projects (card-linear). Empty state: subtle dashed border, ghost icon, clear CTA.",
-    "Project_Flow": "Left Pane (60%): Textarea, AI suggestion chips below it. Right Pane (40%): Live artifact preview in a sticky card. Top: Step pipeline indicator '{ 01 / 05 }'. Ambient pulse when AI is generating.",
-    "Project_Document": "Centered, max-w-3xl. Pure white or #F7F7F8 text. Looks like a pristine, locked, high-end document. Read-only. Action bar floating at bottom for Export/Share.",
-    "Client_Review": "Similar to Project Document but wrapped in a 'Review Mode' shell. Fixed bottom bar with 'Approve' (Primary, Green/Accent) and 'Request Changes' (Ghost/Danger) buttons."
-  },
-  "what_to_remove": [
-    "Shouty all-caps display headings - replace with sentence case, tight-tracking Inter.",
-    "Brutalist `{ first project }` chrome - replace with clean `.card-linear` borders.",
-    "Giant gradient-text 'yet.' pop - replace with subtle, solid white or brand-accent text highlights.",
-    "Mono `{ 01 / 05 }` over-use - restrict to the active step indicator only, make it 11px and muted.",
-    "Oversized drop shadows - use hairline borders and surface color differentiation instead.",
-    "Thick dark mode borders (e.g., 2px+) - everything must be 1px solid rgba(255, 255, 255, 0.08)."
   ],
-  "hero_ambient_art_direction": "Linear-style subtle ambience. Use a CSS-only radial gradient overlay placed absolutely behind the hero text. `background: radial-gradient(circle at 50% 0%, rgba(124, 92, 255, 0.15), transparent 50%);` paired with a very faint absolute SVG grid (`opacity-10`, `stroke-hairline`, 1px stroke-width, 32px cell size). NO 'AI' glowing brains, NO complex 3D renders. Just geometric, ultra-clean light emission.",
-  "testing_and_accessibility": {
-    "data_testid": "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., `data-testid='login-submit-btn'`).",
-    "focus_rings": "Keyboard navigation must show `focus:ring-2 focus:ring-accent_primary/50 focus:outline-none`. Do NOT use default blue outlines.",
-    "contrast": "Text-secondary must remain legible (minimum `#A0A0AB` on `#000000` gives ~4.5:1).",
-    "file_extensions": "Guideline is tailored strictly for `.js` environments (React 19 + Tailwind). Avoid `.tsx` patterns."
+  "client_os_vs_pm_tool": {
+    "core_distinction": "A PM tool requires manual task creation and status dragging. Bracket is an 'OS' that passively reads integrated apps and extracts a 'Memory'.",
+    "ui_implications": [
+      "NO kanban boards. NO drag-and-drop task columns.",
+      "Use chronological 'Ledger' feeds, digest logs, and conversational UI (Ask Bracket).",
+      "Data should look 'extracted' (e.g., source tags like 'From Slack', 'From Gmail' next to memory rows).",
+      "Focus heavily on the 'Zero Connections' empty state: the OS is dead until tools are connected. This connection page is the heartbeat."
+    ],
+    "fixed_categories": "Deliverables, Scope Items, Timelines, Requirements, Decisions, Deadlines. (These act as immutable system folders/pills, NOT user-editable lists)."
   },
-  "pixel_checklist": [
-    "Are all borders exactly 1px using `--hairline`?",
-    "Are there any accidental default box-shadows? (Must be removed)",
-    "Are button hit areas at least 40x40px on mobile, despite visual height?",
-    "Is the body text exactly 14px (or 13px for dense UI) with `leading-relaxed`?",
-    "Do all hover states transition smoothly (150ms ease-out)?",
-    "Is the spacing rhythm mathematically consistent (multiples of 4px)?",
-    "Do all pages implement the `page_enter` fade/blur stagger?"
+  "implementation_order": [
+    {
+      "step": 1,
+      "focus": "Design System & Shell",
+      "description": "Implement global CSS vars, Tailwind config (Geist font, specific spacing), and the Sidebar Shell navigation."
+    },
+    {
+      "step": 2,
+      "focus": "Auth & Empty States",
+      "description": "Login (OTP + password). Crucially: 'Zero Connections' empty state and 'Connect Work' provider picker. This establishes the 'OS' paradigm."
+    },
+    {
+      "step": 3,
+      "focus": "Dashboard & Activity",
+      "description": "Projects list, 5-step project composer modal, and Activity digest feed. Nail the high-density grid and staggered row animations."
+    },
+    {
+      "step": 4,
+      "focus": "Project Memory (/project/:id)",
+      "description": "The core. Horizontal pill nav for the 6 fixed categories. Highly polished ledger rows with tags. 'Ask Bracket' chat thread component alongside it."
+    },
+    {
+      "step": 5,
+      "focus": "Marketing End-to-End",
+      "description": "Landing page bento grids, cinematic hero, pricing. Re-use components (buttons, pills, chat turns) from the app to show a unified 'Product-Led' marketing aesthetic."
+    }
+  ],
+  "screen_by_screen_notes": {
+    "Marketing_Landing": "Hero text text-6xl+ with ultra-tight tracking. Hero image uses the provided Unsplash URL behind a bg-[#191919]/60 gradient. Bento grid for features.",
+    "Dashboard": "No clutter. A single prominent 'Start new project' pill. Stats tiles use the inset-shadow card style. Project list uses clean table-less rows.",
+    "Project_Memory": "Top section: overview stats. Middle: the 6 fixed categories as a horizontally scrolling, sticky pill navigation. Below: categorized rows. Right panel: Ask Bracket.",
+    "Ask_Bracket": "Do not make it look like ChatGPT. Make it look like a native system terminal (inset panel, border-l border-white/5, transparent assistant background).",
+    "Activity_Digest": "A chronological feed. Left column: timestamps. Right column: action text with highlighted system tags (Geist Mono text-xs).",
+    "Connected_Sources": "Gridded display of tools (Slack, Figma, etc.). Connected tools have a glowing green status dot and 'Disconnect' hover state. Disconnected tools are grayscale."
+  },
+  "instructions_to_main_agent": [
+    "You are writing .js React 19 files, NOT .tsx. Skip TypeScript interfaces.",
+    "React Router v7 is being used. Follow v7 routing paradigms.",
+    "Configure Tailwind with custom colors mapping exactly to the provided CSS variables.",
+    "Install and use `framer-motion` for all specified staggered layouts and layoutId animations.",
+    "Install `lucide-react` for standard UI icons and `@phosphor-icons/react` (duotone) for marketing/bento illustrations.",
+    "Never use fully transparent backgrounds for sticky headers or dropdowns. ALWAYS use `bg-[#191919]/80 backdrop-blur-md border-b border-white/5`.",
+    "Add `data-testid` to EVERYTHING that can be clicked or contains key data."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do NOT use 'Inter' for headings. Adhere strictly to the Geist Sans / Geist Mono recommendation for the Linear/Vercel aesthetic.",
+    "Ensure 'hairline' borders (border-white/5) are used to separate panels, never heavy shadows on dark mode.",
+    "No generic centered layouts. Use asymmetrical bento grids for marketing, and strict high-density grids for the dashboard.",
+    "Never use AI emoji characters.",
+    "Use 2-3x more spacing (p-8, p-12) than standard Tailwind defaults.",
+    "Maintain the single accent color (#3B82F6) for primary actions. Let the UI breathe in monochrome everywhere else."
   ]
 }

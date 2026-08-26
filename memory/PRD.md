@@ -69,6 +69,15 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v8 — Linear-grade polish, STEP 1 of full redesign; testing agent iteration_43 95%, no console errors, Geist loaded, cohesive dark) — per user: elevate the whole product to Notion/Linear-grade, keep dark theme, preserve brand mark + 6 memory categories.
+  - **Font**: entire app + marketing switched from Poppins/JetBrains Mono to **Geist Sans + Geist Mono** (index.css @import, tailwind.config, index.html). Cleaner, technical, premium — kills the template look.
+  - **Accent unified**: swept 87 legacy violet refs in index.css (plus all JSX earlier) to the single blue accent `#3B82F6`. Only remaining "violet" is Figma's official brand-logo color on its provider tile (intentional brand exception).
+  - **Depth/motion**: subtle global film-grain overlay (`body::after`, ~1.8% opacity), `--ease-cinematic` cubic-bezier(0.22,1,0.36,1) token, inset top-highlight on dashboard stat/project cards, refined hover lift.
+  - **Sidebar**: Linear-style active item — filled `surface-2` pill + animated blue left accent bar + colored active icon (replaced the old bottom underline).
+  - **Project Memory (core screen)**: memory rows redesigned as a **ledger** (single bordered container, hairline row dividers, hover-fill, typography-first, right-aligned source+timestamp) instead of separate Kanban-like cards. "Ask Bracket" assistant turns restyled as a **terminal** (transparent bg + left accent border) rather than chat bubbles.
+  - Blueprint saved at `/app/design_guidelines.json`. Remaining redesign steps (backlog): Activity feed, Connect Work picker, Settings, Login/Onboarding, 5-step flow, Client Review, and the full marketing site (Landing hero/bento, Pricing, etc.).
+
+## Changelog (older-recent)
 - 2026-06 (iteration_42) — **Dashboard/theme consistency fixes (testing agent 95%, remainder fixed after)**:
   - **White components removed** — `NewProjectComposer` (dashboard) and `OnboardingWelcome` modal were rendering a WHITE gradient background with light `var(--text)` text (effectively invisible). Both switched to `var(--surface)` dark cards.
   - **Accent unified to blue** — replaced all legacy violet (`#5E6AD2` / `#8B95E8` / `#7C5CFF` / `rgba(94,106,210)`) with the blue accent (`#3B82F6` / `#60A5FA` / `var(--accent)`) across every app-surface file (Dashboard, composer, ChangeDigestPanel, ConnectedWorkPanel, ProjectFlow/Overview/Document, ConnectWork, modals, providersMeta Linear tile).
