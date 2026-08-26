@@ -1543,6 +1543,22 @@ body:has(.app-shell) {
 
 .sidebar-spacer { flex: 1; }
 
+.sidebar-legal {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 8px;
+}
+.sidebar-legal-link {
+  font-family: "Geist", sans-serif;
+  font-size: 11px;
+  color: var(--text-3);
+  text-decoration: none;
+  transition: color .12s ease;
+}
+.sidebar-legal-link:hover { color: var(--text); }
+.sidebar-legal-sep { color: var(--text-4); font-size: 11px; }
+
 .sidebar-user {
   display: flex;
   align-items: center;

@@ -492,8 +492,6 @@ function StatCard({ label, value, icon: Icon, accent }) {
 
 // ─── Project card — actions ALWAYS visible on the card, no hover trick.
 function ProjectCard({ project: p, onRename, onDelete, selected, selectionActive, onToggleSelect }) {
-  const isLocked = p.status === "locked";
-  const stepPct = Math.round(((p.step || 1) / 5) * 100);
   const stage = projectStage(p);
   return (
     <div
@@ -525,20 +523,7 @@ function ProjectCard({ project: p, onRename, onDelete, selected, selectionActive
           </span>
         </div>
         <div className="mt-2 flex items-center gap-2 text-[11px] text-[var(--text-3)]">
-          <span>Step {p.step || 1} / 5</span>
-          <span>·</span>
           <span>{formatDate(p.updated_at)}</span>
-        </div>
-        <div className="mt-3 h-[3px] bg-[var(--surface-2)] rounded-full overflow-hidden">
-          <div
-            className="h-full transition-all duration-500"
-            style={{
-              width: `${stepPct}%`,
-              background: isLocked
-                ? "linear-gradient(90deg, #8184C4, #989BE0)"
-                : "linear-gradient(90deg, var(--text-2), var(--text-3))",
-            }}
-          />
         </div>
       </Link>
       <div className="dashboard-project-actions" data-testid={`dashboard-project-actions-${p.id}`}>

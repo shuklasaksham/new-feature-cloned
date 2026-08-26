@@ -224,6 +224,15 @@ export default function AppSidebar() {
 
       <div className="sidebar-spacer" />
 
+      {/* Legal links — kept quiet in the sidebar footer */}
+      {!collapsed && (
+        <div className="sidebar-legal" data-testid="sidebar-legal">
+          <Link to="/privacy" className="sidebar-legal-link" data-testid="sidebar-privacy-link">Privacy</Link>
+          <span className="sidebar-legal-sep">·</span>
+          <Link to="/terms" className="sidebar-legal-link" data-testid="sidebar-terms-link">Terms</Link>
+        </div>
+      )}
+
       {/* User card at bottom */}
       {user && (
         <div className={`sidebar-user ${collapsed ? "is-collapsed" : ""}`} data-testid="sidebar-user">
