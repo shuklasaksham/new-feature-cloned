@@ -23,7 +23,7 @@ import { CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
  * final send happens in the user's own tool — Bracket cannot post anywhere
  * on its own (read-only OAuth scopes today).
  */
-export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
+export default function ChangeActionDrawer({ item, open, onClose, onChanged, onReviewUpdate }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [acting, setActing] = useState(null); // 'confirm' | 'dismiss' | 'not_a_change'
@@ -287,21 +287,11 @@ export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
                 <div className="flex flex-wrap gap-2">
                   {isChange && (
                     <button
-                      type="button" onClick={() => doAction("confirm")} disabled={acting !== null}
+                      type="button" onClick={() => { onReviewUpdate?.(); onClose?.(); }} disabled={acting !== null}
                       className="clay-signal px-4 py-2 text-[12.5px] inline-flex items-center gap-1.5"
-                      data-testid="change-action-confirm"
+                      data-testid="change-action-review-update"
                     >
-                      {acting === "confirm" ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                      Confirm & update memory
-                    </button>
-                  )}
-                  {isChange && (
-                    <button
-                      type="button" onClick={() => doAction("not_a_change")} disabled={acting !== null}
-                      className="clay-ghost px-3 py-2 text-[12px] inline-flex items-center gap-1.5"
-                      data-testid="change-action-not-change"
-                    >
-                      <ThumbsDown size={11} /> Not a change
+                      <Sparkles size={12} /> Review in project update
                     </button>
                   )}
                   <button
@@ -309,11 +299,13 @@ export default function ChangeActionDrawer({ item, open, onClose, onChanged }) {
                     className="clay-ghost px-3 py-2 text-[12px] inline-flex items-center gap-1.5"
                     data-testid="change-action-dismiss"
                   >
-                    <Trash2 size={11} /> {isChange ? "Ignore" : "Dismiss"}
+                    <Trash2 size={11} /> {isChange ? "Ignore this one" : "Dismiss"}
                   </button>
                 </div>
                 <p className="mt-2 text-[10.5px]" style={{ color: "var(--text-3)" }}>
-                  Bracket never sends messages on your behalf. Nothing goes out until you click Send in your email or chat app.
+                  {isChange
+                    ? "Changes are approved together in one Project Update — no separate approvals per item."
+                    : "Bracket never sends messages on your behalf. Nothing goes out until you click Send in your email or chat app."}
                 </p>
               </section>
             </div>

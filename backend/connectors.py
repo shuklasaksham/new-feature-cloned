@@ -31,7 +31,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 
 from auth import current_user
-from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, suggest_reply_for_change, suggest_project_reply
+from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, suggest_reply_for_change, suggest_project_reply, build_project_update
 
 logger = logging.getLogger("bracket")
 ROOT_DIR = Path(__file__).parent
@@ -1328,6 +1328,174 @@ async def project_memory(project_id: str, request: Request):
     counts = {k: len(v) for k, v in grouped.items()}
     total = sum(counts.values())
     return {"grouped": grouped, "counts": counts, "total": total, "categories": MEMORY_CATEGORIES}
+
+
+# ── Consolidated Project Update ──────────────────────────────────────────
+# One change, one review, one approval. Instead of approving each detected
+# item separately (an endless chain), Bracket bundles ALL pending changes into
+# a single snapshot with AI-computed downstream impacts. The user approves or
+# rejects the whole thing at once.
+_PENDING_STATUSES = ("detected", "review")
+_VISIBLE_CATS = ("deliverable", "scope", "timeline", "requirement", "decision", "deadline")
+
+
+async def _pending_memory(project_id: str) -> list:
+    out = []
+    async for m in db.project_memory.find(
+        {"project_id": project_id, "status": {"$in": list(_PENDING_STATUSES)}},
+        {"_id": 0},
+    ).sort("created_at", -1).limit(200):
+        m["display_category"] = _canonical_category(m.get("category"))
+        m["is_scope_change"] = (m.get("category") == "scope_change")
+        out.append(m)
+    return out
+
+
+@router.post("/projects/{project_id}/update/build")
+async def project_update_build(project_id: str, request: Request):
+    """Build ONE consolidated snapshot of every pending change + its downstream
+    impacts. Runs a single AI pass (on demand — never on polling)."""
+    project = await _owned_project(project_id, request)
+    pending = await _pending_memory(project_id)
+    if not pending:
+        return {"pending": False}
+
+    confirmed = []
+    async for m in db.project_memory.find(
+        {"project_id": project_id, "status": "confirmed"},
+        {"_id": 0, "category": 1, "title": 1},
+    ).limit(80):
+        confirmed.append(m)
+
+    ai = await build_project_update(
+        project.get("name", "your project"), project.get("client_name", ""),
+        pending, confirmed,
+    )
+
+    direct = [{
+        "id": p["id"],
+        "category": p["display_category"],
+        "title": p.get("title", ""),
+        "detail": p.get("detail", ""),
+        "provider": p.get("provider", "manual"),
+        "source_label": p.get("source_label", ""),
+        "is_scope_change": p.get("is_scope_change", False),
+    } for p in pending]
+
+    downstream = []
+    for d in (ai.get("downstream") or []):
+        canon = _canonical_category(d.get("category", ""))
+        if canon not in _VISIBLE_CATS:
+            continue
+        title = (d.get("title") or "").strip()
+        if not title:
+            continue
+        downstream.append({
+            "category": canon, "title": title,
+            "detail": (d.get("detail") or "").strip(),
+            "reason": (d.get("reason") or "").strip(),
+        })
+
+    now = _now_iso()
+    update_id = _uuid()
+    snapshot = {
+        "id": update_id, "project_id": project_id, "status": "pending",
+        "summary": (ai.get("summary") or "").strip(),
+        "priority": ai.get("priority", "medium"),
+        "impacts": ai.get("impacts") or [],
+        "direct_ids": [p["id"] for p in pending],
+        "direct": direct,
+        "downstream": downstream,
+        "created_at": now,
+    }
+    # Only one pending snapshot per project — supersede any stale one.
+    await db.project_updates.delete_many({"project_id": project_id, "status": "pending"})
+    await db.project_updates.insert_one(dict(snapshot))
+    return {"pending": True, "update": snapshot}
+
+
+@router.post("/projects/{project_id}/update/{update_id}/approve")
+async def project_update_approve(project_id: str, update_id: str, request: Request):
+    """Approve the whole snapshot: confirm every direct change and add all
+    downstream items — atomically, no new approval chains."""
+    await _owned_project(project_id, request)
+    user = await current_user(request, db)
+    snap = await db.project_updates.find_one(
+        {"id": update_id, "project_id": project_id}, {"_id": 0})
+    if not snap:
+        raise HTTPException(404, "This update no longer exists — refresh and try again.")
+    if snap.get("status") != "pending":
+        raise HTTPException(409, "This update was already resolved.")
+    now = _now_iso()
+
+    confirmed = 0
+    for mid in snap.get("direct_ids", []):
+        res = await db.project_memory.update_one(
+            {"id": mid, "status": {"$in": list(_PENDING_STATUSES)}},
+            {"$set": {"status": "confirmed", "updated_at": now},
+             "$push": {"history": {"to": "confirmed", "via": "project_update", "at": now}}},
+        )
+        confirmed += res.modified_count
+
+    added = 0
+    for d in snap.get("downstream", []):
+        canon = _canonical_category(d.get("category", ""))
+        if canon not in _VISIBLE_CATS:
+            continue
+        doc = {
+            "id": _uuid(), "project_id": project_id, "connection_id": "bracket",
+            "provider": "bracket", "source_label": "Bracket update",
+            "category": canon, "title": d.get("title", ""), "detail": d.get("detail", ""),
+            "status": "confirmed", "occurred_at": now, "created_at": now, "updated_at": now,
+            "history": [{"created": True, "via": "project_update",
+                         "reason": d.get("reason", ""), "by": user["user_id"], "at": now}],
+        }
+        await db.project_memory.insert_one(doc)
+        added += 1
+
+    await db.project_updates.update_one(
+        {"id": update_id}, {"$set": {"status": "approved", "resolved_at": now}})
+    await db.projects.update_one(
+        {"id": project_id}, {"$set": {"last_seen_at": now}})
+    return {"ok": True, "confirmed": confirmed, "added": added}
+
+
+@router.post("/projects/{project_id}/update/{update_id}/reject")
+async def project_update_reject(project_id: str, update_id: str, request: Request):
+    """Reject the whole snapshot: discard every pending change (marked ignored)
+    and add nothing downstream."""
+    await _owned_project(project_id, request)
+    snap = await db.project_updates.find_one(
+        {"id": update_id, "project_id": project_id}, {"_id": 0})
+    if not snap:
+        raise HTTPException(404, "This update no longer exists — refresh and try again.")
+    if snap.get("status") != "pending":
+        raise HTTPException(409, "This update was already resolved.")
+    now = _now_iso()
+    discarded = 0
+    for mid in snap.get("direct_ids", []):
+        res = await db.project_memory.update_one(
+            {"id": mid, "status": {"$in": list(_PENDING_STATUSES)}},
+            {"$set": {"status": "ignored", "updated_at": now},
+             "$push": {"history": {"to": "ignored", "via": "project_update", "at": now}}},
+        )
+        discarded += res.modified_count
+    await db.project_updates.update_one(
+        {"id": update_id}, {"$set": {"status": "rejected", "resolved_at": now}})
+    return {"ok": True, "discarded": discarded}
+
+
+@router.post("/projects/{project_id}/seen")
+async def project_seen(project_id: str, request: Request):
+    """Record that the user has visited this project now. Returns the PREVIOUS
+    visit timestamp so the dashboard can compute 'what changed since last visit'
+    — tracked per account so it syncs across devices."""
+    project = await _owned_project(project_id, request)
+    previous = project.get("last_seen_at")
+    await db.projects.update_one(
+        {"id": project_id}, {"$set": {"last_seen_at": _now_iso()}})
+    return {"previous": previous}
+
 
 
 @router.get("/projects/{project_id}/history")

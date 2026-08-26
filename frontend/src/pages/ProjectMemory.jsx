@@ -6,11 +6,13 @@ import {
   Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown, Search,
+  ArrowRight, Clock, CheckCircle2, CalendarClock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import Seo from "../components/Seo";
 import ChangeActionDrawer from "../components/ChangeActionDrawer";
+import ProjectUpdateReview from "../components/ProjectUpdateReview";
 import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
@@ -44,6 +46,8 @@ export default function ProjectMemory() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [drawerItem, setDrawerItem] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [lastSeen, setLastSeen] = useState(null);
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -68,6 +72,12 @@ export default function ProjectMemory() {
   };
 
   useEffect(() => { load(); }, [id]);
+  useEffect(() => {
+    if (!id) return;
+    // Capture the PREVIOUS visit timestamp once per mount so "What Changed" has
+    // a stable baseline for this session (tracked per account, syncs devices).
+    api.post(`/projects/${id}/seen`).then((r) => setLastSeen(r.data?.previous || null)).catch(() => {});
+  }, [id]);
   useEffect(() => {
     if (!id) return;
     const iv = setInterval(() => { if (!document.hidden) load({ silent: true }); }, 10_000);
@@ -108,33 +118,8 @@ export default function ProjectMemory() {
   }, [memory]);
 
   // Flattened, newest-first list across all categories — powers the Overview
-  // "recent activity" rail (the category snapshot grid is gone, we have tabs).
-  const recentItems = useMemo(() => {
-    const all = [];
-    MEMORY_CATEGORIES.forEach((cat) => {
-      (memory.grouped?.[cat.key] || []).forEach((m) => all.push({ ...m, _catKey: cat.key }));
-    });
-    all.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
-    return all.slice(0, 8);
-  }, [memory]);
-
-  // Compact counts for the Overview summary line (concise "what's happening now").
-  const memorySummary = useMemo(() => {
-    let total = 0, scope = 0;
-    MEMORY_CATEGORIES.forEach((cat) => {
-      const arr = memory.grouped?.[cat.key] || [];
-      total += arr.length;
-      scope += arr.filter((m) => m.is_scope_change).length;
-    });
-    return { total, scope };
-  }, [memory]);
-
-  const openReview = () => {
-    const target = MEMORY_CATEGORIES.find((c) =>
-      (memory.grouped?.[c.key] || []).some((m) => m.status === "detected" || m.status === "review")
-    );
-    if (target) { setView(target.key); setStatusFilter("detected"); }
-  };
+  // "Today's Focus" sections (computed inside OverviewView from `memory`).
+  const openReview = () => setUpdateOpen(true);
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg)" }}>
@@ -177,14 +162,11 @@ export default function ProjectMemory() {
                   {project.name}
                 </h1>
                 <div className="mt-2 flex items-center gap-3 text-[12.5px] flex-wrap" style={{ color: "var(--text-3)" }}>
-                  <span>{visibleCounts.total} items</span>
                   {detectedCount > 0 && (
-                    <>
-                      <span style={{ color: "var(--warning)" }} data-testid="project-memory-new-count">
-                        <AlertTriangle size={11} className="inline mb-0.5 mr-0.5" />
-                        {detectedCount} new to review
-                      </span>
-                    </>
+                    <span style={{ color: "var(--warning)" }} data-testid="project-memory-new-count">
+                      <AlertTriangle size={11} className="inline mb-0.5 mr-0.5" />
+                      {detectedCount} to review
+                    </span>
                   )}
                   <span className="mono-tag inline-flex items-center gap-1.5 text-[9.5px]" data-testid="project-memory-live-indicator">
                     <span className="relative inline-flex w-1.5 h-1.5">
@@ -244,11 +226,12 @@ export default function ProjectMemory() {
               <OverviewView
                 project={project}
                 projectId={id}
-                recentItems={recentItems}
-                summary={memorySummary}
+                memory={memory}
+                lastSeen={lastSeen}
                 connections={connections || []}
                 onConnectionsChanged={() => load({ silent: true })}
                 onJumpTo={(cat) => { setView(cat); setStatusFilter("all"); }}
+                onReviewUpdate={() => setUpdateOpen(true)}
               />
             ) : (
               <CategoryView
@@ -270,6 +253,13 @@ export default function ProjectMemory() {
         open={drawerItem !== null}
         onClose={() => setDrawerItem(null)}
         onChanged={() => load({ silent: true })}
+        onReviewUpdate={() => { setDrawerItem(null); setUpdateOpen(true); }}
+      />
+      <ProjectUpdateReview
+        projectId={id}
+        open={updateOpen}
+        onClose={() => setUpdateOpen(false)}
+        onResolved={() => load({ silent: true })}
       />
       <HistoryDrawer
         projectId={id}
@@ -315,40 +305,123 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
   );
 }
 
-/* ─── Overview summary — concise 2-3 line "what's happening now" ────────── */
-function MemorySummaryLine({ summary, recentItems, connections }) {
-  const total = summary?.total ?? 0;
-  const scope = summary?.scope ?? 0;
-  const latest = recentItems?.[0];
-  const srcN = connections?.length ?? 0;
+/* ─── "Today's Focus" helpers ──────────────────────────────────────────── */
+const MONTHS = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+
+// Best-effort parse of a due date from free text ("Feb 20", "20 March",
+// "2026-02-14", "tomorrow", "in 3 days"). Returns a Date or null.
+function parseDueDate(text, now = new Date()) {
+  if (!text) return null;
+  const s = String(text).toLowerCase();
+  const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) { const d = new Date(+iso[1], +iso[2] - 1, +iso[3]); return isNaN(d) ? null : d; }
+  if (/\btoday\b/.test(s)) return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (/\btomorrow\b/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 1); return d; }
+  const inDays = s.match(/in (\d+) days?/); if (inDays) { const d = new Date(now); d.setDate(d.getDate() + +inDays[1]); return d; }
+  if (/\bnext week\b/.test(s)) { const d = new Date(now); d.setDate(d.getDate() + 7); return d; }
+  // "Feb 20" / "February 20th" / "20 Feb"
+  let m = s.match(/([a-z]{3,9})\.?\s+(\d{1,2})/);
+  if (!m) { const m2 = s.match(/(\d{1,2})\s+([a-z]{3,9})/); if (m2) m = [m2[0], m2[2], m2[1]]; }
+  if (m) {
+    const mon = MONTHS[m[1].slice(0, 3)];
+    const day = +m[2];
+    if (mon != null && day >= 1 && day <= 31) {
+      let d = new Date(now.getFullYear(), mon, day);
+      // If the date already passed this year, assume it means next year.
+      if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d = new Date(now.getFullYear() + 1, mon, day);
+      return d;
+    }
+  }
+  return null;
+}
+
+function flattenMemory(memory) {
+  const all = [];
+  MEMORY_CATEGORIES.forEach((cat) => {
+    (memory.grouped?.[cat.key] || []).forEach((m) => all.push({ ...m, _catKey: cat.key }));
+  });
+  return all;
+}
+
+function FocusSection({ label, icon: Icon, accent, count, children }) {
   return (
-    <div
-      className="rounded-xl px-4 py-3 mb-5"
-      style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
-      data-testid="overview-summary"
-    >
-      <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
-        {total === 0
-          ? "Bracket is reading your connected work — a short summary will appear here as items come in."
-          : `Bracket is tracking ${total} item${total === 1 ? "" : "s"} for this project across ${srcN} connected source${srcN === 1 ? "" : "s"}.`}
-      </p>
-      {latest && (
-        <p className="text-[12px] leading-relaxed mt-0.5" style={{ color: "var(--text-2)" }}>
-          Latest: {latest.title} · {timeAgo(latest.created_at)}.
-        </p>
-      )}
-      {scope > 0 && (
-        <p className="text-[12px] leading-relaxed mt-0.5 inline-flex items-center gap-1" style={{ color: "var(--danger)" }}>
-          <AlertTriangle size={11} /> {scope} possible scope change{scope === 1 ? "" : "s"} flagged.
-        </p>
-      )}
-    </div>
+    <section className="mb-6" >
+      <div className="flex items-center gap-2 mb-2.5">
+        {Icon && <Icon size={12} style={{ color: accent || "var(--text-3)" }} />}
+        <p className="mono-tag text-[9.5px]" style={{ color: "var(--text-3)" }}>{label}</p>
+        {typeof count === "number" && count > 0 && (
+          <span className="mono-tag text-[9px]" style={{ color: accent || "var(--text-3)" }}>· {count}</span>
+        )}
+      </div>
+      {children}
+    </section>
   );
 }
 
-/* ─── Overview — recent activity (left) + subtle Ask Bracket & sources (right) ── */
-function OverviewView({ project, projectId, recentItems, summary, connections, onConnectionsChanged, onJumpTo }) {
+function FocusRow({ item, onClick, right }) {
+  const c = CATEGORY_BY_KEY[item._catKey] || CATEGORY_BY_KEY.decision;
+  return (
+    <button type="button" onClick={onClick}
+            className="memory-ledger-row w-full text-left flex items-start gap-3 px-4 py-3"
+            data-testid={`focus-row-${item.id}`}>
+      <c.icon size={13} style={{ color: c.color, marginTop: 2, flexShrink: 0 }} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-medium leading-snug truncate" style={{ color: "var(--text)" }}>{item.title}</p>
+        <div className="mt-1 flex items-center gap-2 flex-wrap">
+          <span className="mono-tag text-[8.5px]" style={{ color: c.color }}>{c.label.toUpperCase()}</span>
+          {item.is_scope_change && (
+            <span className="mono-tag text-[8.5px] inline-flex items-center gap-0.5" style={{ color: "var(--danger)" }}><AlertTriangle size={8} /> SCOPE</span>
+          )}
+          {right}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+/* ─── Overview — "Today's Focus": Needs Action · What Changed · Coming Up ── */
+function OverviewView({ project, projectId, memory, lastSeen, connections, onConnectionsChanged, onJumpTo, onReviewUpdate }) {
   const noSources = connections.length === 0;
+
+  const all = useMemo(() => flattenMemory(memory), [memory]);
+
+  const pending = useMemo(
+    () => all.filter((m) => m.status === "detected" || m.status === "review"),
+    [all],
+  );
+
+  const changed = useMemo(() => {
+    const now = Date.now();
+    const baseline = lastSeen ? new Date(lastSeen).getTime() : now - 7 * 86400_000;
+    const seen = new Set();
+    return all
+      .filter((m) => {
+        const t = Math.max(
+          new Date(m.updated_at || m.created_at || 0).getTime(),
+          new Date(m.created_at || 0).getTime(),
+        );
+        return t > baseline;
+      })
+      .filter((m) => (seen.has(m.id) ? false : seen.add(m.id)))
+      .sort((a, b) => {
+        const pa = a.is_scope_change ? 0 : (a.status === "detected" || a.status === "review") ? 1 : 2;
+        const pb = b.is_scope_change ? 0 : (b.status === "detected" || b.status === "review") ? 1 : 2;
+        if (pa !== pb) return pa - pb;
+        return String(b.created_at || "").localeCompare(String(a.created_at || ""));
+      })
+      .slice(0, 4);
+  }, [all, lastSeen]);
+
+  const comingUp = useMemo(() => {
+    const now = new Date();
+    const in7 = new Date(now); in7.setDate(in7.getDate() + 7);
+    return all
+      .filter((m) => m._catKey === "deadline" || m._catKey === "timeline")
+      .map((m) => ({ ...m, _due: parseDueDate(`${m.title} ${m.detail || ""}`, now) }))
+      .filter((m) => m._due && m._due >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && m._due <= in7)
+      .sort((a, b) => a._due - b._due)
+      .slice(0, 3);
+  }, [all]);
 
   if (noSources) {
     return (
@@ -364,50 +437,85 @@ function OverviewView({ project, projectId, recentItems, summary, connections, o
     );
   }
 
+  const allCaughtUp = pending.length === 0 && changed.length === 0 && comingUp.length === 0;
+  const dueLabel = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
-      {/* Left — recent activity feed for this project */}
-      <section className="min-w-0" data-testid="overview-recent">
-        <MemorySummaryLine summary={summary} recentItems={recentItems} connections={connections} />
-        <div className="flex items-center justify-between mb-3">
-          <p className="mono-tag text-[9.5px]" style={{ color: "var(--text-3)" }}>RECENT ACTIVITY</p>
-          <span className="mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>{recentItems.length} latest</span>
-        </div>
-        {recentItems.length === 0 ? (
-          <div className="rounded-xl p-8 text-center" style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}>
-            <p className="text-[12.5px]" style={{ color: "var(--text-3)" }}>Bracket is reading your connected work. New items will appear here.</p>
+      <div className="min-w-0" data-testid="todays-focus">
+        {allCaughtUp ? (
+          <div className="rounded-xl p-10 text-center" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="focus-caught-up">
+            <CheckCircle2 size={26} style={{ color: "var(--success)", margin: "0 auto" }} />
+            <p className="mt-3 text-[15px] font-medium" style={{ color: "var(--text)" }}>You're all caught up</p>
+            <p className="mt-1 text-[12.5px]" style={{ color: "var(--text-3)" }}>Nothing needs your attention right now. Bracket keeps watching your connected work.</p>
           </div>
         ) : (
-          <ul className="flex flex-col rounded-xl overflow-hidden"
-              style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)" }}
-              data-testid="overview-recent-items">
-            {recentItems.map((m) => {
-              const c = CATEGORY_BY_KEY[m._catKey] || CATEGORY_BY_KEY.decision;
-              return (
-                <li key={m.id}>
-                  <button type="button" onClick={() => onJumpTo(m._catKey)}
-                          className="memory-ledger-row w-full text-left flex items-start gap-3 px-4 py-3"
-                          data-testid={`overview-recent-${m.id}`}>
-                    <c.icon size={13} style={{ color: c.color, marginTop: 2, flexShrink: 0 }} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-medium leading-snug truncate" style={{ color: "var(--text)" }}>{m.title}</p>
-                      <div className="mt-1 flex items-center gap-2 flex-wrap">
-                        <span className="mono-tag text-[8.5px]" style={{ color: c.color }}>{c.label.toUpperCase()}</span>
-                        {m.is_scope_change && (
-                          <span className="mono-tag text-[8.5px] inline-flex items-center gap-0.5" style={{ color: "var(--danger)" }}><AlertTriangle size={8} /> SCOPE</span>
-                        )}
-                        <span className="text-[10px] inline-flex items-center gap-1" style={{ color: "var(--text-3)" }}>
-                          <ProviderIcon provider={m.provider} size={9} /> {timeAgo(m.created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            {/* 1 · Needs Your Action */}
+            <FocusSection label="NEEDS YOUR ACTION" icon={Sparkles} accent="var(--accent)" count={pending.length}>
+              {pending.length === 0 ? (
+                <div className="rounded-xl px-4 py-3.5 text-[12.5px]" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "var(--text-3)" }} data-testid="focus-action-none">
+                  Nothing to approve. You're clear.
+                </div>
+              ) : (
+                <button type="button" onClick={onReviewUpdate}
+                        className="w-full text-left rounded-xl px-4 py-4 flex items-center justify-between gap-3 transition-colors"
+                        style={{ background: "var(--surface)", border: "1px solid var(--brand-border)" }}
+                        data-testid="focus-review-update">
+                  <div className="min-w-0">
+                    <p className="text-[13.5px] font-semibold" style={{ color: "var(--text)" }}>
+                      Review project update
+                    </p>
+                    <p className="text-[12px] mt-0.5" style={{ color: "var(--text-2)" }}>
+                      {pending.length} change{pending.length === 1 ? "" : "s"} bundled into one review — approve or reject at once.
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium shrink-0 px-3 py-1.5 rounded-md"
+                        style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}>
+                    Review <ArrowRight size={12} />
+                  </span>
+                </button>
+              )}
+            </FocusSection>
+
+            {/* 2 · What Changed */}
+            <FocusSection label="WHAT CHANGED SINCE YOUR LAST VISIT" icon={History} count={changed.length}>
+              {changed.length === 0 ? (
+                <div className="rounded-xl px-4 py-3.5 text-[12.5px]" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "var(--text-3)" }} data-testid="focus-changed-none">
+                  No new updates since you were last here.
+                </div>
+              ) : (
+                <ul className="flex flex-col rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="focus-changed-list">
+                  {changed.map((m) => (
+                    <li key={m.id}>
+                      <FocusRow item={m} onClick={() => onJumpTo(m._catKey)}
+                                right={<span className="text-[10px] inline-flex items-center gap-1" style={{ color: "var(--text-3)" }}><ProviderIcon provider={m.provider} size={9} /> {timeAgo(m.created_at)}</span>} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </FocusSection>
+
+            {/* 3 · Coming Up */}
+            <FocusSection label="COMING UP · NEXT 7 DAYS" icon={CalendarClock} count={comingUp.length}>
+              {comingUp.length === 0 ? (
+                <div className="rounded-xl px-4 py-3.5 text-[12.5px]" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "var(--text-3)" }} data-testid="focus-coming-none">
+                  Nothing due in the next 7 days.
+                </div>
+              ) : (
+                <ul className="flex flex-col rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="focus-coming-list">
+                  {comingUp.map((m) => (
+                    <li key={m.id}>
+                      <FocusRow item={m} onClick={() => onJumpTo(m._catKey)}
+                                right={<span className="mono-tag text-[9px] inline-flex items-center gap-1" style={{ color: "var(--warning)" }}><Clock size={9} /> {dueLabel(m._due)}</span>} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </FocusSection>
+          </>
         )}
-      </section>
+      </div>
 
       {/* Right — subtle Ask Bracket + connected sources */}
       <aside className="min-w-0 flex flex-col gap-5 lg:sticky lg:top-24">

@@ -1,0 +1,33 @@
+{
+  "summary": "Backend + Frontend regression of the consolidated Project Update flow and Today's Focus overview. Backend: 9/9 pytest tests pass covering build (pending:true with summary/priority/impacts/direct/downstream and pending:false when nothing pending), approve (confirmed==direct, added==downstream, 409 on re-approve, DB persistence verified — direct items become 'confirmed' and downstream items appear with provider='bracket' + source_label='Bracket update'), reject (discarded==direct, no downstream added, 409 on re-reject), /seen (returns previous timestamp; 2nd call sees timestamp written by 1st, proving per-account persistence), and auth/ownership (unauth 401, unknown project 404, non-owner 403 for all four endpoints). Frontend: password login works, Today's Focus overview renders exactly the three sections (NEEDS YOUR ACTION w/ focus-review-update card, focus-changed-none, focus-coming-none) — no '<n> items' total badge in header; '3 to review' and LIVE indicators present. Clicking the Review project update card opens data-testid=project-update-drawer; all six drawer testids (project-update-summary, -impacts, -direct, -downstream, -approve, -reject) present after AI build completes. ChangeActionDrawer routing verified by code review (data-testid=change-action-review-update on line 292 of ChangeActionDrawer.jsx, wired to onReviewUpdate → setUpdateOpen(true)); live click-through was not exercised in-browser because the tab views for Deadlines (calendar) and Scope have no data-testid^=project-memory-row wrapper for the specific detected items and this run avoided consuming pending state so main agent can re-verify after fixes. Demo state fully restored: 3 detected items, 0 bracket-provider items, no orphan snapshots.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_52_project_update.py",
+    "/app/test_reports/pytest/iter52_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "connectors.py project_update_build correctly deletes prior pending snapshots before inserting a new one (line 1412) — building supersedes prior pending, matches spec.",
+    "project_update_approve/reject guard with status!='pending' → 409, matches spec exactly (lines 1428, 1473).",
+    "Approve inserts downstream memory docs with connection_id='bracket', provider='bracket', source_label='Bracket update', status='confirmed' — matches spec and is filtered through _canonical_category + _VISIBLE_CATS so risks/questions never leak in.",
+    "project_seen returns {previous} then overwrites last_seen_at — clean per-account persistence (lines 1493-1497).",
+    "_owned_project raises 404 on missing project and 403 on wrong owner; endpoints inherit this — verified by tests.",
+    "ProjectMemory OverviewView emits data-testid focus-review-update / focus-changed-list|none / focus-coming-list|none and does not render a total-items badge in the header; matches spec.",
+    "ChangeActionDrawer renders data-testid change-action-review-update when item.status is detected or review; no legacy 'Confirm & update memory' button remains — verified by grep."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_52_project_update.py"
+  ],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "Overview + consolidated drawer UI verified end-to-end; row-action -> consolidated drawer verified by code review only"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 — worked (password mode toggle at /login).",
+  "seed_data_creation": "None. Tests toggle statuses on the existing 3 pending items and restore them + delete inserted bracket downstream items in a finally/reset step so demo state is preserved.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Pytest suite /app/backend/tests/test_iteration_52_project_update.py is idempotent — resets memory statuses, deletes project_updates docs, and removes any bracket-provider downstream rows between tests. Frontend password login: click 'I have a password →' first (default form is OTP name+email). REACT_APP_BACKEND_URL is https://design-decided.preview.emergentagent.com (NOT bracket-flow-1). The row-action → consolidated drawer path was not click-tested live because the Deadlines category uses a calendar view (no memory-row rows) and detected scope_change items don't render a project-memory-row-<id> node when the New filter is applied via the tests I tried. Recommend main agent verify via a manual click on a detected Scope item; the code path (ChangeActionDrawer line 292 data-testid=change-action-review-update wired via onReviewUpdate to setUpdateOpen(true)) is correct.",
+  "rca of the issue": "N/A — no bugs found."
+}

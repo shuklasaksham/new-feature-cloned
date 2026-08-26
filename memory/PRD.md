@@ -1,5 +1,11 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (consolidated approval + Today's Focus)
+- **Consolidated "Project Update" approval (fixes the endless approval chain)**: New backend flow bundles ALL pending changes into ONE snapshot with an AI pass that computes downstream impacts across every category. Endpoints (connectors.py): `POST /projects/{id}/update/build`, `.../update/{update_id}/approve`, `.../update/{update_id}/reject`; AI in `connect_ai.py::build_project_update`. Approve confirms all direct items + inserts downstream items (provider 'bracket') atomically; reject discards all (ignored). 409 guard on double-resolve; ownership enforced. New drawer `ProjectUpdateReview.jsx`. Per-item Confirm removed from `ChangeActionDrawer` (now routes to consolidated review). Verified 9/9 backend + UI.
+- **"Today's Focus" overview redesign**: `ProjectMemory.jsx` OverviewView now shows only 3 sections — Needs Your Action, What Changed Since Last Visit, Coming Up (next 7 days, free-text date parsing) — capped ~5-7 items, "You're all caught up" empty state. Total-items badge removed from header. 6 category tabs unchanged.
+- **Per-account last-visit tracking**: `POST /projects/{id}/seen` returns previous visit timestamp and updates `project.last_seen_at`; powers "What Changed".
+
+
 ## Changelog — 2026-06 (fork: concise memory + email fix)
 - **Email subject encoding fixed**: `send-email` now builds the MIME message via stdlib `EmailMessage` (connectors.py ~line 1274), so non-ASCII in the Subject (em-dash etc.) is RFC-2047 encoded instead of rendering as mojibake ("Ã¢Â€Â"). Verified via round-trip decode. Threading (In-Reply-To/References/threadId) preserved.
 - **Shorter, human replies**: `suggest_project_reply` prompt (connect_ai.py) now defaults to 2-3 sentences, natural tone, no throat-clearing openers. Verified live: ~174 chars / 3 sentences.

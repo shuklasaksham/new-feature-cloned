@@ -249,3 +249,66 @@ Return STRICT JSON only:
     if not isinstance(data, dict):
         return {"reply": "", "grounded_in": [], "confidence": "low"}
     return data
+
+
+
+async def build_project_update(project_name: str, client_name: str,
+                               pending_items: list, memory_items: list) -> dict:
+    """Consolidate ALL pending changes into ONE reviewable snapshot.
+
+    Instead of approving each change separately, Bracket looks at every pending
+    change together, works out the downstream consequences across every
+    category, and returns a single "Project Update": a plain-language summary,
+    the concrete impacts, and any NEW downstream items that logically follow.
+    The user approves or rejects the whole snapshot at once — no per-item chain.
+    """
+    pend = "\n".join(
+        f'- [{(p.get("display_category") or p.get("category") or "?").upper()}] '
+        f'{p.get("title","")} — {p.get("detail","")}'
+        for p in pending_items[:40]
+    ) or "- (none)"
+    mem = "\n".join(
+        f'- [{(p.get("category") or "?").upper()}] {p.get("title","")}'
+        for p in memory_items[:60]
+    ) or "- (project memory is empty)"
+
+    prompt = f"""You are Bracket, consolidating pending changes for project "{project_name}"
+(client: {client_name or 'the client'}) into ONE reviewable update.
+
+The user does NOT want to approve changes one by one. Look at ALL the pending
+changes together, then work out everything that logically follows from them.
+
+## Pending changes (the direct changes the user is about to approve)
+{pend}
+
+## What the project already knows (confirmed memory — do NOT repeat these)
+{mem}
+
+## Your job
+1. Write a short, plain-language summary (1-2 sentences) of what approving this
+   update means for the project — like a colleague catching them up.
+2. List the concrete IMPACTS across scope, timeline, effort, cost and risk.
+   Quantify when the pending changes support it; never invent numbers.
+3. List any NEW DOWNSTREAM items that logically follow from the direct changes
+   and are NOT already pending or in memory (e.g. a new scope item creates a new
+   deliverable, or a new requirement shifts a deadline). Only include real, non-
+   obvious consequences — an empty list is fine. Do NOT restate the pending
+   changes themselves. Keep titles under 6 words and details to one clause.
+   Downstream category MUST be one of: deliverable, scope, timeline, requirement,
+   decision, deadline. Express pure risks in "impacts", not as downstream items.
+
+Return STRICT JSON only:
+{{
+  "summary": "1-2 sentence plain summary of what this update means",
+  "priority": "high|medium|low",
+  "impacts": [{{"kind": "scope|timeline|effort|cost|risk", "detail": "1 short sentence"}}],
+  "downstream": [{{"category": "deliverable|scope|timeline|requirement|decision|deadline", "title": "short", "detail": "1 sentence", "reason": "why this follows"}}]
+}}"""
+    data = await _run(prompt, "haiku")
+    if not isinstance(data, dict):
+        return {"summary": "", "priority": "medium", "impacts": [], "downstream": []}
+    data.setdefault("summary", "")
+    data.setdefault("priority", "medium")
+    data.setdefault("impacts", [])
+    data.setdefault("downstream", [])
+    return data
