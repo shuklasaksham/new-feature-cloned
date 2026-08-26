@@ -69,6 +69,16 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v13 — Project Memory Overview restructure + JIRA tables + Timeline calendar + review-flow cleanup; testing agent iteration_48 95%→fixed) —
+  - **Removed redundant snapshot grid** from the Overview (the boxed tabs already cover the 6 categories).
+  - **Ask Bracket → subtle right sidebar** (~340px, no longer full-width) that PERSISTS the conversation per project in localStorage (previous interactions survive navigation), with compact styling and quick-prompts.
+  - **Overview left column** now shows a clean RECENT ACTIVITY feed (newest items across all categories).
+  - **One-click connect chips** in the sources panel (Gmail/Slack/Figma/GitHub) deep-link to `/app/connect?project=…&tool=…`; the connect page now highlights + scrolls to that provider (OAuth popup needs a user gesture, so auto-launch would be popup-blocked).
+  - **JIRA-style category tables** for Deliverables/Scope/Requirements/Decisions/Deadlines — columns Summary / Status / Source / Updated, type icon + status pill, hover rows opening the review drawer.
+  - **Timeline tab = month calendar** marking dates with events (dots) + prev/next month nav + an "events this month" list with date & time; clicking a marked day opens the item.
+  - **Removed the SUGGESTED RESPONSE block** from the change-review drawer (global replies now come only from Ask Bracket) — drawer keeps "what changed" + memory updates + confirm/dismiss.
+
+## Changelog (earlier)
 - 2026-06 (design v12 — boxed folder tabs + Activity redesign + first-run checklist + Activity filters; testing agent iteration_47 100% frontend, no console errors) —
   - **Boxed (JIRA folder) tabs**: Project Memory category nav restyled from underline tabs to BOXED folder tabs — each tab a bordered box with rounded top corners; the active tab gets a blue top accent strip, shares the content background and "breaks" the divider line to connect to the panel below (`.memory-tabs`/`.memory-tab` in index.css; PillTab markup in ProjectMemory.jsx).
   - **Activity page redesign**: full rebuild into a cinematic timeline feed — hero count header ("N changes across M projects", blue number), 24h/7d window toggle, scope-alert banner, six clickable category counter tiles, and a vertical timeline of change cards with node dots (`.activity-feed`/`.activity-card`).

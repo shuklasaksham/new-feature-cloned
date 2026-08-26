@@ -1,0 +1,27 @@
+{
+  "summary": "Frontend-only regression for the restructured Project Memory Overview + review flow. Verified snapshot grid removal, right-hand Ask Bracket sidebar (340px) with per-project localStorage persistence and clear-reset, quick-connect chips (gmail/slack/figma/github) deep-linking to /app/connect?project=...&tool=..., JIRA-style category tables (Summary/Status/Source/Updated) for Decisions and Deadlines (Deliverables/Requirements are empty and correctly show the empty note), review drawer no longer contains SUGGESTED RESPONSE / reply editor / Send in Gmail / Open Slack / Copy reply, and Timeline calendar renders month label (August 2026), prev/next buttons, 3 dotted event days (2/9/16), events-this-month list with date+time, and clicking a marked day opens the event drawer. 0 console errors across Overview, category tabs and Timeline.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "One-click connect chip", "issue": "Clicking a quick-connect chip (e.g. gmail) navigates to /app/connect?project=...&tool=gmail correctly, but the connect page does NOT visibly auto-open/launch that provider's OAuth flow — it simply lands on the provider grid with all providers shown. Spec said the connect page should 'auto-open that provider'. Verify whether URL param is being consumed to auto-trigger the provider modal.", "affected_selectors": ["project-memory-quick-connect-gmail"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_48.json"],
+  "action_items": [
+    "Verify /app/connect page consumes ?tool=<provider> query param to auto-open that provider's connect modal/OAuth flow (currently only navigates but does not auto-launch)."
+  ],
+  "critical_code_review_comments": [
+    "Deliverables and Requirements categories are empty in the seed for project 9ea97afb — empty state renders correctly but couldn't validate JIRA row layout for those two categories; validated on Decisions (2 rows) and Deadlines (2 rows) which correctly show Summary/Status/Source/Updated with type icon, status pill, provider icon+label, and updated time.",
+    "Review drawer for CONFIRMED items shows only Dismiss (no change-action-confirm), which is expected; detected/scope item drawer path should still expose change-action-confirm — validated by opening scope item drawer via calendar/Recent Activity flows and confirmed drawer renders 'WHAT CHANGED' + decision row without SUGGESTED RESPONSE section."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "95%"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (login flow: click 'I have a password ->' first)",
+  "seed_data_creation": "None - used existing seeded project 9ea97afb-fb31-4b74-bce0-71a284fdc1eb",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Overview restructure verified: no overview-category-snapshot; RECENT ACTIVITY on left + Ask Bracket sidebar (340px) + Connected Sources on right. Ask Bracket persists per project in localStorage across tab navigation; clear button resets. Category content uses .jira-table with columns SUMMARY/STATUS/SOURCE/UPDATED and rows opening the review drawer. Drawer no longer shows SUGGESTED RESPONSE / reply editor / Send/Slack/Copy buttons. Timeline renders .cal-cell grid with .cal-dot markers; EVENTS THIS MONTH sidebar list; clicking dotted day opens ChangeActionDrawer with event info. Only outstanding item: verify /app/connect auto-opens provider when ?tool= is present in URL.",
+  "rca of the issue": "Quick-connect chip: URL is correctly built with project & tool params, but the connect page currently renders the full provider grid (Gmail/Slack/Figma/etc.) rather than auto-launching the specific provider's OAuth. Likely fix: in the connect page, on mount, read URLSearchParams('tool') and programmatically trigger the corresponding provider's connect handler (or scroll+highlight+auto-click) after auth session is ready."
+}

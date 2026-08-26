@@ -14,7 +14,7 @@ import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
-import { ProviderIcon, timeAgo } from "../lib/providersMeta";
+import { ProviderIcon, PROVIDER_META, timeAgo } from "../lib/providersMeta";
 
 /**
  * ProjectMemory (v2) — Notion-inspired dark, minimal.
@@ -104,6 +104,17 @@ export default function ProjectMemory() {
       });
     });
     return n;
+  }, [memory]);
+
+  // Flattened, newest-first list across all categories — powers the Overview
+  // "recent activity" rail (the category snapshot grid is gone, we have tabs).
+  const recentItems = useMemo(() => {
+    const all = [];
+    MEMORY_CATEGORIES.forEach((cat) => {
+      (memory.grouped?.[cat.key] || []).forEach((m) => all.push({ ...m, _catKey: cat.key }));
+    });
+    all.sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    return all.slice(0, 8);
   }, [memory]);
 
   const openReview = () => {
@@ -221,11 +232,10 @@ export default function ProjectMemory() {
               <OverviewView
                 project={project}
                 projectId={id}
-                counts={visibleCounts}
-                detectedCount={detectedCount}
+                recentItems={recentItems}
                 connections={connections || []}
                 onConnectionsChanged={() => load({ silent: true })}
-                onJumpTo={(cat) => { setView(cat); setStatusFilter("detected"); }}
+                onJumpTo={(cat) => { setView(cat); setStatusFilter("all"); }}
               />
             ) : (
               <CategoryView
@@ -292,12 +302,10 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
   );
 }
 
-/* ─── Overview view — chat-style reply + category snapshot ── */
-function OverviewView({ project, projectId, counts, detectedCount, connections, onConnectionsChanged, onJumpTo }) {
+/* ─── Overview — recent activity (left) + subtle Ask Bracket & sources (right) ── */
+function OverviewView({ project, projectId, recentItems, connections, onConnectionsChanged, onJumpTo }) {
   const noSources = connections.length === 0;
 
-  // Empty state — no connected sources yet. Uses the shared illustrated
-  // EmptyState so it matches Dashboard / Activity exactly.
   if (noSources) {
     return (
       <EmptyState
@@ -313,40 +321,52 @@ function OverviewView({ project, projectId, counts, detectedCount, connections, 
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8">
-      <div className="min-w-0 flex flex-col gap-6">
-        <SuggestedReplyChat projectId={projectId} />
-
-        {/* Category snapshot — 6 tiles, click to jump */}
-        <section data-testid="overview-category-snapshot">
-          <p className="mono-tag text-[9.5px] mb-3" style={{ color: "var(--text-3)" }}>PROJECT MEMORY</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {MEMORY_CATEGORIES.map((c) => {
-              const n = counts.by[c.key] || 0;
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+      {/* Left — recent activity feed for this project */}
+      <section className="min-w-0" data-testid="overview-recent">
+        <div className="flex items-center justify-between mb-3">
+          <p className="mono-tag text-[9.5px]" style={{ color: "var(--text-3)" }}>RECENT ACTIVITY</p>
+          <span className="mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>{recentItems.length} latest</span>
+        </div>
+        {recentItems.length === 0 ? (
+          <div className="rounded-xl p-8 text-center" style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}>
+            <p className="text-[12.5px]" style={{ color: "var(--text-3)" }}>Bracket is reading your connected work. New items will appear here.</p>
+          </div>
+        ) : (
+          <ul className="flex flex-col rounded-xl overflow-hidden"
+              style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)" }}
+              data-testid="overview-recent-items">
+            {recentItems.map((m) => {
+              const c = CATEGORY_BY_KEY[m._catKey] || CATEGORY_BY_KEY.decision;
               return (
-                <button
-                  key={c.key}
-                  type="button"
-                  onClick={() => onJumpTo(c.key)}
-                  className="flex items-center gap-2.5 px-3 py-3 rounded-lg text-left transition-colors"
-                  style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--hairline-strong)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--hairline)"; }}
-                  data-testid={`overview-cat-${c.key}`}
-                >
-                  <c.icon size={14} style={{ color: c.color }} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] font-medium truncate" style={{ color: "var(--text)" }}>{c.label}</p>
-                    <p className="text-[10.5px]" style={{ color: "var(--text-3)" }}>{n} item{n === 1 ? "" : "s"}</p>
-                  </div>
-                </button>
+                <li key={m.id}>
+                  <button type="button" onClick={() => onJumpTo(m._catKey)}
+                          className="memory-ledger-row w-full text-left flex items-start gap-3 px-4 py-3"
+                          data-testid={`overview-recent-${m.id}`}>
+                    <c.icon size={13} style={{ color: c.color, marginTop: 2, flexShrink: 0 }} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-medium leading-snug truncate" style={{ color: "var(--text)" }}>{m.title}</p>
+                      <div className="mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="mono-tag text-[8.5px]" style={{ color: c.color }}>{c.label.toUpperCase()}</span>
+                        {m.is_scope_change && (
+                          <span className="mono-tag text-[8.5px] inline-flex items-center gap-0.5" style={{ color: "var(--danger)" }}><AlertTriangle size={8} /> SCOPE</span>
+                        )}
+                        <span className="text-[10px] inline-flex items-center gap-1" style={{ color: "var(--text-3)" }}>
+                          <ProviderIcon provider={m.provider} size={9} /> {timeAgo(m.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                </li>
               );
             })}
-          </div>
-        </section>
-      </div>
+          </ul>
+        )}
+      </section>
 
-      <aside className="min-w-0 flex flex-col gap-6">
+      {/* Right — subtle Ask Bracket + connected sources */}
+      <aside className="min-w-0 flex flex-col gap-5 lg:sticky lg:top-24">
+        <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} />
         <ConnectedSourcesCompact
           projectId={projectId}
           connections={connections}
@@ -364,9 +384,12 @@ const REPLY_QUICK_PROMPTS = [
   "Ask for the missing details we still need.",
 ];
 
-function SuggestedReplyChat({ projectId }) {
+function SuggestedReplyChat({ projectId, clientName }) {
+  const storeKey = `bracket.askThread.${projectId}`;
   // Each turn: { role: 'user'|'assistant', content: string, meta?: {...} }
-  const [thread, setThread] = useState([]);
+  const [thread, setThread] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`bracket.askThread.${projectId}`) || "[]"); } catch { return []; }
+  });
   const [prompt, setPrompt] = useState("");
   const [sending, setSending] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
@@ -374,6 +397,11 @@ function SuggestedReplyChat({ projectId }) {
   const [editingDraft, setEditingDraft] = useState("");
   const bottomRef = useRef(null);
   const editRef = useRef(null);
+
+  // Persist the conversation so "previous interactions" survive navigation/reload.
+  useEffect(() => {
+    try { localStorage.setItem(storeKey, JSON.stringify(thread.slice(-20))); } catch { /* ignore */ }
+  }, [thread, storeKey]);
 
   useEffect(() => {
     if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -482,43 +510,42 @@ function SuggestedReplyChat({ projectId }) {
       style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
       data-testid="suggested-reply-chat"
     >
-      <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--hairline)" }}>
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid var(--hairline)" }}>
         <div className="flex items-center gap-2 min-w-0">
           <Sparkles size={13} style={{ color: "var(--accent)" }} />
           <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>ASK BRACKET</p>
-          <span className="text-[10.5px] truncate" style={{ color: "var(--text-3)" }}>
-            · on-demand replies grounded in this project
-          </span>
+          {clientName && (
+            <span className="text-[10.5px] truncate" style={{ color: "var(--text-3)" }}>· {clientName}</span>
+          )}
         </div>
         {thread.length > 0 && (
           <button type="button" onClick={() => { setThread([]); setPrompt(""); }}
-                  className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                  className="inline-flex items-center gap-1 text-[10.5px] px-2 py-1 rounded-full"
                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
                   data-testid="suggested-reply-clear">
-            <RotateCcw size={10} /> New thread
+            <RotateCcw size={10} /> New
           </button>
         )}
       </div>
 
       {/* Thread body */}
-      <div className="px-5 py-5 flex flex-col gap-4 max-h-[520px] overflow-y-auto" data-testid="suggested-reply-thread">
+      <div className="px-4 py-4 flex flex-col gap-4 max-h-[440px] overflow-y-auto" data-testid="suggested-reply-thread">
         {thread.length === 0 && (
           <div data-testid="suggested-reply-empty">
-            <p className="text-[13.5px] leading-relaxed" style={{ color: "var(--text)" }}>
-              Tell Bracket what you want to do — draft a reply, ask for missing details, or push back on scope.
-              You&apos;ll get a grounded response using this project&apos;s memory.
+            <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+              Ask Bracket to draft a reply, chase missing details, or push back on scope — grounded in this project&apos;s memory.
             </p>
-            <div className="mt-4 flex flex-wrap gap-1.5" data-testid="suggested-reply-quick-prompts">
+            <div className="mt-3 flex flex-col gap-1.5" data-testid="suggested-reply-quick-prompts">
               {REPLY_QUICK_PROMPTS.map((qp) => (
                 <button
                   key={qp}
                   type="button"
                   onClick={() => send(qp)}
                   disabled={sending}
-                  className="inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-full disabled:opacity-40"
+                  className="inline-flex items-center gap-1.5 text-[11.5px] px-3 py-2 rounded-lg disabled:opacity-40 text-left"
                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
                 >
-                  <Sparkles size={10} /> {qp}
+                  <Sparkles size={10} className="shrink-0" /> {qp}
                 </button>
               ))}
             </div>
@@ -554,7 +581,7 @@ function SuggestedReplyChat({ projectId }) {
       </div>
 
       {/* Input */}
-      <div className="px-5 py-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+      <div className="px-4 py-3" style={{ borderTop: "1px solid var(--hairline)" }}>
         <form
           onSubmit={(e) => { e.preventDefault(); send(prompt); }}
           className="flex items-end gap-2"
@@ -567,17 +594,17 @@ function SuggestedReplyChat({ projectId }) {
               if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(prompt); }
             }}
             placeholder={thread.length === 0
-              ? "Tell Bracket what you want to do…"
-              : "Refine the reply, or ask for a different angle…"}
+              ? "Ask Bracket…"
+              : "Refine or ask for another angle…"}
             rows={2}
-            className="flex-1 resize-none bg-transparent outline-none text-[13.5px] leading-relaxed"
+            className="flex-1 resize-none bg-transparent outline-none text-[13px] leading-relaxed"
             style={{ color: "var(--text)" }}
             data-testid="suggested-reply-input"
           />
           <button
             type="submit"
             disabled={sending || !prompt.trim()}
-            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12.5px] font-medium disabled:opacity-40"
+            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-medium disabled:opacity-40"
             style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
             data-testid="suggested-reply-send"
           >
@@ -585,8 +612,8 @@ function SuggestedReplyChat({ projectId }) {
             {thread.length === 0 ? "Generate" : "Send"}
           </button>
         </form>
-        <p className="mt-2 text-[10.5px]" style={{ color: "var(--text-3)" }}>
-          Shift + Enter for a newline. Bracket never sends autonomously — you review, edit and send.
+        <p className="mt-1.5 text-[10px]" style={{ color: "var(--text-3)" }}>
+          Bracket never sends on its own — you review and send.
         </p>
       </div>
     </section>
@@ -727,6 +754,7 @@ function ChatTurn({
 
 /* ─── Category view — filter + memory rows ────────────────── */
 function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
+  const isTimeline = cat.key === "timeline";
   return (
     <section data-testid="project-memory-pane">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
@@ -735,23 +763,27 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
           <h2 className="text-[20px] font-semibold tracking-[-0.02em]" style={{ color: "var(--text)" }}>{cat.label}</h2>
           <span className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>· {items.length}</span>
         </div>
-        <div className="inline-flex rounded-full p-0.5"
-             style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}
-             data-testid="project-memory-status-filter">
-          {STATUS_FILTERS.map((s) => (
-            <button key={s.key} type="button" onClick={() => setStatusFilter(s.key)}
-                    className="mono-tag px-3 py-1 rounded-full text-[10px] transition-colors"
-                    style={statusFilter === s.key
-                      ? { background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--brand-border)" }
-                      : { color: "var(--text-3)", border: "1px solid transparent", background: "transparent" }}
-                    data-testid={`project-memory-filter-${s.key}`}>
-              {s.label.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {!isTimeline && (
+          <div className="inline-flex rounded-full p-0.5"
+               style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}
+               data-testid="project-memory-status-filter">
+            {STATUS_FILTERS.map((s) => (
+              <button key={s.key} type="button" onClick={() => setStatusFilter(s.key)}
+                      className="mono-tag px-3 py-1 rounded-full text-[10px] transition-colors"
+                      style={statusFilter === s.key
+                        ? { background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--brand-border)" }
+                        : { color: "var(--text-3)", border: "1px solid transparent", background: "transparent" }}
+                      data-testid={`project-memory-filter-${s.key}`}>
+                {s.label.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {items.length === 0 ? (
+      {isTimeline ? (
+        <TimelineCalendar items={items} cat={cat} onOpen={onOpen} />
+      ) : items.length === 0 ? (
         <div className="rounded-xl p-10 text-center"
              style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}
              data-testid="project-memory-empty">
@@ -760,11 +792,16 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-col rounded-xl overflow-hidden"
-            style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)" }}
-            data-testid="project-memory-items">
+        <div className="jira-table rounded-xl overflow-hidden" data-testid="project-memory-items">
+          <div className="jira-row jira-head">
+            <span></span>
+            <span>Summary</span>
+            <span className="jira-col-status">Status</span>
+            <span className="jira-col-source">Source</span>
+            <span className="jira-col-date">Updated</span>
+          </div>
           {items.map((m) => <MemoryRow key={m.id} item={m} cat={cat} onOpen={onOpen} />)}
-        </ul>
+        </div>
       )}
     </section>
   );
@@ -772,38 +809,141 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
 
 function MemoryRow({ item, cat, onOpen }) {
   const status = STATUS_META[item.status] || STATUS_META.confirmed;
-  const isChange = item.status === "detected" || item.status === "review";
   return (
-    <li>
-      <button type="button" onClick={() => onOpen(item)}
-              className="memory-ledger-row group w-full text-left flex items-start gap-3.5 px-5 py-3.5"
-              data-testid={`project-memory-row-${item.id}`}>
-        <cat.icon size={14} style={{ color: cat.color, marginTop: 2, flexShrink: 0 }} />
-        <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-medium leading-snug" style={{ color: "var(--text)" }}>{item.title}</p>
-          {item.detail && (
-            <p className="mt-0.5 text-[12px] leading-snug line-clamp-1" style={{ color: "var(--text-2)" }}>{item.detail}</p>
-          )}
-          <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-            <span className="mono-tag text-[9px]" style={{ color: status.color }}>
-              {status.label}
-            </span>
-            {item.is_scope_change && (
-              <span className="mono-tag text-[9px] inline-flex items-center gap-0.5" style={{ color: "var(--danger)" }}>
-                <AlertTriangle size={9} /> SCOPE CREEP
-              </span>
-            )}
-            <span className="text-[10.5px] inline-flex items-center gap-1" style={{ color: "var(--text-3)" }}>
-              <ProviderIcon provider={item.provider} size={10} className="align-middle" />
-              {item.source_label} · {timeAgo(item.created_at)}
-            </span>
-          </div>
-        </div>
-        {isChange && (
-          <span className="shrink-0 mono-tag text-[9px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--accent)" }}>REVIEW →</span>
+    <button type="button" onClick={() => onOpen(item)}
+            className="jira-row jira-body group"
+            data-testid={`project-memory-row-${item.id}`}>
+      <span className="jira-key" aria-hidden="true">
+        <cat.icon size={13} style={{ color: cat.color }} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[13.5px] font-medium leading-snug truncate" style={{ color: "var(--text)" }}>{item.title}</span>
+        {item.detail && (
+          <span className="block mt-0.5 text-[11.5px] leading-snug truncate" style={{ color: "var(--text-3)" }}>{item.detail}</span>
         )}
-      </button>
-    </li>
+        {item.is_scope_change && (
+          <span className="mono-tag text-[8.5px] inline-flex items-center gap-0.5 mt-1" style={{ color: "var(--danger)" }}>
+            <AlertTriangle size={8} /> SCOPE CREEP
+          </span>
+        )}
+      </span>
+      <span className="jira-col-status">
+        <span className="jira-status-pill" style={{ color: status.color, background: status.bg, borderColor: `${status.color}33` }}>
+          {status.label}
+        </span>
+      </span>
+      <span className="jira-col-source inline-flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
+        <ProviderIcon provider={item.provider} size={11} />
+        <span className="truncate">{item.source_label || item.provider}</span>
+      </span>
+      <span className="jira-col-date text-[11px] whitespace-nowrap" style={{ color: "var(--text-3)" }}>
+        {timeAgo(item.created_at)}
+      </span>
+    </button>
+  );
+}
+
+/* ─── Timeline calendar — month grid marking when events happened ── */
+function TimelineCalendar({ items, cat, onOpen }) {
+  const [monthOffset, setMonthOffset] = useState(0);
+  const base = new Date();
+  const view = new Date(base.getFullYear(), base.getMonth() + monthOffset, 1);
+  const year = view.getFullYear();
+  const month = view.getMonth();
+
+  const byDay = useMemo(() => {
+    const map = {};
+    (items || []).forEach((it) => {
+      const d = new Date(it.created_at);
+      if (isNaN(d)) return;
+      const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      (map[key] = map[key] || []).push(it);
+    });
+    return map;
+  }, [items]);
+
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const monthLabel = view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const todayKey = `${base.getFullYear()}-${base.getMonth()}-${base.getDate()}`;
+
+  const monthItems = useMemo(() => (items || [])
+    .filter((it) => { const d = new Date(it.created_at); return !isNaN(d) && d.getFullYear() === year && d.getMonth() === month; })
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))), [items, year, month]);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5 items-start" data-testid="timeline-calendar">
+      <div className="rounded-xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)" }}>
+        <div className="flex items-center justify-between mb-3">
+          <button type="button" onClick={() => setMonthOffset((m) => m - 1)} className="cal-nav" data-testid="timeline-prev-month" aria-label="Previous month">‹</button>
+          <p className="text-[13.5px] font-semibold" style={{ color: "var(--text)" }} data-testid="timeline-month-label">{monthLabel}</p>
+          <button type="button" onClick={() => setMonthOffset((m) => m + 1)} className="cal-nav" data-testid="timeline-next-month" aria-label="Next month">›</button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 mb-1">
+          {["S","M","T","W","T","F","S"].map((d, i) => (
+            <span key={i} className="mono-tag text-[8.5px] text-center py-1" style={{ color: "var(--text-3)" }}>{d}</span>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((d, i) => {
+            if (d === null) return <span key={`e${i}`} />;
+            const key = `${year}-${month}-${d}`;
+            const dayItems = byDay[key] || [];
+            const has = dayItems.length > 0;
+            const isToday = key === todayKey;
+            return (
+              <button key={key} type="button" disabled={!has}
+                      onClick={() => has && onOpen(dayItems[0])}
+                      className="cal-cell"
+                      data-active={has ? "true" : "false"}
+                      data-testid={`timeline-day-${d}`}
+                      title={has ? `${dayItems.length} event${dayItems.length === 1 ? "" : "s"}` : ""}
+                      style={isToday ? { borderColor: "var(--accent)" } : undefined}>
+                <span className="text-[11.5px]" style={{ color: has ? "var(--text)" : "var(--text-3)" }}>{d}</span>
+                {has && <span className="cal-dot" style={{ background: cat.color }} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* This month's events list */}
+      <div>
+        <p className="mono-tag text-[9px] mb-2" style={{ color: "var(--text-3)" }}>EVENTS THIS MONTH · {monthItems.length}</p>
+        {monthItems.length === 0 ? (
+          <div className="rounded-xl p-6 text-center" style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}>
+            <p className="text-[12px]" style={{ color: "var(--text-3)" }}>No timeline events this month.</p>
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {monthItems.map((it) => {
+              const d = new Date(it.created_at);
+              return (
+                <li key={it.id}>
+                  <button type="button" onClick={() => onOpen(it)}
+                          className="w-full text-left rounded-lg px-3 py-2.5 transition-colors"
+                          style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--hairline-hover)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--hairline)"; }}
+                          data-testid={`timeline-event-${it.id}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="mono-tag text-[9px]" style={{ color: cat.color }}>
+                        {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <p className="text-[12.5px] font-medium leading-snug" style={{ color: "var(--text)" }}>{it.title}</p>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -877,7 +1017,29 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
           })}
         </ul>
       )}
-      <Link to={`/app/connect?project=${projectId}`} className="text-[11px] mt-2 inline-flex items-center gap-1"
+      {/* One-click connect more sources — deep-links straight into the
+          connect flow for that provider for this project. */}
+      <div className="mt-3">
+        <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
+        <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
+          {["gmail", "slack", "figma", "github"].map((p) => {
+            const meta = PROVIDER_META[p] || {};
+            return (
+              <Link
+                key={p}
+                to={`/app/connect?project=${projectId}&tool=${p}`}
+                className="quick-connect-chip inline-flex items-center gap-1.5"
+                title={`Connect ${meta.label || p}`}
+                data-testid={`project-memory-quick-connect-${p}`}
+              >
+                <ProviderIcon provider={p} size={11} />
+                {meta.label || p}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+      <Link to={`/app/connect?project=${projectId}`} className="text-[11px] mt-3 inline-flex items-center gap-1"
             style={{ color: "var(--accent)" }} data-testid="project-memory-sources-manage">
         Manage connections <ExternalLink size={10} />
       </Link>

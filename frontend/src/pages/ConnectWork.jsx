@@ -29,11 +29,13 @@ function Chip({ status }) {
   return <span className="mono-tag px-2 py-0.5 rounded text-[9.5px]" style={c.style}>{c.label}</span>;
 }
 
-function AppCard({ p, onPick, onDisconnect, busy }) {
+function AppCard({ p, onPick, onDisconnect, busy, highlight }) {
   const clickable = p.status === "connected" || p.status === "available";
   return (
     <div
+      id={`connect-card-${p.key}`}
       className="card-linear card-linear--solid p-4 text-left w-full transition-transform duration-200 hover:-translate-y-0.5 relative group"
+      style={highlight ? { borderColor: "var(--accent)", boxShadow: "0 0 0 1px var(--accent), 0 18px 44px -26px rgba(59,130,246,0.5)" } : undefined}
       data-testid={`connect-app-${p.key}`}
     >
       <button
@@ -399,7 +401,14 @@ export default function ConnectWork() {
     if (!loading && tool && providers.length && !modalProvider) {
       const p = providers.find((x) => x.key === tool);
       if (p && p.status === "connected") setModalProvider(p);
-      else if (p) setActive(p);
+      else if (p) {
+        setActive(p);
+        // Scroll the selected provider into view so the chip lands with intent.
+        setTimeout(() => {
+          const el = document.getElementById(`connect-card-${p.key}`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 200);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, providers]);
@@ -544,7 +553,7 @@ export default function ConnectWork() {
                   <section key={cat} data-testid={`connect-category-${cat.toLowerCase().replace(/[^a-z]+/g, "-")}`}>
                     <p className="mono-tag text-muted text-[10px] mb-3">{cat.toUpperCase()}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {apps.map((p) => <AppCard key={p.key} p={p} onPick={pick} onDisconnect={disconnectProvider} busy={busy} />)}
+                      {apps.map((p) => <AppCard key={p.key} p={p} onPick={pick} onDisconnect={disconnectProvider} busy={busy} highlight={active?.key === p.key} />)}
                     </div>
                   </section>
                 );

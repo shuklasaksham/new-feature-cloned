@@ -4167,3 +4167,106 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
   .activity-card:hover { transform: none !important; }
   .activity-card, .activity-stat { transition: none !important; }
 }
+
+/* ============================================================
+   JIRA-style category table
+   ============================================================ */
+.jira-table {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+}
+.jira-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr) 120px 150px 84px;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  text-align: left;
+  width: 100%;
+}
+.jira-head {
+  border-bottom: 1px solid var(--hairline);
+  background: var(--surface-2);
+}
+.jira-head span {
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.jira-body {
+  border-bottom: 1px solid var(--hairline);
+  cursor: pointer;
+  transition: background .15s var(--ease-out);
+}
+.jira-table .jira-body:last-child { border-bottom: none; }
+.jira-body:hover { background: var(--surface-2); }
+.jira-key {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--hairline);
+}
+.jira-status-pill {
+  display: inline-block;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 9px; font-weight: 600;
+  padding: 3px 7px; border-radius: 5px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  .jira-row { grid-template-columns: 30px minmax(0,1fr) 92px; }
+  .jira-col-source, .jira-col-date { display: none; }
+}
+
+/* Timeline calendar */
+.cal-nav {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface-2); border: 1px solid var(--hairline);
+  color: var(--text-2); font-size: 16px; line-height: 1;
+  transition: background .15s var(--ease-out);
+}
+.cal-nav:hover { background: var(--surface-3); color: var(--text); }
+.cal-cell {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s var(--ease-out), border-color .15s var(--ease-out);
+}
+.cal-cell[data-active="true"] {
+  background: var(--surface-2);
+  border-color: var(--hairline);
+  cursor: pointer;
+}
+.cal-cell[data-active="true"]:hover { background: var(--surface-3); }
+.cal-dot {
+  position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jira-body, .cal-cell, .cal-nav { transition: none !important; }
+}
+
+/* One-click connect chips (Project Memory sources panel) */
+.quick-connect-chip {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  color: var(--text-2);
+  font-size: 11.5px;
+  font-weight: 500;
+  transition: background .15s var(--ease-out), border-color .15s var(--ease-out), color .15s var(--ease-out);
+}
+.quick-connect-chip:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+  color: var(--text);
+}
+@media (prefers-reduced-motion: reduce) { .quick-connect-chip { transition: none !important; } }
