@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Loader2, ExternalLink, AlertTriangle,
   Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
-  Check, RotateCcw, Send, User, Trash2, Plug,
+  Check, RotateCcw, Send, User, Unplug, Plug,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -190,6 +190,8 @@ export default function ProjectMemory() {
             <nav
               className="flex items-center gap-1 mb-8 overflow-x-auto no-scrollbar"
               data-testid="project-memory-pills"
+              role="tablist"
+              aria-label="Memory categories"
               style={{ borderBottom: "1px solid var(--hairline)" }}
             >
               <PillTab
@@ -258,31 +260,38 @@ export default function ProjectMemory() {
   );
 }
 
-/* ─── Pill tab ────────────────────────────────────────────── */
+/* ─── Category tab (JIRA-style: label + count chip + accent underline) ── */
 function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active ? "true" : "false"}
       onClick={onClick}
-      className="relative inline-flex items-center gap-1.5 px-3.5 py-2.5 text-[13px] font-medium whitespace-nowrap transition-colors"
-      style={{
-        color: active ? "var(--text)" : "var(--text-3)",
-      }}
+      className="memory-tab relative inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-medium whitespace-nowrap"
+      data-active={active ? "true" : "false"}
+      style={{ color: active ? "var(--text)" : "var(--text-3)" }}
       data-testid={testid}
     >
       {Icon && <Icon size={13} style={{ color: active ? (color || "var(--accent)") : "var(--text-3)" }} />}
       {label}
       {typeof count === "number" && count > 0 && (
-        <span className="mono-tag text-[9.5px]" style={{ color: active ? "var(--text-2)" : "var(--text-3)" }}>
+        <span
+          className="memory-tab-count inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold"
+          style={{
+            background: active ? "var(--accent-soft, rgba(59,130,246,0.14))" : "var(--surface-2)",
+            color: active ? "var(--accent)" : "var(--text-3)",
+          }}
+        >
           {count}
         </span>
       )}
       {active && (
         <motion.span
           layoutId="pill-underline"
-          className="absolute -bottom-px left-0 right-0 h-0.5"
-          style={{ background: "var(--text)" }}
-          transition={{ duration: 0.18 }}
+          className="absolute -bottom-px left-0 right-0 h-[2px] rounded-full"
+          style={{ background: "var(--accent)" }}
+          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
         />
       )}
     </button>
@@ -860,12 +869,12 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
                   type="button"
                   onClick={() => disconnect(c)}
                   disabled={busy === c.id}
-                  title="Disconnect"
-                  className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-                  style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-3)" }}
+                  title="Disconnect this source"
+                  className="disconnect-btn shrink-0 inline-flex items-center gap-1 px-2 h-6 rounded-md text-[10.5px] font-medium transition-colors"
                   data-testid={`project-memory-source-disconnect-${c.id}`}
                 >
-                  {busy === c.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                  {busy === c.id ? <Loader2 size={11} className="animate-spin" /> : <Unplug size={11} />}
+                  <span>Disconnect</span>
                 </button>
               </li>
             );

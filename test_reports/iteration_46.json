@@ -1,0 +1,22 @@
+{
+  "summary": "Frontend regression for Bracket batch 46 verified: always-visible Disconnect buttons on each connected source, JIRA-style Project Memory tabs with count chips + blue underline, Sidebar Activity unread-badge clearing, and FAQ 'Cost' replacement of Pricing section. All flows pass with no console errors.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PillTab does not set aria-selected on the active tab; only visual (class) state is used. Consider adding aria-selected='true' / role='tab' for a11y compliance (non-blocking)."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a", "frontend": "100%" },
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (password mode via 'I have a password →')",
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Login: /login -> 'I have a password →', email input is type=text (placeholder 'you@studio.com'), password type=password, submit button 'Sign in'. Project with 2 seeded sources: /project/9ea97afb-fb31-4b74-bce0-71a284fdc1eb. Verified: (a) both project-memory-source-disconnect-{id} buttons are visible=true opacity=1 with Unplug SVG + 'Disconnect' label WITHOUT hover, (b) confirm dialog (dialog-confirm-btn) removes only the clicked source and leaves the other, (c) project-memory-pills renders Overview + 6 category tabs with 'memory-tab' class; Scope/Decisions/Deadlines each show a '1' count chip; Overview is the active tab with blue accent underline, (d) FAQ has 'Cost' section with 'How much does Bracket cost?' and NO 'Pricing & billing' text, (e) /app/activity renders empty-state (digest is 0 for demo so no numeric badge appears — acceptable per spec), (f) no console errors on /app, /app/activity, /project/:id, /faq.",
+  "rca of the issue": "n/a — no issues found"
+}

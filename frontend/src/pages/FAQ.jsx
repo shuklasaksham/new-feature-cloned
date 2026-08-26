@@ -23,11 +23,9 @@ const FAQS = [
     ],
   },
   {
-    cat: "Pricing & billing",
+    cat: "Cost",
     items: [
-      { q: "Is it really free?", a: "Yes — fully free during early access. Every tier is unlocked. No card. No upsell." },
-      { q: "When will paid tiers start?", a: "When Bracket graduates from early access. We'll email all users at least 30 days before any pricing change. You can decide then." },
-      { q: "Can I cancel anytime?", a: "Yes, monthly billing with no annual lock-in. We'd rather earn it every month." },
+      { q: "How much does Bracket cost?", a: "Nothing right now. Bracket is fully free during early access — every feature unlocked, no card required. We'll email all users at least 30 days before that ever changes, so there are no surprises." },
     ],
   },
   {

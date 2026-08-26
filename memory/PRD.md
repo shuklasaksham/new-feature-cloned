@@ -69,6 +69,14 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v11 — disconnect UX + JIRA tabs + activity badge + copy + reduced-motion; testing agent iteration_46 100% frontend, no console errors) —
+  - **Disconnect UX**: each connected source now shows an ALWAYS-VISIBLE "Disconnect" button (Unplug icon + label, `.disconnect-btn`, danger-on-hover) instead of a hover-only trash icon. Multiple sources per project are independently disconnectable (verified with 2 sources).
+  - **JIRA-style category tabs**: Project Memory nav restyled from pills to tabs — label + count chip badge + animated blue accent underline on the active tab; added `role=tablist`/`role=tab`/`aria-selected` a11y.
+  - **Sidebar Activity badge**: `NavItem` gained a `badge` prop; sidebar polls `/connect/digest?window=7d` and shows an unread count vs `localStorage bracket.activity.seenTotal`. Opening `/app/activity` marks seen (dispatches `activity-seen`) and clears the badge. Collapsed sidebar shows a dot.
+  - **Marketing copy**: FAQ 'Pricing & billing' section replaced with a single 'Cost' Q&A so the story flows without the removed Pricing page (How-it-works / Use-cases had no pricing refs).
+  - **Reduced-motion**: wrapped app in `<MotionConfig reducedMotion="user">` (framer-motion) + added a global `prefers-reduced-motion` CSS catch-all covering the new interactive elements.
+
+## Changelog (recent-history)
 - 2026-06 (design v10 — Pricing removal + self-hosted icons + empty-state set; testing agent iteration_45 100% frontend, console clean) —
   - **Pricing removed entirely**: deleted `pages/Pricing.jsx`, the `/pricing` route + import (App.js), the NAV_LINKS entry (constants.js), the footer link, and the Landing `<PricingSection/>` + `PricingCard` defs + `PRICING` import. `/pricing` now falls through the catch-all to `/`.
   - **Self-hosted brand icons**: `ProviderIcon` no longer calls `cdn.simpleicons.org` (was the source of console 404s for slack/adobe). Brand marks are bundled as inline SVG paths in `lib/brandIcons.js` (simple-icons) and rendered inline — verified 0 external icon requests.

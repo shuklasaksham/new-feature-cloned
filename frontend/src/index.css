@@ -3969,3 +3969,79 @@ html, body { overscroll-behavior-y: none; }
 }
 .memory-ledger-row:hover { background: var(--surface-2); }
 ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { border-bottom: 0; }
+
+/* Disconnect source button — always visible, quiet until hover (danger). */
+.disconnect-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--hairline);
+  color: var(--text-3);
+}
+.disconnect-btn:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--danger);
+}
+.disconnect-btn:disabled { opacity: 0.6; cursor: default; }
+
+/* Memory category tabs (JIRA-style) — hover affordance on inactive tabs. */
+.memory-tab { transition: color .18s var(--ease-out); }
+.memory-tab[data-active="false"]:hover { color: var(--text-2); }
+.memory-tab[data-active="false"]:hover .memory-tab-count { color: var(--text-2); }
+
+/* Sidebar unread badge (Activity) */
+.nav-item { position: relative; }
+.nav-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-family: 'Geist Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 2px 6px -2px rgba(59,130,246,0.6);
+}
+.nav-icon { position: relative; }
+.nav-badge--dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 8px;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* ============================================================
+   Reduced-motion catch-all — belt & suspenders for CSS transitions
+   on interactive elements added during the redesign. Framer Motion
+   components honor prefers-reduced-motion via <MotionConfig reducedMotion="user">.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .memory-ledger-row,
+  .memory-tab,
+  .disconnect-btn,
+  .bento-card,
+  .dashboard-project-card,
+  .dashboard-stat-card,
+  .nav-item,
+  .nav-active-bar,
+  .card-linear {
+    transition: none !important;
+  }
+  .bento-card:hover,
+  .dashboard-project-card:hover { transform: none !important; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}

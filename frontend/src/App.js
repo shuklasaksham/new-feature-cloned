@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { MotionConfig } from "framer-motion";
 import { Toaster } from "sonner";
 
 import MarketingLayout from "./components/MarketingLayout";
@@ -50,6 +51,7 @@ function AnalyticsTrackerMount() {
 export default function App() {
   return (
     <HelmetProvider>
+      <MotionConfig reducedMotion="user">
       <PageLoader />
       <AuthProvider>
         <DialogProvider>
@@ -101,6 +103,7 @@ export default function App() {
       </BrowserRouter>
         </DialogProvider>
     </AuthProvider>
+      </MotionConfig>
     </HelmetProvider>
   );
 }

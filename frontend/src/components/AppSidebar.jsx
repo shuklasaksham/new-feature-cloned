@@ -13,16 +13,26 @@ import {
 } from "lucide-react";
 import Avatar from "./Avatar";
 import { useAuth } from "../lib/AuthContext";
+import { api } from "../lib/api";
 
 const STORAGE_KEY = "bracket.sidebar.collapsed";
 
-function NavItem({ to, icon: Icon, label, collapsed, active, end, dataTestId, onClick }) {
+function NavItem({ to, icon: Icon, label, collapsed, active, end, dataTestId, onClick, badge }) {
+  const showBadge = typeof badge === "number" && badge > 0;
   const content = (
     <>
       <span className="nav-icon" aria-hidden="true">
         <Icon size={16} strokeWidth={1.75} />
+        {showBadge && collapsed && (
+          <span className="nav-badge nav-badge--dot" aria-hidden="true" />
+        )}
       </span>
       {!collapsed && <span className="nav-label">{label}</span>}
+      {showBadge && !collapsed && (
+        <span className="nav-badge" data-testid={`${dataTestId}-badge`}>
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
       {active && <span className="nav-active-bar" aria-hidden="true" />}
     </>
   );
@@ -84,6 +94,29 @@ export default function AppSidebar() {
   }, [collapsed, isMobile]);
 
   const path = location.pathname;
+
+  // Activity unread badge — "new changes since you last opened Activity".
+  // Compares the rolling 7d digest total against the count last seen on the
+  // Activity page (persisted in localStorage, updated via 'activity-seen').
+  const ACT_SEEN_KEY = "bracket.activity.seenTotal";
+  const [activityUnread, setActivityUnread] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    const compute = async () => {
+      try {
+        const { data } = await api.get("/connect/digest?window=7d");
+        if (cancelled) return;
+        const total = data?.total || 0;
+        const seen = Number(localStorage.getItem(ACT_SEEN_KEY) || "0");
+        setActivityUnread(Math.max(0, total - seen));
+      } catch { /* ignore */ }
+    };
+    compute();
+    const id = setInterval(compute, 45000);
+    const onSeen = () => setActivityUnread(0);
+    window.addEventListener("activity-seen", onSeen);
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener("activity-seen", onSeen); };
+  }, []);
   const isProjectsActive =
     path === "/app" || path === "/app/new" || path.startsWith("/project/");
   const isSettingsActive = path === "/settings";
@@ -146,6 +179,7 @@ export default function AppSidebar() {
           collapsed={collapsed}
           active={path.startsWith("/app/activity")}
           dataTestId="sidebar-nav-activity"
+          badge={activityUnread}
         />
         <NavItem
           to="/app/connect"

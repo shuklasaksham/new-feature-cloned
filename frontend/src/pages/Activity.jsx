@@ -1,14 +1,26 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { TrendingUp } from "lucide-react";
 import Seo from "../components/Seo";
 import ChangeDigestPanel from "../components/ChangeDigestPanel";
+import { api } from "../lib/api";
 
 /**
  * Activity — the "what changed" roll-up across every connected project.
  * Moved off the main dashboard so the dashboard stays focused on projects.
  */
 export default function Activity() {
+  // Mark everything as seen on visit — clears the sidebar Activity badge.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await api.get("/connect/digest?window=7d");
+        localStorage.setItem("bracket.activity.seenTotal", String(data?.total || 0));
+      } catch { /* ignore */ }
+      window.dispatchEvent(new Event("activity-seen"));
+    })();
+  }, []);
+
   return (
     <div className="dashboard-root relative min-h-full" data-testid="activity-page">
       <Seo title="Activity" path="/app/activity" noindex />
