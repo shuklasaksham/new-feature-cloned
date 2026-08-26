@@ -4299,3 +4299,35 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .cal-dot-multi { width: 3.5px; height: 3.5px; border-radius: 50%; }
 .cal-cell--week { aspect-ratio: auto; min-height: 56px; align-items: flex-start; padding: 6px; }
 @media (prefers-reduced-motion: reduce) { .jira-sort-head { transition: none !important; } }
+
+/* JIRA columns button */
+.jira-cols-btn {
+  height: 30px; padding: 0 11px; border-radius: 8px;
+  background: var(--surface-2); border: 1px solid var(--hairline);
+  color: var(--text-2); font-size: 12px; font-weight: 500;
+  transition: border-color .15s var(--ease-out), color .15s var(--ease-out);
+}
+.jira-cols-btn:hover { border-color: var(--hairline-hover); color: var(--text); }
+
+/* Calendar day hover popover */
+.cal-cell { overflow: visible; }
+.cal-popover {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  width: 210px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 20px 50px -20px rgba(0,0,0,0.75);
+  text-align: left;
+  pointer-events: none;
+}
+.cal-popover::after {
+  content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: var(--surface);
+}
+@media (prefers-reduced-motion: reduce) { .jira-cols-btn { transition: none !important; } }

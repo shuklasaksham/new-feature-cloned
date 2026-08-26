@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend-only smoke of iteration 50 changes on the Bracket demo project (9ea97afb...). All four target features verified: (1) decluttered category tables — Decisions & Scope rows show only a single-line title, no secondary detail text, scope items render a small red dot before the title with NO 'SCOPE CREEP' text badge in the row (badge still visible inside the drawer as expected); (2) Columns menu present with Status/Source/Updated toggles — hiding/showing Source removes/restores the column and header + row grid stay perfectly aligned (computed gridTemplateColumns identical); (3) Sort + column visibility persist per category to localStorage keys bracket.sort.decision / bracket.cols.decision — verified across a full page reload; (4) Calendar day popover appears on hover for days with events (Aug 2 → 'Kickoff call with client', Aug 9 → '2 EVENTS: Second review on the 9th, Design review milestone', Aug 16 → 'Print vendor handoff') and disappears on mouse leave; month/week toggle still works (week view collapses to 7 day cells). Filter no-match message shows for gibberish. Gmail connect chip opens a popup (about:blank in headless) without navigating the main tab away from /project/. No console errors on Decisions, Scope, Timeline, or Overview. Boxed tabs + Ask Bracket sidebar render.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ProjectMemory.jsx is ~1100+ lines — consider splitting TimelineCalendar, CategoryView, MemoryRow, ConnectedSourcesCompact into separate files for maintainability.",
+    "bracket.cols.<cat> localStorage stores the list of HIDDEN columns (verified: after hiding Source then Date, value became [\"status\"] — this is actually the toggled-off set given default JIRA_OPT_COLS). Naming is slightly confusing; a short comment near the persistence code would help future maintainers."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (via /login → 'I have a password →')",
+  "seed_data_creation": "None — used existing demo project data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Login flow requires clicking 'I have a password →' first (default is passwordless email-code). Timeline day testids follow timeline-day-<n>; popover testid timeline-popover-<n>. Columns menu testid jira-columns-btn + jira-columns-menu with jira-col-toggle-status/-source/-date. Persistence keys: bracket.sort.<cat>, bracket.cols.<cat>. Multi-source picker inside ConnectedSourcesCompact only appears AFTER real OAuth completes — not testable headlessly (per request).",
+  "rca of the issue": "No issues found."
+}

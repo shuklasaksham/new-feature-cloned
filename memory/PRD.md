@@ -69,6 +69,13 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v15 — decluttered tables + multi-source attach + column config + calendar popover; testing agent iteration_50 100% frontend, no console errors) —
+  - **Decluttered category tables**: memory rows now show a single-line title only (detail moved to the drawer), and scope-creep is a small red dot instead of a text badge — far less overwhelming.
+  - **Multi-source attach**: the inline connect picker has checkboxes to select several sources at once, an "Attach N" button, and per-source sync status (spinner → check/error). (Only reachable after real OAuth — verified up to the popup opening.)
+  - **Column config + persistence**: category tables have a "Columns" menu to show/hide Status/Source/Updated; the chosen sort and visible columns persist per category in localStorage across reloads. Grid stays aligned via a computed `gridTemplateColumns`.
+  - **Calendar day popover**: hovering a day with events shows a popover listing that day's event titles (works alongside the month/week toggle and multi-event click-to-select).
+
+## Changelog (archive)
 - 2026-06 (design v14 — inline one-click connect + JIRA table sort/filter + calendar week view; testing agent iteration_49 100% frontend, no console errors) —
   - **Inline one-click connect**: the "ADD A SOURCE" chips in the project's Connected Sources are now buttons that start OAuth in a popup right from the project view (user-gesture safe) — they no longer navigate to `/app/connect`. After OAuth returns (`bracket-oauth:{key}:ok`), an inline source-picker modal lets you attach a source to this project via `/connect/preview` + `/connect/establish`. Popup shows a "Opening secure sign-in…" placeholder instead of about:blank.
   - **JIRA table sort + filter**: category tables have clickable sortable headers (Summary / Status / Source / Updated, asc/desc arrow) and a live text filter input (title/detail/source), with a no-match message.

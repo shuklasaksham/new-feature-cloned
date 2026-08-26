@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Loader2, ExternalLink, AlertTriangle,
   Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
-  Check, RotateCcw, Send, User, Unplug, Plug,
+  Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -753,12 +753,33 @@ function ChatTurn({
 }
 
 /* ─── Category view — filter + memory rows ────────────────── */
+const JIRA_OPT_COLS = [
+  { key: "status", label: "Status", w: "112px" },
+  { key: "source", label: "Source", w: "140px" },
+  { key: "date",   label: "Updated", w: "96px" },
+];
+
 function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
   const isTimeline = cat.key === "timeline";
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState({ col: "date", dir: "desc" });
+  const [sort, setSort] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`bracket.sort.${cat.key}`)) || { col: "date", dir: "desc" }; }
+    catch { return { col: "date", dir: "desc" }; }
+  });
+  const [visibleCols, setVisibleCols] = useState(() => {
+    try { const v = JSON.parse(localStorage.getItem(`bracket.cols.${cat.key}`)); return Array.isArray(v) ? v : ["status", "source", "date"]; }
+    catch { return ["status", "source", "date"]; }
+  });
+  const [colMenu, setColMenu] = useState(false);
+
+  useEffect(() => { try { localStorage.setItem(`bracket.sort.${cat.key}`, JSON.stringify(sort)); } catch { /* ignore */ } }, [sort, cat.key]);
+  useEffect(() => { try { localStorage.setItem(`bracket.cols.${cat.key}`, JSON.stringify(visibleCols)); } catch { /* ignore */ } }, [visibleCols, cat.key]);
 
   const toggleSort = (col) => setSort((s) => s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: col === "date" ? "desc" : "asc" });
+  const toggleCol = (key) => setVisibleCols((cols) => cols.includes(key) ? cols.filter((c) => c !== key) : [...JIRA_OPT_COLS.map((c) => c.key).filter((k) => cols.includes(k) || k === key)]);
+
+  const shownOpt = JIRA_OPT_COLS.filter((c) => visibleCols.includes(c.key));
+  const gridTemplate = `30px minmax(0,1fr)${shownOpt.map((c) => ` ${c.w}`).join("")}`;
 
   const displayed = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -775,9 +796,9 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
     return [...list].sort((a, b) => val(a) < val(b) ? -dir : val(a) > val(b) ? dir : 0);
   }, [items, query, sort]);
 
-  const SortHead = ({ col, label, className }) => (
+  const SortHead = ({ col, label }) => (
     <button type="button" onClick={() => toggleSort(col)}
-            className={`jira-sort-head inline-flex items-center gap-1 ${className || ""}`}
+            className="jira-sort-head inline-flex items-center gap-1"
             data-testid={`jira-sort-${col}`}>
       {label}
       {sort.col === col && <span className="jira-sort-arrow">{sort.dir === "asc" ? "▲" : "▼"}</span>}
@@ -794,14 +815,8 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
         </div>
         {!isTimeline && (
           <div className="flex items-center gap-2 flex-wrap">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter…"
-              className="jira-filter-input"
-              data-testid="jira-filter-input"
-            />
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
+                   placeholder="Filter…" className="jira-filter-input" data-testid="jira-filter-input" />
             <div className="inline-flex rounded-full p-0.5"
                  style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}
                  data-testid="project-memory-status-filter">
@@ -815,6 +830,38 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
                   {s.label.toUpperCase()}
                 </button>
               ))}
+            </div>
+            <div className="relative">
+              <button type="button" onClick={() => setColMenu((v) => !v)}
+                      className="jira-cols-btn inline-flex items-center gap-1.5" data-testid="jira-columns-btn" title="Configure columns">
+                <SlidersHorizontal size={12} /> Columns
+              </button>
+              {colMenu && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setColMenu(false)} />
+                  <div className="absolute right-0 mt-1.5 z-40 rounded-xl p-1.5 min-w-[150px]"
+                       style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.7)" }}
+                       data-testid="jira-columns-menu">
+                    {JIRA_OPT_COLS.map((c) => {
+                      const on = visibleCols.includes(c.key);
+                      return (
+                        <button key={c.key} type="button" onClick={() => toggleCol(c.key)}
+                                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-[12px] transition-colors text-left"
+                                style={{ color: "var(--text-2)" }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                                data-testid={`jira-col-toggle-${c.key}`}>
+                          <span className="inline-flex items-center justify-center w-4 h-4 rounded"
+                                style={{ background: on ? "var(--accent)" : "transparent", border: on ? "none" : "1px solid var(--hairline-strong)", color: "#fff" }}>
+                            {on && <Check size={11} />}
+                          </span>
+                          {c.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -832,19 +879,17 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
         </div>
       ) : (
         <div className="jira-table rounded-xl overflow-hidden" data-testid="project-memory-items">
-          <div className="jira-row jira-head">
+          <div className="jira-row jira-head" style={{ gridTemplateColumns: gridTemplate }}>
             <span></span>
             <SortHead col="summary" label="Summary" />
-            <SortHead col="status" label="Status" className="jira-col-status" />
-            <SortHead col="source" label="Source" className="jira-col-source" />
-            <SortHead col="date" label="Updated" className="jira-col-date" />
+            {shownOpt.map((c) => <SortHead key={c.key} col={c.key} label={c.label} />)}
           </div>
           {displayed.length === 0 ? (
             <div className="px-4 py-8 text-center text-[12.5px]" style={{ color: "var(--text-3)" }} data-testid="jira-no-match">
               No items match “{query}”.
             </div>
           ) : (
-            displayed.map((m) => <MemoryRow key={m.id} item={m} cat={cat} onOpen={onOpen} />)
+            displayed.map((m) => <MemoryRow key={m.id} item={m} cat={cat} onOpen={onOpen} gridTemplate={gridTemplate} visibleCols={visibleCols} />)
           )}
         </div>
       )}
@@ -852,38 +897,40 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
   );
 }
 
-function MemoryRow({ item, cat, onOpen }) {
+function MemoryRow({ item, cat, onOpen, gridTemplate, visibleCols }) {
   const status = STATUS_META[item.status] || STATUS_META.confirmed;
   return (
     <button type="button" onClick={() => onOpen(item)}
             className="jira-row jira-body group"
+            style={{ gridTemplateColumns: gridTemplate }}
             data-testid={`project-memory-row-${item.id}`}>
       <span className="jira-key" aria-hidden="true">
         <cat.icon size={13} style={{ color: cat.color }} />
       </span>
-      <span className="min-w-0">
-        <span className="block text-[13.5px] font-medium leading-snug truncate" style={{ color: "var(--text)" }}>{item.title}</span>
-        {item.detail && (
-          <span className="block mt-0.5 text-[11.5px] leading-snug truncate" style={{ color: "var(--text-3)" }}>{item.detail}</span>
-        )}
+      <span className="min-w-0 flex items-center gap-2">
         {item.is_scope_change && (
-          <span className="mono-tag text-[8.5px] inline-flex items-center gap-0.5 mt-1" style={{ color: "var(--danger)" }}>
-            <AlertTriangle size={8} /> SCOPE CREEP
-          </span>
+          <span title="Scope creep" className="shrink-0 inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--danger)" }} />
         )}
+        <span className="block text-[13.5px] font-medium leading-snug truncate" style={{ color: "var(--text)" }}>{item.title}</span>
       </span>
-      <span className="jira-col-status">
-        <span className="jira-status-pill" style={{ color: status.color, background: status.bg, borderColor: `${status.color}33` }}>
-          {status.label}
+      {visibleCols.includes("status") && (
+        <span>
+          <span className="jira-status-pill" style={{ color: status.color, background: status.bg, borderColor: `${status.color}33` }}>
+            {status.label}
+          </span>
         </span>
-      </span>
-      <span className="jira-col-source inline-flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
-        <ProviderIcon provider={item.provider} size={11} />
-        <span className="truncate">{item.source_label || item.provider}</span>
-      </span>
-      <span className="jira-col-date text-[11px] whitespace-nowrap" style={{ color: "var(--text-3)" }}>
-        {timeAgo(item.created_at)}
-      </span>
+      )}
+      {visibleCols.includes("source") && (
+        <span className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: "var(--text-3)" }}>
+          <ProviderIcon provider={item.provider} size={11} />
+          <span className="truncate">{item.source_label || item.provider}</span>
+        </span>
+      )}
+      {visibleCols.includes("date") && (
+        <span className="text-[11px] whitespace-nowrap" style={{ color: "var(--text-3)" }}>
+          {timeAgo(item.created_at)}
+        </span>
+      )}
     </button>
   );
 }
@@ -893,6 +940,7 @@ function TimelineCalendar({ items, cat, onOpen }) {
   const [mode, setMode] = useState("month");   // "month" | "week"
   const [offset, setOffset] = useState(0);      // months or weeks depending on mode
   const [selectedKey, setSelectedKey] = useState(null);
+  const [hoverKey, setHoverKey] = useState(null);
   const base = new Date();
 
   const byDay = useMemo(() => {
@@ -982,15 +1030,32 @@ function TimelineCalendar({ items, cat, onOpen }) {
             return (
               <button key={key} type="button" disabled={!has}
                       onClick={() => clickDay(d, dayItems)}
+                      onMouseEnter={() => has && setHoverKey(key)}
+                      onMouseLeave={() => setHoverKey((k) => (k === key ? null : k))}
                       className={`cal-cell ${mode === "week" ? "cal-cell--week" : ""}`}
                       data-active={has ? "true" : "false"}
                       data-testid={`timeline-day-${d.getDate()}`}
-                      title={has ? `${dayItems.length} event${dayItems.length === 1 ? "" : "s"}` : ""}
                       style={isSel ? { borderColor: "var(--accent)", background: "var(--accent-soft)" } : isToday ? { borderColor: "var(--accent)" } : undefined}>
                 <span className="text-[11.5px]" style={{ color: has ? "var(--text)" : "var(--text-3)" }}>{d.getDate()}</span>
                 {has && (
                   <span className="cal-dots">
                     {dayItems.slice(0, 3).map((_, di) => <span key={di} className="cal-dot-multi" style={{ background: cat.color }} />)}
+                  </span>
+                )}
+                {has && hoverKey === key && (
+                  <span className="cal-popover" data-testid={`timeline-popover-${d.getDate()}`}>
+                    <span className="block mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>
+                      {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {dayItems.length} EVENT{dayItems.length === 1 ? "" : "S"}
+                    </span>
+                    {dayItems.slice(0, 4).map((it) => (
+                      <span key={it.id} className="flex items-start gap-1.5 py-0.5">
+                        <span className="shrink-0 mt-1 w-1.5 h-1.5 rounded-full" style={{ background: cat.color }} />
+                        <span className="text-[11px] leading-snug truncate" style={{ color: "var(--text)" }}>{it.title}</span>
+                      </span>
+                    ))}
+                    {dayItems.length > 4 && (
+                      <span className="block text-[10px] mt-1" style={{ color: "var(--text-3)" }}>+{dayItems.length - 4} more</span>
+                    )}
                   </span>
                 )}
               </button>
@@ -1047,6 +1112,8 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
   const [connecting, setConnecting] = useState(null);   // provider key while OAuth in flight
   const [picker, setPicker] = useState(null);           // { provider, sources }
   const [attaching, setAttaching] = useState(false);
+  const [selected, setSelected] = useState([]);         // selected source ids
+  const [sourceStatus, setSourceStatus] = useState({}); // { id: 'attaching'|'done'|'error' }
   const pendingRef = useRef(null);
   const popupRef = useRef(null);
 
@@ -1067,6 +1134,8 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
           onChanged?.();
         } else {
           setPicker({ provider: key, sources });
+          setSelected(sources.length === 1 ? [sources[0].id] : []);
+          setSourceStatus({});
         }
       } catch (err) { toast.error(formatApiError(err)); }
       finally { setConnecting(null); }
@@ -1099,22 +1168,38 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
     }
   };
 
-  // Attach a chosen source to THIS project (preview -> establish).
-  const attachSource = async (src) => {
-    if (!picker) return;
+  // Attach the selected sources to THIS project (preview -> establish), one by
+  // one, updating per-source sync status as they land.
+  const attachSelected = async () => {
+    if (!picker || selected.length === 0) return;
     setAttaching(true);
-    try {
-      const { data: prev } = await api.post("/connect/preview", {
-        provider: picker.provider,
-        sources: [{ id: src.id, name: src.name, url: src.url || "" }],
-      });
-      await api.post("/connect/establish", { preview_id: prev.preview_id, mode: "existing", project_id: projectId });
-      toast.success(`${src.name} connected`);
-      setPicker(null);
+    const chosen = picker.sources.filter((s) => selected.includes(s.id));
+    let anyOk = false;
+    for (const src of chosen) {
+      setSourceStatus((st) => ({ ...st, [src.id]: "attaching" }));
+      try {
+        const { data: prev } = await api.post("/connect/preview", {
+          provider: picker.provider,
+          sources: [{ id: src.id, name: src.name, url: src.url || "" }],
+        });
+        await api.post("/connect/establish", { preview_id: prev.preview_id, mode: "existing", project_id: projectId });
+        setSourceStatus((st) => ({ ...st, [src.id]: "done" }));
+        anyOk = true;
+      } catch (e) {
+        setSourceStatus((st) => ({ ...st, [src.id]: "error" }));
+      }
+    }
+    setAttaching(false);
+    if (anyOk) {
+      toast.success(`${chosen.length === 1 ? "Source" : `${chosen.length} sources`} connected`);
       onChanged?.();
-    } catch (e) { toast.error(formatApiError(e)); }
-    finally { setAttaching(false); }
+      setTimeout(() => setPicker(null), 700);
+    } else {
+      toast.error("Couldn't attach the selected sources.");
+    }
   };
+
+  const toggleSelect = (id) => setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]);
 
   const disconnect = async (conn) => {
     const ok = await dialog.confirm({
@@ -1221,31 +1306,48 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
             <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--hairline)" }}>
               <ProviderIcon provider={picker.provider} size={13} />
               <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>
-                Pick a {PROVIDER_META[picker.provider]?.label || picker.provider} source
+                Attach {PROVIDER_META[picker.provider]?.label || picker.provider} sources
               </p>
+              <span className="ml-auto mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>{selected.length} SELECTED</span>
             </div>
-            <ul className="max-h-[360px] overflow-y-auto p-2">
-              {picker.sources.map((s) => (
-                <li key={s.id}>
-                  <button type="button" onClick={() => attachSource(s)} disabled={attaching}
-                          className="w-full text-left px-3 py-2.5 rounded-lg text-[13px] transition-colors disabled:opacity-50"
-                          style={{ color: "var(--text)" }}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                          data-testid={`inline-connect-source-${s.id}`}>
-                    <span className="font-medium truncate block">{s.name}</span>
-                    {s.subtitle && <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{s.subtitle}</span>}
-                  </button>
-                </li>
-              ))}
+            <ul className="max-h-[340px] overflow-y-auto p-2">
+              {picker.sources.map((s) => {
+                const on = selected.includes(s.id);
+                const st = sourceStatus[s.id];
+                return (
+                  <li key={s.id}>
+                    <button type="button" onClick={() => !attaching && toggleSelect(s.id)} disabled={attaching}
+                            className="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-2.5 transition-colors disabled:opacity-70"
+                            onMouseEnter={(e) => { if (!attaching) e.currentTarget.style.background = "var(--surface-2)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            data-testid={`inline-connect-source-${s.id}`}>
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded shrink-0"
+                            style={{ background: on ? "var(--accent)" : "transparent", border: on ? "none" : "1px solid var(--hairline-strong)", color: "#fff" }}>
+                        {on && <Check size={11} />}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="font-medium truncate block text-[13px]" style={{ color: "var(--text)" }}>{s.name}</span>
+                        {s.subtitle && <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{s.subtitle}</span>}
+                      </span>
+                      {st === "attaching" && <Loader2 size={13} className="animate-spin shrink-0" style={{ color: "var(--accent)" }} data-testid={`inline-connect-status-${s.id}`} />}
+                      {st === "done" && <Check size={13} className="shrink-0" style={{ color: "var(--success, #22C55E)" }} data-testid={`inline-connect-status-${s.id}`} />}
+                      {st === "error" && <AlertTriangle size={12} className="shrink-0" style={{ color: "var(--danger)" }} data-testid={`inline-connect-status-${s.id}`} />}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
-            <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: "1px solid var(--hairline)" }}>
-              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
-                {attaching ? "Attaching to this project…" : "Choose which source feeds this project."}
-              </span>
+            <div className="px-5 py-3 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--hairline)" }}>
               <button type="button" onClick={() => !attaching && setPicker(null)}
                       className="text-[12px]" style={{ color: "var(--text-2)" }}
                       data-testid="inline-connect-cancel">Cancel</button>
+              <button type="button" onClick={attachSelected} disabled={attaching || selected.length === 0}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-medium disabled:opacity-40"
+                      style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+                      data-testid="inline-connect-attach">
+                {attaching ? <Loader2 size={12} className="animate-spin" /> : <Plug size={12} />}
+                {attaching ? "Attaching…" : `Attach ${selected.length || ""}`.trim()}
+              </button>
             </div>
           </div>
         </div>
