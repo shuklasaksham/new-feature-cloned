@@ -1120,32 +1120,38 @@ async def project_send_targets(project_id: str, request: Request):
     await _owned_project(project_id, request)
     user = await current_user(request, db)
     targets = []
-    gmail_done = False
+    gmail_account = None
+    gmail_own = ""
     async for c in db.source_connections.find(
         {"project_id": project_id, "status": {"$ne": "disconnected"}}, {"_id": 0}
     ):
         prov = c.get("provider")
-        if prov == "gmail" and not gmail_done:
-            gmail_done = True
+        if prov == "gmail":
             to = c.get("client_email") or ""
             if not c.get("is_demo"):
                 try:
-                    account = await _get_account(user["user_id"], "gmail")
-                    own = (account.get("label") or "").lower()
-                    # Never pre-fill the connected account's own address.
-                    if to and to.lower() == own:
+                    if gmail_account is None:
+                        gmail_account = await _get_account(user["user_id"], "gmail")
+                        gmail_own = (gmail_account.get("label") or "").lower()
+                    if to and to.lower() == gmail_own:
                         to = ""
                     if not to:
-                        to = await _gmail_client_email(account, c.get("source_id", ""))
-                    if to and to.lower() == own:
+                        to = await _gmail_client_email(gmail_account, c.get("source_id", ""))
+                    if to and to.lower() == gmail_own:
                         to = ""
                 except Exception:
                     pass
-            targets.append({"provider": "gmail", "label": "Send email", "to": to})
+            targets.append({
+                "provider": "gmail",
+                "label": to or (c.get("source_name") or "Gmail thread"),
+                "to": to,
+                "thread_id": c.get("source_id"),
+                "thread_name": c.get("source_name"),
+            })
         elif prov == "slack":
             targets.append({
                 "provider": "slack",
-                "label": f"Send to {c.get('source_name') or 'Slack'}",
+                "label": f"Post to {c.get('source_name') or 'Slack'}",
                 "channel_id": c.get("source_id"),
                 "channel_name": c.get("source_name"),
                 "is_demo": bool(c.get("is_demo")),
@@ -1214,49 +1220,85 @@ async def project_send_slack(project_id: str, request: Request):
 
 @router.post("/projects/{project_id}/send-email")
 async def project_send_email(project_id: str, request: Request):
-    """Send an email to the client DIRECTLY via the user's connected Gmail —
-    no redirect, no mailto. Requires the gmail.send scope (reconnect Gmail if it
-    was linked before send was enabled)."""
+    """Send replies to one or more client threads DIRECTLY via the connected
+    Gmail — threaded into the original conversation. Accepts either a single
+    {to, thread_id} or a list of {to, thread_id} under `targets`."""
     await _owned_project(project_id, request)
     user = await current_user(request, db)
     try:
         body = await request.json()
     except Exception:
         body = {}
-    to = (body.get("to") or "").strip()
-    subject = (body.get("subject") or "").strip() or "Re: your project"
     text = (body.get("body") or "").strip()
-    if not to or "@" not in to:
-        raise HTTPException(400, "Enter the client's email address to send.")
+    subject_override = (body.get("subject") or "").strip()
     if not text:
         raise HTTPException(400, "Nothing to send — the reply is empty.")
+
+    targets = body.get("targets")
+    if not isinstance(targets, list) or not targets:
+        targets = [{"to": body.get("to", ""), "thread_id": body.get("thread_id", "")}]
+    clean = []
+    for t in targets:
+        to = (t.get("to") or "").strip()
+        if to and "@" in to:
+            clean.append({"to": to, "thread_id": (t.get("thread_id") or "").strip()})
+    if not clean:
+        raise HTTPException(400, "Pick at least one recipient with a valid email.")
 
     account = await _get_account(user["user_id"], "gmail")
     token = await _access_token(account)
 
-    raw_msg = (
-        f"To: {to}\r\n"
-        f"Subject: {subject}\r\n"
-        "MIME-Version: 1.0\r\n"
-        "Content-Type: text/plain; charset=utf-8\r\n\r\n"
-        f"{text}"
-    )
-    raw_b64 = base64.urlsafe_b64encode(raw_msg.encode("utf-8")).decode("utf-8")
-
+    sent, failed = [], []
     async with await _http() as c:
-        r = await c.post(
-            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-            json={"raw": raw_b64},
-        )
-    if r.status_code == 403:
-        raise HTTPException(400, "Bracket can read this Gmail but isn't allowed to send yet. Disconnect and reconnect Gmail to grant send permission.")
-    if r.status_code == 401:
-        raise HTTPException(400, "Your Gmail connection expired — reconnect Gmail and try again.")
-    if r.status_code not in (200, 201):
-        logger.warning("gmail send failed %s: %s", r.status_code, r.text[:300])
+        for t in clean:
+            to, thread_id = t["to"], t["thread_id"]
+            # Thread the reply into the original conversation.
+            in_reply_to, refs, thread_subject = "", "", ""
+            if thread_id:
+                try:
+                    tr = await c.get(
+                        f"https://gmail.googleapis.com/gmail/v1/users/me/threads/{thread_id}",
+                        headers={"Authorization": f"Bearer {token}"},
+                        params={"format": "metadata", "metadataHeaders": ["Message-ID", "Subject", "References"]},
+                    )
+                    if tr.status_code == 200:
+                        msgs = tr.json().get("messages", [])
+                        if msgs:
+                            last = {h["name"].lower(): h["value"] for h in ((msgs[-1].get("payload") or {}).get("headers") or [])}
+                            first = {h["name"].lower(): h["value"] for h in ((msgs[0].get("payload") or {}).get("headers") or [])}
+                            in_reply_to = last.get("message-id", "")
+                            refs = (last.get("references", "") + " " + in_reply_to).strip()
+                            thread_subject = first.get("subject", "")
+                except Exception:
+                    pass
+            subj = subject_override or (f"Re: {thread_subject}" if thread_subject and not thread_subject.lower().startswith("re:") else (thread_subject or "Re: your project"))
+            hdrs = [f"To: {to}", f"Subject: {subj}", "MIME-Version: 1.0", "Content-Type: text/plain; charset=utf-8"]
+            if in_reply_to:
+                hdrs.insert(2, f"In-Reply-To: {in_reply_to}")
+                hdrs.insert(3, f"References: {refs}")
+            raw_msg = "\r\n".join(hdrs) + "\r\n\r\n" + text
+            raw_b64 = base64.urlsafe_b64encode(raw_msg.encode("utf-8")).decode("utf-8")
+            payload = {"raw": raw_b64}
+            if thread_id:
+                payload["threadId"] = thread_id
+            r = await c.post(
+                "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json=payload,
+            )
+            if r.status_code in (200, 201):
+                sent.append(to)
+            elif r.status_code == 403:
+                raise HTTPException(400, "Bracket can read this Gmail but isn't allowed to send yet. Disconnect and reconnect Gmail to grant send permission.")
+            elif r.status_code == 401:
+                raise HTTPException(400, "Your Gmail connection expired — reconnect Gmail and try again.")
+            else:
+                logger.warning("gmail send failed %s: %s", r.status_code, r.text[:200])
+                failed.append(to)
+
+    if not sent:
         raise HTTPException(502, "Gmail wouldn't send the message right now.")
-    return {"sent": True, "to": to}
+    return {"sent": True, "to": sent, "failed": failed}
 
 
 @router.get("/projects/{project_id}/memory")

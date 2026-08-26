@@ -634,32 +634,47 @@ function ChatTurn({
   onEdit, onEditChange, onEditSave, onEditCancel,
   onCopy, copied, onRegenerate,
 }) {
-  // Channel-aware send: a modal (matching the connect-source modal) opens for
-  // the chosen channel. Gmail pre-populates the client's email.
-  const [sendChannel, setSendChannel] = useState(null); // the selected target
-  const [to, setTo] = useState("");
-  const [subject, setSubject] = useState(clientName ? `Re: ${clientName}` : "Re: your project");
+  // Send a reply to one OR MORE connected client threads/channels via a checklist.
+  const keyOf = (t) => `${t.provider}:${t.thread_id || t.channel_id || ""}`;
+  const [sendOpen, setSendOpen] = useState(false);
+  const [checked, setChecked] = useState({});      // { key: true }
+  const [toEdits, setToEdits] = useState({});       // { key: email } for gmail
   const [sending, setSending] = useState(false);
 
-  const openSend = (target) => {
-    setSendChannel(target);
-    if (target.provider === "gmail") setTo(target.to || "");
+  const openSend = () => {
+    const init = {};
+    (sendTargets || []).forEach((t) => { init[keyOf(t)] = true; });   // default: all ticked
+    setChecked(init);
+    const edits = {};
+    (sendTargets || []).forEach((t) => { if (t.provider === "gmail") edits[keyOf(t)] = t.to || ""; });
+    setToEdits(edits);
+    setSendOpen(true);
   };
-  const closeSend = () => { if (!sending) setSendChannel(null); };
+  const closeSend = () => { if (!sending) setSendOpen(false); };
 
   const doSend = async () => {
-    if (sending || !sendChannel) return;
+    if (sending) return;
+    const picked = (sendTargets || []).filter((t) => checked[keyOf(t)]);
+    if (picked.length === 0) { toast.error("Tick at least one recipient."); return; }
+    const gmailTargets = picked.filter((t) => t.provider === "gmail")
+      .map((t) => ({ to: (toEdits[keyOf(t)] || "").trim(), thread_id: t.thread_id }));
+    const slackTargets = picked.filter((t) => t.provider === "slack");
+    if (gmailTargets.some((t) => !t.to || !t.to.includes("@"))) {
+      toast.error("Add a valid email for each ticked Gmail thread."); return;
+    }
     setSending(true);
     try {
-      if (sendChannel.provider === "gmail") {
-        if (!to.trim()) { toast.error("Enter the client's email address to send."); setSending(false); return; }
-        await api.post(`/projects/${projectId}/send-email`, { to: to.trim(), subject: subject.trim(), body: turn.content });
-        toast.success(`Email sent to ${to.trim()}`);
-      } else if (sendChannel.provider === "slack") {
-        await api.post(`/projects/${projectId}/send-slack`, { channel_id: sendChannel.channel_id, body: turn.content });
-        toast.success(`Posted to ${sendChannel.channel_name || "Slack"}`);
+      const results = [];
+      if (gmailTargets.length) {
+        await api.post(`/projects/${projectId}/send-email`, { targets: gmailTargets, body: turn.content });
+        results.push(`${gmailTargets.length} email${gmailTargets.length > 1 ? "s" : ""}`);
       }
-      setSendChannel(null);
+      for (const s of slackTargets) {
+        await api.post(`/projects/${projectId}/send-slack`, { channel_id: s.channel_id, body: turn.content });
+      }
+      if (slackTargets.length) results.push(`${slackTargets.length} Slack post${slackTargets.length > 1 ? "s" : ""}`);
+      toast.success(`Sent — ${results.join(" · ")}`);
+      setSendOpen(false);
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -765,69 +780,74 @@ function ChatTurn({
                           data-testid={`chat-turn-regenerate-${idx}`}>
                     <RefreshCw size={10} /> Regenerate
                   </button>
-                  {/* One send CTA per connected channel */}
-                  {(sendTargets || []).map((tg) => (
-                    <button key={tg.provider + (tg.channel_id || "")} type="button" onClick={() => openSend(tg)}
+                  {/* Single send button → checklist of recipients */}
+                  {(sendTargets || []).length > 0 && (
+                    <button type="button" onClick={openSend}
                             className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md font-medium"
                             style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
-                            data-testid={`chat-turn-send-${tg.provider}-${idx}`}>
-                      {tg.provider === "slack" ? <Slack size={10} /> : <Mail size={10} />} {tg.label}
+                            data-testid={`chat-turn-send-${idx}`}>
+                      <Send size={10} /> Send reply
                     </button>
-                  ))}
+                  )}
                 </div>
 
-                {sendChannel && (
+                {sendOpen && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
                        style={{ background: "rgba(0,0,0,0.6)" }}
                        onClick={closeSend}
                        data-testid={`chat-turn-send-modal-${idx}`}>
-                    <div className="w-full max-w-[440px] rounded-2xl overflow-hidden"
+                    <div className="w-full max-w-[460px] rounded-2xl overflow-hidden"
                          style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "0 40px 120px -30px rgba(0,0,0,0.8)" }}
                          onClick={(e) => e.stopPropagation()}>
-                      <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--hairline)" }}>
-                        <ProviderIcon provider={sendChannel.provider} size={13} />
-                        <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>
-                          {sendChannel.provider === "slack"
-                            ? `Post to ${sendChannel.channel_name || "Slack"}`
-                            : "Send email to your client"}
-                        </p>
+                      <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--hairline)" }}>
+                        <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>Send this reply</p>
+                        <p className="text-[11.5px] mt-0.5" style={{ color: "var(--text-3)" }}>Pick who gets it. Emails reply inside the client's original thread.</p>
                       </div>
-                      <div className="px-5 py-4 flex flex-col gap-3">
-                        {sendChannel.provider === "gmail" && (
-                          <>
-                            <div>
-                              <label className="mono-tag text-[9px] block mb-1" style={{ color: "var(--text-3)" }}>TO</label>
-                              <input type="email" value={to} onChange={(e) => setTo(e.target.value)}
-                                     placeholder="client@company.com" className="jira-filter-input" style={{ width: "100%" }}
-                                     data-testid={`chat-turn-send-to-${idx}`} />
+                      <div className="px-4 py-3 flex flex-col gap-1.5 max-h-[240px] overflow-y-auto">
+                        {(sendTargets || []).map((t) => {
+                          const k = keyOf(t);
+                          const on = !!checked[k];
+                          return (
+                            <div key={k} className="rounded-lg px-2.5 py-2"
+                                 style={{ background: on ? "var(--surface-2)" : "transparent", border: "1px solid var(--hairline)" }}>
+                              <button type="button" onClick={() => setChecked((c) => ({ ...c, [k]: !c[k] }))}
+                                      className="w-full flex items-center gap-2.5 text-left"
+                                      data-testid={`chat-turn-send-target-${k}`}>
+                                <span className="inline-flex items-center justify-center w-4 h-4 rounded shrink-0"
+                                      style={{ background: on ? "var(--accent)" : "transparent", border: on ? "none" : "1px solid var(--hairline-strong)", color: "#fff" }}>
+                                  {on && <Check size={11} />}
+                                </span>
+                                <ProviderIcon provider={t.provider} size={12} bare />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block text-[12.5px] truncate" style={{ color: "var(--text)" }}>
+                                    {t.provider === "slack" ? (t.channel_name || "Slack channel") : (t.thread_name || "Gmail thread")}
+                                  </span>
+                                </span>
+                              </button>
+                              {t.provider === "gmail" && on && (
+                                <input type="email" value={toEdits[k] || ""} onChange={(e) => setToEdits((m) => ({ ...m, [k]: e.target.value }))}
+                                       placeholder="client@company.com" className="jira-filter-input mt-2" style={{ width: "100%" }}
+                                       data-testid={`chat-turn-send-to-${k}`} />
+                              )}
                             </div>
-                            <div>
-                              <label className="mono-tag text-[9px] block mb-1" style={{ color: "var(--text-3)" }}>SUBJECT</label>
-                              <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)}
-                                     placeholder="Subject" className="jira-filter-input" style={{ width: "100%" }}
-                                     data-testid={`chat-turn-send-subject-${idx}`} />
-                            </div>
-                          </>
-                        )}
-                        <div>
-                          <label className="mono-tag text-[9px] block mb-1" style={{ color: "var(--text-3)" }}>MESSAGE</label>
-                          <div className="text-[12.5px] leading-relaxed rounded-lg p-3 max-h-[180px] overflow-y-auto whitespace-pre-wrap"
-                               style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}>
-                            {turn.content}
-                          </div>
+                          );
+                        })}
+                      </div>
+                      <div className="px-4 pb-3">
+                        <div className="text-[12px] leading-relaxed rounded-lg p-3 max-h-[120px] overflow-y-auto whitespace-pre-wrap"
+                             style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}>
+                          {turn.content}
                         </div>
                       </div>
                       <div className="px-5 py-3 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--hairline)" }}>
                         <button type="button" onClick={closeSend} className="text-[12px]" style={{ color: "var(--text-2)" }}
                                 data-testid={`chat-turn-send-cancel-${idx}`}>Cancel</button>
-                        <button type="button" onClick={doSend} disabled={sending || (sendChannel.provider === "gmail" && !to.trim())}
+                        <button type="button" onClick={doSend} disabled={sending}
                                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-medium disabled:opacity-40"
                                 style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
                                 data-testid={`chat-turn-send-confirm-${idx}`}>
                           {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                          {sending
-                            ? "Sending…"
-                            : (sendChannel.provider === "slack" ? "Post to Slack" : "Send from Gmail")}
+                          {sending ? "Sending…" : "Send"}
                         </button>
                       </div>
                     </div>
@@ -852,6 +872,11 @@ const JIRA_OPT_COLS = [
 function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
   const dialog = useDialog();
   const isTimeline = cat.key === "timeline";
+  const [simple, setSimple] = useState(() => {
+    try { const v = localStorage.getItem("bracket.simpleView"); return v === null ? true : v === "1"; }
+    catch { return true; }
+  });
+  useEffect(() => { try { localStorage.setItem("bracket.simpleView", simple ? "1" : "0"); } catch { /* ignore */ } }, [simple]);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`bracket.sort.${cat.key}`)) || { col: "date", dir: "desc" }; }
@@ -938,6 +963,13 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
         </div>
         {!isTimeline && (
           <div className="flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => setSimple((s) => !s)}
+                    className="jira-cols-btn inline-flex items-center gap-1.5" data-testid="jira-simple-toggle"
+                    title={simple ? "Show full details" : "Show simple view"}>
+              <SlidersHorizontal size={12} /> {simple ? "Details" : "Simple"}
+            </button>
+            {!simple && (
+            <>
             <input type="text" value={query} onChange={(e) => setQuery(e.target.value)}
                    placeholder="Filter…" className="jira-filter-input" data-testid="jira-filter-input" />
             <div className="inline-flex rounded-full p-0.5"
@@ -1056,9 +1088,21 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
                 <AlignJustify size={13} />
               </button>
             </div>
+            </>
+            )}
           </div>
         )}
       </div>
+
+      {!isTimeline && items.length > 0 && (() => {
+        const need = items.filter((i) => i.status === "detected" || i.status === "review").length;
+        return (
+          <p className="text-[12.5px] mb-3 -mt-1" style={{ color: "var(--text-3)" }} data-testid="category-summary">
+            {items.length} {items.length === 1 ? cat.label.toLowerCase().replace(/s$/, "") : cat.plural.toLowerCase()}
+            {need > 0 ? ` · ${need} need${need === 1 ? "s" : ""} your review` : " · all confirmed"}.
+          </p>
+        );
+      })()}
 
       {isTimeline ? (
         <TimelineCalendar items={items} cat={cat} onOpen={onOpen} />
@@ -1069,6 +1113,25 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
           <p className="text-[13px]" style={{ color: "var(--text-3)" }}>
             No {cat.plural.toLowerCase()} yet.
           </p>
+        </div>
+      ) : simple ? (
+        <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--hairline)" }} data-testid="project-memory-items">
+          {displayed.map((m) => {
+            const st = STATUS_META[m.status] || STATUS_META.confirmed;
+            return (
+              <button key={m.id} type="button" onClick={() => onOpen(m)}
+                      className="w-full text-left flex items-start gap-3 px-4 py-3 transition-colors"
+                      style={{ borderBottom: "1px solid var(--hairline)", background: "transparent" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                      data-testid={`memory-simple-row-${m.id}`}>
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: st.color || "var(--text-3)" }} />
+                <span className="text-[13.5px] leading-relaxed" style={{ color: "var(--text)" }}>
+                  {m.title || m.summary || m.content}
+                </span>
+              </button>
+            );
+          })}
         </div>
       ) : (
         <div className="jira-table rounded-xl overflow-hidden" data-density={density} data-testid="project-memory-items">
@@ -1514,8 +1577,7 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
       {/* Add a source — only providers NOT already attached to this project.
           Opens the source list (search); connects the account only if needed. */}
       {(() => {
-        const attachedProviders = new Set(conns.map((c) => c.provider));
-        const addable = ["gmail", "slack", "figma", "github"].filter((p) => !attachedProviders.has(p));
+        const addable = ["gmail", "slack", "figma", "github"];
         if (addable.length === 0) return null;
         return (
           <div className="mt-3">
