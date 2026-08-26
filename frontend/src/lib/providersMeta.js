@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Mail,
   Slack,
@@ -12,10 +12,11 @@ import {
   Github,
   Layers,
 } from "lucide-react";
+import { BRAND_PATHS } from "./brandIcons";
 
-// Real brand logos via the simple-icons CDN (official brand marks + colors).
-// `cdnColor` overrides the default brand color where it would be invisible
-// on Bracket's dark surface (GitHub/Notion default to near-black).
+// Real brand marks are bundled locally (simple-icons paths, see brandIcons.js)
+// — no external CDN calls. `brandColor` is the mark's fill on Bracket's dark
+// surface; a few brands are lightened so they stay visible.
 export const PROVIDER_META = {
   gmail:    { label: "Gmail",           icon: Mail,          color: "#EA4335", slug: "gmail" },
   slack:    { label: "Slack",           icon: Slack,         color: "#E01E5A", slug: "slack" },
@@ -24,19 +25,17 @@ export const PROVIDER_META = {
   figma:    { label: "Figma",           icon: Figma,         color: "#A259FF", slug: "figma" },
   adobe:    { label: "Adobe",           icon: Palette,       color: "#FF3B30", slug: "adobe" },
   gdrive:   { label: "Google Drive",    icon: HardDrive,     color: "#4285F4", slug: "googledrive" },
-  notion:   { label: "Notion",          icon: NotebookText,  color: "#E8E7E4", slug: "notion", cdnColor: "FFFFFF" },
+  notion:   { label: "Notion",          icon: NotebookText,  color: "#E8E7E4", slug: "notion", brandColor: "#FFFFFF" },
   dropbox:  { label: "Dropbox",         icon: Package,       color: "#0061FF", slug: "dropbox" },
-  github:   { label: "GitHub",          icon: Github,        color: "#E6EDF3", slug: "github", cdnColor: "E6EDF3" },
-  linear:   { label: "Linear",          icon: Layers,        color: "#3B82F6", slug: "linear" },
+  github:   { label: "GitHub",          icon: Github,        color: "#E6EDF3", slug: "github", brandColor: "#E6EDF3" },
+  linear:   { label: "Linear",          icon: Layers,        color: "#3B82F6", slug: "linear", brandColor: "#3B82F6" },
 };
 
 export function ProviderIcon({ provider, size = 16 }) {
   const meta = PROVIDER_META[provider] || {};
-  const [failed, setFailed] = useState(false);
   const Icon = meta.icon || Layers;
-  const src = meta.slug
-    ? `https://cdn.simpleicons.org/${meta.slug}${meta.cdnColor ? `/${meta.cdnColor}` : ""}`
-    : null;
+  const path = meta.slug ? BRAND_PATHS[meta.slug] : null;
+  const fill = meta.brandColor || meta.color || "var(--text-2)";
   return (
     <span
       className="inline-flex items-center justify-center rounded-lg shrink-0"
@@ -48,16 +47,10 @@ export function ProviderIcon({ provider, size = 16 }) {
       }}
       aria-hidden="true"
     >
-      {src && !failed ? (
-        <img
-          src={src}
-          alt=""
-          width={size}
-          height={size}
-          loading="lazy"
-          style={{ display: "block", width: size, height: size, objectFit: "contain" }}
-          onError={() => setFailed(true)}
-        />
+      {path ? (
+        <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block" }} fill={fill}>
+          <path d={path} />
+        </svg>
       ) : (
         <Icon size={size} strokeWidth={1.75} />
       )}

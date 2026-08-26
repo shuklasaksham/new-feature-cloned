@@ -69,6 +69,13 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v10 — Pricing removal + self-hosted icons + empty-state set; testing agent iteration_45 100% frontend, console clean) —
+  - **Pricing removed entirely**: deleted `pages/Pricing.jsx`, the `/pricing` route + import (App.js), the NAV_LINKS entry (constants.js), the footer link, and the Landing `<PricingSection/>` + `PricingCard` defs + `PRICING` import. `/pricing` now falls through the catch-all to `/`.
+  - **Self-hosted brand icons**: `ProviderIcon` no longer calls `cdn.simpleicons.org` (was the source of console 404s for slack/adobe). Brand marks are bundled as inline SVG paths in `lib/brandIcons.js` (simple-icons) and rendered inline — verified 0 external icon requests.
+  - **Illustrated empty-state set**: new shared `components/EmptyState.jsx` (dark line-art illustration + title/description/CTA) now powers Dashboard (`dashboard-empty`), Activity (`activity-empty`), and Project Memory zero-connections (`overview-empty-state`) — one consistent first-run visual language across the app.
+  - Marketing How-it-works / Use-cases / FAQ / Case-studies inherit the global Geist + blue-accent + card system; verified consistent with no console errors.
+
+## Changelog (recent-oldest)
 - 2026-06 (design v9 — marketing + connect/activity + auth polish + theme unification; testing agent iteration_44 100% frontend, no console errors) —
   - **Theme consistency (key fix)**: Settings, ProjectFlow, ProjectDocument, ProjectOverview, AdminDashboard and ConnectWork were painting a near-black `#08090A` gradient background while Dashboard/Project Memory/Activity used `#191919`. All authenticated app pages now unified to `var(--bg)` `#191919` — no more jarring bg shift when navigating (this was a real part of the earlier "mismatch" report).
   - **Marketing**: bento feature cards moved from translucent gradients to solid `var(--surface)` with inset top-highlight + cinematic hover lift; hero + bento now read Linear-grade on Geist.

@@ -50,7 +50,6 @@ export default function Footer() {
           <ul className="space-y-2.5">
             <li><Link to="/how-it-works" className={colLink}>How it works</Link></li>
             <li><Link to="/use-cases" className={colLink}>Use cases</Link></li>
-            <li><Link to="/pricing" className={colLink}>Pricing</Link></li>
             <li><Link to="/case-studies" className={colLink}>Case studies</Link></li>
           </ul>
         </div>

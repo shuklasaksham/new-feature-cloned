@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Loader2, TrendingUp, AlertTriangle, Check, CalendarClock, Layers, ListChecks, HelpCircle } from "lucide-react";
 import { api } from "../lib/api";
 import { ProviderIcon, timeAgo } from "../lib/providersMeta";
+import { EmptyState } from "./EmptyState";
 
 /**
  * ChangeDigestPanel — "What changed" roll-up across every connected project.
@@ -50,15 +51,14 @@ export default function ChangeDigestPanel({ showEmptyState = false }) {
   if (!loading && total === 0) {
     if (!showEmptyState) return null;
     return (
-      <div
-        className="rounded-xl px-5 py-10 text-center"
-        style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}
-        data-testid="activity-empty-hint"
-      >
-        <p className="text-[12.5px]" style={{ color: "var(--text-3)" }}>
-          When your connected tools surface something new, it shows up here first.
-        </p>
-      </div>
+      <EmptyState
+        icon={TrendingUp}
+        title="Nothing new — yet"
+        description="When your connected tools surface a new decision, deadline, scope change or question, it shows up here first."
+        cta="Connect a tool"
+        ctaTo="/app/connect"
+        testid="activity-empty"
+      />
     );
   }
 

@@ -32,6 +32,7 @@ import NotificationBell from "../components/NotificationBell";
 import GlobalAskModal from "../components/GlobalAskModal";
 import NewProjectComposer from "../components/NewProjectComposer";
 import OnboardingWelcome from "../components/OnboardingWelcome";
+import { EmptyState } from "../components/EmptyState";
 
 
 const AI_OUTPUTS = [
@@ -438,29 +439,32 @@ export default function Dashboard() {
             </motion.div>
           </>
         ) : (
-          // ─── Empty state — the NewProjectComposer above already handles
-          // the intent-first CTA. Show a subtle "what Bracket produces"
-          // marketing note so first-time users know what to expect.
+          // ─── Empty state — the NewProjectComposer above handles the
+          // intent-first CTA; this illustrated panel makes the empty
+          // dashboard feel intentional and shows what Bracket produces.
           <motion.div variants={item} data-testid="dashboard-outputs-wrap">
-            <div className="flex items-baseline justify-between mb-3">
-              <p className="mono-tag text-muted text-[10px]">WHAT BRACKET DOES</p>
-              <p className="text-[10.5px] text-[var(--text-3)]">once a tool is connected</p>
-            </div>
-            <div className="produces-manifest">
-              {AI_OUTPUTS.map((o) => {
-                const Icon = o.icon;
-                return (
-                  <div key={o.label} className="produces-manifest-row">
-                    <span className="produces-manifest-check" aria-hidden="true">
-                      <Check size={11} />
-                    </span>
-                    <Icon size={13} className="text-[var(--text-3)] shrink-0" />
-                    <p className="text-[12.5px] font-medium text-[var(--text)]">{o.label}</p>
-                    <p className="text-[11px] text-[var(--text-3)] hidden md:block truncate">{o.hint}</p>
-                  </div>
-                );
-              })}
-            </div>
+            <EmptyState
+              icon={Plug}
+              title="No projects yet"
+              description="Connect a client tool above and Bracket builds a living project memory automatically. Here's what it keeps track of:"
+              testid="dashboard-empty"
+            >
+              <div className="produces-manifest max-w-[520px] mx-auto text-left">
+                {AI_OUTPUTS.map((o) => {
+                  const Icon = o.icon;
+                  return (
+                    <div key={o.label} className="produces-manifest-row">
+                      <span className="produces-manifest-check" aria-hidden="true">
+                        <Check size={11} />
+                      </span>
+                      <Icon size={13} className="text-[var(--text-3)] shrink-0" />
+                      <p className="text-[12.5px] font-medium text-[var(--text)]">{o.label}</p>
+                      <p className="text-[11px] text-[var(--text-3)] hidden md:block truncate">{o.hint}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </EmptyState>
           </motion.div>
         )}
       </motion.main>

@@ -15,7 +15,6 @@ import { AuthProvider } from "./lib/AuthContext";
 import Landing from "./pages/Landing";
 import HowItWorks from "./pages/HowItWorks";
 import UseCases from "./pages/UseCases";
-import Pricing from "./pages/Pricing";
 import CaseStudies from "./pages/CaseStudies";
 import FAQ from "./pages/FAQ";
 import Privacy from "./pages/Privacy";
@@ -65,7 +64,6 @@ export default function App() {
             <Route path="/" element={<Landing />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/use-cases" element={<UseCases />} />
-            <Route path="/pricing" element={<Pricing />} />
             <Route path="/case-studies" element={<CaseStudies />} />
             <Route path="/faq" element={<FAQ />} />
             <Route path="/privacy" element={<Privacy />} />

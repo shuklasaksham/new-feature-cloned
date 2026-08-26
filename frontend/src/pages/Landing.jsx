@@ -26,7 +26,6 @@ import {
   animate,
 } from "framer-motion";
 import Lenis from "@studio-freight/lenis";
-import { PRICING } from "../lib/constants";
 import { api } from "../lib/api";
 import Seo from "../components/Seo";
 
@@ -1443,149 +1442,6 @@ function TestimonialCard({ card }) {
   );
 }
 
-// ─── SECTION 5: PRICING (glassmorphic, middle amber-glowed) ──────────────
-function PricingSection() {
-  const [currency, setCurrency] = useState("USD");
-  const cur = PRICING.currencies[currency];
-  const priceFor = (id) => cur[id];
-
-  return (
-    <section className="relative py-28 md:py-36 overflow-x-clip isolate" data-testid="landing-pricing" id="pricing">
-      {/* Opaque backdrop bleeding into neighbours — below the amber wash. */}
-      <SectionBleed className="-z-20" />
-      {/* Amber wash — pulled UP past the section top so it overlaps the
-         testimonials blue for a soft colour transition (no visible seam). */}
-      <ParallaxGlow
-        distance={45}
-        className="absolute inset-x-0 mx-auto h-[1400px] w-[900px] blur-[120px] opacity-[0.22] -z-10"
-        style={{
-          top: "-400px",
-          background: "radial-gradient(closest-side, #FFB84C, transparent 70%)",
-        }}
-      />
-      <FilmGrain opacity={0.05} fadeTop fadeBottom />
-
-      <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 relative">
-        <SectionHeading
-          tag="PRICING"
-          title="Choose the way you work."
-          center
-        />
-
-        {/* Early-access banner — announces free until v1.0 without dictating
-           when that is. Sits above the currency toggle so it's the first
-           thing pricing-curious visitors read. */}
-        <div className="mt-6 flex justify-center">
-          <div className="pricing-early-access-banner" data-testid="pricing-early-access-banner">
-            <span className="pricing-early-access-dot" aria-hidden="true" />
-            <span>
-              <strong>Bracket is in early access — everything below is free while we ship v1.</strong>{" "}
-              You&apos;ll get a heads-up 30 days before we start charging.
-            </span>
-          </div>
-        </div>
-
-        {/* Currency toggle */}
-        <div className="mt-6 flex justify-center">
-          <div className="landing-currency-toggle" role="group" aria-label="Currency">
-            {["USD", "INR"].map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCurrency(c)}
-                className={currency === c ? "is-active" : ""}
-                data-testid={`pricing-currency-${c.toLowerCase()}`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-14 grid md:grid-cols-3 gap-6 items-stretch">
-          {PRICING.tiers.map((t) => (
-            <PricingCard key={t.id} tier={t} price={priceFor(t.id)} symbol={cur.symbol} popular={t.id === "pro"} />
-          ))}
-        </div>
-
-        <p className="mt-10 text-center text-[12px] text-[var(--text-3)]">
-          Every plan includes unlimited pastes, AI project understanding and secure cloud storage.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function PricingCard({ tier, price, symbol, popular }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={popular ? { y: -8, transition: { duration: 0.4 } } : { y: -4, transition: { duration: 0.4 } }}
-      className={`pricing-card ${popular ? "pricing-card--popular" : ""}`}
-      data-testid={`pricing-card-${tier.id}`}
-    >
-      {popular && (
-        <div className="pricing-ribbon">
-          <span>Most popular</span>
-        </div>
-      )}
-      <div className="pricing-card-glow" aria-hidden="true" />
-      <div className="relative z-10 p-8 sm:p-10 flex flex-col h-full">
-        <p className="mono-tag" style={{ color: popular ? "#FFB84C" : "var(--accent)" }}>{tier.name}</p>
-        <p className="mt-1 text-[12px] text-[var(--text-3)] leading-relaxed">{tier.tagline}</p>
-        {tier.bestFor && (
-          <p
-            className="mt-3 inline-flex self-start items-center gap-1.5 px-2 py-1 rounded-full text-[10.5px] tracking-[0.02em] uppercase font-mono"
-            style={{
-              background: popular ? "rgba(255,184,76,0.10)" : "rgba(94,106,210,0.10)",
-              color: popular ? "#FFB84C" : "var(--accent)",
-              border: `1px solid ${popular ? "rgba(255,184,76,0.25)" : "rgba(94,106,210,0.25)"}`,
-            }}
-          >
-            {tier.bestFor}
-          </p>
-        )}
-        <div className="mt-6 flex items-baseline gap-2.5">
-          {price !== 0 && (
-            <span
-              className="font-display font-semibold text-[26px] leading-none tracking-[-0.02em] line-through text-[var(--text-3)]"
-              data-testid={`pricing-old-price-${tier.id}`}
-            >
-              {symbol}{price}
-            </span>
-          )}
-          <span className="font-display font-semibold text-[56px] leading-none tracking-[-0.03em]">
-            {price === 0 ? "Free" : `${symbol}0`}
-          </span>
-          {price !== 0 && <span className="text-[12px] text-[var(--text-3)]">/ mo</span>}
-        </div>
-        <ul className="mt-8 space-y-3 flex-1">
-          {tier.features.map((f, i) => (
-            <li key={i} className="flex items-start gap-3 text-[13.5px] text-[var(--text-2)]">
-              <span className="mt-[3px] inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
-                    style={{ background: popular ? "rgba(255,184,76,0.15)" : "rgba(94,106,210,0.15)" }}>
-                <span className="text-[10px]" style={{ color: popular ? "#FFB84C" : "var(--accent)" }}>✓</span>
-              </span>
-              <span>{f}</span>
-            </li>
-          ))}
-        </ul>
-        <Link
-          to="/login"
-          className={`mt-10 landing-plan-cta ${popular ? "landing-plan-cta--popular" : ""}`}
-          data-testid={`pricing-cta-${tier.id}`}
-        >
-          <span>{tier.cta}</span>
-          <ArrowRight size={14} />
-        </Link>
-      </div>
-    </motion.div>
-  );
-}
-
 // ─── SECTION 5: FINAL CTA / FOOTER BAND ──────────────────────────────────
 function FinalCTA() {
   return (
@@ -1741,7 +1597,6 @@ export default function Landing() {
         <Bento />
         <Story />
         <Testimonials />
-        <PricingSection />
         <FinalCTA />
       </div>
     </>

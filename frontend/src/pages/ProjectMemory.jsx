@@ -12,6 +12,7 @@ import Seo from "../components/Seo";
 import ChangeActionDrawer from "../components/ChangeActionDrawer";
 import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
+import { EmptyState } from "../components/EmptyState";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, timeAgo } from "../lib/providersMeta";
 
@@ -292,40 +293,19 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
 function OverviewView({ project, projectId, counts, detectedCount, connections, onConnectionsChanged, onJumpTo }) {
   const noSources = connections.length === 0;
 
-  // Empty state — no connected sources yet. Instead of an awkward empty
-  // reply rail, show a Notion-style illustration + a single CTA that
-  // sends the user to Connect Work.
+  // Empty state — no connected sources yet. Uses the shared illustrated
+  // EmptyState so it matches Dashboard / Activity exactly.
   if (noSources) {
     return (
-      <section
-        className="rounded-xl overflow-hidden"
-        style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
-        data-testid="overview-empty-state"
-      >
-        <div className="px-6 sm:px-10 py-14 sm:py-20 flex flex-col items-center text-center">
-          <EmptyOverviewIllustration />
-          <p className="mono-tag text-[10px] mt-6" style={{ color: "var(--text-3)" }}>PROJECT MEMORY</p>
-          <h2 className="mt-3 text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em]" style={{ color: "var(--text)" }}>
-            Your project memory is waiting.
-          </h2>
-          <p className="mt-3 max-w-[440px] text-[13.5px] leading-relaxed" style={{ color: "var(--text-2)" }}>
-            Connect Gmail, Slack, Figma or GitHub and Bracket will start
-            extracting deliverables, scope, timelines, requirements, decisions
-            and deadlines from your client conversations.
-          </p>
-          <Link
-            to={`/app/connect?project=${projectId}`}
-            className="mt-6 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-medium"
-            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(59,130,246,0.5)" }}
-            data-testid="overview-empty-connect-cta"
-          >
-            <Plug size={13} /> Connect your first tool
-          </Link>
-          <p className="mt-3 mono-tag text-[9.5px]" style={{ color: "var(--text-3)" }}>
-            GMAIL · SLACK · FIGMA · GITHUB
-          </p>
-        </div>
-      </section>
+      <EmptyState
+        icon={Plug}
+        title="Your project memory is waiting"
+        description="Connect Gmail, Slack, Figma or GitHub and Bracket starts extracting deliverables, scope, timelines, requirements, decisions and deadlines from your client conversations."
+        cta="Connect your first tool"
+        ctaTo={`/app/connect?project=${projectId}`}
+        footnote="GMAIL · SLACK · FIGMA · GITHUB"
+        testid="overview-empty-state"
+      />
     );
   }
 
@@ -371,39 +351,6 @@ function OverviewView({ project, projectId, counts, detectedCount, connections, 
         />
       </aside>
     </div>
-  );
-}
-
-/* ─── Notion-style illustration for the empty Overview ────── */
-function EmptyOverviewIllustration() {
-  return (
-    <svg
-      width="152"
-      height="112"
-      viewBox="0 0 152 112"
-      fill="none"
-      aria-hidden="true"
-      data-testid="overview-empty-illustration"
-    >
-      {/* soft glow */}
-      <circle cx="76" cy="56" r="52" fill="url(#g)" opacity="0.55" />
-      {/* stacked project cards */}
-      <rect x="30" y="24" width="92" height="68" rx="10" fill="var(--surface-2)" stroke="var(--hairline-strong)" />
-      <rect x="38" y="36" width="42" height="6" rx="3" fill="var(--hairline-strong)" />
-      <rect x="38" y="48" width="76" height="4" rx="2" fill="var(--hairline)" />
-      <rect x="38" y="58" width="60" height="4" rx="2" fill="var(--hairline)" />
-      <rect x="38" y="68" width="50" height="4" rx="2" fill="var(--hairline)" />
-      {/* connector plug */}
-      <circle cx="120" cy="82" r="12" fill="var(--primary-bg)" />
-      <path d="M116 82h8M120 78v8" stroke="var(--primary-fg)" strokeWidth="1.6" strokeLinecap="round" />
-      <defs>
-        <radialGradient id="g" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
-                        gradientTransform="translate(76 56) rotate(90) scale(52)">
-          <stop stopColor="var(--accent)" stopOpacity="0.30" />
-          <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-    </svg>
   );
 }
 
