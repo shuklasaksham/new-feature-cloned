@@ -69,6 +69,8 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (fix — hide already-attached providers from "Add a source") — restored the provider-level filter in `ConnectedSourcesCompact`: chips only show providers with no active source_connection on this project (block hides entirely when all are attached). Kept the searchable picker + no-reauth for the remaining providers. Verified: demo project (Gmail+Slack attached) shows only Figma+GitHub.
+
 - 2026-06 (fix — Send email pre-filled the user's OWN address instead of the client) —
   - Root cause: `_gmail_client_email` read `account.get("account_label")` but the connected Gmail address is stored under `label`, so the "exclude my own address" filter always no-op'd and returned the first address in the thread (often the user's own inbox). `establish` also compared against `user["email"]` (Bracket signup) not the Gmail address.
   - Fixes (connectors.py): `_gmail_client_email` now uses `account.get("label")`; `establish` derives `own_gmail` from the Gmail account label when computing/storing `client_email`; `GET /send-targets` now guards — it will never return the connected account's own address, clearing a bad stored value and re-deriving live (or leaving TO empty). Demo unaffected (still `anna@nordwind.co`).

@@ -1511,30 +1511,37 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
           })}
         </ul>
       )}
-      {/* Add a source — opens the source list (search). Connects the account
-          only if it isn't linked yet; never re-authorizes an existing account. */}
-      <div className="mt-3">
-        <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
-        <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
-          {["gmail", "slack", "figma", "github"].map((p) => {
-            const meta = PROVIDER_META[p] || {};
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => openSourcePicker(p)}
-                disabled={!!connecting}
-                className="quick-connect-chip inline-flex items-center gap-1.5 disabled:opacity-45"
-                title={`Add a source from ${meta.label || p}`}
-                data-testid={`project-memory-quick-connect-${p}`}
-              >
-                {connecting === p ? <Loader2 size={13} className="animate-spin" /> : <ProviderIcon provider={p} size={14} bare />}
-                {meta.label || p}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* Add a source — only providers NOT already attached to this project.
+          Opens the source list (search); connects the account only if needed. */}
+      {(() => {
+        const attachedProviders = new Set(conns.map((c) => c.provider));
+        const addable = ["gmail", "slack", "figma", "github"].filter((p) => !attachedProviders.has(p));
+        if (addable.length === 0) return null;
+        return (
+          <div className="mt-3">
+            <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
+            <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
+              {addable.map((p) => {
+                const meta = PROVIDER_META[p] || {};
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => openSourcePicker(p)}
+                    disabled={!!connecting}
+                    className="quick-connect-chip inline-flex items-center gap-1.5 disabled:opacity-45"
+                    title={`Add a source from ${meta.label || p}`}
+                    data-testid={`project-memory-quick-connect-${p}`}
+                  >
+                    {connecting === p ? <Loader2 size={13} className="animate-spin" /> : <ProviderIcon provider={p} size={14} bare />}
+                    {meta.label || p}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       <Link to={`/app/connect?project=${projectId}`} className="text-[11px] mt-3 inline-flex items-center gap-1"
             style={{ color: "var(--accent)" }} data-testid="project-memory-sources-manage">
         Manage connections <ExternalLink size={10} />
