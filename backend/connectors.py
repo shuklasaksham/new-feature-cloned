@@ -930,6 +930,13 @@ async def establish_connection(body: EstablishIn, request: Request):
         })
 
     total_mem, connected = 0, []
+    own_gmail = ""
+    if provider == "gmail":
+        try:
+            _acc = await _get_account(user["user_id"], "gmail")
+            own_gmail = _acc.get("label") or ""
+        except Exception:
+            own_gmail = ""
     for it in items:
         src = it["source"]
         dup = await db.source_connections.find_one({"project_id": project_id, "provider": provider,
@@ -938,7 +945,7 @@ async def establish_connection(body: EstablishIn, request: Request):
             continue
         conn_id = _uuid()
         analysis = it.get("analysis") or {}
-        client_email = _extract_client_email(it.get("digest", ""), user["email"]) if provider == "gmail" else ""
+        client_email = _extract_client_email(it.get("digest", ""), own_gmail) if provider == "gmail" else ""
         await db.source_connections.insert_one({
             "id": conn_id, "project_id": project_id, "user_id": user["user_id"],
             "provider": provider, "source_type": provider,
@@ -1119,12 +1126,19 @@ async def project_send_targets(project_id: str, request: Request):
         if prov == "gmail" and not gmail_done:
             gmail_done = True
             to = c.get("client_email") or ""
-            if not to and not c.get("is_demo"):
+            if not c.get("is_demo"):
                 try:
                     account = await _get_account(user["user_id"], "gmail")
-                    to = await _gmail_client_email(account, c.get("source_id", ""))
+                    own = (account.get("label") or "").lower()
+                    # Never pre-fill the connected account's own address.
+                    if to and to.lower() == own:
+                        to = ""
+                    if not to:
+                        to = await _gmail_client_email(account, c.get("source_id", ""))
+                    if to and to.lower() == own:
+                        to = ""
                 except Exception:
-                    to = ""
+                    pass
             targets.append({"provider": "gmail", "label": "Send email", "to": to})
         elif prov == "slack":
             targets.append({
@@ -1142,7 +1156,7 @@ async def _gmail_client_email(account: dict, thread_id: str) -> str:
     if not thread_id:
         return ""
     at = await _access_token(account)
-    own = (account.get("account_label") or "").lower()
+    own = (account.get("label") or "").lower()
     async with await _http() as c:
         r = await c.get(
             f"https://gmail.googleapis.com/gmail/v1/users/me/threads/{thread_id}",

@@ -69,6 +69,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (fix — Send email pre-filled the user's OWN address instead of the client) —
+  - Root cause: `_gmail_client_email` read `account.get("account_label")` but the connected Gmail address is stored under `label`, so the "exclude my own address" filter always no-op'd and returned the first address in the thread (often the user's own inbox). `establish` also compared against `user["email"]` (Bracket signup) not the Gmail address.
+  - Fixes (connectors.py): `_gmail_client_email` now uses `account.get("label")`; `establish` derives `own_gmail` from the Gmail account label when computing/storing `client_email`; `GET /send-targets` now guards — it will never return the connected account's own address, clearing a bad stored value and re-deriving live (or leaving TO empty). Demo unaffected (still `anna@nordwind.co`).
+
 - 2026-06 (design v21 — account-level source reuse + picker search + client-email prefill) —
   - **Source picker search box**: the inline source picker now has a debounced search input that re-queries `GET /connect/{provider}/sources?q=` — users filter their chats/files/emails instead of scanning a flat list. Already-attached sources are filtered out of the list.
   - **No re-auth when the account is already linked**: "Add a source" chips now call `openSourcePicker` which lists the account's sources directly (account-level). OAuth only fires if the account isn't connected yet (`/sources` → 400 → connect). Connecting an account associates it with the Bracket account (integration_account); attaching to a project is a separate step. All four provider chips are always shown so users can add more sources.
