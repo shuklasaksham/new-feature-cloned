@@ -6,6 +6,7 @@ import {
   PanelLeftClose,
   PanelLeft,
   Plug,
+  Activity as ActivityIcon,
   ShieldCheck,
   Settings as SettingsIcon,
   HelpCircle,
@@ -137,6 +138,14 @@ export default function AppSidebar() {
           collapsed={collapsed}
           active={isProjectsActive}
           dataTestId="sidebar-nav-dashboard"
+        />
+        <NavItem
+          to="/app/activity"
+          icon={ActivityIcon}
+          label="Activity"
+          collapsed={collapsed}
+          active={path.startsWith("/app/activity")}
+          dataTestId="sidebar-nav-activity"
         />
         <NavItem
           to="/app/connect"

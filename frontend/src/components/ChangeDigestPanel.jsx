@@ -12,7 +12,7 @@ const CAT_META = {
   decision:     { label: "Decisions",     icon: Check,          color: "#22C55E" },
   deadline:     { label: "Deadlines",     icon: CalendarClock,  color: "#FFB84C" },
   scope_change: { label: "Scope changes", icon: AlertTriangle,  color: "#EF4444" },
-  requirement:  { label: "Requirements",  icon: ListChecks,     color: "#8B95E8" },
+  requirement:  { label: "Requirements",  icon: ListChecks,     color: "#60A5FA" },
   deliverable:  { label: "Deliverables",  icon: Layers,         color: "#7CD5FF" },
   question:     { label: "Open questions",icon: HelpCircle,     color: "var(--text-3)" },
 };
@@ -22,7 +22,7 @@ const WINDOWS = [
   { key: "7d",  label: "Last 7 days" },
 ];
 
-export default function ChangeDigestPanel() {
+export default function ChangeDigestPanel({ showEmptyState = false }) {
   const [win, setWin] = useState("24h");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,15 +45,29 @@ export default function ChangeDigestPanel() {
 
   // Hide the panel entirely when there's nothing to show — no need to nag
   // an empty dashboard. `null` avoids layout jitter for first-time users.
+  // On the Activity page (showEmptyState) we render a quiet empty note instead.
   const total = data?.total || 0;
-  if (!loading && total === 0) return null;
+  if (!loading && total === 0) {
+    if (!showEmptyState) return null;
+    return (
+      <div
+        className="rounded-xl px-5 py-10 text-center"
+        style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}
+        data-testid="activity-empty-hint"
+      >
+        <p className="text-[12.5px]" style={{ color: "var(--text-3)" }}>
+          When your connected tools surface something new, it shows up here first.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <section
       className="rounded-2xl p-5"
       style={{
-        background: "linear-gradient(180deg, rgba(94,106,210,0.06) 0%, rgba(94,106,210,0.02) 100%)",
-        border: "1px solid rgba(94,106,210,0.20)",
+        background: "linear-gradient(180deg, rgba(59, 130, 246,0.06) 0%, rgba(59, 130, 246,0.02) 100%)",
+        border: "1px solid rgba(59, 130, 246,0.20)",
       }}
       data-testid="change-digest-panel"
     >
@@ -87,7 +101,7 @@ export default function ChangeDigestPanel() {
               onClick={() => setWin(w.key)}
               className="mono-tag px-3 py-1 rounded-full text-[10px] transition-colors"
               style={win === w.key
-                ? { background: "rgba(94,106,210,0.18)", color: "#8B95E8", border: "1px solid rgba(94,106,210,0.35)" }
+                ? { background: "rgba(59, 130, 246,0.18)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246,0.35)" }
                 : { color: "var(--text-3)", border: "1px solid transparent", background: "transparent" }}
               data-testid={`change-digest-window-${w.key}`}
             >

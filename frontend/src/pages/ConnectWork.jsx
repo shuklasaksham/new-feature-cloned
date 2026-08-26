@@ -19,7 +19,7 @@ import { PROVIDER_META, ProviderIcon, timeAgo } from "../lib/providersMeta";
 
 const STATUS_CHIP = {
   connected:      { label: "CONNECTED",      style: { background: "rgba(34,197,94,0.10)", color: "#22C55E", border: "1px solid rgba(34,197,94,0.25)" } },
-  available:      { label: "CONNECT",        style: { background: "rgba(94,106,210,0.10)", color: "#8B95E8", border: "1px solid rgba(94,106,210,0.3)" } },
+  available:      { label: "CONNECT",        style: { background: "rgba(59, 130, 246,0.10)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246,0.3)" } },
   setup_required: { label: "SETUP REQUIRED", style: { background: "rgba(255,184,76,0.10)", color: "#FFB84C", border: "1px solid rgba(255,184,76,0.25)" } },
   coming_soon:    { label: "COMING SOON",    style: { background: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" } },
 };
@@ -172,7 +172,7 @@ function SourceModal({ provider, onConfirm, onClose }) {
                 key={s.id}
                 onClick={() => toggle(s)}
                 className="p-3 text-left flex items-center gap-3 rounded-lg transition-colors"
-                style={{ background: on ? "rgba(94,106,210,0.10)" : "rgba(255,255,255,0.02)", border: `1px solid ${on ? "rgba(94,106,210,0.4)" : "var(--hairline)"}` }}
+                style={{ background: on ? "rgba(59, 130, 246,0.10)" : "rgba(255,255,255,0.02)", border: `1px solid ${on ? "rgba(59, 130, 246,0.4)" : "var(--hairline)"}` }}
                 data-testid={`source-modal-item-${s.id}`}
               >
                 {on ? <CheckSquare size={15} className="text-signal shrink-0" /> : <Square size={15} className="text-[var(--text-3)] shrink-0" />}
@@ -308,7 +308,7 @@ function SourcePreview({ provider, sources, attachProjectId, onDone, onBack }) {
       </div>
 
       {match && (
-        <div className="mt-3 card-linear card-linear--solid p-4" style={{ borderColor: "rgba(94,106,210,0.35)" }} data-testid="connect-match-card">
+        <div className="mt-3 card-linear card-linear--solid p-4" style={{ borderColor: "rgba(59, 130, 246,0.35)" }} data-testid="connect-match-card">
           <p className="mono-tag text-signal text-[10px]">WE FOUND A POSSIBLE PROJECT MATCH</p>
           <p className="mt-1.5 text-[14px] font-medium text-[var(--text)]">{match.name}</p>
           <p className="text-[11.5px] text-[var(--text-3)] mt-0.5">{match.reason} · {match.confidence}% confidence</p>

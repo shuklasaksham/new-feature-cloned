@@ -69,6 +69,12 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (iteration_42) — **Dashboard/theme consistency fixes (testing agent 95%, remainder fixed after)**:
+  - **White components removed** — `NewProjectComposer` (dashboard) and `OnboardingWelcome` modal were rendering a WHITE gradient background with light `var(--text)` text (effectively invisible). Both switched to `var(--surface)` dark cards.
+  - **Accent unified to blue** — replaced all legacy violet (`#5E6AD2` / `#8B95E8` / `#7C5CFF` / `rgba(94,106,210)`) with the blue accent (`#3B82F6` / `#60A5FA` / `var(--accent)`) across every app-surface file (Dashboard, composer, ChangeDigestPanel, ConnectedWorkPanel, ProjectFlow/Overview/Document, ConnectWork, modals, providersMeta Linear tile).
+  - **Change Digest moved off the dashboard** — per user request, the "what changed" roll-up now lives on a dedicated **Activity** page (`/app/activity`, new `Activity.jsx`) reachable via a new sidebar nav item (`sidebar-nav-activity`). Dashboard no longer renders `ChangeDigestPanel`. Panel gained a `showEmptyState` prop so the Activity page shows a quiet empty note instead of collapsing to null.
+
+## Changelog (older)
 - 2026-06 (iteration_41) — **Client OS UX batch VERIFIED (testing agent 100%: backend 6/6, frontend all pass)**:
   - **Chat-style suggested reply** — replaced the unprompted auto-reply with an on-demand "Ask Bracket" thread on the Project Memory Overview tab (`SuggestedReplyChat` in `ProjectMemory.jsx`). User types an instruction (or picks a quick-prompt); each turn POSTs `/api/projects/{id}/suggest-reply` `{instruction, history}` → grounded draft with Copy/Edit/Regenerate/Gmail/Mail/Slack actions. "New thread" resets. Bracket never auto-replies or sends.
   - **Zero-connections empty state** — `overview-empty-state` with SVG illustration + "Connect your first tool" CTA (→ `/app/connect?project={id}`) shows when a project has no active sources.

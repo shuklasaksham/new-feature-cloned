@@ -70,8 +70,8 @@ export default function StructuringModal({ open }) {
               width: 48,
               height: 48,
               borderRadius: 999,
-              background: "rgba(94,106,210,0.12)",
-              border: "1px solid rgba(94,106,210,0.35)",
+              background: "rgba(59, 130, 246,0.12)",
+              border: "1px solid rgba(59, 130, 246,0.35)",
             }}
           >
             <Loader2 size={22} className="animate-spin text-signal" />

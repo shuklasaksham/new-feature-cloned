@@ -86,9 +86,9 @@ export default function OnboardingWelcome({ open, onClose, onFinish }) {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-[560px] rounded-3xl overflow-hidden"
               style={{
-                background: "linear-gradient(160deg, #FFFFFF 0%, #F6F4FC 100%)",
+                background: "var(--surface)",
                 border: "1px solid var(--hairline)",
-                boxShadow: "0 40px 120px -32px rgba(30,27,75,0.30)",
+                boxShadow: "0 40px 120px -32px rgba(0,0,0,0.65)",
               }}
               data-testid="onboarding-modal"
             >

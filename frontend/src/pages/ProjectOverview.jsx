@@ -67,7 +67,7 @@ const STEPS = [
 const STATUS_STYLE = {
   draft:       { backgroundColor: "transparent", color: "var(--text-2)", border: "1px solid var(--hairline)" },
   in_progress: { backgroundColor: "var(--surface-2)", color: "var(--text)",  border: "1px solid var(--hairline)" },
-  locked:      { backgroundColor: "#5E6AD2", color: "#FFFFFF", border: "1px solid #5E6AD2" },
+  locked:      { backgroundColor: "#3B82F6", color: "#FFFFFF", border: "1px solid #3B82F6" },
 };
 const STATUS_LABEL = { draft: "DRAFT", in_progress: "IN PROGRESS", locked: "LOCKED" };
 
@@ -89,7 +89,7 @@ function StepStatus({ done, current }) {
     return (
       <span
         className="mono-tag px-2 py-1 inline-flex items-center gap-1.5 rounded"
-        style={{ backgroundColor: "#5E6AD2", color: "#FFFFFF", border: "1px solid #5E6AD2" }}
+        style={{ backgroundColor: "#3B82F6", color: "#FFFFFF", border: "1px solid #3B82F6" }}
       >
         <Check size={11} /> <span style={{ color: "inherit" }}>DONE</span>
       </span>

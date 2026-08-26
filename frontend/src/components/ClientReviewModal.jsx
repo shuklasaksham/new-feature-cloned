@@ -152,7 +152,7 @@ export default function ClientReviewModal({ open, onClose, project, setProject }
                     onClick={applyChanges}
                     disabled={applying}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-semibold transition-all press disabled:opacity-60"
-                    style={{ background: "#5E6AD2", color: "#fff", border: "1px solid #6E7AE8", boxShadow: "0 8px 24px rgba(94,106,210,0.35)" }}
+                    style={{ background: "#3B82F6", color: "#fff", border: "1px solid #6E7AE8", boxShadow: "0 8px 24px rgba(59, 130, 246,0.35)" }}
                     data-testid="crm-apply-changes"
                   >
                     {applying ? (

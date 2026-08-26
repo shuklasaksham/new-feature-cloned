@@ -27,7 +27,7 @@ export const PROVIDER_META = {
   notion:   { label: "Notion",          icon: NotebookText,  color: "#E8E7E4", slug: "notion", cdnColor: "FFFFFF" },
   dropbox:  { label: "Dropbox",         icon: Package,       color: "#0061FF", slug: "dropbox" },
   github:   { label: "GitHub",          icon: Github,        color: "#E6EDF3", slug: "github", cdnColor: "E6EDF3" },
-  linear:   { label: "Linear",          icon: Layers,        color: "#5E6AD2", slug: "linear" },
+  linear:   { label: "Linear",          icon: Layers,        color: "#3B82F6", slug: "linear" },
 };
 
 export function ProviderIcon({ provider, size = 16 }) {
