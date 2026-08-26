@@ -69,6 +69,13 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v14 — inline one-click connect + JIRA table sort/filter + calendar week view; testing agent iteration_49 100% frontend, no console errors) —
+  - **Inline one-click connect**: the "ADD A SOURCE" chips in the project's Connected Sources are now buttons that start OAuth in a popup right from the project view (user-gesture safe) — they no longer navigate to `/app/connect`. After OAuth returns (`bracket-oauth:{key}:ok`), an inline source-picker modal lets you attach a source to this project via `/connect/preview` + `/connect/establish`. Popup shows a "Opening secure sign-in…" placeholder instead of about:blank.
+  - **JIRA table sort + filter**: category tables have clickable sortable headers (Summary / Status / Source / Updated, asc/desc arrow) and a live text filter input (title/detail/source), with a no-match message.
+  - **Timeline calendar week view**: month/week toggle + prev/next range nav; multi-event days show stacked dots and, when clicked, expand that day's events in the side list ("SELECTED DAY · N" + Clear); single-event days open the item directly.
+  - Note: real OAuth completion isn't testable headlessly; the inline flow uses the existing verified connect endpoints.
+
+## Changelog (prior)
 - 2026-06 (design v13 — Project Memory Overview restructure + JIRA tables + Timeline calendar + review-flow cleanup; testing agent iteration_48 95%→fixed) —
   - **Removed redundant snapshot grid** from the Overview (the boxed tabs already cover the 6 categories).
   - **Ask Bracket → subtle right sidebar** (~340px, no longer full-width) that PERSISTS the conversation per project in localStorage (previous interactions survive navigation), with compact styling and quick-prompts.

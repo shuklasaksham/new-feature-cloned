@@ -755,6 +755,35 @@ function ChatTurn({
 /* ─── Category view — filter + memory rows ────────────────── */
 function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
   const isTimeline = cat.key === "timeline";
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState({ col: "date", dir: "desc" });
+
+  const toggleSort = (col) => setSort((s) => s.col === col ? { col, dir: s.dir === "asc" ? "desc" : "asc" } : { col, dir: col === "date" ? "desc" : "asc" });
+
+  const displayed = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let list = items;
+    if (q) list = list.filter((m) =>
+      String(m.title || "").toLowerCase().includes(q) ||
+      String(m.detail || "").toLowerCase().includes(q) ||
+      String(m.source_label || "").toLowerCase().includes(q));
+    const dir = sort.dir === "asc" ? 1 : -1;
+    const val = (m) => sort.col === "summary" ? String(m.title || "").toLowerCase()
+      : sort.col === "status" ? String(m.status || "")
+      : sort.col === "source" ? String(m.source_label || m.provider || "").toLowerCase()
+      : String(m.created_at || "");
+    return [...list].sort((a, b) => val(a) < val(b) ? -dir : val(a) > val(b) ? dir : 0);
+  }, [items, query, sort]);
+
+  const SortHead = ({ col, label, className }) => (
+    <button type="button" onClick={() => toggleSort(col)}
+            className={`jira-sort-head inline-flex items-center gap-1 ${className || ""}`}
+            data-testid={`jira-sort-${col}`}>
+      {label}
+      {sort.col === col && <span className="jira-sort-arrow">{sort.dir === "asc" ? "▲" : "▼"}</span>}
+    </button>
+  );
+
   return (
     <section data-testid="project-memory-pane">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
@@ -764,19 +793,29 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
           <span className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>· {items.length}</span>
         </div>
         {!isTimeline && (
-          <div className="inline-flex rounded-full p-0.5"
-               style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}
-               data-testid="project-memory-status-filter">
-            {STATUS_FILTERS.map((s) => (
-              <button key={s.key} type="button" onClick={() => setStatusFilter(s.key)}
-                      className="mono-tag px-3 py-1 rounded-full text-[10px] transition-colors"
-                      style={statusFilter === s.key
-                        ? { background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--brand-border)" }
-                        : { color: "var(--text-3)", border: "1px solid transparent", background: "transparent" }}
-                      data-testid={`project-memory-filter-${s.key}`}>
-                {s.label.toUpperCase()}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter…"
+              className="jira-filter-input"
+              data-testid="jira-filter-input"
+            />
+            <div className="inline-flex rounded-full p-0.5"
+                 style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}
+                 data-testid="project-memory-status-filter">
+              {STATUS_FILTERS.map((s) => (
+                <button key={s.key} type="button" onClick={() => setStatusFilter(s.key)}
+                        className="mono-tag px-3 py-1 rounded-full text-[10px] transition-colors"
+                        style={statusFilter === s.key
+                          ? { background: "var(--accent-soft)", color: "var(--accent)", border: "1px solid var(--brand-border)" }
+                          : { color: "var(--text-3)", border: "1px solid transparent", background: "transparent" }}
+                        data-testid={`project-memory-filter-${s.key}`}>
+                  {s.label.toUpperCase()}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -795,12 +834,18 @@ function CategoryView({ cat, items, statusFilter, setStatusFilter, onOpen }) {
         <div className="jira-table rounded-xl overflow-hidden" data-testid="project-memory-items">
           <div className="jira-row jira-head">
             <span></span>
-            <span>Summary</span>
-            <span className="jira-col-status">Status</span>
-            <span className="jira-col-source">Source</span>
-            <span className="jira-col-date">Updated</span>
+            <SortHead col="summary" label="Summary" />
+            <SortHead col="status" label="Status" className="jira-col-status" />
+            <SortHead col="source" label="Source" className="jira-col-source" />
+            <SortHead col="date" label="Updated" className="jira-col-date" />
           </div>
-          {items.map((m) => <MemoryRow key={m.id} item={m} cat={cat} onOpen={onOpen} />)}
+          {displayed.length === 0 ? (
+            <div className="px-4 py-8 text-center text-[12.5px]" style={{ color: "var(--text-3)" }} data-testid="jira-no-match">
+              No items match “{query}”.
+            </div>
+          ) : (
+            displayed.map((m) => <MemoryRow key={m.id} item={m} cat={cat} onOpen={onOpen} />)
+          )}
         </div>
       )}
     </section>
@@ -843,13 +888,12 @@ function MemoryRow({ item, cat, onOpen }) {
   );
 }
 
-/* ─── Timeline calendar — month grid marking when events happened ── */
+/* ─── Timeline calendar — month/week views marking when events happened ── */
 function TimelineCalendar({ items, cat, onOpen }) {
-  const [monthOffset, setMonthOffset] = useState(0);
+  const [mode, setMode] = useState("month");   // "month" | "week"
+  const [offset, setOffset] = useState(0);      // months or weeks depending on mode
+  const [selectedKey, setSelectedKey] = useState(null);
   const base = new Date();
-  const view = new Date(base.getFullYear(), base.getMonth() + monthOffset, 1);
-  const year = view.getFullYear();
-  const month = view.getMonth();
 
   const byDay = useMemo(() => {
     const map = {};
@@ -862,26 +906,65 @@ function TimelineCalendar({ items, cat, onOpen }) {
     return map;
   }, [items]);
 
-  const firstDow = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const cells = [];
-  for (let i = 0; i < firstDow; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  const monthLabel = view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
   const todayKey = `${base.getFullYear()}-${base.getMonth()}-${base.getDate()}`;
 
-  const monthItems = useMemo(() => (items || [])
-    .filter((it) => { const d = new Date(it.created_at); return !isNaN(d) && d.getFullYear() === year && d.getMonth() === month; })
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))), [items, year, month]);
+  // Build the visible day cells for the current view.
+  let cells = [];
+  let rangeLabel = "";
+  if (mode === "month") {
+    const view = new Date(base.getFullYear(), base.getMonth() + offset, 1);
+    const year = view.getFullYear();
+    const month = view.getMonth();
+    const firstDow = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 0; i < firstDow; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+    rangeLabel = view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  } else {
+    const start = new Date(base);
+    start.setDate(base.getDate() - base.getDay() + offset * 7);
+    start.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 7; i++) { const d = new Date(start); d.setDate(start.getDate() + i); cells.push(d); }
+    const end = new Date(start); end.setDate(start.getDate() + 6);
+    rangeLabel = `${start.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${end.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  }
+
+  const keyOf = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+  // Events shown in the side list: selected day, else everything in the view range.
+  const rangeKeys = new Set(cells.filter(Boolean).map(keyOf));
+  const listItems = useMemo(() => {
+    let list = (items || []).filter((it) => { const d = new Date(it.created_at); return !isNaN(d); });
+    if (selectedKey) list = list.filter((it) => keyOf(new Date(it.created_at)) === selectedKey);
+    else list = list.filter((it) => rangeKeys.has(keyOf(new Date(it.created_at))));
+    return list.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, selectedKey, mode, offset]);
+
+  const clickDay = (d, dayItems) => {
+    if (!dayItems.length) return;
+    const k = keyOf(d);
+    if (dayItems.length === 1) { onOpen(dayItems[0]); return; }
+    setSelectedKey((cur) => (cur === k ? null : k));  // multi-event: expand the day in the side list
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-5 items-start" data-testid="timeline-calendar">
       <div className="rounded-xl p-4" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)" }}>
-        <div className="flex items-center justify-between mb-3">
-          <button type="button" onClick={() => setMonthOffset((m) => m - 1)} className="cal-nav" data-testid="timeline-prev-month" aria-label="Previous month">‹</button>
-          <p className="text-[13.5px] font-semibold" style={{ color: "var(--text)" }} data-testid="timeline-month-label">{monthLabel}</p>
-          <button type="button" onClick={() => setMonthOffset((m) => m + 1)} className="cal-nav" data-testid="timeline-next-month" aria-label="Next month">›</button>
+        <div className="flex items-center justify-between mb-3 gap-2">
+          <button type="button" onClick={() => setOffset((m) => m - 1)} className="cal-nav" data-testid="timeline-prev" aria-label="Previous">‹</button>
+          <p className="text-[13px] font-semibold" style={{ color: "var(--text)" }} data-testid="timeline-month-label">{rangeLabel}</p>
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-full p-0.5" style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }} data-testid="timeline-mode-toggle">
+              {["month", "week"].map((m) => (
+                <button key={m} type="button" onClick={() => { setMode(m); setOffset(0); setSelectedKey(null); }}
+                        className="mono-tag px-2.5 py-1 rounded-full text-[9px] transition-colors"
+                        style={mode === m ? { background: "var(--accent-soft)", color: "var(--accent)" } : { color: "var(--text-3)", background: "transparent" }}
+                        data-testid={`timeline-mode-${m}`}>{m.toUpperCase()}</button>
+              ))}
+            </div>
+            <button type="button" onClick={() => setOffset((m) => m + 1)} className="cal-nav" data-testid="timeline-next" aria-label="Next">›</button>
+          </div>
         </div>
         <div className="grid grid-cols-7 gap-1 mb-1">
           {["S","M","T","W","T","F","S"].map((d, i) => (
@@ -891,36 +974,48 @@ function TimelineCalendar({ items, cat, onOpen }) {
         <div className="grid grid-cols-7 gap-1">
           {cells.map((d, i) => {
             if (d === null) return <span key={`e${i}`} />;
-            const key = `${year}-${month}-${d}`;
+            const key = keyOf(d);
             const dayItems = byDay[key] || [];
             const has = dayItems.length > 0;
             const isToday = key === todayKey;
+            const isSel = key === selectedKey;
             return (
               <button key={key} type="button" disabled={!has}
-                      onClick={() => has && onOpen(dayItems[0])}
-                      className="cal-cell"
+                      onClick={() => clickDay(d, dayItems)}
+                      className={`cal-cell ${mode === "week" ? "cal-cell--week" : ""}`}
                       data-active={has ? "true" : "false"}
-                      data-testid={`timeline-day-${d}`}
+                      data-testid={`timeline-day-${d.getDate()}`}
                       title={has ? `${dayItems.length} event${dayItems.length === 1 ? "" : "s"}` : ""}
-                      style={isToday ? { borderColor: "var(--accent)" } : undefined}>
-                <span className="text-[11.5px]" style={{ color: has ? "var(--text)" : "var(--text-3)" }}>{d}</span>
-                {has && <span className="cal-dot" style={{ background: cat.color }} />}
+                      style={isSel ? { borderColor: "var(--accent)", background: "var(--accent-soft)" } : isToday ? { borderColor: "var(--accent)" } : undefined}>
+                <span className="text-[11.5px]" style={{ color: has ? "var(--text)" : "var(--text-3)" }}>{d.getDate()}</span>
+                {has && (
+                  <span className="cal-dots">
+                    {dayItems.slice(0, 3).map((_, di) => <span key={di} className="cal-dot-multi" style={{ background: cat.color }} />)}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* This month's events list */}
+      {/* Events list — selected day, else the whole visible range */}
       <div>
-        <p className="mono-tag text-[9px] mb-2" style={{ color: "var(--text-3)" }}>EVENTS THIS MONTH · {monthItems.length}</p>
-        {monthItems.length === 0 ? (
+        <div className="flex items-center justify-between mb-2">
+          <p className="mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>
+            {selectedKey ? "SELECTED DAY" : (mode === "month" ? "THIS MONTH" : "THIS WEEK")} · {listItems.length}
+          </p>
+          {selectedKey && (
+            <button type="button" onClick={() => setSelectedKey(null)} className="mono-tag text-[9px]" style={{ color: "var(--accent)" }} data-testid="timeline-clear-day">CLEAR</button>
+          )}
+        </div>
+        {listItems.length === 0 ? (
           <div className="rounded-xl p-6 text-center" style={{ background: "var(--surface)", border: "1px dashed var(--hairline-strong)" }}>
-            <p className="text-[12px]" style={{ color: "var(--text-3)" }}>No timeline events this month.</p>
+            <p className="text-[12px]" style={{ color: "var(--text-3)" }}>No timeline events here.</p>
           </div>
         ) : (
           <ul className="flex flex-col gap-1.5">
-            {monthItems.map((it) => {
+            {listItems.map((it) => {
               const d = new Date(it.created_at);
               return (
                 <li key={it.id}>
@@ -930,11 +1025,9 @@ function TimelineCalendar({ items, cat, onOpen }) {
                           onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--hairline-hover)"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--hairline)"; }}
                           data-testid={`timeline-event-${it.id}`}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="mono-tag text-[9px]" style={{ color: cat.color }}>
-                        {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
+                    <span className="mono-tag text-[9px] block mb-1" style={{ color: cat.color }}>
+                      {d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                    </span>
                     <p className="text-[12.5px] font-medium leading-snug" style={{ color: "var(--text)" }}>{it.title}</p>
                   </button>
                 </li>
@@ -951,6 +1044,77 @@ function TimelineCalendar({ items, cat, onOpen }) {
 function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
   const dialog = useDialog();
   const [busy, setBusy] = useState(null);
+  const [connecting, setConnecting] = useState(null);   // provider key while OAuth in flight
+  const [picker, setPicker] = useState(null);           // { provider, sources }
+  const [attaching, setAttaching] = useState(false);
+  const pendingRef = useRef(null);
+  const popupRef = useRef(null);
+
+  // OAuth completion — the callback posts "bracket-oauth:{key}:{ok|error}".
+  useEffect(() => {
+    const onMsg = async (e) => {
+      if (typeof e.data !== "string" || !e.data.startsWith("bracket-oauth:")) return;
+      const [, key, status] = e.data.split(":");
+      if (key !== pendingRef.current) return;
+      pendingRef.current = null;
+      try { popupRef.current?.close?.(); } catch { /* ignore */ }
+      if (status !== "ok") { setConnecting(null); toast.error("Connection cancelled."); return; }
+      try {
+        const { data } = await api.get(`/connect/${key}/sources`);
+        const sources = data?.sources || data || [];
+        if (!Array.isArray(sources) || sources.length === 0) {
+          toast.info("Connected, but no sources were found to attach.");
+          onChanged?.();
+        } else {
+          setPicker({ provider: key, sources });
+        }
+      } catch (err) { toast.error(formatApiError(err)); }
+      finally { setConnecting(null); }
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, [onChanged]);
+
+  // Single-click connect — opens the OAuth popup synchronously (user gesture,
+  // popup-blocker safe), then points it at the provider login. Never leaves the page.
+  const quickConnect = async (providerKey) => {
+    if (connecting) return;
+    const popup = window.open("about:blank", "bracket-oauth", "width=560,height=680");
+    if (popup) {
+      try {
+        popup.document.write('<!doctype html><meta charset="utf-8"><title>Connecting…</title><body style="margin:0;display:flex;align-items:center;justify-content:center;height:100vh;background:#191919;color:#8a8f98;font-family:system-ui,sans-serif;font-size:14px">Opening secure sign-in…</body>');
+      } catch { /* ignore */ }
+    }
+    popupRef.current = popup;
+    setConnecting(providerKey);
+    pendingRef.current = providerKey;
+    try {
+      const { data } = await api.get(`/connect/${providerKey}/auth-url`);
+      if (popup) popup.location = data.url; else window.open(data.url, "_blank");
+    } catch (e) {
+      try { popup?.close?.(); } catch { /* ignore */ }
+      setConnecting(null);
+      pendingRef.current = null;
+      toast.error(formatApiError(e));
+    }
+  };
+
+  // Attach a chosen source to THIS project (preview -> establish).
+  const attachSource = async (src) => {
+    if (!picker) return;
+    setAttaching(true);
+    try {
+      const { data: prev } = await api.post("/connect/preview", {
+        provider: picker.provider,
+        sources: [{ id: src.id, name: src.name, url: src.url || "" }],
+      });
+      await api.post("/connect/establish", { preview_id: prev.preview_id, mode: "existing", project_id: projectId });
+      toast.success(`${src.name} connected`);
+      setPicker(null);
+      onChanged?.();
+    } catch (e) { toast.error(formatApiError(e)); }
+    finally { setAttaching(false); }
+  };
 
   const disconnect = async (conn) => {
     const ok = await dialog.confirm({
@@ -1017,24 +1181,25 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
           })}
         </ul>
       )}
-      {/* One-click connect more sources — deep-links straight into the
-          connect flow for that provider for this project. */}
+      {/* One-click connect — starts OAuth in a popup right here; never leaves the page. */}
       <div className="mt-3">
         <p className="mono-tag text-[8.5px] mb-1.5" style={{ color: "var(--text-3)" }}>ADD A SOURCE</p>
         <div className="flex flex-wrap gap-1.5" data-testid="project-memory-quick-connect">
           {["gmail", "slack", "figma", "github"].map((p) => {
             const meta = PROVIDER_META[p] || {};
             return (
-              <Link
+              <button
                 key={p}
-                to={`/app/connect?project=${projectId}&tool=${p}`}
-                className="quick-connect-chip inline-flex items-center gap-1.5"
+                type="button"
+                onClick={() => quickConnect(p)}
+                disabled={!!connecting}
+                className="quick-connect-chip inline-flex items-center gap-1.5 disabled:opacity-45"
                 title={`Connect ${meta.label || p}`}
                 data-testid={`project-memory-quick-connect-${p}`}
               >
-                <ProviderIcon provider={p} size={11} />
+                {connecting === p ? <Loader2 size={11} className="animate-spin" /> : <ProviderIcon provider={p} size={11} />}
                 {meta.label || p}
-              </Link>
+              </button>
             );
           })}
         </div>
@@ -1043,6 +1208,48 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
             style={{ color: "var(--accent)" }} data-testid="project-memory-sources-manage">
         Manage connections <ExternalLink size={10} />
       </Link>
+
+      {/* Inline source picker — shown after OAuth so connecting never leaves the page. */}
+      {picker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+             style={{ background: "rgba(0,0,0,0.6)" }}
+             onClick={() => !attaching && setPicker(null)}
+             data-testid="inline-connect-picker">
+          <div className="w-full max-w-[440px] rounded-2xl overflow-hidden"
+               style={{ background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "0 40px 120px -30px rgba(0,0,0,0.8)" }}
+               onClick={(e) => e.stopPropagation()}>
+            <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: "1px solid var(--hairline)" }}>
+              <ProviderIcon provider={picker.provider} size={13} />
+              <p className="text-[14px] font-semibold" style={{ color: "var(--text)" }}>
+                Pick a {PROVIDER_META[picker.provider]?.label || picker.provider} source
+              </p>
+            </div>
+            <ul className="max-h-[360px] overflow-y-auto p-2">
+              {picker.sources.map((s) => (
+                <li key={s.id}>
+                  <button type="button" onClick={() => attachSource(s)} disabled={attaching}
+                          className="w-full text-left px-3 py-2.5 rounded-lg text-[13px] transition-colors disabled:opacity-50"
+                          style={{ color: "var(--text)" }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                          data-testid={`inline-connect-source-${s.id}`}>
+                    <span className="font-medium truncate block">{s.name}</span>
+                    {s.subtitle && <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{s.subtitle}</span>}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: "1px solid var(--hairline)" }}>
+              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                {attaching ? "Attaching to this project…" : "Choose which source feeds this project."}
+              </span>
+              <button type="button" onClick={() => !attaching && setPicker(null)}
+                      className="text-[12px]" style={{ color: "var(--text-2)" }}
+                      data-testid="inline-connect-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

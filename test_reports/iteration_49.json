@@ -1,0 +1,23 @@
+{
+  "summary": "Frontend-only regression for iter 49 focused on: (1) in-project one-click connect chips MUST NOT navigate to /app/connect, (2) JIRA-style category table SORT + text FILTER, (3) Timeline MONTH/WEEK toggle + multi-event day behavior. All 6 test areas PASS. 0 console errors across Overview / Decisions / Timeline.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/test_reports/iteration_49.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Category rows use a DIV-based grid (.jira-row) inside .jira-table, not a semantic <table>/<tbody><tr> — accessibility is limited (no role=table/row/cell). Consider adding role attributes so screen readers/tests using semantic queries work. Not blocking; sort/filter functionality is correct.",
+    "Quick-connect popup: when the popup was captured we saw url='about:blank' immediately after click (before the /connect/{p}/auth-url callback populated the URL). This is expected but consider using window.open(authUrl, ...) only AFTER the URL is fetched, OR write a placeholder loading page into the popup so users don't briefly see about:blank on slow networks."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (login: click 'I have a password ->' before Sign in)",
+  "seed_data_creation": "None — used existing seeded project 9ea97afb-fb31-4b74-bce0-71a284fdc1eb (2 decisions, 2 deadlines, 4 timeline events in Aug 2026 with TWO on the 9th).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "VERIFIED: (1) Quick-connect chips gmail/slack/figma/github in Overview > CONNECTED SOURCES > 'ADD A SOURCE' are <button> elements (not <a>). Click keeps URL on /project/9ea97afb... — no route change to /app/connect. Gmail chip observed opening a popup window (about:blank first, then populated by /connect/{p}/auth-url). Real OAuth NOT tested per instructions. (2) Decisions tab: .jira-table renders header .jira-row.jira-head with 4 sort buttons (jira-sort-summary/status/source/date). Default sort is date ▼. Clicking jira-sort-summary toggles ▲/▼ arrow and reorders rows alphabetically (verified: 'Approved cover redesign' <-> 'Approved the v2 packaging direction' swap). jira-filter-input filters live (typing 'SUMMARY' hid both data rows; 'zzzqqqxxx' shows jira-no-match message; clearing restores all rows). (3) Timeline: timeline-mode-month / timeline-mode-week toggle works — week view shows 7 .cal-cell--week cells; month shows 31; timeline-prev / timeline-next update timeline-month-label ('August 2026' → 'September 2026' for month, 'Aug 30 – Sep 5' for week). (4) Multi-event day 9: has .cal-dot-multi marker (2 dots visible), click sets 'SELECTED DAY · 2' side header, does NOT open drawer, timeline-clear-day resets it. Single-event day 2 opens ChangeActionDrawer showing 'Kickoff call with client' with Dismiss action. (5) Ask Bracket sidebar renders on Overview with Draft/Acknowledge/Ask suggestion chips + Generate button. 0 console errors across all screens.",
+  "rca of the issue": "No bugs found. All spec items functional."
+}
