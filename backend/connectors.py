@@ -12,6 +12,7 @@ import asyncio
 import base64
 import hashlib
 import json as _json
+from email.message import EmailMessage
 import logging
 import os
 import re
@@ -1272,12 +1273,17 @@ async def project_send_email(project_id: str, request: Request):
                 except Exception:
                     pass
             subj = subject_override or (f"Re: {thread_subject}" if thread_subject and not thread_subject.lower().startswith("re:") else (thread_subject or "Re: your project"))
-            hdrs = [f"To: {to}", f"Subject: {subj}", "MIME-Version: 1.0", "Content-Type: text/plain; charset=utf-8"]
+            # Build the MIME message via the stdlib email module so the Subject
+            # (and any other headers) are RFC-2047 encoded correctly — raw UTF-8
+            # bytes in a header render as mojibake ("Ã¢Â€Â") in the client.
+            msg = EmailMessage()
+            msg["To"] = to
+            msg["Subject"] = subj
             if in_reply_to:
-                hdrs.insert(2, f"In-Reply-To: {in_reply_to}")
-                hdrs.insert(3, f"References: {refs}")
-            raw_msg = "\r\n".join(hdrs) + "\r\n\r\n" + text
-            raw_b64 = base64.urlsafe_b64encode(raw_msg.encode("utf-8")).decode("utf-8")
+                msg["In-Reply-To"] = in_reply_to
+                msg["References"] = refs
+            msg.set_content(text)
+            raw_b64 = base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
             payload = {"raw": raw_b64}
             if thread_id:
                 payload["threadId"] = thread_id

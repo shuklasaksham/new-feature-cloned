@@ -1,5 +1,12 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (fork: concise memory + email fix)
+- **Email subject encoding fixed**: `send-email` now builds the MIME message via stdlib `EmailMessage` (connectors.py ~line 1274), so non-ASCII in the Subject (em-dash etc.) is RFC-2047 encoded instead of rendering as mojibake ("Ã¢Â€Â"). Verified via round-trip decode. Threading (In-Reply-To/References/threadId) preserved.
+- **Shorter, human replies**: `suggest_project_reply` prompt (connect_ai.py) now defaults to 2-3 sentences, natural tone, no throat-clearing openers. Verified live: ~174 chars / 3 sentences.
+- **Concise extraction**: `analyze_connected_source` + `detect_source_updates` prompts now skip greetings/small talk and cap titles (<6 words) / details (one clause).
+- **Overview summary line**: ProjectMemory.jsx OverviewView now leads with a concise 2-3 line "what's happening now" banner (`MemorySummaryLine`, data-testid `overview-summary`): item count across sources, latest activity, scope-change flag.
+
+
 ## Original problem statement
 Build "Bracket" — an AI decision operating system for designers. Not another tool. A senior-designer brain between input and output. Positioned against Notion / Figma plugins / AI writing tools.
 

@@ -118,6 +118,17 @@ export default function ProjectMemory() {
     return all.slice(0, 8);
   }, [memory]);
 
+  // Compact counts for the Overview summary line (concise "what's happening now").
+  const memorySummary = useMemo(() => {
+    let total = 0, scope = 0;
+    MEMORY_CATEGORIES.forEach((cat) => {
+      const arr = memory.grouped?.[cat.key] || [];
+      total += arr.length;
+      scope += arr.filter((m) => m.is_scope_change).length;
+    });
+    return { total, scope };
+  }, [memory]);
+
   const openReview = () => {
     const target = MEMORY_CATEGORIES.find((c) =>
       (memory.grouped?.[c.key] || []).some((m) => m.status === "detected" || m.status === "review")
@@ -234,6 +245,7 @@ export default function ProjectMemory() {
                 project={project}
                 projectId={id}
                 recentItems={recentItems}
+                summary={memorySummary}
                 connections={connections || []}
                 onConnectionsChanged={() => load({ silent: true })}
                 onJumpTo={(cat) => { setView(cat); setStatusFilter("all"); }}
@@ -303,8 +315,39 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
   );
 }
 
+/* ─── Overview summary — concise 2-3 line "what's happening now" ────────── */
+function MemorySummaryLine({ summary, recentItems, connections }) {
+  const total = summary?.total ?? 0;
+  const scope = summary?.scope ?? 0;
+  const latest = recentItems?.[0];
+  const srcN = connections?.length ?? 0;
+  return (
+    <div
+      className="rounded-xl px-4 py-3 mb-5"
+      style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+      data-testid="overview-summary"
+    >
+      <p className="text-[13px] leading-relaxed" style={{ color: "var(--text)" }}>
+        {total === 0
+          ? "Bracket is reading your connected work — a short summary will appear here as items come in."
+          : `Bracket is tracking ${total} item${total === 1 ? "" : "s"} for this project across ${srcN} connected source${srcN === 1 ? "" : "s"}.`}
+      </p>
+      {latest && (
+        <p className="text-[12px] leading-relaxed mt-0.5" style={{ color: "var(--text-2)" }}>
+          Latest: {latest.title} · {timeAgo(latest.created_at)}.
+        </p>
+      )}
+      {scope > 0 && (
+        <p className="text-[12px] leading-relaxed mt-0.5 inline-flex items-center gap-1" style={{ color: "var(--danger)" }}>
+          <AlertTriangle size={11} /> {scope} possible scope change{scope === 1 ? "" : "s"} flagged.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ─── Overview — recent activity (left) + subtle Ask Bracket & sources (right) ── */
-function OverviewView({ project, projectId, recentItems, connections, onConnectionsChanged, onJumpTo }) {
+function OverviewView({ project, projectId, recentItems, summary, connections, onConnectionsChanged, onJumpTo }) {
   const noSources = connections.length === 0;
 
   if (noSources) {
@@ -325,6 +368,7 @@ function OverviewView({ project, projectId, recentItems, connections, onConnecti
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
       {/* Left — recent activity feed for this project */}
       <section className="min-w-0" data-testid="overview-recent">
+        <MemorySummaryLine summary={summary} recentItems={recentItems} connections={connections} />
         <div className="flex items-center justify-between mb-3">
           <p className="mono-tag text-[9.5px]" style={{ color: "var(--text-3)" }}>RECENT ACTIVITY</p>
           <span className="mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>{recentItems.length} latest</span>

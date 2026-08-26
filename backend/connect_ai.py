@@ -25,6 +25,8 @@ CRITICAL RULES:
 - Classify each item's status: "confirmed" ONLY when explicitly agreed/approved/stated as final; otherwise "detected".
 - Casual mentions ("maybe we could add dark mode") are "detected", never "confirmed".
 - If the content is thin, return fewer items. Empty arrays are fine.
+- Extract ONLY what actually matters to running the project. Skip greetings, small talk, pleasantries and generic chatter.
+- Keep it concise: titles under 6 words, details to one short factual clause.
 
 EXISTING PROJECTS (for matching — use client names, participants, keywords, titles):
 {cand_lines}
@@ -68,6 +70,7 @@ Identify only MEANINGFUL new information: new requests, decisions, deliverables,
 potential scope creep (requests outside known scope), approvals, blockers.
 - status "confirmed" ONLY for explicit agreements; ambiguous statements are "detected".
 - If nothing meaningful is new, return empty arrays.
+- Ignore greetings, small talk and chatter. Keep titles under 6 words and details to one short factual clause.
 
 Return STRICT JSON only:
 {{
@@ -227,10 +230,12 @@ latest instruction precisely.
 - Follow the designer's latest instruction above (tone, length, angle, request).
 - Ground in the client's message + project memory — do NOT invent facts.
 - Reflect the correct scope, deliverables or deadlines when relevant.
-- End with the next concrete step the designer will take.
-- Default length 3-5 sentences unless the instruction asks otherwise.
-- First-person "I". No jargon, no filler.
-- If nothing new to reply to, acknowledge current status briefly.
+- Keep it SHORT: 2-3 sentences by default, unless the instruction asks otherwise.
+- Sound like a real person wrote it quickly — natural, warm, direct. No corporate filler, no throat-clearing openers ("Great question", "Thanks for reaching out"), no essay.
+- Say only what matters. Cut anything the client doesn't need.
+- End with the one concrete next step, only if there is a real one.
+- First-person "I". Plain language, no jargon.
+- If nothing new to reply to, acknowledge current status in a single line.
 
 Return STRICT JSON only:
 {{
