@@ -1515,7 +1515,7 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
           Opens the source list (search); connects the account only if needed. */}
       {(() => {
         const attachedProviders = new Set(conns.map((c) => c.provider));
-        const addable = ["gmail", "slack", "github"].filter((p) => !attachedProviders.has(p));
+        const addable = ["gmail", "slack", "figma", "github"].filter((p) => !attachedProviders.has(p));
         if (addable.length === 0) return null;
         return (
           <div className="mt-3">

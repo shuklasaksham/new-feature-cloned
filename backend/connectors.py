@@ -105,7 +105,7 @@ PROVIDERS: Dict[str, Dict[str, Any]] = {
                  "select_mode": "list", "select_hint": "Choose the channel or conversation Bracket should understand.", "multi": True},
     "whatsapp": {"label": "WhatsApp", "category": "Communication", "desc": "Connect a supported client conversation", "impl": "soon"},
     "teams":    {"label": "Microsoft Teams", "category": "Communication", "desc": "Connect a specific conversation", "impl": "soon"},
-    "figma":    {"label": "Figma", "category": "Design", "desc": "Connect a specific design file", "impl": "soon",
+    "figma":    {"label": "Figma", "category": "Design", "desc": "Connect a specific design file", "impl": "oauth",
                  "select_mode": "figma", "select_hint": "Pick files from your team, or paste a file link.", "multi": True},
     "adobe":    {"label": "Adobe", "category": "Design", "desc": "Connect a specific design/project source", "impl": "soon"},
     "gdrive":   {"label": "Google Drive", "category": "Files & Knowledge", "desc": "Connect a specific file or folder", "impl": "soon"},
