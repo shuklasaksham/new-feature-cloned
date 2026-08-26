@@ -208,7 +208,7 @@ export default function ProjectFlow() {
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
-        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+        style={{ background: "var(--bg)" }}
       />
       <div className="flow-root">
       <main

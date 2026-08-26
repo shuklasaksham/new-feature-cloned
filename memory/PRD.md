@@ -69,6 +69,14 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v9 — marketing + connect/activity + auth polish + theme unification; testing agent iteration_44 100% frontend, no console errors) —
+  - **Theme consistency (key fix)**: Settings, ProjectFlow, ProjectDocument, ProjectOverview, AdminDashboard and ConnectWork were painting a near-black `#08090A` gradient background while Dashboard/Project Memory/Activity used `#191919`. All authenticated app pages now unified to `var(--bg)` `#191919` — no more jarring bg shift when navigating (this was a real part of the earlier "mismatch" report).
+  - **Marketing**: bento feature cards moved from translucent gradients to solid `var(--surface)` with inset top-highlight + cinematic hover lift; hero + bento now read Linear-grade on Geist.
+  - **Connect Work / Activity**: removed the near-black overlay so they match the app; elevated card treatment via shared `card-linear`.
+  - **Auth**: Login + Onboarding already use the shared elevated `card-linear` / `input-line` (accent focus ring) — now on Geist + unified blue; OnboardingWelcome modal dark surface fixed earlier.
+  - Note: two console 404s remain from external `cdn.simpleicons.org/slack` and `/adobe` provider-icon endpoints (harmless, lucide fallback renders). Self-hosting provider SVGs is backlog.
+
+## Changelog (recent-older)
 - 2026-06 (design v8 — Linear-grade polish, STEP 1 of full redesign; testing agent iteration_43 95%, no console errors, Geist loaded, cohesive dark) — per user: elevate the whole product to Notion/Linear-grade, keep dark theme, preserve brand mark + 6 memory categories.
   - **Font**: entire app + marketing switched from Poppins/JetBrains Mono to **Geist Sans + Geist Mono** (index.css @import, tailwind.config, index.html). Cleaner, technical, premium — kills the template look.
   - **Accent unified**: swept 87 legacy violet refs in index.css (plus all JSX earlier) to the single blue accent `#3B82F6`. Only remaining "violet" is Figma's official brand-logo color on its provider tile (intentional brand exception).

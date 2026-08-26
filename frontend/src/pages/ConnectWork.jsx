@@ -502,7 +502,6 @@ export default function ConnectWork() {
   return (
     <div className="dashboard-root relative min-h-full" data-testid="connect-work-page">
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
-      <div aria-hidden="true" className="absolute inset-0 -z-10" style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }} />
 
       <main className="relative max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-6 md:py-8 flex flex-col gap-6 page-enter">
         <Link to={attachProjectId ? `/project/${attachProjectId}` : "/app"} className="mono-tag text-muted hover:text-[var(--text)] inline-flex items-center gap-1.5 text-[10px] w-fit" data-testid="connect-back">

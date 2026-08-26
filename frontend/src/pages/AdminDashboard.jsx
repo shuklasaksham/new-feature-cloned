@@ -194,7 +194,7 @@ export default function AdminDashboard() {
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
-        style={{ background: "linear-gradient(180deg, #08090A 0%, #06070A 55%, #050506 100%)" }}
+        style={{ background: "var(--bg)" }}
       />
       <main className="relative max-w-[1100px] mx-auto px-6 sm:px-8 md:px-10 py-10 md:py-14 page-enter">
         {/* Page intro — matches /app dashboard */}
