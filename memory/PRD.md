@@ -69,6 +69,8 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (fix — Figma OAuth error hitting ALL users; gated off until valid creds) — the "works on my PC not theirs" report was actually the Figma connect error (`OAuth app with client id qB2MZrWiGwN4vqOjjzQMXo doesn't exist`) — the configured Figma OAuth app is invalid/deleted, so every user hitting "Connect Figma" got it. Since valid Figma creds can only come from the user, gated Figma off as a stopgap: set `PROVIDERS["figma"].impl = "soon"` (Connect Work now shows Figma "COMING SOON", non-clickable), added an `impl == "soon"` guard in `/connect/{provider}/auth-url` (returns 400), and removed `figma` from the project "Add a source" chips. **To re-enable:** user provides a valid Figma Client ID + Secret (callback `…/api/connect/figma/callback`) → set env + revert `impl` to `"oauth"` + re-add `figma` to the add-source array. Verified: figma auth-url → 400, providers status `coming_soon`, card disabled.
+
 - 2026-06 (fix — hide already-attached providers from "Add a source") — restored the provider-level filter in `ConnectedSourcesCompact`: chips only show providers with no active source_connection on this project (block hides entirely when all are attached). Kept the searchable picker + no-reauth for the remaining providers. Verified: demo project (Gmail+Slack attached) shows only Figma+GitHub.
 
 - 2026-06 (fix — Send email pre-filled the user's OWN address instead of the client) —
