@@ -1,5 +1,9 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (Project Update: glance-and-decide)
+- **Simplified the Project Update review** (was overwhelming — 6-line paragraph + 6 impacts + 12 changes dumped at once). Default now shows only: a ONE-sentence bottom line (AI prompt updated in `connect_ai.py::build_project_update`), a tiny meta line (`N changes · biggest risk: …`), and Approve / Reject. Full impacts + all changes + downstream collapse behind a "See what's inside" toggle (`ProjectUpdateReview.jsx`, data-testid `project-update-details-toggle`). Decide in ~5 seconds; detail on demand. Backend flow unchanged.
+
+
 ## Changelog — 2026-06 (consolidated approval + Today's Focus)
 - **Consolidated "Project Update" approval (fixes the endless approval chain)**: New backend flow bundles ALL pending changes into ONE snapshot with an AI pass that computes downstream impacts across every category. Endpoints (connectors.py): `POST /projects/{id}/update/build`, `.../update/{update_id}/approve`, `.../update/{update_id}/reject`; AI in `connect_ai.py::build_project_update`. Approve confirms all direct items + inserts downstream items (provider 'bracket') atomically; reject discards all (ignored). 409 guard on double-resolve; ownership enforced. New drawer `ProjectUpdateReview.jsx`. Per-item Confirm removed from `ChangeActionDrawer` (now routes to consolidated review). Verified 9/9 backend + UI.
 - **"Today's Focus" overview redesign**: `ProjectMemory.jsx` OverviewView now shows only 3 sections — Needs Your Action, What Changed Since Last Visit, Coming Up (next 7 days, free-text date parsing) — capped ~5-7 items, "You're all caught up" empty state. Total-items badge removed from header. 6 category tabs unchanged.

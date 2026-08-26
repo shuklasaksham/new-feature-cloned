@@ -285,8 +285,10 @@ changes together, then work out everything that logically follows from them.
 {mem}
 
 ## Your job
-1. Write a short, plain-language summary (1-2 sentences) of what approving this
-   update means for the project — like a colleague catching them up.
+1. Write the BOTTOM LINE in ONE short sentence (max ~22 words) — plain English,
+   the single thing the user needs to know before deciding. No preamble, no
+   listing every change. Example: "Approving locks 5 areas into a 4-week
+   deadline — a real scope and timeline risk."
 2. List the concrete IMPACTS across scope, timeline, effort, cost and risk.
    Quantify when the pending changes support it; never invent numbers.
 3. List any NEW DOWNSTREAM items that logically follow from the direct changes
@@ -299,7 +301,7 @@ changes together, then work out everything that logically follows from them.
 
 Return STRICT JSON only:
 {{
-  "summary": "1-2 sentence plain summary of what this update means",
+  "summary": "the bottom line in ONE short sentence",
   "priority": "high|medium|low",
   "impacts": [{{"kind": "scope|timeline|effort|cost|risk", "detail": "1 short sentence"}}],
   "downstream": [{{"category": "deliverable|scope|timeline|requirement|decision|deadline", "title": "short", "detail": "1 sentence", "reason": "why this follows"}}]

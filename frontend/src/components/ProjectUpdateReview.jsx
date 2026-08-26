@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X, Loader2, Check, AlertTriangle, TrendingUp, ArrowRight, Sparkles, ThumbsDown, CheckCircle2,
+  X, Loader2, Check, AlertTriangle, TrendingUp, ArrowRight, Sparkles, ThumbsDown, CheckCircle2, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -24,11 +24,13 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
   const [update, setUpdate] = useState(null);
   const [nonePending, setNonePending] = useState(false);
   const [acting, setActing] = useState(null); // 'approve' | 'reject'
+  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     if (!open || !projectId) return;
     setUpdate(null);
     setNonePending(false);
+    setShowDetails(false);
     setLoading(true);
     let cancelled = false;
     (async () => {
@@ -75,6 +77,8 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
   const prio = PRIORITY[update?.priority] || PRIORITY.medium;
   const directByCat = groupByCat(update?.direct || []);
   const downstreamByCat = groupByCat(update?.downstream || []);
+  const totalChanges = (update?.direct?.length || 0) + (update?.downstream?.length || 0);
+  const riskImpact = (update?.impacts || []).find((i) => i.kind === "risk") || (update?.impacts || [])[0];
 
   return (
     <AnimatePresence>
@@ -134,82 +138,100 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
 
               {!loading && update && (
                 <>
-                  {/* Summary */}
-                  {update.summary && (
-                    <section>
-                      <p className="mono-tag text-[9.5px] mb-1.5" style={{ color: "var(--text-3)" }}>WHAT THIS UPDATE MEANS</p>
-                      <p className="text-[14px] leading-relaxed" style={{ color: "var(--text)" }} data-testid="project-update-summary">
-                        {update.summary}
-                      </p>
-                    </section>
-                  )}
-
-                  {/* Impacts */}
-                  {update.impacts?.length > 0 && (
-                    <section>
-                      <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
-                        <TrendingUp size={10} /> IMPACT ACROSS THE PROJECT
-                      </p>
-                      <ul className="space-y-2" data-testid="project-update-impacts">
-                        {update.impacts.map((imp, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text-2)" }}>
-                            <ArrowRight size={13} className="mt-0.5 shrink-0" style={{ color: "var(--accent)" }} />
-                            <div>
-                              <span className="mono-tag text-[9px] mr-1.5" style={{ color: "var(--text-3)" }}>{String(imp.kind).toUpperCase()}</span>
-                              {imp.detail}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
-
-                  {/* Direct changes */}
+                  {/* Bottom line — the one thing to know */}
                   <section>
-                    <p className="mono-tag text-[9.5px] mb-2" style={{ color: "var(--text-3)" }}>
-                      CHANGES IN THIS UPDATE · {update.direct?.length || 0}
+                    <p className="text-[16px] font-semibold leading-snug tracking-[-0.01em]"
+                       style={{ color: "var(--text)" }} data-testid="project-update-summary">
+                      {update.summary || "Bundles your pending changes into one update."}
                     </p>
-                    <div className="space-y-1.5" data-testid="project-update-direct">
-                      {directByCat.map(([catKey, list]) => (
-                        <CatGroup key={catKey} catKey={catKey} list={list} />
-                      ))}
-                    </div>
+                    <p className="mt-2 text-[12px]" style={{ color: "var(--text-3)" }} data-testid="project-update-meta">
+                      {totalChanges} change{totalChanges === 1 ? "" : "s"}
+                      {riskImpact
+                        ? <> · biggest risk: <span style={{ color: prio.color }}>{riskImpact.detail.length > 72 ? riskImpact.detail.slice(0, 72).trim() + "…" : riskImpact.detail}</span></>
+                        : <> · {prio.label.toLowerCase()}</>}
+                    </p>
                   </section>
 
-                  {/* Downstream */}
-                  {update.downstream?.length > 0 && (
-                    <section>
-                      <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                        <Sparkles size={10} /> BRACKET WILL ALSO ADD · {update.downstream.length}
-                      </p>
-                      <div className="space-y-1.5" data-testid="project-update-downstream">
-                        {downstreamByCat.map(([catKey, list]) => (
-                          <CatGroup key={catKey} catKey={catKey} list={list} showReason />
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Decision row */}
-                  <section className="pt-2 sticky bottom-0 pb-1" style={{ borderTop: "1px solid var(--hairline)", background: "var(--surface)" }}>
-                    <p className="mono-tag text-[9.5px] mb-2 mt-3" style={{ color: "var(--text-3)" }}>ONE REVIEW, ONE APPROVAL</p>
+                  {/* Decide now */}
+                  <section>
                     <div className="flex flex-wrap gap-2">
                       <button type="button" onClick={() => resolve("approve")} disabled={acting !== null}
-                              className="clay-signal px-4 py-2 text-[12.5px] inline-flex items-center gap-1.5"
+                              className="clay-signal px-4 py-2.5 text-[13px] inline-flex items-center gap-1.5"
                               data-testid="project-update-approve">
-                        {acting === "approve" ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                        {acting === "approve" ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
                         Approve update
                       </button>
                       <button type="button" onClick={() => resolve("reject")} disabled={acting !== null}
-                              className="clay-ghost px-3 py-2 text-[12px] inline-flex items-center gap-1.5"
+                              className="clay-ghost px-3 py-2.5 text-[12.5px] inline-flex items-center gap-1.5"
                               data-testid="project-update-reject">
                         {acting === "reject" ? <Loader2 size={11} className="animate-spin" /> : <ThumbsDown size={11} />}
                         Reject all
                       </button>
                     </div>
                     <p className="mt-2 text-[10.5px]" style={{ color: "var(--text-3)" }}>
-                      Approving applies every change above at once. Rejecting discards them all — no separate approvals.
+                      Approving applies every change at once. Rejecting discards them all — no separate approvals.
                     </p>
+                  </section>
+
+                  {/* Details, hidden by default */}
+                  <section>
+                    <button type="button" onClick={() => setShowDetails((v) => !v)}
+                            className="inline-flex items-center gap-1.5 text-[12px] font-medium"
+                            style={{ color: "var(--text-2)" }}
+                            data-testid="project-update-details-toggle">
+                      {showDetails ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                      {showDetails ? "Hide details" : "See what's inside"}
+                    </button>
+
+                    {showDetails && (
+                      <div className="mt-4 space-y-6">
+                        {/* Impacts */}
+                        {update.impacts?.length > 0 && (
+                          <div>
+                            <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
+                              <TrendingUp size={10} /> IMPACT ACROSS THE PROJECT
+                            </p>
+                            <ul className="space-y-2" data-testid="project-update-impacts">
+                              {update.impacts.map((imp, i) => (
+                                <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text-2)" }}>
+                                  <ArrowRight size={13} className="mt-0.5 shrink-0" style={{ color: "var(--accent)" }} />
+                                  <div>
+                                    <span className="mono-tag text-[9px] mr-1.5" style={{ color: "var(--text-3)" }}>{String(imp.kind).toUpperCase()}</span>
+                                    {imp.detail}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Direct changes */}
+                        <div>
+                          <p className="mono-tag text-[9.5px] mb-2" style={{ color: "var(--text-3)" }}>
+                            CHANGES IN THIS UPDATE · {update.direct?.length || 0}
+                          </p>
+                          <div className="space-y-1.5" data-testid="project-update-direct">
+                            {directByCat.map(([catKey, list]) => (
+                              <CatGroup key={catKey} catKey={catKey} list={list} />
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Downstream */}
+                        {update.downstream?.length > 0 && (
+                          <div>
+                            <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
+                              <Sparkles size={10} /> BRACKET WILL ALSO ADD · {update.downstream.length}
+                            </p>
+                            <div className="space-y-1.5" data-testid="project-update-downstream">
+                              {downstreamByCat.map(([catKey, list]) => (
+                                <CatGroup key={catKey} catKey={catKey} list={list} showReason />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </section>
                 </>
               )}
