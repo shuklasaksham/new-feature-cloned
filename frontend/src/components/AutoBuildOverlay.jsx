@@ -52,7 +52,7 @@ export default function AutoBuildOverlay({ open }) {
       >
         <div
           className="mx-auto w-12 h-12 rounded-full flex items-center justify-center"
-          style={{ background: "rgba(59, 130, 246,0.12)", border: "1px solid rgba(59, 130, 246,0.35)" }}
+          style={{ background: "rgba(129, 132, 196,0.12)", border: "1px solid rgba(129, 132, 196,0.35)" }}
         >
           <Loader2 size={22} className="animate-spin text-signal" />
         </div>

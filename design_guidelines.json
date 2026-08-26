@@ -1,198 +1,143 @@
 {
-  "typography": {
-    "primary_font": "Geist Sans",
-    "mono_font": "Geist Mono",
-    "rationale": "Geist delivers the ultra-clean, technical, yet premium 'Linear' feel. It eliminates the generic template look of Poppins while retaining legibility at small sizes.",
-    "headings": {
-      "style": "font-medium tracking-tighter text-white",
-      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tighter leading-[1.1]",
-      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight leading-[1.15]",
-      "h3": "text-xl sm:text-2xl tracking-tight text-white/90"
-    },
-    "body": {
-      "style": "font-normal leading-relaxed text-white/70",
-      "base": "text-base",
-      "sm": "text-sm",
-      "xs": "text-xs tracking-wide uppercase text-white/50"
-    },
-    "mono": {
-      "style": "font-mono text-[0.85em] tracking-tight",
-      "usage": "Use strictly for the 6 memory categories tags, code snippets, timestamps, and metadata tags."
-    }
-  },
+  "theme": "dark_only",
   "colors": {
-    "theme": "Dark Mode Only",
-    "backgrounds": {
-      "bg": "#191919",
-      "surface_1": "#1E1E1E",
-      "surface_2": "#232323",
-      "surface_3": "#2A2A2A"
+    "background": {
+      "base": "#111111",
+      "surface_1": "#181818",
+      "surface_2": "#222222",
+      "surface_active": "#2C2C2C"
     },
-    "borders": {
-      "hairline": "rgba(255,255,255,0.07)",
-      "focus": "rgba(255,255,255,0.15)"
-    },
-    "accents": {
-      "primary": "#3B82F6",
-      "primary_hover": "#2563EB",
-      "primary_glow": "rgba(59, 130, 246, 0.15)"
-    },
-    "status": {
-      "success": "#22C55E",
-      "warning": "#F59E0B",
-      "danger": "#EF4444"
+    "accent": {
+      "primary": "#8184C4", 
+      "hover": "#989BE0",
+      "muted": "rgba(129, 132, 196, 0.15)",
+      "justification": "A muted violet (#8184C4) was chosen over cool gray to provide a distinctive, professional software feel that maps perfectly to the Linear aesthetic while remaining sufficiently subdued and avoiding forbidden hex codes."
     },
     "text": {
-      "primary": "#FFFFFF",
-      "secondary": "rgba(255, 255, 255, 0.7)",
-      "tertiary": "rgba(255, 255, 255, 0.4)"
+      "primary": "#F4F4F5",
+      "secondary": "#A1A1AA",
+      "tertiary": "#71717A",
+      "mono": "#D4D4D8"
     },
-    "rules": [
-      "No full-screen gradients. Use deep dark solid backgrounds.",
-      "Strictly ONE accent color (#3B82F6). Remove all violet/purple.",
-      "Never use pure black or pure #808080. Adhere to the provided hex scale.",
-      "Use 'hairline' borders (border-white/5 or border-[#ffffff12]) for structural separation."
-    ]
+    "borders": {
+      "hairline": "rgba(255, 255, 255, 0.08)",
+      "hairline_strong": "rgba(255, 255, 255, 0.15)",
+      "focus": "rgba(129, 132, 196, 0.5)"
+    },
+    "semantics": {
+      "success": "#52A874",
+      "success_bg": "rgba(82, 168, 116, 0.1)",
+      "warning": "#D4A72C",
+      "warning_bg": "rgba(212, 167, 44, 0.1)",
+      "danger": "#D95757",
+      "danger_bg": "rgba(217, 87, 87, 0.1)"
+    }
   },
-  "visual_enhancers": {
-    "shadows": {
-      "ambient": "shadow-[0_4px_24px_rgba(0,0,0,0.2)]",
-      "inset": "shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
-      "glow": "shadow-[0_0_24px_rgba(59,130,246,0.1)]"
+  "typography": {
+    "font_family": "Geist Sans, sans-serif",
+    "font_family_mono": "Geist Mono, monospace",
+    "scale": {
+      "h1": "text-3xl (30px) tracking-tight font-medium",
+      "h2": "text-2xl (24px) tracking-tight font-medium",
+      "h3": "text-lg (18px) tracking-tight font-medium",
+      "body": "text-sm (14px) tracking-normal font-normal",
+      "mono": "text-[13px] tracking-tight",
+      "labels": "text-xs (12px) tracking-wide font-medium uppercase"
+    }
+  },
+  "radius": {
+    "policy": "Maximum 6px. ALL pills (rounded-full), rounded-lg, rounded-xl, etc., must be eliminated and replaced with 4px or 6px radii across the entire app.",
+    "mapping": {
+      "buttons": "4px (rounded-sm)",
+      "inputs": "4px (rounded-sm)",
+      "cards": "6px (rounded-md)",
+      "status_chips": "4px (rounded-sm)",
+      "modals": "6px (rounded-md)"
+    }
+  },
+  "spacing_and_density": {
+    "sidebar": {
+      "width": "240px",
+      "item_height": "28px",
+      "padding": "px-3 py-1",
+      "icon_size": "14px"
     },
-    "surfaces": {
-      "cards": "bg-[#1E1E1E] border border-white/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] rounded-xl",
-      "glass": "bg-[#191919]/70 backdrop-blur-xl border border-white/5",
-      "pills": "bg-[#232323] hover:bg-[#2A2A2A] transition-colors border border-transparent hover:border-white/5 rounded-full"
+    "data_table": {
+      "row_height_compact": "32px",
+      "row_height_comfortable": "44px",
+      "padding_cell": "px-3 py-2",
+      "header_height": "36px"
     },
-    "textures": [
-      "Apply extremely subtle noise texture overlay (opacity 1-2%) globally to remove digital flatness."
-    ]
+    "general": {
+      "page_padding": "p-8",
+      "section_gap": "gap-8",
+      "component_gap": "gap-4"
+    }
+  },
+  "shadows_and_gradients": {
+    "policy": "NO shadows, NO gradients, NO glows, NO film-grain on body. Remove all drop-shadow and box-shadow utilities. Depth is achieved ONLY via hairline borders and flat background colors.",
+    "elevation_replacement": "Instead of elevation tokens (--elev-*), use: border border-white/10 bg-[#181818]"
   },
   "components": {
-    "Cards": {
-      "description": "Minimalist containers, never purely flat. Always include an inset shadow to simulate a 1px top highlight.",
-      "classes": "bg-[var(--surface)] rounded-xl border border-[var(--hairline)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] p-6"
+    "buttons": {
+      "primary": "bg-[#8184C4] text-black hover:bg-[#989BE0] rounded-sm px-3 py-1.5 text-sm font-medium transition-colors duration-100 ease-in border border-transparent",
+      "secondary": "bg-[#222222] text-[#F4F4F5] hover:bg-[#2C2C2C] rounded-sm px-3 py-1.5 text-sm font-medium border border-white/10 transition-colors duration-100 ease-in",
+      "ghost": "bg-transparent text-[#A1A1AA] hover:text-[#F4F4F5] hover:bg-white/5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors duration-100 ease-in",
+      "disconnect_cta": "bg-transparent text-[#D95757] hover:bg-[rgba(217,87,87,0.1)] rounded-sm px-3 py-1.5 text-sm font-medium border border-[rgba(217,87,87,0.3)] transition-colors duration-100 ease-in"
     },
-    "Buttons": {
-      "primary": "bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]",
-      "secondary": "bg-[#232323] hover:bg-[#2A2A2A] text-white/90 rounded-lg px-4 py-2 text-sm font-medium border border-white/5 transition-all shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]"
+    "provider_cards_fix": {
+      "issue": "Disconnect CTA overlapping the status chip.",
+      "solution": "Refactor the provider card into a strict Flex Column structure to ensure elements cannot overlap.",
+      "html_structure": "<div class=\"flex flex-col h-full gap-4 p-4 bg-[#181818] border border-white/10 rounded-md\"><div class=\"flex items-start justify-between gap-4\">[Icon/Title Container] [Status Chip]</div><div class=\"flex-1\">[Description]</div><div class=\"flex justify-end mt-auto pt-4 border-t border-white/5\">[Disconnect CTA]</div></div>"
     },
-    "Inputs": {
-      "classes": "bg-[#191919] border border-white/10 rounded-lg px-3 py-2 text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)]"
+    "status_chips": {
+      "design": "Flat, 4px radius, dense, NO rounded-full.",
+      "connected": "bg-[rgba(82,168,116,0.1)] text-[#52A874] border border-[rgba(82,168,116,0.2)] rounded-sm px-2 py-0.5 text-xs font-medium uppercase tracking-wide",
+      "coming_soon": "bg-white/5 text-[#A1A1AA] border border-white/10 rounded-sm px-2 py-0.5 text-xs font-medium uppercase tracking-wide"
     },
-    "Tabs": {
-      "description": "Horizontal pill nav. Inactive tabs are text-white/50. Active tab has bg-[#232323] + text-white. Underline is a framer-motion layoutId.",
-      "classes": "relative px-3 py-1.5 text-sm font-medium rounded-md transition-colors"
+    "memory_tabs": {
+      "design": "Boxed tabs. Dense, no floating underline indicators.",
+      "container": "flex space-x-1 p-1 bg-[#181818] border border-white/10 rounded-md w-fit",
+      "active_tab": "bg-[#2C2C2C] text-[#F4F4F5] rounded-sm px-3 py-1 text-sm font-medium shadow-none",
+      "inactive_tab": "text-[#A1A1AA] hover:text-[#F4F4F5] hover:bg-white/5 rounded-sm px-3 py-1 text-sm font-medium transition-colors duration-100"
     },
-    "Memory_Rows": {
-      "description": "Data rows for the 6 categories. Should look like highly polished ledger entries, not Kanban tasks. Emphasize timestamps and typography over container boxes.",
-      "classes": "group flex items-center justify-between py-3 border-b border-[var(--hairline)] hover:bg-[#1E1E1E]/50 transition-colors cursor-pointer"
+    "data_table": {
+      "container": "border border-white/10 rounded-md overflow-hidden bg-[#111111]",
+      "header": "bg-[#181818] border-b border-white/10 text-[#A1A1AA] text-xs font-medium uppercase tracking-wide",
+      "row": "border-b border-white/5 hover:bg-white/[0.02] transition-colors duration-100"
     },
-    "Chat_Turns": {
-      "user": "bg-[#2A2A2A] text-white/90 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[85%] self-end",
-      "assistant": "bg-transparent text-white/80 pr-4 py-3 max-w-[90%] self-start border-l-2 border-blue-500/30 pl-4"
+    "modals_drawers": {
+      "container": "bg-[#181818] border border-white/10 rounded-md shadow-none",
+      "overlay": "bg-black/60 backdrop-blur-md"
     }
   },
-  "grids": {
-    "marketing_bento": "grid grid-cols-1 md:grid-cols-12 gap-6. Hero tile spans col-span-12 lg:col-span-8. Supporting tiles span col-span-4.",
-    "app_dashboard": "grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4. Dense, highly optimized for scanning."
+  "marketing_landing": {
+    "hero": "Solid #111111 background. NO gradient meshes or glows. Use a subtle hairline grid pattern (rgba(255,255,255,0.03)) for texture. Typography must be extremely sharp. Use muted violet (#8184C4) exclusively for primary CTAs and key highlights.",
+    "sections": "Flat surfaces separated by hairline borders. Feature cards should follow the exact same component styling as the app (flat, 6px radius, hairline borders).",
+    "motion": "Immediate and precise. Use framer-motion for slight fade-ups (y: 10, opacity: 0 -> 1) but keep durations very short (0.2s)."
   },
-  "layouts": {
-    "spacing": "Generous spacing. Use p-8 or p-12 for major section padding. Within cards, use p-5 or p-6. Never cramp text.",
-    "sidebar": "w-64 fixed left-0 top-0 h-screen bg-[#191919] border-r border-[var(--hairline)] flex flex-col z-40",
-    "main_content": "ml-64 min-h-screen bg-[#191919] text-white"
+  "motion_policy": {
+    "speed": "Fast and precise.",
+    "durations": "Hover states: 100ms. Modals/Drawers: 200ms.",
+    "easings": "ease-out for entering, ease-in for exiting. Avoid bouncy spring physics."
   },
-  "motion": {
-    "philosophy": "Cinematic but quiet. No bouncy spring animations. Use ease-out for entrances, ease-in for exits.",
-    "page_load": "opacity-0 to opacity-100, translateY(10px) to translateY(0) with duration 0.4s and ease [0.22, 1, 0.36, 1].",
-    "stagger": "List items (Memory rows, dashboard tiles) should stagger reveal with 0.05s delay increments.",
-    "interactions": "Buttons scale down slightly on active (scale: 0.98). Hover states transition color in 0.15s."
+  "migration_plan": {
+    "step_1": "CSS Tokens (index.css): Update --bg (#111111), --surface (#181818), --surface-2 (#222222), --accent (#8184C4). Remove --elev-* tokens. Modify --hairline to rgba(255,255,255,0.08). Remove any gradient or noise/film-grain tokens applied to body.",
+    "step_2": "Global Radius & Shadows: Run a project-wide search-and-replace in .js files to change 'rounded-full', 'rounded-lg', 'rounded-xl', 'rounded-2xl' to 'rounded-md' (6px) or 'rounded-sm' (4px). Remove all 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'drop-shadow-*' classes.",
+    "step_3": "Typography & Spacing: Apply tight tracking to all H1/H2 headings. Update Data Table components to enforce the 32px/44px row heights. Refactor Boxed Tabs (.memory-tabs, .memory-tab).",
+    "step_4": "Component Fixes: Apply the exact flex-col structure fix to Connect Work Provider Cards to eliminate the Disconnect CTA overlap with the status chip.",
+    "step_5": "Marketing Alignment: Strip gradients, background glows, and large radii from the marketing/landing page. Ensure it matches the same strict dark flat system."
   },
-  "accessibility": {
-    "contrast": "Ensure text-white/50 meets 4.5:1 ratio against #191919. (Use text-white/60 if necessary).",
-    "focus": "All interactive elements MUST have a visible focus ring (focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#191919]).",
-    "data_testid": "MANDATORY on all links, buttons, inputs, tabs, and major view containers (e.g., data-testid='nav-dashboard-link', data-testid='ask-bracket-submit')."
-  },
-  "media": {
-    "images": "Use monochromatic or deeply tinted images. Opacity overlays must not exceed 50%. Let the image content breathe."
-  },
-  "3d_libraries": {
-    "recommendation": "Use framer-motion for 2.5D depth on marketing scroll. Avoid heavy WebGL/Three.js unless specifically building the 'Connected Sources' hero visualization.",
-    "visual_data": "For activity digests, use simple Recharts with custom tooltips (bg-[#1E1E1E], 1px border), matching the dark UI exactly."
-  },
-  "image_urls": [
-    {
-      "url": "https://images.unsplash.com/photo-1735948055457-8d816fb80a87?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwyfHxtaW5pbWFsaXN0JTIwZGFyayUyMHdvcmtzcGFjZXxlbnwwfHx8fDE3ODc3MzA2MjR8MA&ixlib=rb-4.1.0&q=85",
-      "category": "marketing_hero_background",
-      "description": "Minimalist dark workspace desk, to be used with a radial gradient fade for the marketing hero section."
-    },
-    {
-      "url": "https://images.pexels.com/photos/880989/pexels-photo-880989.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-      "category": "marketing_bento_tile",
-      "description": "Dimly lit workspace, perfect for the 'Late Night Sync' or 'Background Activity' bento box illustration."
-    }
-  ],
-  "client_os_vs_pm_tool": {
-    "core_distinction": "A PM tool requires manual task creation and status dragging. Bracket is an 'OS' that passively reads integrated apps and extracts a 'Memory'.",
-    "ui_implications": [
-      "NO kanban boards. NO drag-and-drop task columns.",
-      "Use chronological 'Ledger' feeds, digest logs, and conversational UI (Ask Bracket).",
-      "Data should look 'extracted' (e.g., source tags like 'From Slack', 'From Gmail' next to memory rows).",
-      "Focus heavily on the 'Zero Connections' empty state: the OS is dead until tools are connected. This connection page is the heartbeat."
-    ],
-    "fixed_categories": "Deliverables, Scope Items, Timelines, Requirements, Decisions, Deadlines. (These act as immutable system folders/pills, NOT user-editable lists)."
-  },
-  "implementation_order": [
-    {
-      "step": 1,
-      "focus": "Design System & Shell",
-      "description": "Implement global CSS vars, Tailwind config (Geist font, specific spacing), and the Sidebar Shell navigation."
-    },
-    {
-      "step": 2,
-      "focus": "Auth & Empty States",
-      "description": "Login (OTP + password). Crucially: 'Zero Connections' empty state and 'Connect Work' provider picker. This establishes the 'OS' paradigm."
-    },
-    {
-      "step": 3,
-      "focus": "Dashboard & Activity",
-      "description": "Projects list, 5-step project composer modal, and Activity digest feed. Nail the high-density grid and staggered row animations."
-    },
-    {
-      "step": 4,
-      "focus": "Project Memory (/project/:id)",
-      "description": "The core. Horizontal pill nav for the 6 fixed categories. Highly polished ledger rows with tags. 'Ask Bracket' chat thread component alongside it."
-    },
-    {
-      "step": 5,
-      "focus": "Marketing End-to-End",
-      "description": "Landing page bento grids, cinematic hero, pricing. Re-use components (buttons, pills, chat turns) from the app to show a unified 'Product-Led' marketing aesthetic."
-    }
-  ],
-  "screen_by_screen_notes": {
-    "Marketing_Landing": "Hero text text-6xl+ with ultra-tight tracking. Hero image uses the provided Unsplash URL behind a bg-[#191919]/60 gradient. Bento grid for features.",
-    "Dashboard": "No clutter. A single prominent 'Start new project' pill. Stats tiles use the inset-shadow card style. Project list uses clean table-less rows.",
-    "Project_Memory": "Top section: overview stats. Middle: the 6 fixed categories as a horizontally scrolling, sticky pill navigation. Below: categorized rows. Right panel: Ask Bracket.",
-    "Ask_Bracket": "Do not make it look like ChatGPT. Make it look like a native system terminal (inset panel, border-l border-white/5, transparent assistant background).",
-    "Activity_Digest": "A chronological feed. Left column: timestamps. Right column: action text with highlighted system tags (Geist Mono text-xs).",
-    "Connected_Sources": "Gridded display of tools (Slack, Figma, etc.). Connected tools have a glowing green status dot and 'Disconnect' hover state. Disconnected tools are grayscale."
-  },
-  "instructions_to_main_agent": [
-    "You are writing .js React 19 files, NOT .tsx. Skip TypeScript interfaces.",
-    "React Router v7 is being used. Follow v7 routing paradigms.",
-    "Configure Tailwind with custom colors mapping exactly to the provided CSS variables.",
-    "Install and use `framer-motion` for all specified staggered layouts and layoutId animations.",
-    "Install `lucide-react` for standard UI icons and `@phosphor-icons/react` (duotone) for marketing/bento illustrations.",
-    "Never use fully transparent backgrounds for sticky headers or dropdowns. ALWAYS use `bg-[#191919]/80 backdrop-blur-md border-b border-white/5`.",
-    "Add `data-testid` to EVERYTHING that can be clicked or contains key data."
-  ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "Do NOT use 'Inter' for headings. Adhere strictly to the Geist Sans / Geist Mono recommendation for the Linear/Vercel aesthetic.",
-    "Ensure 'hairline' borders (border-white/5) are used to separate panels, never heavy shadows on dark mode.",
-    "No generic centered layouts. Use asymmetrical bento grids for marketing, and strict high-density grids for the dashboard.",
-    "Never use AI emoji characters.",
-    "Use 2-3x more spacing (p-8, p-12) than standard Tailwind defaults.",
-    "Maintain the single accent color (#3B82F6) for primary actions. Let the UI breathe in monochrome everywhere else."
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "No generic centered layouts. Use left-aligned, information-dense layouts.",
+    "DO NOT use gradients or shadows. Depth comes exclusively from hairline borders (1px solid rgba(255,255,255,0.08)) and flat surface color steps.",
+    "Maximum border-radius across the entire application is 6px (rounded-md). Replace all pills/rounded-full elements.",
+    "CRITICAL: DO NOT use complete transparent backgrounds in headers, overlays, or surfaces that have content under them. Ensure sufficient contrast with backdrop blurs and base opacity fills.",
+    "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing (e.g., data-testid='login-button', data-testid='provider-card-disconnect').",
+    "Never use generic AI emojis (🤖🧠💭💡🔮🎯) for icons. Use Phosphor or Lucide icons exclusively.",
+    "Keep spacing extremely tight and exact, matching the 'Linear' aesthetic. Data tables should feel highly technical and dense.",
+    "Always apply hover, active, and focus states explicitly. Do not rely on universal 'transition: all', use specific transition properties to avoid breaking transforms.",
+    "Applies exclusively to .js and .jsx files as requested by the user, not .tsx files."
   ]
 }

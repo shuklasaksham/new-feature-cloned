@@ -25,7 +25,7 @@ export function SectionBleed({ className = "" }) {
 
 // Soft radial colour wash — the same treatment the homepage layers on top of
 // its SectionBleeds (blue over testimonials, amber over pricing, …).
-export function GlowWash({ color = "#5E6AD2", opacity = 0.14, className = "" }) {
+export function GlowWash({ color = "#8184C4", opacity = 0.14, className = "" }) {
   return (
     <div
       aria-hidden="true"

@@ -14,8 +14,8 @@ const CAT_META = {
   decision:     { label: "Decisions",      icon: Check,          color: "#22C55E" },
   deadline:     { label: "Deadlines",      icon: CalendarClock,  color: "#FFB84C" },
   scope_change: { label: "Scope changes",  icon: AlertTriangle,  color: "#EF4444" },
-  requirement:  { label: "Requirements",   icon: ListChecks,     color: "#60A5FA" },
-  deliverable:  { label: "Deliverables",   icon: Layers,         color: "#7CD5FF" },
+  requirement:  { label: "Requirements",   icon: ListChecks,     color: "#989BE0" },
+  deliverable:  { label: "Deliverables",   icon: Layers,         color: "#989BE0" },
   question:     { label: "Open questions", icon: HelpCircle,     color: "var(--text-3)" },
 };
 
@@ -156,7 +156,7 @@ export default function Activity() {
                     className="activity-stat text-left rounded-xl px-3 py-3 transition-all disabled:cursor-default"
                     style={{
                       background: active ? "var(--accent-soft)" : "var(--surface)",
-                      border: `1px solid ${active ? "rgba(59,130,246,0.4)" : "var(--hairline)"}`,
+                      border: `1px solid ${active ? "rgba(129, 132, 196,0.4)" : "var(--hairline)"}`,
                       boxShadow: "inset 0 1px 0 rgba(255,255,255,0.03)",
                       opacity: n === 0 ? 0.45 : 1,
                     }}

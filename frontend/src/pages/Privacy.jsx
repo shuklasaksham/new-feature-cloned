@@ -15,7 +15,7 @@ const UL = ({ items }) => (
   <ul className="mt-3 space-y-2">
     {items.map((it, i) => (
       <li key={i} className="text-[13.5px] leading-[1.7] text-[var(--text-2)] pl-4 relative">
-        <span className="absolute left-0 top-[9px] w-1.5 h-1.5 rounded-full" style={{ background: "var(--signal, #5E6AD2)" }} />
+        <span className="absolute left-0 top-[9px] w-1.5 h-1.5 rounded-full" style={{ background: "var(--signal, #8184C4)" }} />
         {it}
       </li>
     ))}

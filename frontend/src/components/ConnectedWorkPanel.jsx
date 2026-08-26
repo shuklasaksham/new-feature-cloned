@@ -18,7 +18,7 @@ import { PROVIDER_META, ProviderIcon, timeAgo } from "../lib/providersMeta";
 
 const CONN_STATUS = {
   connected:       { label: "CONNECTED",  dot: "#22C55E" },
-  syncing:         { label: "SYNCING",    dot: "#60A5FA" },
+  syncing:         { label: "SYNCING",    dot: "#989BE0" },
   expired:         { label: "EXPIRED",    dot: "#FFB84C" },
   needs_attention: { label: "ATTENTION",  dot: "#FFB84C" },
   error:           { label: "ERROR",      dot: "#EF4444" },
@@ -32,7 +32,7 @@ const HEALTH_STYLE = {
 };
 
 const MEM_STATUS = {
-  confirmed: { label: "CONFIRMED", style: { background: "rgba(59, 130, 246,0.12)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246,0.3)" } },
+  confirmed: { label: "CONFIRMED", style: { background: "rgba(129, 132, 196,0.12)", color: "#989BE0", border: "1px solid rgba(129, 132, 196,0.3)" } },
   detected:  { label: "DETECTED",  style: { background: "rgba(255,184,76,0.10)", color: "#FFB84C", border: "1px solid rgba(255,184,76,0.25)" } },
   context:   { label: "CONTEXT",   style: { background: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" } },
 };
@@ -157,7 +157,7 @@ function AskBracket({ projectId }) {
         </button>
       </div>
       {result && (
-        <div className="mt-3 p-3.5 rounded-lg" style={{ background: "rgba(59, 130, 246,0.06)", border: "1px solid rgba(59, 130, 246,0.2)" }} data-testid="ask-bracket-answer">
+        <div className="mt-3 p-3.5 rounded-lg" style={{ background: "rgba(129, 132, 196,0.06)", border: "1px solid rgba(129, 132, 196,0.2)" }} data-testid="ask-bracket-answer">
           <p className="text-[12.5px] text-[var(--text)] leading-relaxed">{result.answer}</p>
           {(result.sources || []).length > 0 && (
             <div className="mt-2.5 flex flex-col gap-1">
@@ -314,7 +314,7 @@ export const ConnectedWorkPanel = ({ projectId }) => {
                   onClick={() => setCatFilter(c.key)}
                   className="mono-tag px-2 py-1 rounded text-[9.5px]"
                   style={catFilter === c.key
-                    ? { background: "rgba(59, 130, 246,0.14)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246,0.35)" }
+                    ? { background: "rgba(129, 132, 196,0.14)", color: "#989BE0", border: "1px solid rgba(129, 132, 196,0.35)" }
                     : { background: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" }}
                   data-testid={`memory-filter-${c.key}`}
                 >

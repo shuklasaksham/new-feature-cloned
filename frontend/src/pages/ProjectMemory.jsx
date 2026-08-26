@@ -194,7 +194,7 @@ export default function ProjectMemory() {
                 {detectedCount > 0 && (
                   <button type="button" onClick={openReview}
                           className="inline-flex items-center gap-1.5 text-[12.5px] px-3.5 py-2 rounded-full font-medium"
-                          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(59,130,246,0.5)" }}
+                          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(129, 132, 196,0.5)" }}
                           data-testid="project-memory-review-cta">
                     <Sparkles size={12} /> Review changes
                   </button>
@@ -292,7 +292,7 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
         <span
           className="memory-tab-count inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold"
           style={{
-            background: active ? "var(--accent-soft, rgba(59,130,246,0.14))" : "var(--surface-2)",
+            background: active ? "var(--accent-soft, rgba(129, 132, 196,0.14))" : "var(--surface-2)",
             color: active ? "var(--accent)" : "var(--text-3)",
           }}
         >

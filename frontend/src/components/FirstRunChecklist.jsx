@@ -106,7 +106,7 @@ export default function FirstRunChecklist() {
             return (
               <div key={s.key}
                    className="rounded-xl px-3.5 py-3 flex flex-col gap-1.5"
-                   style={{ background: s.done ? "var(--accent-soft)" : "var(--surface-2)", border: `1px solid ${s.done ? "rgba(59,130,246,0.3)" : "var(--hairline)"}` }}
+                   style={{ background: s.done ? "var(--accent-soft)" : "var(--surface-2)", border: `1px solid ${s.done ? "rgba(129, 132, 196,0.3)" : "var(--hairline)"}` }}
                    data-testid={`first-run-step-${s.key}`}>
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center justify-center w-6 h-6 rounded-full shrink-0"
@@ -125,7 +125,7 @@ export default function FirstRunChecklist() {
         <div className="px-3 pb-3">
           <Link to={next.to}
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-medium"
-                style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(59,130,246,0.5)" }}
+                style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(129, 132, 196,0.5)" }}
                 data-testid="first-run-cta">
             {next.key === "connect" ? "Connect your first tool" : next.key === "memory" ? "Open a project" : "Draft a reply"} <ArrowRight size={13} />
           </Link>

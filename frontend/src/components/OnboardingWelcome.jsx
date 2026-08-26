@@ -166,7 +166,7 @@ export default function OnboardingWelcome({ open, onClose, onFinish }) {
                         style={{
                           background: "var(--primary-bg)", color: "var(--primary-fg)",
                           fontSize: "13.5px",
-                          boxShadow: "0 10px 32px -10px rgba(94,106,210,0.40)",
+                          boxShadow: "0 10px 32px -10px rgba(129, 132, 196,0.40)",
                         }}
                         data-testid="onboarding-continue-welcome"
                       >
@@ -207,8 +207,8 @@ export default function OnboardingWelcome({ open, onClose, onFinish }) {
                               onClick={() => togglePick(t.key)}
                               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left"
                               style={{
-                                background: on ? "rgba(94,106,210,0.06)" : "var(--surface)",
-                                border: `1px solid ${on ? "rgba(94,106,210,0.35)" : "var(--hairline)"}`,
+                                background: on ? "rgba(129, 132, 196,0.06)" : "var(--surface)",
+                                border: `1px solid ${on ? "rgba(129, 132, 196,0.35)" : "var(--hairline)"}`,
                               }}
                               data-testid={`onboarding-tool-${t.key}`}
                               aria-pressed={on}
@@ -256,7 +256,7 @@ export default function OnboardingWelcome({ open, onClose, onFinish }) {
                         style={{
                           background: "var(--primary-bg)", color: "var(--primary-fg)",
                           fontSize: "13.5px",
-                          boxShadow: "0 10px 32px -10px rgba(94,106,210,0.40)",
+                          boxShadow: "0 10px 32px -10px rgba(129, 132, 196,0.40)",
                         }}
                         data-testid="onboarding-continue-tools"
                       >
@@ -287,7 +287,7 @@ export default function OnboardingWelcome({ open, onClose, onFinish }) {
                     </p>
                     <div
                       className="mt-4 rounded-xl px-4 py-3 flex items-center gap-3"
-                      style={{ background: "rgba(94,106,210,0.06)", border: "1px solid rgba(94,106,210,0.20)" }}
+                      style={{ background: "rgba(129, 132, 196,0.06)", border: "1px solid rgba(129, 132, 196,0.20)" }}
                     >
                       <span className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center"
                             style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
@@ -319,7 +319,7 @@ export default function OnboardingWelcome({ open, onClose, onFinish }) {
                         style={{
                           background: "var(--primary-bg)", color: "var(--primary-fg)",
                           fontSize: "13.5px",
-                          boxShadow: "0 10px 32px -10px rgba(94,106,210,0.40)",
+                          boxShadow: "0 10px 32px -10px rgba(129, 132, 196,0.40)",
                         }}
                         data-testid="onboarding-connect-now"
                       >

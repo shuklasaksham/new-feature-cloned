@@ -9,45 +9,49 @@ module.exports = {
         // The legacy class names (bg-paper, text-ink, border-ink, etc.) are
         // remapped to dark surfaces so every existing className adopts the
         // new theme without JSX changes.
-        ink:    "#F3F4F6",  // legacy "text-ink" / "bg-ink" → now primary text / elevated surface
-        paper:  "#09090B",  // legacy page background → near-black
-        chalk:  "#16181D",  // legacy "white" surface → secondary surface
-        muted:  "#9CA3AF",  // secondary text
-        faint:  "#6B7280",  // muted text
-        signal: "#5E6AD2",  // accent (blue — matches CSS var --accent)
-        signalHover: "#1E4AEB",
-        danger: "#EF4444",
-        safe:   "#22C55E",
-        background: "#09090B",
-        foreground: "#F3F4F6",
-        border:     "#262A36",
-        input:      "#16181D",
-        ring:       "#5E6AD2",
-        primary:     { DEFAULT: "#F3F4F6", foreground: "#09090B" },
-        secondary:   { DEFAULT: "#16181D", foreground: "#F3F4F6" },
-        destructive: { DEFAULT: "#EF4444", foreground: "#F3F4F6" },
-        accent:      { DEFAULT: "#5E6AD2", foreground: "#F3F4F6" },
-        popover:     { DEFAULT: "#1B1D23", foreground: "#F3F4F6" },
-        card:        { DEFAULT: "#111113", foreground: "#F3F4F6" },
-        muted_:      { DEFAULT: "#1B1D23", foreground: "#9CA3AF" },
+        ink:    "#F4F4F5",  // legacy "text-ink" / "bg-ink" → now primary text / elevated surface
+        paper:  "#111111",  // legacy page background → near-black
+        chalk:  "#181818",  // legacy "white" surface → secondary surface
+        muted:  "#A1A1AA",  // secondary text
+        faint:  "#71717A",  // muted text
+        signal: "#8184C4",  // accent (muted violet — matches CSS var --accent)
+        signalHover: "#989BE0",
+        danger: "#D95757",
+        safe:   "#52A874",
+        background: "#111111",
+        foreground: "#F4F4F5",
+        border:     "rgba(255,255,255,0.08)",
+        input:      "#222222",
+        ring:       "#8184C4",
+        primary:     { DEFAULT: "#F4F4F5", foreground: "#111111" },
+        secondary:   { DEFAULT: "#181818", foreground: "#F4F4F5" },
+        destructive: { DEFAULT: "#D95757", foreground: "#F4F4F5" },
+        accent:      { DEFAULT: "#8184C4", foreground: "#111111" },
+        popover:     { DEFAULT: "#181818", foreground: "#F4F4F5" },
+        card:        { DEFAULT: "#181818", foreground: "#F4F4F5" },
+        muted_:      { DEFAULT: "#222222", foreground: "#A1A1AA" },
         // Linear-style surface scale (use in any new code instead of legacy names)
-        surface:   "#111113",
-        surface2:  "#16181D",
-        surface3:  "#1B1D23",
-        hairline:  "#262A36",
+        surface:   "#111111",
+        surface2:  "#181818",
+        surface3:  "#222222",
+        hairline:  "rgba(255,255,255,0.08)",
       },
       fontFamily: {
         display: ["'Geist'", "sans-serif"],
         body:    ["'Geist'", "sans-serif"],
         mono:    ["'Geist Mono'", "ui-monospace", "monospace"],
       },
-      borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "8px", lg: "10px", xl: "14px", "2xl": "18px" },
+      borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "6px", lg: "6px", xl: "6px", "2xl": "6px", "3xl": "6px", full: "6px" },
       boxShadow: {
-        // Replace all hard brutalist shadows with the new soft Linear stack
-        brut:       "0 1px 2px rgba(0,0,0,0.4), 0 8px 24px -12px rgba(0,0,0,0.6)",
-        brutLg:     "0 2px 4px rgba(0,0,0,0.45), 0 18px 40px -16px rgba(0,0,0,0.7)",
-        brutBlue:   "0 1px 2px rgba(0,0,0,0.4), 0 10px 28px -12px rgba(124,92,255,0.35)",
-        brutDanger: "0 1px 2px rgba(0,0,0,0.4), 0 10px 28px -12px rgba(239,68,68,0.35)",
+        // Flat Linear system — no elevation, depth via hairline borders only
+        sm: "none", DEFAULT: "none", md: "none", lg: "none", xl: "none", "2xl": "none", inner: "none", none: "none",
+        brut:       "none",
+        brutLg:     "none",
+        brutBlue:   "none",
+        brutDanger: "none",
+      },
+      dropShadow: {
+        sm: "0 0 #0000", DEFAULT: "0 0 #0000", md: "0 0 #0000", lg: "0 0 #0000", xl: "0 0 #0000", "2xl": "0 0 #0000", none: "0 0 #0000",
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },

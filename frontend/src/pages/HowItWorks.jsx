@@ -62,7 +62,7 @@ export default function HowItWorks() {
       <section className="relative overflow-x-clip isolate">
         <SectionBleed className="-z-20" />
         <GlowWash
-          color="#5E6AD2"
+          color="#8184C4"
           className="inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[900px] w-[900px] -z-10"
         />
         <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-24 md:py-32">
@@ -98,13 +98,13 @@ export default function HowItWorks() {
                 <div
                   aria-hidden="true"
                   className="absolute -top-16 -right-16 h-40 w-40 rounded-full blur-[50px] opacity-0 group-hover:opacity-60 transition-opacity duration-500"
-                  style={{ background: "radial-gradient(closest-side, rgba(94,106,210,0.4), transparent)" }}
+                  style={{ background: "radial-gradient(closest-side, rgba(129, 132, 196,0.4), transparent)" }}
                 />
                 <p
                   className="font-display font-semibold text-[38px] leading-none tracking-[-0.03em] tabular-nums"
                   style={{
                     color: "transparent",
-                    backgroundImage: "linear-gradient(135deg, #5E6AD2 0%, #7CD5FF 100%)",
+                    backgroundImage: "linear-gradient(135deg, #8184C4 0%, #989BE0 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                   }}
@@ -133,7 +133,7 @@ export default function HowItWorks() {
       <section className="relative overflow-x-clip isolate">
         <SectionBleed className="-z-20" />
         <GlowWash
-          color="#7CD5FF"
+          color="#989BE0"
           opacity={0.09}
           className="inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[1100px] w-[900px] -z-10"
         />
@@ -173,7 +173,7 @@ export default function HowItWorks() {
                     className="font-display font-semibold text-[42px] leading-none tracking-[-0.03em]"
                     style={{
                       color: "transparent",
-                      backgroundImage: "linear-gradient(135deg, #5E6AD2 0%, #7CD5FF 100%)",
+                      backgroundImage: "linear-gradient(135deg, #8184C4 0%, #989BE0 100%)",
                       WebkitBackgroundClip: "text",
                       backgroundClip: "text",
                     }}

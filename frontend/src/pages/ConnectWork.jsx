@@ -19,7 +19,7 @@ import { PROVIDER_META, ProviderIcon, timeAgo } from "../lib/providersMeta";
 
 const STATUS_CHIP = {
   connected:      { label: "CONNECTED",      style: { background: "rgba(34,197,94,0.10)", color: "#22C55E", border: "1px solid rgba(34,197,94,0.25)" } },
-  available:      { label: "CONNECT",        style: { background: "rgba(59, 130, 246,0.10)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246,0.3)" } },
+  available:      { label: "CONNECT",        style: { background: "rgba(129, 132, 196,0.10)", color: "#989BE0", border: "1px solid rgba(129, 132, 196,0.3)" } },
   setup_required: { label: "SETUP REQUIRED", style: { background: "rgba(255,184,76,0.10)", color: "#FFB84C", border: "1px solid rgba(255,184,76,0.25)" } },
   coming_soon:    { label: "COMING SOON",    style: { background: "transparent", color: "var(--text-3)", border: "1px solid var(--hairline)" } },
 };
@@ -34,42 +34,54 @@ function AppCard({ p, onPick, onDisconnect, busy, highlight }) {
   return (
     <div
       id={`connect-card-${p.key}`}
-      className="card-linear card-linear--solid p-4 text-left w-full transition-transform duration-200 hover:-translate-y-0.5 relative group"
-      style={highlight ? { borderColor: "var(--accent)", boxShadow: "0 0 0 1px var(--accent), 0 18px 44px -26px rgba(59,130,246,0.5)" } : undefined}
+      className="flex flex-col p-4 text-left w-full relative group"
+      style={{
+        background: "var(--surface)",
+        border: highlight ? "1px solid var(--accent)" : "1px solid var(--hairline)",
+        borderRadius: "6px",
+        minHeight: "150px",
+      }}
       data-testid={`connect-app-${p.key}`}
     >
       <button
         type="button"
         onClick={() => onPick(p)}
         disabled={p.status === "coming_soon" || busy === p.key}
-        className="block w-full text-left disabled:opacity-45 disabled:hover:translate-y-0"
+        className="block w-full text-left disabled:opacity-45 flex-1"
       >
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start justify-between gap-3">
           <ProviderIcon provider={p.key} size={17} />
-          {busy === p.key ? <Loader2 size={13} className="animate-spin text-signal" /> : <Chip status={p.status} />}
+          {busy === p.key
+            ? <Loader2 size={13} className="animate-spin" style={{ color: "var(--accent)" }} />
+            : <Chip status={p.status} />}
         </div>
-        <p className="mt-3 font-display font-semibold text-[14.5px] text-[var(--text)]">{p.label}</p>
-        <p className="mt-1 text-[11.5px] text-[var(--text-3)] leading-snug">{p.desc}</p>
+        <p className="mt-3 font-semibold text-[14px] tracking-[-0.01em]" style={{ color: "var(--text)" }}>{p.label}</p>
+        <p className="mt-1 text-[12px] leading-snug" style={{ color: "var(--text-3)" }}>{p.desc}</p>
         {p.status === "connected" && p.account_label && (
-          <p className="mt-2 mono-tag text-[9.5px] text-signal truncate">{p.account_label}</p>
+          <p className="mt-2 mono-tag text-[9.5px] truncate" style={{ color: "var(--accent)" }}>{p.account_label}</p>
         )}
         {clickable && p.status === "available" && (
-          <p className="mt-2 text-[10px] text-[var(--text-3)]">One click — sign in with {p.label}, then pick your source.</p>
+          <p className="mt-2 text-[10px]" style={{ color: "var(--text-3)" }}>One click — sign in with {p.label}, then pick your source.</p>
         )}
       </button>
       {p.status === "connected" && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDisconnect(p); }}
-          disabled={busy === `dc:${p.key}`}
-          title={`Disconnect ${p.label}`}
-          aria-label={`Disconnect ${p.label}`}
-          className="absolute top-3 right-3 inline-flex items-center justify-center w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
-          style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-3)" }}
-          data-testid={`connect-disconnect-${p.key}`}
-        >
-          {busy === `dc:${p.key}` ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
-        </button>
+        <div className="flex justify-end mt-3 pt-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDisconnect(p); }}
+            disabled={busy === `dc:${p.key}`}
+            title={`Disconnect ${p.label}`}
+            aria-label={`Disconnect ${p.label}`}
+            className="inline-flex items-center gap-1.5 px-2.5 h-7 text-[11px] font-medium transition-colors"
+            style={{ background: "transparent", border: "1px solid var(--danger-soft)", borderRadius: "4px", color: "var(--danger)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--danger-soft)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+            data-testid={`connect-disconnect-${p.key}`}
+          >
+            {busy === `dc:${p.key}` ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+            Disconnect
+          </button>
+        </div>
       )}
     </div>
   );
@@ -174,7 +186,7 @@ function SourceModal({ provider, onConfirm, onClose }) {
                 key={s.id}
                 onClick={() => toggle(s)}
                 className="p-3 text-left flex items-center gap-3 rounded-lg transition-colors"
-                style={{ background: on ? "rgba(59, 130, 246,0.10)" : "rgba(255,255,255,0.02)", border: `1px solid ${on ? "rgba(59, 130, 246,0.4)" : "var(--hairline)"}` }}
+                style={{ background: on ? "rgba(129, 132, 196,0.10)" : "rgba(255,255,255,0.02)", border: `1px solid ${on ? "rgba(129, 132, 196,0.4)" : "var(--hairline)"}` }}
                 data-testid={`source-modal-item-${s.id}`}
               >
                 {on ? <CheckSquare size={15} className="text-signal shrink-0" /> : <Square size={15} className="text-[var(--text-3)] shrink-0" />}
@@ -310,7 +322,7 @@ function SourcePreview({ provider, sources, attachProjectId, onDone, onBack }) {
       </div>
 
       {match && (
-        <div className="mt-3 card-linear card-linear--solid p-4" style={{ borderColor: "rgba(59, 130, 246,0.35)" }} data-testid="connect-match-card">
+        <div className="mt-3 card-linear card-linear--solid p-4" style={{ borderColor: "rgba(129, 132, 196,0.35)" }} data-testid="connect-match-card">
           <p className="mono-tag text-signal text-[10px]">WE FOUND A POSSIBLE PROJECT MATCH</p>
           <p className="mt-1.5 text-[14px] font-medium text-[var(--text)]">{match.name}</p>
           <p className="text-[11.5px] text-[var(--text-3)] mt-0.5">{match.reason} · {match.confidence}% confidence</p>

@@ -30,8 +30,8 @@ export default function BracketMark({
     >
       <defs>
         <linearGradient id="bracket-mark-blue" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#2C4FF2" />
-          <stop offset="1" stopColor="#70A7FF" />
+          <stop offset="0" stopColor="#8184C4" />
+          <stop offset="1" stopColor="#8184C4" />
         </linearGradient>
       </defs>
       <polygon

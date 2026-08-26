@@ -27,7 +27,7 @@ export default function Navbar() {
   const navAccent = useTransform(
     scrollYProgress,
     [0, 0.45, 0.85, 1],
-    ["#5E6AD2", "#7CD5FF", "#FFB84C", "#FFB84C"]
+    ["#8184C4", "#989BE0", "#FFB84C", "#FFB84C"]
   );
   const accentOpacity = useTransform(scrollY, [0, 160], [0, 0.9]);
 

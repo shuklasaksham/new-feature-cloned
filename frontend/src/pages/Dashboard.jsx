@@ -47,7 +47,7 @@ const AI_OUTPUTS = [
 
 const STAGE_STYLE = {
   in_progress: { backgroundColor: "var(--surface-2)", color: "var(--text)", border: "1px solid var(--hairline)" },
-  locked:      { backgroundColor: "#3B82F6", color: "#FFFFFF", border: "1px solid #3B82F6" },
+  locked:      { backgroundColor: "#8184C4", color: "#FFFFFF", border: "1px solid #8184C4" },
   awaiting:    { backgroundColor: "rgba(245,158,11,0.14)", color: "#FBBF24", border: "1px solid rgba(245,158,11,0.35)" },
   rejected:    { backgroundColor: "#EF4444", color: "#FFFFFF", border: "1px solid #EF4444" },
   accepted:    { backgroundColor: "#22C55E", color: "#0A0A0C", border: "1px solid #22C55E" },
@@ -285,8 +285,8 @@ export default function Dashboard() {
         {hasProjects && (
           <motion.div variants={item} className="grid grid-cols-3 gap-3" data-testid="dashboard-stats">
             <StatCard label="Total projects" value={stats.total} icon={FolderOpen} accent="var(--text-2)" />
-            <StatCard label="In progress" value={stats.inProgress} icon={CircleDot} accent="#7CD5FF" />
-            <StatCard label="Locked" value={stats.locked} icon={Lock} accent="#3B82F6" />
+            <StatCard label="In progress" value={stats.inProgress} icon={CircleDot} accent="#989BE0" />
+            <StatCard label="Locked" value={stats.locked} icon={Lock} accent="#8184C4" />
           </motion.div>
         )}
 
@@ -535,7 +535,7 @@ function ProjectCard({ project: p, onRename, onDelete, selected, selectionActive
             style={{
               width: `${stepPct}%`,
               background: isLocked
-                ? "linear-gradient(90deg, #3B82F6, #7CD5FF)"
+                ? "linear-gradient(90deg, #8184C4, #989BE0)"
                 : "linear-gradient(90deg, var(--text-2), var(--text-3))",
             }}
           />

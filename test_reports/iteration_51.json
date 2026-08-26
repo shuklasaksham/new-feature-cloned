@@ -1,0 +1,28 @@
+{
+  "summary": "Frontend-only regression sweep after the app-wide Linear-style redesign (dark #111, violet #8184C4, flat/dense, 4-6px radii, no shadows/gradients). Verified: marketing landing, /login password flow, /app dashboard, /app/connect, /app/activity, /settings, /faq, and /project/{id} (ProjectMemory) all render cleanly with the new dark flat theme. NO console errors, NO pageerrors, NO blank/white surfaces, NO broken layouts observed. Sidebar navigation (Dashboard/Activity/Connect Work/Settings/FAQ) all resolve. ProjectMemory: Overview + all 6 category pills (Deliverables/Scope/Timeline/Requirements/Decisions/Deadlines) render, Decisions table shows 2 rows, Columns menu opens, Views dropdown opens, density-compact and density-comfortable toggles present and clickable. Connect Work: page renders; demo account has no CONNECTED providers on the workspace-scoped page, so the live overlap could not be observed in-browser — verified by code review that ConnectWork.jsx AppCard now uses flex-col with Disconnect in a bordered footer row (borderTop hairline, data-testid connect-disconnect-{key}), so it is structurally impossible for Disconnect to overlap the CONNECTED chip.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Connect Work (/app/connect)", "issues": ["Could not visually verify the Disconnect-vs-CONNECTED chip fix because demo account has no connected providers on this page. Code review confirms the fix (flex-col card + bordered footer for Disconnect)."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "OPTIONAL: To enable visual regression on the Connect Work disconnect fix, seed the demo account with at least one CONNECTED provider (Gmail or Slack) on the workspace-level connections list so /app/connect renders a CONNECTED card. Right now only project-scoped connected sources are populated, which aren't the same UI."
+  ],
+  "critical_code_review_comments": [
+    "ConnectWork.jsx AppCard fix is correct: card is flex-col, top block is a button containing icon + Chip + label/desc, and a sibling footer div with borderTop hairline contains the Disconnect button — no absolute positioning, no possibility of overlap. data-testid connect-disconnect-{key} is present.",
+    "ProjectMemory.jsx pill tabs use data-testid project-memory-pill-{key} where key is SINGULAR (deliverable/scope/timeline/requirement/decision/deadline). External tests written against plural keys will fail — must use singular.",
+    "Views dropdown and Columns menu use a full-viewport click-catcher div (fixed inset-0 z-30). Expected UX (click-outside-to-close) but can trip Playwright clicks on other elements right after; close via Escape or trigger click before next interaction."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped per request)", "frontend": "100% of tested flows pass"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 — worked.",
+  "seed_data_creation": "None. Used existing project 9ea97afb-fb31-4b74-bce0-71a284fdc1eb.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Redesign regression pass complete. All tested routes render correctly with zero console/page errors. Connect Work disconnect fix could not be visually observed live (demo has no workspace-level connected providers) but is correct by construction in ConnectWork.jsx lines 32-88. ProjectMemory tabs use singular category keys in testids (project-memory-pill-decision, not -decisions).",
+  "rca of the issue": "N/A — no bugs found."
+}

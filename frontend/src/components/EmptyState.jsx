@@ -43,7 +43,7 @@ export function EmptyState({
           <Link
             to={ctaTo}
             className="mt-6 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-medium"
-            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(59,130,246,0.5)" }}
+            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(129, 132, 196,0.5)" }}
             data-testid={`${testid}-cta`}
           >
             {cta}
@@ -54,7 +54,7 @@ export function EmptyState({
             type="button"
             onClick={ctaOnClick}
             className="mt-6 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-medium"
-            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(59,130,246,0.5)" }}
+            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(129, 132, 196,0.5)" }}
             data-testid={`${testid}-cta`}
           >
             {cta}
@@ -96,7 +96,7 @@ function EmptyArt({ icon: Icon }) {
       {Icon && (
         <span
           className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-8 h-8 rounded-full"
-          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 6px 16px -6px rgba(59,130,246,0.6)" }}
+          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 6px 16px -6px rgba(129, 132, 196,0.6)" }}
         >
           <Icon size={15} />
         </span>

@@ -12,6 +12,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import Avatar from "./Avatar";
+import BracketMark from "./BracketMark";
 import { useAuth } from "../lib/AuthContext";
 import { api } from "../lib/api";
 
@@ -138,12 +139,7 @@ export default function AppSidebar() {
       {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
         <Link to="/app" className="brand-mark" data-testid="sidebar-brand" aria-label="Bracket">
-          <img
-            src="/logo-diamond.png"
-            alt="Bracket"
-            height={24}
-            style={{ display: "block", flexShrink: 0, objectFit: "contain", height: 24, width: "auto" }}
-          />
+          <BracketMark size={20} />
         </Link>
         <button
           type="button"

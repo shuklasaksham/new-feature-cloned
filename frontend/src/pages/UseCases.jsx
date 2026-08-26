@@ -61,11 +61,11 @@ export default function UseCases() {
       <section className="relative overflow-x-clip isolate">
         <SectionBleed className="-z-20" />
         <GlowWash
-          color="#5E6AD2"
+          color="#8184C4"
           className="inset-x-0 top-1/4 mx-auto h-[900px] w-[900px] -z-10"
         />
         <GlowWash
-          color="#7CD5FF"
+          color="#989BE0"
           opacity={0.08}
           className="inset-x-0 bottom-0 mx-auto h-[700px] w-[800px] -z-10"
         />
@@ -84,14 +84,14 @@ export default function UseCases() {
               <div
                 aria-hidden="true"
                 className="absolute -top-16 -right-16 h-40 w-40 rounded-full blur-[50px] opacity-30 group-hover:opacity-60 transition-opacity"
-                style={{ background: "radial-gradient(closest-side, rgba(94,106,210,0.35), transparent)" }}
+                style={{ background: "radial-gradient(closest-side, rgba(129, 132, 196,0.35), transparent)" }}
               />
               <div className="lg:col-span-3 flex lg:flex-col items-baseline lg:items-start gap-3 lg:gap-2">
                 <span
                   className="font-display font-semibold text-[42px] leading-none tracking-[-0.03em] tabular-nums"
                   style={{
                     color: "transparent",
-                    backgroundImage: "linear-gradient(135deg, #5E6AD2 0%, #7CD5FF 100%)",
+                    backgroundImage: "linear-gradient(135deg, #8184C4 0%, #989BE0 100%)",
                     WebkitBackgroundClip: "text",
                     backgroundClip: "text",
                   }}

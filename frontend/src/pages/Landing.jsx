@@ -242,7 +242,7 @@ function HeroOrbs() {
   const orbs = [
     { size: 640, top: "-18%",  left: "-12%", bg: "rgba(255,255,255,0.05)", dx: 22,  dy: -14, dur: 14 },
     { size: 520, top: "34%",   left: "82%",  bg: "rgba(255,255,255,0.04)", dx: -22, dy: -10, dur: 18 },
-    { size: 620, top: "66%",   left: "92%",  bg: "rgba(124,213,255,0.05)", dx: 16,  dy: 12,  dur: 20 },
+    { size: 620, top: "66%",   left: "92%",  bg: "rgba(152, 155, 224,0.05)", dx: 16,  dy: 12,  dur: 20 },
   ];
   return (
     <div aria-hidden="true" className="absolute inset-0 -z-[5] pointer-events-none overflow-hidden">
@@ -495,7 +495,7 @@ const SHOWCASE = [
     body:
       "Connect Gmail threads, Slack channels, Figma files or GitHub repos. Bracket only reads the sources you pick — nothing else.",
     output: "Live-Synced Sources",
-    accent: "#5E6AD2",
+    accent: "#8184C4",
     icon: Compass,
   },
   {
@@ -504,7 +504,7 @@ const SHOWCASE = [
     body:
       "Bracket polls your connected sources on a live 10-second cadence, so the project always reflects the freshest client conversation.",
     output: "Always Fresh",
-    accent: "#7CD5FF",
+    accent: "#989BE0",
     icon: Zap,
   },
   {
@@ -522,7 +522,7 @@ const SHOWCASE = [
     body:
       "Tell Bracket what you want — “draft a reply”, “push back on scope”, “ask for the missing details”. You get a grounded response using this project's memory.",
     output: "Chat-Style Reply",
-    accent: "#B7B7FF",
+    accent: "#989BE0",
     icon: Sparkles,
   },
   {
@@ -943,12 +943,12 @@ function GhostDefs({ id }) {
   return (
     <defs>
       <linearGradient id={`${id}-panel`} x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="rgba(94,106,210,0.14)" />
-        <stop offset="100%" stopColor="rgba(94,106,210,0.02)" />
+        <stop offset="0%" stopColor="rgba(129, 132, 196,0.14)" />
+        <stop offset="100%" stopColor="rgba(129, 132, 196,0.02)" />
       </linearGradient>
       <radialGradient id={`${id}-glow`} cx="0.5" cy="0.5" r="0.5">
-        <stop offset="0%" stopColor="rgba(94,106,210,0.45)" />
-        <stop offset="100%" stopColor="rgba(94,106,210,0)" />
+        <stop offset="0%" stopColor="rgba(129, 132, 196,0.45)" />
+        <stop offset="100%" stopColor="rgba(129, 132, 196,0)" />
       </radialGradient>
       <pattern id={`${id}-dots`} width="22" height="22" patternUnits="userSpaceOnUse">
         <circle cx="1" cy="1" r="0.9" fill="rgba(255,255,255,0.055)" />
@@ -985,7 +985,7 @@ function GhostFlow() {
       </g>
 
       {/* converging flow lines */}
-      <g fill="none" stroke="rgba(94,106,210,0.42)" strokeWidth="1.1" className="bg-flowdash">
+      <g fill="none" stroke="rgba(129, 132, 196,0.42)" strokeWidth="1.1" className="bg-flowdash">
         <path d="M112 62 C 160 70, 178 108, 200 130" />
         <path d="M104 138 C 140 140, 168 140, 196 140" />
         <path d="M114 206 C 160 200, 180 168, 200 150" />
@@ -994,28 +994,28 @@ function GhostFlow() {
       {/* Bracket node — glow + ring + diamond core */}
       <g transform="translate(222, 140)">
         <circle r="44" fill="url(#gf-glow)" className="bg-pulse" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
-        <circle r="21" fill="rgba(8,9,10,0.6)" stroke="rgba(94,106,210,0.55)" strokeWidth="1.1" />
-        <circle r="27" fill="none" stroke="rgba(94,106,210,0.22)" strokeWidth="1" strokeDasharray="2.5 5" className="bg-slowspin" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
-        <rect x="-7" y="-7" width="14" height="14" rx="2.5" transform="rotate(45)" fill="rgba(94,106,210,0.85)" />
+        <circle r="21" fill="rgba(8,9,10,0.6)" stroke="rgba(129, 132, 196,0.55)" strokeWidth="1.1" />
+        <circle r="27" fill="none" stroke="rgba(129, 132, 196,0.22)" strokeWidth="1" strokeDasharray="2.5 5" className="bg-slowspin" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
+        <rect x="-7" y="-7" width="14" height="14" rx="2.5" transform="rotate(45)" fill="rgba(129, 132, 196,0.85)" />
       </g>
 
       {/* node → workspace */}
-      <path d="M250 140 C 268 140, 272 140, 288 140" fill="none" stroke="rgba(94,106,210,0.5)" strokeWidth="1.2" className="bg-flowdash" />
+      <path d="M250 140 C 268 140, 272 140, 288 140" fill="none" stroke="rgba(129, 132, 196,0.5)" strokeWidth="1.2" className="bg-flowdash" />
 
       {/* structured workspace panel */}
       <g>
         <rect x="292" y="46" width="156" height="188" rx="12" fill="url(#gf-panel)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-        <text x="306" y="68" fontSize="7.5" fontFamily={MONO} letterSpacing="1.5" fill="rgba(94,106,210,0.85)">WORKSPACE</text>
+        <text x="306" y="68" fontSize="7.5" fontFamily={MONO} letterSpacing="1.5" fill="rgba(129, 132, 196,0.85)">WORKSPACE</text>
         <line x1="306" y1="78" x2="434" y2="78" stroke="rgba(255,255,255,0.10)" />
         {[92, 106, 120].map((y, i) => (
           <g key={y}>
-            <circle cx="311" cy={y} r="2.2" fill="rgba(94,106,210,0.7)" />
+            <circle cx="311" cy={y} r="2.2" fill="rgba(129, 132, 196,0.7)" />
             <line x1="320" y1={y} x2={320 + [104, 84, 96][i]} y2={y} stroke={`rgba(255,255,255,${0.22 - i * 0.05})`} strokeWidth="1.2" />
           </g>
         ))}
         {/* structured chips */}
         <g fontFamily={MONO} fontSize="6.5" letterSpacing="1">
-          <rect x="306" y="138" width="52" height="16" rx="8" fill="rgba(94,106,210,0.16)" stroke="rgba(94,106,210,0.4)" strokeWidth="0.8" />
+          <rect x="306" y="138" width="52" height="16" rx="8" fill="rgba(129, 132, 196,0.16)" stroke="rgba(129, 132, 196,0.4)" strokeWidth="0.8" />
           <text x="332" y="148.5" textAnchor="middle" fill="rgba(197,203,255,0.9)">SCOPE</text>
           <rect x="364" y="138" width="52" height="16" rx="8" fill="rgba(239,68,68,0.10)" stroke="rgba(239,68,68,0.35)" strokeWidth="0.8" />
           <text x="390" y="148.5" textAnchor="middle" fill="rgba(252,165,165,0.85)">RISKS</text>
@@ -1024,7 +1024,7 @@ function GhostFlow() {
         </g>
         {/* progress */}
         <rect x="306" y="192" width="128" height="4" rx="2" fill="rgba(255,255,255,0.07)" />
-        <rect x="306" y="192" width="96" height="4" rx="2" fill="rgba(94,106,210,0.65)" className="bg-progress" />
+        <rect x="306" y="192" width="96" height="4" rx="2" fill="rgba(129, 132, 196,0.65)" className="bg-progress" />
         <text x="306" y="214" fontSize="6.5" fontFamily={MONO} fill="rgba(255,255,255,0.35)" letterSpacing="1">STEP 4 / 5</text>
       </g>
     </svg>
@@ -1038,7 +1038,7 @@ function GhostScope() {
       <GhostDefs id="gs" />
       <rect x="0" y="0" width="220" height="172" fill="url(#gs-dots)" />
       <rect x="16" y="8" width="188" height="150" rx="12" fill="url(#gs-panel)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-      <text x="30" y="28" fontSize="7.5" fontFamily={MONO} letterSpacing="1.5" fill="rgba(94,106,210,0.85)">SCOPE · V1</text>
+      <text x="30" y="28" fontSize="7.5" fontFamily={MONO} letterSpacing="1.5" fill="rgba(129, 132, 196,0.85)">SCOPE · V1</text>
       <line x1="30" y1="37" x2="190" y2="37" stroke="rgba(255,255,255,0.10)" />
       {[
         { y: 53, w: 108, on: true },
@@ -1046,7 +1046,7 @@ function GhostScope() {
         { y: 89, w: 118, on: false },
       ].map((r, i) => (
         <g key={i}>
-          <circle cx="37" cy={r.y} r="6" fill={r.on ? "rgba(94,106,210,0.32)" : "transparent"} stroke={r.on ? "rgba(94,106,210,0.7)" : "rgba(255,255,255,0.16)"} strokeWidth="1.1" />
+          <circle cx="37" cy={r.y} r="6" fill={r.on ? "rgba(129, 132, 196,0.32)" : "transparent"} stroke={r.on ? "rgba(129, 132, 196,0.7)" : "rgba(255,255,255,0.16)"} strokeWidth="1.1" />
           {r.on && <path d={`M33.6 ${r.y} l2.4 2.4 l4.6 -4.8`} stroke="rgba(255,255,255,0.9)" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />}
           <line x1="50" y1={r.y} x2={50 + r.w} y2={r.y} stroke={r.on ? "rgba(255,255,255,0.26)" : "rgba(255,255,255,0.12)"} strokeWidth="1.2" />
         </g>
@@ -1055,8 +1055,8 @@ function GhostScope() {
       <text x="30" y="118" fontSize="6.5" fontFamily={MONO} letterSpacing="1.2" fill="rgba(255,255,255,0.35)">TIMELINE</text>
       <g>
         <rect x="30" y="126" width="160" height="6" rx="3" fill="rgba(255,255,255,0.06)" />
-        <rect x="30" y="126" width="64" height="6" rx="3" fill="rgba(94,106,210,0.55)" />
-        <rect x="98" y="126" width="52" height="6" rx="3" fill="rgba(94,106,210,0.28)" />
+        <rect x="30" y="126" width="64" height="6" rx="3" fill="rgba(129, 132, 196,0.55)" />
+        <rect x="98" y="126" width="52" height="6" rx="3" fill="rgba(129, 132, 196,0.28)" />
         {["W1", "W2", "W3"].map((w, i) => (
           <text key={w} x={34 + i * 66} y="146" fontSize="6" fontFamily={MONO} fill="rgba(255,255,255,0.30)">{w}</text>
         ))}
@@ -1089,7 +1089,7 @@ function GhostRisk() {
       <path d="M34 98 q4 3 8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0 t8 0" stroke="rgba(239,68,68,0.6)" strokeWidth="1" fill="none" />
       <text x="168" y="94" fontSize="6" fontFamily={MONO} fill="rgba(252,165,165,0.85)" letterSpacing="0.5">RISK</text>
       {/* scanning beam */}
-      <rect x="24" y="44" width="172" height="14" rx="4" fill="rgba(94,106,210,0.10)" className="bg-scan" />
+      <rect x="24" y="44" width="172" height="14" rx="4" fill="rgba(129, 132, 196,0.10)" className="bg-scan" />
     </svg>
   );
 }
@@ -1106,7 +1106,7 @@ function GhostTree() {
       {/* trunk + branches */}
       <line x1="110" y1="42" x2="110" y2="88" stroke="rgba(255,255,255,0.16)" strokeWidth="1.1" />
       <path d="M110 88 C 110 118, 58 122, 58 152" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.1" strokeDasharray="3 4" />
-      <path d="M110 88 C 110 118, 162 122, 162 152" fill="none" stroke="rgba(94,106,210,0.65)" strokeWidth="1.4" className="bg-draw" />
+      <path d="M110 88 C 110 118, 162 122, 162 152" fill="none" stroke="rgba(129, 132, 196,0.65)" strokeWidth="1.4" className="bg-draw" />
       {/* option A — dimmed */}
       <g opacity="0.55">
         <rect x="22" y="152" width="72" height="46" rx="9" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.13)" strokeWidth="1" />
@@ -1116,7 +1116,7 @@ function GhostTree() {
       </g>
       {/* option B — chosen */}
       <g>
-        <rect x="126" y="148" width="76" height="54" rx="9" fill="url(#gt-panel)" stroke="rgba(94,106,210,0.55)" strokeWidth="1.1" />
+        <rect x="126" y="148" width="76" height="54" rx="9" fill="url(#gt-panel)" stroke="rgba(129, 132, 196,0.55)" strokeWidth="1.1" />
         <text x="136" y="163" fontSize="6.5" fontFamily={MONO} letterSpacing="1" fill="rgba(197,203,255,0.95)">PATH B ✓</text>
         <line x1="136" y1="173" x2="192" y2="173" stroke="rgba(255,255,255,0.28)" strokeWidth="1.2" />
         <line x1="136" y1="182" x2="176" y2="182" stroke="rgba(255,255,255,0.13)" />
@@ -1125,14 +1125,14 @@ function GhostTree() {
       {/* confidence */}
       <text x="30" y="238" fontSize="6.5" fontFamily={MONO} letterSpacing="1.2" fill="rgba(255,255,255,0.4)">CONFIDENCE</text>
       <rect x="30" y="246" width="160" height="5" rx="2.5" fill="rgba(255,255,255,0.07)" />
-      <rect x="30" y="246" width="132" height="5" rx="2.5" fill="rgba(94,106,210,0.65)" className="bg-progress" />
+      <rect x="30" y="246" width="132" height="5" rx="2.5" fill="rgba(129, 132, 196,0.65)" className="bg-progress" />
       <text x="196" y="252" fontSize="7" fontFamily={MONO} fill="rgba(197,203,255,0.9)" textAnchor="end">92%</text>
       {/* evidence rows */}
       <text x="30" y="282" fontSize="6.5" fontFamily={MONO} letterSpacing="1.2" fill="rgba(255,255,255,0.4)">EVIDENCE</text>
       {[296, 314, 332].map((y, i) => (
         <g key={y}>
           <rect x="30" y={y - 8} width="160" height="14" rx="4" fill={`rgba(255,255,255,${0.03 - i * 0.006})`} stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" />
-          <circle cx="39" cy={y - 1} r="2" fill="rgba(94,106,210,0.7)" />
+          <circle cx="39" cy={y - 1} r="2" fill="rgba(129, 132, 196,0.7)" />
           <line x1="47" y1={y - 1} x2={47 + [110, 92, 76][i]} y2={y - 1} stroke={`rgba(255,255,255,${0.2 - i * 0.05})`} strokeWidth="1.1" />
         </g>
       ))}
@@ -1148,19 +1148,19 @@ function GhostMessage() {
       <rect x="0" y="0" width="220" height="172" fill="url(#gm-dots)" />
       {/* to-client pill */}
       <rect x="16" y="10" width="96" height="18" rx="9" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.13)" strokeWidth="1" />
-      <circle cx="27" cy="19" r="3" fill="rgba(94,106,210,0.7)" />
+      <circle cx="27" cy="19" r="3" fill="rgba(129, 132, 196,0.7)" />
       <text x="35" y="22" fontSize="6.5" fontFamily={MONO} letterSpacing="1" fill="rgba(255,255,255,0.45)">TO CLIENT</text>
       {/* email panel */}
-      <rect x="16" y="38" width="188" height="94" rx="12" fill="url(#gm-panel)" stroke="rgba(94,106,210,0.3)" strokeWidth="1" />
+      <rect x="16" y="38" width="188" height="94" rx="12" fill="url(#gm-panel)" stroke="rgba(129, 132, 196,0.3)" strokeWidth="1" />
       <line x1="30" y1="56" x2="176" y2="56" stroke="rgba(255,255,255,0.3)" strokeWidth="1.3" className="bg-type" style={{ transformOrigin: "30px 56px" }} />
       <line x1="30" y1="72" x2="156" y2="72" stroke="rgba(255,255,255,0.16)" strokeWidth="1.2" className="bg-type bg-type-2" style={{ transformOrigin: "30px 72px" }} />
       <line x1="30" y1="88" x2="140" y2="88" stroke="rgba(255,255,255,0.16)" strokeWidth="1.2" className="bg-type bg-type-3" style={{ transformOrigin: "30px 88px" }} />
       {/* signature scribble + cursor */}
-      <path d="M30 110 q5 -7 10 0 t10 0 t10 -2" stroke="rgba(94,106,210,0.6)" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+      <path d="M30 110 q5 -7 10 0 t10 0 t10 -2" stroke="rgba(129, 132, 196,0.6)" strokeWidth="1.3" strokeLinecap="round" fill="none" />
       <rect x="66" y="103" width="1.6" height="10" fill="rgba(197,203,255,0.9)" className="bg-cursor" />
       {/* send pill */}
       <g transform="translate(150, 142)">
-        <rect x="0" y="0" width="54" height="20" rx="10" fill="rgba(94,106,210,0.30)" stroke="rgba(94,106,210,0.6)" strokeWidth="1" className="bg-glowpulse" />
+        <rect x="0" y="0" width="54" height="20" rx="10" fill="rgba(129, 132, 196,0.30)" stroke="rgba(129, 132, 196,0.6)" strokeWidth="1" className="bg-glowpulse" />
         <text x="27" y="13.5" fontSize="7" fontWeight="700" fontFamily={MONO} fill="rgba(255,255,255,0.9)" textAnchor="middle">SEND →</text>
       </g>
     </svg>
@@ -1181,11 +1181,11 @@ function GhostTimeline() {
       <GhostDefs id="gl" />
       <rect x="0" y="0" width="380" height="110" fill="url(#gl-dots)" />
       {/* time chip */}
-      <rect x="298" y="8" width="66" height="17" rx="8.5" fill="rgba(94,106,210,0.14)" stroke="rgba(94,106,210,0.4)" strokeWidth="0.8" />
+      <rect x="298" y="8" width="66" height="17" rx="8.5" fill="rgba(129, 132, 196,0.14)" stroke="rgba(129, 132, 196,0.4)" strokeWidth="0.8" />
       <text x="331" y="19" fontSize="6.8" fontFamily={MONO} letterSpacing="1" fill="rgba(197,203,255,0.9)" textAnchor="middle">&lt; 60 SEC</text>
       <g fill="none">
         <line x1="20" y1="62" x2="360" y2="62" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
-        <line x1="20" y1="62" x2="332" y2="62" stroke="rgba(94,106,210,0.55)" strokeWidth="1.6" className="bento-ghost-progress" />
+        <line x1="20" y1="62" x2="332" y2="62" stroke="rgba(129, 132, 196,0.55)" strokeWidth="1.6" className="bento-ghost-progress" />
         {/* travelling pulse */}
         <circle r="3.4" cy="62" fill="rgba(197,203,255,0.95)" className="bg-comet">
           <animate attributeName="cx" values="20;332;332" keyTimes="0;0.7;1" dur="3.6s" repeatCount="indefinite" calcMode="spline" keySplines="0.16 1 0.3 1;0 0 1 1" />
@@ -1195,7 +1195,7 @@ function GhostTimeline() {
         </circle>
         {steps.map((s, i) => (
           <g key={s.label} transform={`translate(${s.x}, 62)`}>
-            <circle r={i === 4 ? 6 : 4} fill={i <= 3 ? "rgba(94,106,210,0.65)" : "rgba(255,255,255,0.14)"} stroke={i === 4 ? "rgba(94,106,210,0.7)" : "none"} strokeWidth={i === 4 ? 1.2 : 0} />
+            <circle r={i === 4 ? 6 : 4} fill={i <= 3 ? "rgba(129, 132, 196,0.65)" : "rgba(255,255,255,0.14)"} stroke={i === 4 ? "rgba(129, 132, 196,0.7)" : "none"} strokeWidth={i === 4 ? 1.2 : 0} />
             <text y="24" fontSize="7" fontFamily={MONO} fill={i <= 3 ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.28)"} textAnchor="middle" letterSpacing="0.5">{s.label}</text>
           </g>
         ))}
@@ -1211,7 +1211,7 @@ function GhostSigned() {
       <GhostDefs id="gd" />
       <rect x="0" y="0" width="220" height="172" fill="url(#gd-dots)" />
       <rect x="20" y="10" width="126" height="148" rx="10" fill="url(#gd-panel)" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-      <text x="34" y="30" fontSize="7" fontFamily={MONO} letterSpacing="1.2" fill="rgba(94,106,210,0.85)">SIGN-OFF · V1</text>
+      <text x="34" y="30" fontSize="7" fontFamily={MONO} letterSpacing="1.2" fill="rgba(129, 132, 196,0.85)">SIGN-OFF · V1</text>
       <line x1="34" y1="40" x2="132" y2="40" stroke="rgba(255,255,255,0.14)" strokeWidth="1.1" />
       <g stroke="rgba(255,255,255,0.09)" strokeWidth="1">
         <line x1="34" y1="56" x2="120" y2="56" />
@@ -1220,7 +1220,7 @@ function GhostSigned() {
       </g>
       {/* signature draws in */}
       <line x1="34" y1="112" x2="112" y2="112" stroke="rgba(255,255,255,0.18)" />
-      <path d="M36 106 q7 -10 14 0 t14 0 t14 -4 t16 4" stroke="rgba(94,106,210,0.75)" strokeWidth="1.5" strokeLinecap="round" fill="none" className="bg-sign" />
+      <path d="M36 106 q7 -10 14 0 t14 0 t14 -4 t16 4" stroke="rgba(129, 132, 196,0.75)" strokeWidth="1.5" strokeLinecap="round" fill="none" className="bg-sign" />
       <text x="34" y="126" fontSize="6" fontFamily={MONO} letterSpacing="0.8" fill="rgba(255,255,255,0.35)">SIGNED BY CLIENT</text>
       {/* accepted chip */}
       <rect x="34" y="134" width="62" height="14" rx="7" fill="rgba(34,197,94,0.12)" stroke="rgba(34,197,94,0.35)" strokeWidth="0.8" />
@@ -1228,8 +1228,8 @@ function GhostSigned() {
       {/* seal */}
       <g transform="translate(178, 116)">
         <circle r="26" fill="url(#gd-glow)" opacity="0.7" />
-        <circle r="21" fill="rgba(8,9,10,0.5)" stroke="rgba(94,106,210,0.55)" strokeWidth="1" />
-        <circle r="15" fill="none" stroke="rgba(94,106,210,0.35)" strokeDasharray="3 3.5" className="bg-slowspin" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
+        <circle r="21" fill="rgba(8,9,10,0.5)" stroke="rgba(129, 132, 196,0.55)" strokeWidth="1" />
+        <circle r="15" fill="none" stroke="rgba(129, 132, 196,0.35)" strokeDasharray="3 3.5" className="bg-slowspin" style={{ transformOrigin: "0px 0px", transformBox: "fill-box" }} />
         <path d="M-7 0 l5 5 l10 -10" stroke="rgba(197,203,255,0.95)" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       </g>
     </svg>
@@ -1244,7 +1244,7 @@ const STORY = [
     title: "Bracket started at 3am.",
     body:
       "A messy client brief lands in your inbox. Hours disappear trying to understand the scope, price the work, and write the perfect response. We built Bracket to compress that entire process into minutes — for anyone who works with clients.",
-    accent: "#5E6AD2",
+    accent: "#8184C4",
   },
   {
     chapter: "02 · MISTAKES",
@@ -1268,7 +1268,7 @@ const STORY = [
     title: "Where we're going.",
     body:
       "We're building the operating system for client work — where every decision, conversation, revision and document stays connected. Same promise. Better decisions, not more tools.",
-    accent: "#B7B7FF",
+    accent: "#989BE0",
   },
 ];
 
@@ -1283,7 +1283,7 @@ function Story() {
         className="absolute inset-x-0 mx-auto h-[900px] w-[900px] blur-[120px] opacity-[0.16] -z-10"
         style={{
           bottom: "-300px",
-          background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)",
+          background: "radial-gradient(closest-side, #8184C4, transparent 70%)",
         }}
       />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
@@ -1339,14 +1339,14 @@ const TESTIMONIALS = [
       "Bracket turns unstructured client discussions into a clear project scope. Less ambiguity, better communication, more confidence.",
     name: "Kshitij Sahu",
     role: "Experience Designer",
-    accent: "#5E6AD2",
+    accent: "#8184C4",
   },
   {
     quote:
       "Bracket has changed how our design team collaborates. Everything stays organized, reviews are faster, and our workflow is noticeably smoother.",
     name: "Tanay Vyas",
     role: "Founder",
-    accent: "#7CD5FF",
+    accent: "#989BE0",
   },
   {
     quote:
@@ -1367,7 +1367,7 @@ const TESTIMONIALS = [
       "I use Bracket for every new project. It clarifies the brief and helps me set a realistic timeline with confidence.",
     name: "Abhinav Sharma",
     role: "Motion Designer",
-    accent: "#B7B7FF",
+    accent: "#989BE0",
   },
 ];
 
@@ -1387,7 +1387,7 @@ function Testimonials() {
       <ParallaxGlow
         distance={40}
         className="absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto h-[1400px] w-[900px] blur-[120px] opacity-[0.14] -z-10"
-        style={{ background: "radial-gradient(closest-side, #5E6AD2, transparent 70%)" }}
+        style={{ background: "radial-gradient(closest-side, #8184C4, transparent 70%)" }}
       />
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
@@ -1453,7 +1453,7 @@ function FinalCTA() {
         style={{
           top: "-300px",
           bottom: "-200px",
-          background: "radial-gradient(60% 40% at 50% 45%, rgba(94,106,210,0.18), transparent 70%)",
+          background: "radial-gradient(60% 40% at 50% 45%, rgba(129, 132, 196,0.18), transparent 70%)",
         }}
       />
       <FilmGrain opacity={0.08} fadeTop />

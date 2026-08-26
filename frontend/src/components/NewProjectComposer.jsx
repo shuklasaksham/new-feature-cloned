@@ -33,7 +33,7 @@ export default function NewProjectComposer({ onAskOpen, hasProjects }) {
       <div
         aria-hidden="true"
         className="absolute -top-24 -right-16 h-[260px] w-[260px] rounded-full opacity-40 pointer-events-none"
-        style={{ background: "radial-gradient(closest-side, rgba(59, 130, 246,0.20), transparent 70%)" }}
+        style={{ background: "radial-gradient(closest-side, rgba(129, 132, 196,0.20), transparent 70%)" }}
       />
 
       <div className="relative flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
@@ -75,8 +75,8 @@ export default function NewProjectComposer({ onAskOpen, hasProjects }) {
                     transition: "border-color 200ms ease, box-shadow 200ms ease",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(59, 130, 246,0.45)";
-                    e.currentTarget.style.boxShadow = "0 4px 12px -6px rgba(59, 130, 246,0.30)";
+                    e.currentTarget.style.borderColor = "rgba(129, 132, 196,0.45)";
+                    e.currentTarget.style.boxShadow = "0 4px 12px -6px rgba(129, 132, 196,0.30)";
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = "var(--hairline-strong)";
@@ -108,7 +108,7 @@ export default function NewProjectComposer({ onAskOpen, hasProjects }) {
               background: "var(--primary-bg)",
               color: "var(--primary-fg)",
               fontSize: "13.5px",
-              boxShadow: "0 10px 32px -10px rgba(59, 130, 246,0.40)",
+              boxShadow: "0 10px 32px -10px rgba(129, 132, 196,0.40)",
             }}
             data-testid="dashboard-new-project-start"
           >

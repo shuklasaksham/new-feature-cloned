@@ -13,8 +13,8 @@ const CAT_META = {
   decision:     { label: "Decisions",     icon: Check,          color: "#22C55E" },
   deadline:     { label: "Deadlines",     icon: CalendarClock,  color: "#FFB84C" },
   scope_change: { label: "Scope changes", icon: AlertTriangle,  color: "#EF4444" },
-  requirement:  { label: "Requirements",  icon: ListChecks,     color: "#60A5FA" },
-  deliverable:  { label: "Deliverables",  icon: Layers,         color: "#7CD5FF" },
+  requirement:  { label: "Requirements",  icon: ListChecks,     color: "#989BE0" },
+  deliverable:  { label: "Deliverables",  icon: Layers,         color: "#989BE0" },
   question:     { label: "Open questions",icon: HelpCircle,     color: "var(--text-3)" },
 };
 
@@ -66,8 +66,8 @@ export default function ChangeDigestPanel({ showEmptyState = false }) {
     <section
       className="rounded-2xl p-5"
       style={{
-        background: "linear-gradient(180deg, rgba(59, 130, 246,0.06) 0%, rgba(59, 130, 246,0.02) 100%)",
-        border: "1px solid rgba(59, 130, 246,0.20)",
+        background: "linear-gradient(180deg, rgba(129, 132, 196,0.06) 0%, rgba(129, 132, 196,0.02) 100%)",
+        border: "1px solid rgba(129, 132, 196,0.20)",
       }}
       data-testid="change-digest-panel"
     >
@@ -101,7 +101,7 @@ export default function ChangeDigestPanel({ showEmptyState = false }) {
               onClick={() => setWin(w.key)}
               className="mono-tag px-3 py-1 rounded-full text-[10px] transition-colors"
               style={win === w.key
-                ? { background: "rgba(59, 130, 246,0.18)", color: "#60A5FA", border: "1px solid rgba(59, 130, 246,0.35)" }
+                ? { background: "rgba(129, 132, 196,0.18)", color: "#989BE0", border: "1px solid rgba(129, 132, 196,0.35)" }
                 : { color: "var(--text-3)", border: "1px solid transparent", background: "transparent" }}
               data-testid={`change-digest-window-${w.key}`}
             >

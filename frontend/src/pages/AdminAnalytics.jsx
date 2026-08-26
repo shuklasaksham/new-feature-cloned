@@ -24,8 +24,8 @@ import { api, formatApiError } from "../lib/api";
 // ---- palette (dark aesthetic, matches reference image) --------------------
 // Palette aligned with site tokens (see index.css)
 const COLORS = {
-  accent: "#5E6AD2",       // --accent (blue)
-  accent2: "#4E7FFF",      // scatter cluster 2 (lighter blue tint)
+  accent: "#8184C4",       // --accent (blue)
+  accent2: "#8184C4",      // scatter cluster 2 (lighter blue tint)
   accent3: "#F97316",      // scatter cluster 3 (orange)
   positive: "#22C55E",
   danger: "#EF4444",
@@ -36,7 +36,7 @@ const COLORS = {
   cardBg: "#0E0F12",      // --surface
   cardBorder: "rgba(255, 255, 255, 0.07)", // --hairline
 };
-const PIE_COLORS = ["#5E6AD2", "#4E7FFF", "#22C55E", "#F97316", "#EF4444", "#06B6D4"];
+const PIE_COLORS = ["#8184C4", "#8184C4", "#22C55E", "#F97316", "#EF4444", "#06B6D4"];
 
 // ---- helpers --------------------------------------------------------------
 const shortDate = (iso) => {
@@ -171,7 +171,7 @@ function Heatmap({ data }) {
     const t = Math.min(1, v / maxVal);
     // signal blue with alpha ramp
     const alpha = 0.18 + t * 0.82;
-    return `rgba(94, 106, 210, ${alpha.toFixed(3)})`;
+    return `rgba(129, 132, 196, ${alpha.toFixed(3)})`;
   };
 
   return (
@@ -423,7 +423,7 @@ function PublishLogPanel() {
         <form
           onSubmit={submit}
           className="rounded-2xl px-5 py-4 space-y-3"
-          style={{ background: "rgba(94,106,210,0.06)", border: "1px solid rgba(94,106,210,0.35)" }}
+          style={{ background: "rgba(129, 132, 196,0.06)", border: "1px solid rgba(129, 132, 196,0.35)" }}
           data-testid="publish-add-form"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -486,7 +486,7 @@ function PublishLogPanel() {
                     className="px-4 py-3 flex items-start gap-2 cursor-pointer group"
                     style={{
                       borderBottom: "1px solid var(--hairline)",
-                      background: active ? "rgba(94,106,210,0.08)" : "transparent",
+                      background: active ? "rgba(129, 132, 196,0.08)" : "transparent",
                     }}
                     onClick={() => setSelectedId(p.id)}
                     data-testid={`publish-row-${p.id}`}
@@ -622,7 +622,7 @@ function CountryRow({ c, max }) {
         <span className="text-[12px] tabular-nums" style={{ color: "var(--text-3)" }}>{c.sessions.toLocaleString()}</span>
       </div>
       <div className="mt-1 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #5E6AD2 0%, #22C55E 100%)" }} />
+        <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg, #8184C4 0%, #22C55E 100%)" }} />
       </div>
     </li>
   );
@@ -892,8 +892,8 @@ function CampaignRow({ c }) {
       <td className="py-2.5 px-3 text-[13px] tabular-nums" style={{ color: "#F59E0B" }}>{c.queued || 0}</td>
       <td className="py-2.5 px-3 text-[12px]">
         {isRunning ? (
-          <span className="inline-flex items-center gap-1.5" style={{ color: "#5E6AD2" }}>
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#5E6AD2] animate-pulse" />
+          <span className="inline-flex items-center gap-1.5" style={{ color: "#8184C4" }}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#8184C4] animate-pulse" />
             Sending · {pct}%
           </span>
         ) : c.status === "cancelled" ? (
@@ -1109,10 +1109,10 @@ function NpsDetailPanel() {
           {running && (
             <div
               className="rounded-2xl px-5 py-4 flex items-center gap-4"
-              style={{ background: "rgba(94,106,210,0.08)", border: "1px solid rgba(94,106,210,0.35)" }}
+              style={{ background: "rgba(129, 132, 196,0.08)", border: "1px solid rgba(129, 132, 196,0.35)" }}
               data-testid="nps-live-progress"
             >
-              <Loader2 size={16} className="animate-spin" style={{ color: "#5E6AD2" }} />
+              <Loader2 size={16} className="animate-spin" style={{ color: "#8184C4" }} />
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-medium" style={{ color: "var(--text)" }}>
                   Sending in progress · {(running.sent || 0) + (running.failed || 0)} of {running.targeted} processed
@@ -1122,7 +1122,7 @@ function NpsDetailPanel() {
                     className="h-full"
                     style={{
                       width: `${running.targeted ? Math.min(100, Math.round(((running.sent || 0) + (running.failed || 0)) / running.targeted * 100)) : 0}%`,
-                      background: "linear-gradient(90deg, #5E6AD2 0%, #22C55E 100%)",
+                      background: "linear-gradient(90deg, #8184C4 0%, #22C55E 100%)",
                       transition: "width 0.6s ease-out",
                     }}
                   />

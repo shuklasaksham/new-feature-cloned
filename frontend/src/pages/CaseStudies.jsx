@@ -8,7 +8,7 @@ import { SectionBleed, GlowWash } from "../components/SectionBleed";
 
 // Colour rhythm for the case sections — mirrors the homepage's blue → cyan →
 // green → amber wash cycle so backgrounds blend from one hue into the next.
-const CASE_WASHES = ["#5E6AD2", "#7CD5FF", "#4BE39B", "#FFB84C", "#B7B7FF"];
+const CASE_WASHES = ["#8184C4", "#989BE0", "#4BE39B", "#FFB84C", "#989BE0"];
 
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
@@ -82,7 +82,7 @@ export default function CaseStudies() {
                 className="font-display font-semibold text-[56px] leading-none tracking-[-0.03em]"
                 style={{
                   color: "transparent",
-                  backgroundImage: "linear-gradient(135deg, #5E6AD2 0%, #7CD5FF 100%)",
+                  backgroundImage: "linear-gradient(135deg, #8184C4 0%, #989BE0 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                 }}
@@ -128,12 +128,12 @@ export default function CaseStudies() {
                 whileInView="show"
                 viewport={{ once: true, margin: "-60px" }}
                 className="card-linear p-7 relative overflow-hidden"
-                style={{ borderColor: "rgba(94, 106, 210, 0.25)" }}
+                style={{ borderColor: "rgba(129, 132, 196, 0.25)" }}
               >
                 <div
                   aria-hidden="true"
                   className="absolute -top-16 -right-16 h-40 w-40 rounded-full blur-[50px] opacity-50"
-                  style={{ background: "radial-gradient(closest-side, rgba(94,106,210,0.4), transparent)" }}
+                  style={{ background: "radial-gradient(closest-side, rgba(129, 132, 196,0.4), transparent)" }}
                 />
                 <p className="mono-tag text-signal">AFTER</p>
                 <ul className="mt-6 space-y-3">
