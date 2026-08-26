@@ -981,6 +981,24 @@ async def project_connections(project_id: str, request: Request):
     return {"connections": conns}
 
 
+@router.get("/connect/connections")
+async def all_user_connections(request: Request):
+    """Every active connection across every project the current user owns.
+
+    Powers the "Disconnect" affordance on the /app/connect provider directory
+    (which can't scope to a single project) and any future global connections
+    manager.
+    """
+    user = await current_user(request, db)
+    conns = []
+    async for c in db.source_connections.find(
+        {"user_id": user["user_id"], "status": {"$ne": "disconnected"}},
+        {"_id": 0, "content_cache": 0},
+    ):
+        conns.append(c)
+    return {"connections": conns}
+
+
 MEMORY_CATEGORIES = [
     "scope", "deliverable", "decision", "requirement",
     "timeline", "deadline", "risk", "assumption", "commercial", "question",
@@ -1000,14 +1018,23 @@ def _canonical_category(cat: str) -> str:
 
 @router.post("/projects/{project_id}/suggest-reply")
 async def project_suggest_reply(project_id: str, request: Request):
-    """PROJECT-LEVEL suggested reply — ONE draft per project.
+    """PROJECT-LEVEL suggested reply — chat-style, on-demand.
 
-    Grounds the reply in (a) the most recent inbound message from the client
-    across every connected source and (b) the full project memory. Displayed
-    on the Overview page. Never sends autonomously — the returned text is a
-    draft the user copies/edits/sends via their own tool.
+    User submits an instruction (e.g. "acknowledge the deadline and confirm
+    Phase 1 scope") plus prior chat turns; Bracket returns ONE grounded draft.
+    The Overview page keeps the thread client-side; every turn hits this
+    endpoint so the reply always reflects the freshest memory.
     """
     project = await _owned_project(project_id, request)
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    instruction = (body.get("instruction") or "").strip()
+    history = body.get("history") or []
+    if not isinstance(history, list):
+        history = []
 
     # Latest inbound client "message" — the newest memory item detected from a
     # non-manual source. This is the closest we have to "what did the client
@@ -1032,6 +1059,7 @@ async def project_suggest_reply(project_id: str, request: Request):
         result = await suggest_project_reply(
             project.get("name", ""), project.get("client_name", ""),
             latest_msg or {}, memory_items,
+            instruction=instruction, history=history,
         )
     except Exception as e:
         logger.warning("project suggest-reply failed: %s", e)

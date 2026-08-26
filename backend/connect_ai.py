@@ -162,12 +162,16 @@ Return STRICT JSON only:
 
 async def suggest_project_reply(project_name: str, client_name: str,
                                 latest_client_message: dict,
-                                memory_items: list) -> dict:
-    """PROJECT-LEVEL suggested reply — ONE reply for the whole project.
+                                memory_items: list,
+                                instruction: str = "",
+                                history: list | None = None) -> dict:
+    """PROJECT-LEVEL suggested reply — chat-style, on-demand.
 
     Grounded in:
       - The most recent inbound client message across all connected sources.
       - The full project memory (six canonical categories).
+      - The user's explicit instruction ("Tell Bracket what you want to do…").
+      - The prior chat turns so refinements ("shorter", "more assertive") work.
 
     Bracket surfaces the reply on the Overview page; the user reviews / edits
     / regenerates / approves and sends via their own tool. No autonomous send.
@@ -184,22 +188,49 @@ async def suggest_project_reply(project_name: str, client_name: str,
             f'({latest_client_message.get("provider","?")})\n'
             f'"{(latest_client_message.get("detail") or latest_client_message.get("title") or "").strip()[:800]}"'
         )
-    prompt = f"""You are Bracket, drafting ONE short, professional client-facing reply for the
-project "{project_name}" (client: {client_name or 'the client'}).
 
-Ground it in:
-1. The most recent inbound message from the client:
+    # Convert prior turns into a compact thread so the refinement request
+    # ("shorter", "more formal", "push the deadline back") stays grounded.
+    convo_lines: list[str] = []
+    for turn in (history or [])[-8:]:
+        role = (turn.get("role") or "").lower()
+        content = (turn.get("content") or "").strip()
+        if not content:
+            continue
+        if role == "user":
+            convo_lines.append(f"USER INSTRUCTION: {content[:500]}")
+        elif role == "assistant":
+            convo_lines.append(f"PREVIOUS DRAFT: {content[:500]}")
+    convo_block = "\n".join(convo_lines) if convo_lines else "(no prior turns)"
+
+    latest_instruction = (instruction or "").strip() or "Draft the best possible reply."
+
+    prompt = f"""You are Bracket, drafting ONE short, professional client-facing reply for the
+project "{project_name}" (client: {client_name or 'the client'}). The designer is
+using you as an on-demand assistant — reply only when asked, and follow their
+latest instruction precisely.
+
+## User's latest instruction
+{latest_instruction}
+
+## Prior turns in this chat (most recent last)
+{convo_block}
+
+## Grounding context
+1. Most recent inbound message from the client:
 {client_line}
 
 2. What Bracket already knows about the project (memory):
 {mem}
 
-The reply must:
-- Directly respond to the latest client message (do NOT invent context).
-- Reflect what Bracket already knows — reference the correct scope, deliverables or deadlines when relevant.
-- Concrete: state the next concrete step the designer will take.
-- 3-5 sentences maximum. No jargon, no filler. First-person "I".
-- If nothing new to reply to, produce a brief acknowledgement of the current status.
+## Rules for the reply
+- Follow the designer's latest instruction above (tone, length, angle, request).
+- Ground in the client's message + project memory — do NOT invent facts.
+- Reflect the correct scope, deliverables or deadlines when relevant.
+- End with the next concrete step the designer will take.
+- Default length 3-5 sentences unless the instruction asks otherwise.
+- First-person "I". No jargon, no filler.
+- If nothing new to reply to, acknowledge current status briefly.
 
 Return STRICT JSON only:
 {{

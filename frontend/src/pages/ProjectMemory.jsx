@@ -4,13 +4,14 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, Loader2, ExternalLink, AlertTriangle,
   Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
-  Check, RotateCcw,
+  Check, RotateCcw, Send, User, Trash2, Plug,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import Seo from "../components/Seo";
 import ChangeActionDrawer from "../components/ChangeActionDrawer";
 import HistoryDrawer from "../components/HistoryDrawer";
+import { useDialog } from "../components/Dialog";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, timeAgo } from "../lib/providersMeta";
 
@@ -35,6 +36,7 @@ export default function ProjectMemory() {
 
   const [project, setProject] = useState(null);
   const [memory, setMemory] = useState({ grouped: {}, counts: {}, total: 0 });
+  const [connections, setConnections] = useState(null); // null = still loading
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("overview"); // 'overview' | one of the 6 category keys
   const [statusFilter, setStatusFilter] = useState("all");
@@ -44,12 +46,14 @@ export default function ProjectMemory() {
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
     try {
-      const [projRes, memRes] = await Promise.all([
+      const [projRes, memRes, connRes] = await Promise.all([
         api.get(`/projects/${id}`),
         api.get(`/projects/${id}/memory`),
+        api.get(`/projects/${id}/connections`).catch(() => ({ data: { connections: [] } })),
       ]);
       setProject(projRes.data.project || projRes.data);
       setMemory(memRes.data);
+      setConnections(connRes.data.connections || []);
     } catch (e) {
       if (!silent) toast.error(formatApiError(e));
     } finally {
@@ -213,6 +217,8 @@ export default function ProjectMemory() {
                 projectId={id}
                 counts={visibleCounts}
                 detectedCount={detectedCount}
+                connections={connections || []}
+                onConnectionsChanged={() => load({ silent: true })}
                 onJumpTo={(cat) => { setView(cat); setStatusFilter("detected"); }}
               />
             ) : (
@@ -282,12 +288,51 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
   );
 }
 
-/* ─── Overview view — suggested reply + category snapshot ── */
-function OverviewView({ project, projectId, counts, detectedCount, onJumpTo }) {
+/* ─── Overview view — chat-style reply + category snapshot ── */
+function OverviewView({ project, projectId, counts, detectedCount, connections, onConnectionsChanged, onJumpTo }) {
+  const noSources = connections.length === 0;
+
+  // Empty state — no connected sources yet. Instead of an awkward empty
+  // reply rail, show a Notion-style illustration + a single CTA that
+  // sends the user to Connect Work.
+  if (noSources) {
+    return (
+      <section
+        className="rounded-xl overflow-hidden"
+        style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
+        data-testid="overview-empty-state"
+      >
+        <div className="px-6 sm:px-10 py-14 sm:py-20 flex flex-col items-center text-center">
+          <EmptyOverviewIllustration />
+          <p className="mono-tag text-[10px] mt-6" style={{ color: "var(--text-3)" }}>PROJECT MEMORY</p>
+          <h2 className="mt-3 text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em]" style={{ color: "var(--text)" }}>
+            Your project memory is waiting.
+          </h2>
+          <p className="mt-3 max-w-[440px] text-[13.5px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+            Connect Gmail, Slack, Figma or GitHub and Bracket will start
+            extracting deliverables, scope, timelines, requirements, decisions
+            and deadlines from your client conversations.
+          </p>
+          <Link
+            to={`/app/connect?project=${projectId}`}
+            className="mt-6 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-medium"
+            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(59,130,246,0.5)" }}
+            data-testid="overview-empty-connect-cta"
+          >
+            <Plug size={13} /> Connect your first tool
+          </Link>
+          <p className="mt-3 mono-tag text-[9.5px]" style={{ color: "var(--text-3)" }}>
+            GMAIL · SLACK · FIGMA · GITHUB
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-8">
       <div className="min-w-0 flex flex-col gap-6">
-        <SuggestedReplyPanel projectId={projectId} />
+        <SuggestedReplyChat projectId={projectId} />
 
         {/* Category snapshot — 6 tiles, click to jump */}
         <section data-testid="overview-category-snapshot">
@@ -319,176 +364,412 @@ function OverviewView({ project, projectId, counts, detectedCount, onJumpTo }) {
       </div>
 
       <aside className="min-w-0 flex flex-col gap-6">
-        <ConnectedSourcesCompact projectId={projectId} />
+        <ConnectedSourcesCompact
+          projectId={projectId}
+          connections={connections}
+          onChanged={onConnectionsChanged}
+        />
       </aside>
     </div>
   );
 }
 
-/* ─── Suggested Reply panel (ONE per project) ─────────────── */
-function SuggestedReplyPanel({ projectId }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [editing, setEditing] = useState(false);
-  const ref = useRef(null);
+/* ─── Notion-style illustration for the empty Overview ────── */
+function EmptyOverviewIllustration() {
+  return (
+    <svg
+      width="152"
+      height="112"
+      viewBox="0 0 152 112"
+      fill="none"
+      aria-hidden="true"
+      data-testid="overview-empty-illustration"
+    >
+      {/* soft glow */}
+      <circle cx="76" cy="56" r="52" fill="url(#g)" opacity="0.55" />
+      {/* stacked project cards */}
+      <rect x="30" y="24" width="92" height="68" rx="10" fill="var(--surface-2)" stroke="var(--hairline-strong)" />
+      <rect x="38" y="36" width="42" height="6" rx="3" fill="var(--hairline-strong)" />
+      <rect x="38" y="48" width="76" height="4" rx="2" fill="var(--hairline)" />
+      <rect x="38" y="58" width="60" height="4" rx="2" fill="var(--hairline)" />
+      <rect x="38" y="68" width="50" height="4" rx="2" fill="var(--hairline)" />
+      {/* connector plug */}
+      <circle cx="120" cy="82" r="12" fill="var(--primary-bg)" />
+      <path d="M116 82h8M120 78v8" stroke="var(--primary-fg)" strokeWidth="1.6" strokeLinecap="round" />
+      <defs>
+        <radialGradient id="g" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse"
+                        gradientTransform="translate(76 56) rotate(90) scale(52)">
+          <stop stopColor="var(--accent)" stopOpacity="0.30" />
+          <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
 
-  const fetchReply = async () => {
-    setLoading(true);
+/* ─── Suggested Reply chat (on-demand, per-project) ───────── */
+const REPLY_QUICK_PROMPTS = [
+  "Draft a reply to the client's latest message.",
+  "Acknowledge the deadline and confirm next steps.",
+  "Ask for the missing details we still need.",
+];
+
+function SuggestedReplyChat({ projectId }) {
+  // Each turn: { role: 'user'|'assistant', content: string, meta?: {...} }
+  const [thread, setThread] = useState([]);
+  const [prompt, setPrompt] = useState("");
+  const [sending, setSending] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
+  const [editingIdx, setEditingIdx] = useState(-1);
+  const [editingDraft, setEditingDraft] = useState("");
+  const bottomRef = useRef(null);
+  const editRef = useRef(null);
+
+  useEffect(() => {
+    if (bottomRef.current) bottomRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [thread.length, sending]);
+
+  useEffect(() => {
+    if (editingIdx >= 0 && editRef.current) {
+      editRef.current.focus();
+      const len = editRef.current.value.length;
+      editRef.current.setSelectionRange(len, len);
+    }
+  }, [editingIdx]);
+
+  const send = async (instruction) => {
+    const text = (instruction || "").trim();
+    if (!text || sending) return;
+    setSending(true);
+    // Append the user turn immediately so the UI feels responsive.
+    const userTurn = { role: "user", content: text };
+    const nextThread = [...thread, userTurn];
+    setThread(nextThread);
+    setPrompt("");
     try {
-      const { data } = await api.post(`/projects/${projectId}/suggest-reply`);
-      setData(data);
-      setDraft(data.reply || "");
-      setEditing(false);
+      const { data } = await api.post(`/projects/${projectId}/suggest-reply`, {
+        instruction: text,
+        history: thread, // send the turns BEFORE this instruction
+      });
+      const reply = (data.reply || "").trim();
+      const assistantTurn = {
+        role: "assistant",
+        content: reply,
+        meta: {
+          based_on: data.based_on || null,
+          deep_links: data.deep_links || {},
+          confidence: data.confidence || "medium",
+        },
+      };
+      setThread((cur) => [...cur, assistantTurn]);
     } catch (e) {
       toast.error(formatApiError(e));
+      // Roll the user turn back if the request failed — nothing to reply to.
+      setThread(thread);
     } finally {
-      setLoading(false);
+      setSending(false);
     }
   };
 
-  useEffect(() => { if (projectId) fetchReply(); }, [projectId]);
-
-  const regenerate = async () => {
-    setRegenerating(true);
+  const regenerate = async (assistantIdx) => {
+    // Find the user instruction paired with this assistant reply.
+    const userIdx = assistantIdx - 1;
+    if (userIdx < 0 || thread[userIdx]?.role !== "user") return;
+    const instruction = thread[userIdx].content;
+    // Truncate thread up to (but not including) this pair, then re-send.
+    const priorThread = thread.slice(0, userIdx);
+    setSending(true);
+    setThread([...priorThread, { role: "user", content: instruction }]);
     try {
-      const { data } = await api.post(`/projects/${projectId}/suggest-reply`);
-      setData(data);
-      setDraft(data.reply || "");
-      setEditing(false);
+      const { data } = await api.post(`/projects/${projectId}/suggest-reply`, {
+        instruction, history: priorThread,
+      });
+      const reply = (data.reply || "").trim();
+      setThread([
+        ...priorThread,
+        { role: "user", content: instruction },
+        {
+          role: "assistant",
+          content: reply,
+          meta: {
+            based_on: data.based_on || null,
+            deep_links: data.deep_links || {},
+            confidence: data.confidence || "medium",
+          },
+        },
+      ]);
       toast.success("Bracket re-drafted the reply");
     } catch (e) { toast.error(formatApiError(e)); }
-    finally { setRegenerating(false); }
+    finally { setSending(false); }
   };
 
-  const copyReply = async () => {
-    if (!draft.trim()) return;
+  const copyReply = async (idx, content) => {
+    if (!content.trim()) return;
     try {
-      await navigator.clipboard.writeText(draft.trim());
+      await navigator.clipboard.writeText(content.trim());
+      setCopiedId(idx);
+      setTimeout(() => setCopiedId((c) => (c === idx ? null : c)), 1500);
       toast.success("Reply copied — paste it in your tool to send.");
     } catch { toast.error("Couldn't access clipboard."); }
   };
 
-  useEffect(() => {
-    if (editing && ref.current) {
-      ref.current.focus();
-      const end = ref.current.value.length;
-      ref.current.setSelectionRange(end, end);
-    }
-  }, [editing]);
+  const saveEdit = () => {
+    if (editingIdx < 0) return;
+    setThread((cur) => cur.map((t, i) => (i === editingIdx ? { ...t, content: editingDraft } : t)));
+    setEditingIdx(-1);
+    setEditingDraft("");
+  };
 
-  const encoded = encodeURIComponent(draft || "");
-  const gmailWeb = `https://mail.google.com/mail/?view=cm&fs=1&su=Re:%20your%20project&body=${encoded}`;
-  const mailto = `mailto:?subject=Re:%20your%20project&body=${encoded}`;
-  const slackWeb = data?.deep_links?.slack_web || "slack://open";
+  const encodedForLink = (t) => encodeURIComponent(t || "");
+  const gmailLink = (t) => `https://mail.google.com/mail/?view=cm&fs=1&su=Re:%20your%20project&body=${encodedForLink(t)}`;
+  const mailtoLink = (t) => `mailto:?subject=Re:%20your%20project&body=${encodedForLink(t)}`;
 
   return (
     <section
-      className="rounded-xl overflow-hidden"
+      className="rounded-xl overflow-hidden flex flex-col"
       style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
-      data-testid="suggested-reply-panel"
+      data-testid="suggested-reply-chat"
     >
       <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: "1px solid var(--hairline)" }}>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <Sparkles size={13} style={{ color: "var(--accent)" }} />
-          <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>SUGGESTED RESPONSE</p>
-          {data?.based_on && (
+          <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>ASK BRACKET</p>
+          <span className="text-[10.5px] truncate" style={{ color: "var(--text-3)" }}>
+            · on-demand replies grounded in this project
+          </span>
+        </div>
+        {thread.length > 0 && (
+          <button type="button" onClick={() => { setThread([]); setPrompt(""); }}
+                  className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                  data-testid="suggested-reply-clear">
+            <RotateCcw size={10} /> New thread
+          </button>
+        )}
+      </div>
+
+      {/* Thread body */}
+      <div className="px-5 py-5 flex flex-col gap-4 max-h-[520px] overflow-y-auto" data-testid="suggested-reply-thread">
+        {thread.length === 0 && (
+          <div data-testid="suggested-reply-empty">
+            <p className="text-[13.5px] leading-relaxed" style={{ color: "var(--text)" }}>
+              Tell Bracket what you want to do — draft a reply, ask for missing details, or push back on scope.
+              You&apos;ll get a grounded response using this project&apos;s memory.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-1.5" data-testid="suggested-reply-quick-prompts">
+              {REPLY_QUICK_PROMPTS.map((qp) => (
+                <button
+                  key={qp}
+                  type="button"
+                  onClick={() => send(qp)}
+                  disabled={sending}
+                  className="inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-full disabled:opacity-40"
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                >
+                  <Sparkles size={10} /> {qp}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {thread.map((t, i) => (
+          <ChatTurn
+            key={i}
+            idx={i}
+            turn={t}
+            editing={editingIdx === i}
+            editingDraft={editingDraft}
+            editRef={editRef}
+            onEdit={() => { setEditingIdx(i); setEditingDraft(t.content); }}
+            onEditChange={(v) => setEditingDraft(v)}
+            onEditSave={saveEdit}
+            onEditCancel={() => { setEditingIdx(-1); setEditingDraft(""); }}
+            onCopy={(content) => copyReply(i, content)}
+            copied={copiedId === i}
+            onRegenerate={() => regenerate(i)}
+            gmailLink={gmailLink}
+            mailtoLink={mailtoLink}
+          />
+        ))}
+
+        {sending && (
+          <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-3)" }}>
+            <Loader2 size={12} className="animate-spin" /> Bracket is drafting…
+          </div>
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div className="px-5 py-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+        <form
+          onSubmit={(e) => { e.preventDefault(); send(prompt); }}
+          className="flex items-end gap-2"
+          data-testid="suggested-reply-form"
+        >
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(prompt); }
+            }}
+            placeholder={thread.length === 0
+              ? "Tell Bracket what you want to do…"
+              : "Refine the reply, or ask for a different angle…"}
+            rows={2}
+            className="flex-1 resize-none bg-transparent outline-none text-[13.5px] leading-relaxed"
+            style={{ color: "var(--text)" }}
+            data-testid="suggested-reply-input"
+          />
+          <button
+            type="submit"
+            disabled={sending || !prompt.trim()}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12.5px] font-medium disabled:opacity-40"
+            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+            data-testid="suggested-reply-send"
+          >
+            {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            {thread.length === 0 ? "Generate" : "Send"}
+          </button>
+        </form>
+        <p className="mt-2 text-[10.5px]" style={{ color: "var(--text-3)" }}>
+          Shift + Enter for a newline. Bracket never sends autonomously — you review, edit and send.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ChatTurn({
+  idx, turn, editing, editingDraft, editRef,
+  onEdit, onEditChange, onEditSave, onEditCancel,
+  onCopy, copied, onRegenerate, gmailLink, mailtoLink,
+}) {
+  if (turn.role === "user") {
+    return (
+      <div className="flex items-start gap-3" data-testid={`chat-turn-user-${idx}`}>
+        <span
+          className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full mt-0.5"
+          style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+        >
+          <User size={11} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="mono-tag text-[9.5px] mb-1" style={{ color: "var(--text-3)" }}>YOU</p>
+          <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text)" }}>
+            {turn.content}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Assistant turn
+  const based = turn.meta?.based_on || null;
+  const gmailWeb = turn.meta?.deep_links?.gmail_web || gmailLink(turn.content);
+  const mailto = turn.meta?.deep_links?.mailto || mailtoLink(turn.content);
+  const slackWeb = turn.meta?.deep_links?.slack_web || "slack://open";
+
+  return (
+    <div className="flex items-start gap-3" data-testid={`chat-turn-assistant-${idx}`}>
+      <span
+        className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full mt-0.5"
+        style={{ background: "var(--accent-soft)", border: "1px solid var(--brand-border)", color: "var(--accent)" }}
+      >
+        <Sparkles size={11} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <p className="mono-tag text-[9.5px]" style={{ color: "var(--accent)" }}>BRACKET</p>
+          {based && (
             <span className="text-[10.5px]" style={{ color: "var(--text-3)" }}>
-              · replying to <ProviderIcon provider={data.based_on.provider} size={9} className="inline mx-1" />
-              {data.based_on.source_label}
+              · replying to <ProviderIcon provider={based.provider} size={9} className="inline mx-1" />
+              {based.source_label}
             </span>
           )}
         </div>
-        <button type="button" onClick={regenerate} disabled={regenerating || loading}
-                className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full disabled:opacity-40"
-                style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                data-testid="suggested-reply-regenerate">
-          {regenerating ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
-          Regenerate
-        </button>
-      </div>
 
-      <div className="p-5">
-        {loading ? (
-          <div className="flex items-center gap-2 text-[12px]" style={{ color: "var(--text-3)" }}>
-            <Loader2 size={12} className="animate-spin" /> Drafting…
-          </div>
-        ) : data?.reply ? (
-          editing ? (
-            <>
-              <textarea
-                ref={ref}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                rows={Math.max(4, Math.min(10, (draft.match(/\n/g) || []).length + 4))}
-                className="w-full resize-y bg-transparent outline-none text-[14px] leading-relaxed"
-                style={{ color: "var(--text)" }}
-                data-testid="suggested-reply-editor"
-              />
-              <button type="button" onClick={() => setEditing(false)}
-                      className="mt-2 inline-flex items-center gap-1 text-[11px]" style={{ color: "var(--accent)" }}
-                      data-testid="suggested-reply-done">
-                <Check size={11} /> Done editing
+        {editing ? (
+          <>
+            <textarea
+              ref={editRef}
+              value={editingDraft}
+              onChange={(e) => onEditChange(e.target.value)}
+              rows={Math.max(4, Math.min(12, (editingDraft.match(/\n/g) || []).length + 4))}
+              className="w-full resize-y bg-transparent outline-none text-[13.5px] leading-relaxed rounded-lg p-3"
+              style={{ color: "var(--text)", background: "var(--surface-2)", border: "1px solid var(--hairline-strong)" }}
+              data-testid={`chat-turn-editor-${idx}`}
+            />
+            <div className="mt-2 flex items-center gap-2">
+              <button type="button" onClick={onEditSave}
+                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                      style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+                      data-testid={`chat-turn-save-${idx}`}>
+                <Check size={11} /> Save
               </button>
-            </>
-          ) : (
-            <div className="relative group">
-              <p className="text-[14px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text)" }} data-testid="suggested-reply-body">
-                {draft || data.reply}
-              </p>
-              <button type="button" onClick={() => setEditing(true)}
-                      className="absolute -top-2 -right-2 inline-flex items-center gap-1 text-[10.5px] px-2 py-1 rounded-full transition-opacity opacity-0 group-hover:opacity-100 focus:opacity-100"
+              <button type="button" onClick={onEditCancel}
+                      className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
                       style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                      data-testid="suggested-reply-edit">
-                <Pencil size={10} /> Edit
+                      data-testid={`chat-turn-cancel-${idx}`}>
+                Cancel
               </button>
-              {draft !== data.reply && (
-                <button type="button" onClick={() => { setDraft(data.reply || ""); setEditing(false); }}
-                        className="mt-2 inline-flex items-center gap-1 text-[10.5px]"
-                        style={{ color: "var(--text-3)" }}
-                        data-testid="suggested-reply-reset">
-                  <RotateCcw size={10} /> Reset to AI draft
-                </button>
-              )}
             </div>
-          )
+          </>
         ) : (
-          <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
-            Nothing to reply to yet. Once your client sends something new, Bracket drafts a response here.
-          </p>
-        )}
+          <>
+            <div
+              className="rounded-lg p-3.5 text-[13.5px] leading-relaxed whitespace-pre-wrap"
+              style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text)" }}
+              data-testid={`chat-turn-body-${idx}`}
+            >
+              {turn.content || <span style={{ color: "var(--text-3)" }}>(Bracket returned an empty reply — try a different instruction.)</span>}
+            </div>
 
-        {data?.reply && !editing && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" onClick={copyReply}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12.5px] font-medium"
-                    style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
-                    data-testid="suggested-reply-copy">
-              <Copy size={12} /> Copy reply
-            </button>
-            <a href={gmailWeb} target="_blank" rel="noreferrer"
-               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px]"
-               style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text)" }}
-               data-testid="suggested-reply-gmail">
-              <Mail size={12} /> Send in Gmail
-            </a>
-            <a href={mailto}
-               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px]"
-               style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text)" }}
-               data-testid="suggested-reply-mailto">
-              <Mail size={12} /> Open in default mail
-            </a>
-            <a href={slackWeb}
-               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12.5px]"
-               style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text)" }}
-               data-testid="suggested-reply-slack">
-              <Slack size={12} /> Open Slack
-            </a>
-          </div>
+            {turn.content && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <button type="button" onClick={() => onCopy(turn.content)}
+                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                        style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+                        data-testid={`chat-turn-copy-${idx}`}>
+                  {copied ? <><Check size={10} /> Copied</> : <><Copy size={10} /> Copy</>}
+                </button>
+                <button type="button" onClick={onEdit}
+                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                        style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                        data-testid={`chat-turn-edit-${idx}`}>
+                  <Pencil size={10} /> Edit
+                </button>
+                <button type="button" onClick={onRegenerate}
+                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                        style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                        data-testid={`chat-turn-regenerate-${idx}`}>
+                  <RefreshCw size={10} /> Regenerate
+                </button>
+                <a href={gmailWeb} target="_blank" rel="noreferrer"
+                   className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                   data-testid={`chat-turn-gmail-${idx}`}>
+                  <Mail size={10} /> Gmail
+                </a>
+                <a href={mailto}
+                   className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                   data-testid={`chat-turn-mailto-${idx}`}>
+                  <Mail size={10} /> Mail
+                </a>
+                <a href={slackWeb}
+                   className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
+                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                   data-testid={`chat-turn-slack-${idx}`}>
+                  <Slack size={10} /> Slack
+                </a>
+              </div>
+            )}
+          </>
         )}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -580,28 +861,36 @@ function MemoryRow({ item, cat, onOpen }) {
 }
 
 /* ─── Connected sources (compact) ─────────────────────────── */
-function ConnectedSourcesCompact({ projectId }) {
-  const [conns, setConns] = useState(null);
-  useEffect(() => {
-    if (!projectId) return;
-    let cancelled = false;
-    const fetchOnce = async () => {
-      try {
-        const { data } = await api.get(`/projects/${projectId}/connections`);
-        if (!cancelled) setConns(data.connections || []);
-      } catch { if (!cancelled) setConns((prev) => prev ?? []); }
-    };
-    fetchOnce();
-    const iv = setInterval(() => { if (!document.hidden) fetchOnce(); }, 10_000);
-    return () => { cancelled = true; clearInterval(iv); };
-  }, [projectId]);
+function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
+  const dialog = useDialog();
+  const [busy, setBusy] = useState(null);
 
-  if (conns === null) return null;
+  const disconnect = async (conn) => {
+    const ok = await dialog.confirm({
+      title: `Disconnect ${conn.source_name}?`,
+      message: "Bracket will stop syncing this source. Memory items already extracted stay. You can reconnect anytime.",
+      confirmLabel: "Disconnect",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setBusy(conn.id);
+    try {
+      await api.delete(`/connect/connections/${conn.id}`);
+      toast.success(`${conn.source_name} disconnected`);
+      onChanged?.();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const conns = connections || [];
   return (
     <div data-testid="project-memory-sources">
       <p className="mono-tag text-[9.5px] mb-3" style={{ color: "var(--text-3)" }}>CONNECTED SOURCES</p>
       {conns.length === 0 ? (
-        <Link to="/app/connect"
+        <Link to={`/app/connect?project=${projectId}`}
               className="block rounded-lg px-3 py-3 text-[12px]"
               style={{ border: "1px dashed var(--hairline-strong)", color: "var(--text-2)" }}
               data-testid="project-memory-sources-connect">
@@ -614,7 +903,7 @@ function ConnectedSourcesCompact({ projectId }) {
             const isWarn = c.health?.level === "amber";
             return (
               <li key={c.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                  className="group flex items-center gap-2 px-3 py-2 rounded-lg"
                   style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}>
                 <ProviderIcon provider={c.provider} size={12} />
                 <div className="min-w-0 flex-1">
@@ -625,12 +914,23 @@ function ConnectedSourcesCompact({ projectId }) {
                 </div>
                 <span className="w-1.5 h-1.5 rounded-full shrink-0"
                       style={{ background: isBad ? "var(--danger)" : isWarn ? "var(--warning)" : "var(--success)" }} />
+                <button
+                  type="button"
+                  onClick={() => disconnect(c)}
+                  disabled={busy === c.id}
+                  title="Disconnect"
+                  className="shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-3)" }}
+                  data-testid={`project-memory-source-disconnect-${c.id}`}
+                >
+                  {busy === c.id ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                </button>
               </li>
             );
           })}
         </ul>
       )}
-      <Link to="/app/connect" className="text-[11px] mt-2 inline-flex items-center gap-1"
+      <Link to={`/app/connect?project=${projectId}`} className="text-[11px] mt-2 inline-flex items-center gap-1"
             style={{ color: "var(--accent)" }} data-testid="project-memory-sources-manage">
         Manage connections <ExternalLink size={10} />
       </Link>

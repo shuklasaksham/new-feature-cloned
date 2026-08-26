@@ -9,10 +9,12 @@ import {
   Search,
   Sparkles,
   Square,
+  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
+import { useDialog } from "../components/Dialog";
 import { PROVIDER_META, ProviderIcon, timeAgo } from "../lib/providersMeta";
 
 const STATUS_CHIP = {
@@ -27,29 +29,47 @@ function Chip({ status }) {
   return <span className="mono-tag px-2 py-0.5 rounded text-[9.5px]" style={c.style}>{c.label}</span>;
 }
 
-function AppCard({ p, onPick, busy }) {
+function AppCard({ p, onPick, onDisconnect, busy }) {
   const clickable = p.status === "connected" || p.status === "available";
   return (
-    <button
-      type="button"
-      onClick={() => onPick(p)}
-      disabled={p.status === "coming_soon" || busy === p.key}
-      className="card-linear card-linear--solid p-4 text-left w-full transition-transform duration-200 hover:-translate-y-0.5 disabled:opacity-45 disabled:hover:translate-y-0"
+    <div
+      className="card-linear card-linear--solid p-4 text-left w-full transition-transform duration-200 hover:-translate-y-0.5 relative group"
       data-testid={`connect-app-${p.key}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <ProviderIcon provider={p.key} size={17} />
-        {busy === p.key ? <Loader2 size={13} className="animate-spin text-signal" /> : <Chip status={p.status} />}
-      </div>
-      <p className="mt-3 font-display font-semibold text-[14.5px] text-[var(--text)]">{p.label}</p>
-      <p className="mt-1 text-[11.5px] text-[var(--text-3)] leading-snug">{p.desc}</p>
-      {p.status === "connected" && p.account_label && (
-        <p className="mt-2 mono-tag text-[9.5px] text-signal truncate">{p.account_label}</p>
+      <button
+        type="button"
+        onClick={() => onPick(p)}
+        disabled={p.status === "coming_soon" || busy === p.key}
+        className="block w-full text-left disabled:opacity-45 disabled:hover:translate-y-0"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <ProviderIcon provider={p.key} size={17} />
+          {busy === p.key ? <Loader2 size={13} className="animate-spin text-signal" /> : <Chip status={p.status} />}
+        </div>
+        <p className="mt-3 font-display font-semibold text-[14.5px] text-[var(--text)]">{p.label}</p>
+        <p className="mt-1 text-[11.5px] text-[var(--text-3)] leading-snug">{p.desc}</p>
+        {p.status === "connected" && p.account_label && (
+          <p className="mt-2 mono-tag text-[9.5px] text-signal truncate">{p.account_label}</p>
+        )}
+        {clickable && p.status === "available" && (
+          <p className="mt-2 text-[10px] text-[var(--text-3)]">One click — sign in with {p.label}, then pick your source.</p>
+        )}
+      </button>
+      {p.status === "connected" && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDisconnect(p); }}
+          disabled={busy === `dc:${p.key}`}
+          title={`Disconnect ${p.label}`}
+          aria-label={`Disconnect ${p.label}`}
+          className="absolute top-3 right-3 inline-flex items-center justify-center w-7 h-7 rounded-full opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+          style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-3)" }}
+          data-testid={`connect-disconnect-${p.key}`}
+        >
+          {busy === `dc:${p.key}` ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+        </button>
       )}
-      {clickable && p.status === "available" && (
-        <p className="mt-2 text-[10px] text-[var(--text-3)]">One click — sign in with {p.label}, then pick your source.</p>
-      )}
-    </button>
+    </div>
   );
 }
 
@@ -340,6 +360,7 @@ function SourcePreview({ provider, sources, attachProjectId, onDone, onBack }) {
 // ─── Root page ──────────────────────────────────────────────────────────────
 export default function ConnectWork() {
   const navigate = useNavigate();
+  const dialog = useDialog();
   const [searchParams] = useSearchParams();
   const attachProjectId = searchParams.get("project") || null;
 
@@ -437,6 +458,47 @@ export default function ConnectWork() {
     }
   };
 
+  const disconnectProvider = async (p) => {
+    // Fetch every connection for this provider (across projects the user owns)
+    // and disconnect them in one confirm. We can't cleanly single-connection
+    // scope from this directory view — the provider card represents ALL of
+    // the user's connections for that tool.
+    setBusy(`dc:${p.key}`);
+    let ids = [];
+    try {
+      const { data } = await api.get("/connect/connections");
+      ids = (data.connections || [])
+        .filter((c) => c.provider === p.key && c.status !== "disconnected")
+        .map((c) => c.id);
+    } catch (e) {
+      toast.error(formatApiError(e));
+      setBusy(null);
+      return;
+    }
+    if (!ids.length) {
+      toast.info(`No active ${p.label} connections to disconnect.`);
+      setBusy(null);
+      loadProviders();
+      return;
+    }
+    const ok = await dialog.confirm({
+      title: `Disconnect ${p.label}?`,
+      message: `Bracket will stop syncing ${ids.length === 1 ? "this source" : `${ids.length} sources`}. Memory items already extracted stay. You can reconnect anytime.`,
+      confirmLabel: "Disconnect",
+      tone: "danger",
+    });
+    if (!ok) { setBusy(null); return; }
+    try {
+      await Promise.all(ids.map((cid) => api.delete(`/connect/connections/${cid}`)));
+      toast.success(`${p.label} disconnected`);
+      await loadProviders();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="dashboard-root relative min-h-full" data-testid="connect-work-page">
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
@@ -483,7 +545,7 @@ export default function ConnectWork() {
                   <section key={cat} data-testid={`connect-category-${cat.toLowerCase().replace(/[^a-z]+/g, "-")}`}>
                     <p className="mono-tag text-muted text-[10px] mb-3">{cat.toUpperCase()}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {apps.map((p) => <AppCard key={p.key} p={p} onPick={pick} busy={busy} />)}
+                      {apps.map((p) => <AppCard key={p.key} p={p} onPick={pick} onDisconnect={disconnectProvider} busy={busy} />)}
                     </div>
                   </section>
                 );

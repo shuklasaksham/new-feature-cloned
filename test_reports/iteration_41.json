@@ -1,0 +1,31 @@
+{
+  "summary": "Iteration 41 — 4 new features validated end-to-end. Backend (6/6 pytest passed, /app/backend/tests/test_iteration_41_reply_disconnect.py): POST /api/projects/{id}/suggest-reply returns grounded reply (~323 chars) with reply/confidence/based_on/deep_links{gmail_web,mailto,slack_web}/grounded_in, works with instruction+history; DELETE /api/connect/connections/{id} returns {ok:true}, marks status=disconnected, removes from GET /api/projects/{id}/connections and GET /api/connect/connections; DELETE non-existent → 404; empty project (ca004e...) returns []. Frontend (Playwright, demo login via /login → 'I have a password'): Landing (/) renders refreshed hero ('Your client work. Remembered.', new subhead, Product Hunt badge, stats) — no console errors. Empty project /project/ca004e13... shows overview-empty-state + overview-empty-illustration + overview-empty-connect-cta (href=/app/connect?project=ca004e13...). Horizontal pills show Overview + 6 canonical categories exactly (Deliverables, Scope, Timeline, Requirements, Decisions, Deadlines). Connected project /project/9ea97afb... shows suggested-reply-chat + project-memory-sources, initial thread is empty (no auto-reply — verified chat-turn-assistant-0=0 on mount, 3 quick-prompt chips). Typing instruction + clicking send appends chat-turn-user-0 and chat-turn-assistant-1 with grounded reply referencing v2/Phase 1/cover redesign/testimonials/Feb 20 launch; all six action buttons present (copy/edit/regenerate/gmail/mailto/slack indexed as -1). 'New thread' clears (user_turn=0, empty=1). Disconnect: hover source row reveals project-memory-source-disconnect-{id}; click opens confirm dialog 'Disconnect Client thread — Nordwind?'; Confirm calls DELETE /api/connect/connections/{id}; row is removed and overview-empty-state now shows (fallback to empty state, as expected).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_41_reply_disconnect.py",
+    "/app/test_reports/pytest/iter41.xml"
+  ],
+  "action_items": [
+    "Task spec mentioned /project/{id}/memory routes but actual route is /project/{id}. Not a bug — spec was slightly off. Test used the actual route successfully.",
+    "After running iter41 backend disconnect test, the seeded connection c1d3dd05-... is disconnected. If future frontend/backend tests need it back, reseed via mongo upsert on db.source_connections (script used: set status=active, is_demo=true, owner_user_id=user_a76c1e5b34c1). Consider adding a demo/reseed-connections endpoint so tests are hermetic.",
+    "(Leftover) ProjectOut still strips demo_tag/is_demo/client_name/project_type — carried over from iter39/iter40; not a regression."
+  ],
+  "critical_code_review_comments": [
+    "connectors.py now 1830 lines — file should be split (Connections API, Memory API, Digest, Suggest-reply into separate routers).",
+    "ProjectMemory.jsx is 940 lines mixing OverviewView, SuggestedReplyChat, ChatTurn, ConnectedSourcesCompact, EmptyOverviewIllustration and MemoryPane — split into per-component files for maintainability.",
+    "SuggestedReplyChat renders a Sparkles icon and quick-prompt chips but there is no aria-live region on the assistant turn — screen readers won't announce Bracket's draft when it arrives.",
+    "Disconnect confirmation dialog uses generic buttons 'Cancel'/'Disconnect' without data-testid — tests have to fall back to text selectors. Add data-testid=\"disconnect-confirm\" / \"disconnect-cancel\" for stability.",
+    "Landing hero uses a large 'Remembered.' gradient — verify the gradient stays visible over the dark background on all breakpoints; on very narrow viewports the gradient shift might reduce contrast. Not observed on 1440×900."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_41_reply_disconnect.py"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% (all 4 new features + regression pass)"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (password login via /login → 'I have a password →').",
+  "seed_data_creation": "Reseeded the demo Gmail connection c1d3dd05-8b41-412e-be16-9e4fe72999bb into project 9ea97afb-fb31-4b74-bce0-71a284fdc1eb (owner user_a76c1e5b34c1) before running the frontend disconnect test. After the frontend disconnect test, that connection is disconnected again (expected — the project now shows empty state).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Route is /project/{id} NOT /project/{id}/memory (ProjectMemory is rendered on the base route). Assistant turn index in the chat is idx 1 (user is idx 0) — so testids are chat-turn-assistant-1, chat-turn-copy-1, chat-turn-gmail-1, etc. after the first send. Disconnect confirm modal uses plain text buttons ('Cancel'/'Disconnect') without data-testid — use text selector. To re-seed the connection for future disconnect testing, run the mongo upsert on db.source_connections (see seed_data_creation). Backend suggest-reply endpoint takes ~5-8s per call — set generous timeout when testing.",
+  "rca of the issue": "N/A — no functional regressions. All 4 new features (chat suggest-reply, empty-state illustration + CTA, disconnect UX, refreshed marketing copy) and the pill regression pass."
+}

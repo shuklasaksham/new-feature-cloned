@@ -298,14 +298,14 @@ function Hero() {
           className="mono-tag text-signal inline-flex items-center gap-2"
         >
           <span className="dot" style={{ background: "var(--accent)" }} />
-          FROM CHAOS TO CLARITY
+          THE PROJECT MEMORY OS FOR CLIENT WORK
         </motion.div>
 
         <h1 className="mt-6 font-display font-semibold tracking-[-0.032em] leading-[1.05] text-[42px] sm:text-[64px] md:text-[82px] lg:text-[96px] text-[var(--text)]">
-          <WordReveal text="Paste the mess." tag="span" />
+          <WordReveal text="Your client work." tag="span" />
           <br />
           <span className="landing-hero-gradient">
-            <WordReveal text="Ship the decision." tag="span" delayBase={2} />
+            <WordReveal text="Remembered." tag="span" delayBase={2} />
           </span>
         </h1>
 
@@ -313,10 +313,12 @@ function Hero() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.7 }}
-          className="mt-6 max-w-[620px] text-[15px] sm:text-lg text-[var(--text-2)] leading-relaxed"
+          className="mt-6 max-w-[640px] text-[15px] sm:text-lg text-[var(--text-2)] leading-relaxed"
         >
-          Paste an email, WhatsApp chat or meeting notes. Bracket turns them into scope,
-          deliverables, risks, timelines and client-ready documentation in under a minute.
+          Connect Gmail, Slack, Figma or GitHub in one click. Bracket keeps a live
+          memory of every deliverable, scope item, timeline, requirement, decision
+          and deadline — and drafts on-demand replies grounded in what your client
+          actually said.
         </motion.p>
 
         <motion.div
@@ -464,8 +466,8 @@ function HeroMetrics() {
   }, []);
   if (!m) return <div className="mt-12 h-10" data-testid="hero-metrics" aria-hidden="true" />;
   const items = [
-    { n: m.projects_started_with_ai ?? 0, label: "briefs turned into projects" },
-    { n: m.projects_scoped ?? 0, label: "decisions locked" },
+    { n: m.projects_started_with_ai ?? 0, label: "projects with live memory" },
+    { n: m.projects_scoped ?? 0, label: "decisions tracked in Bracket" },
     { n: m.freelancers_and_teams ?? 0, label: "professionals on Bracket" },
   ];
   return (
@@ -489,49 +491,49 @@ function HeroMetrics() {
 // ─── SECTION 2: SCROLL-PINNED FEATURE SHOWCASE (horizontal parallax) ─────
 const SHOWCASE = [
   {
-    tag: "01 · UNDERSTAND",
-    title: "Paste anything. Bracket understands it.",
+    tag: "01 · CONNECT",
+    title: "One-click access to where work already lives.",
     body:
-      "Paste an email, WhatsApp chat, meeting notes or a transcript. Bracket uncovers the goals, assumptions, stakeholders and hidden context automatically.",
-    output: "Structured Brief",
+      "Connect Gmail threads, Slack channels, Figma files or GitHub repos. Bracket only reads the sources you pick — nothing else.",
+    output: "Live-Synced Sources",
     accent: "#5E6AD2",
     icon: Compass,
   },
   {
-    tag: "02 · SIMPLIFY",
-    title: "The signal. Not the noise.",
+    tag: "02 · SYNC",
+    title: "Every ten seconds. Continuously.",
     body:
-      "Bracket filters distractions, surfaces what actually matters, and rewrites the problem into one clear, actionable direction.",
-    output: "Clear Problem Statement",
+      "Bracket polls your connected sources on a live 10-second cadence, so the project always reflects the freshest client conversation.",
+    output: "Always Fresh",
     accent: "#7CD5FF",
+    icon: Zap,
+  },
+  {
+    tag: "03 · REMEMBER",
+    title: "Six categories. Nothing forgotten.",
+    body:
+      "Deliverables, Scope, Timelines, Requirements, Decisions, Deadlines — extracted, categorized and history-tracked automatically.",
+    output: "Project Memory",
+    accent: "#FFB84C",
     icon: Layers,
   },
   {
-    tag: "03 · STRATEGY",
-    title: "A decision. Not a debate.",
+    tag: "04 · ASK",
+    title: "Chat with your project. Reply on demand.",
     body:
-      "Bracket recommends the strongest path forward, explains why it works, and highlights the trade-offs before you commit.",
-    output: "Confident Recommendation",
-    accent: "#FFB84C",
+      "Tell Bracket what you want — “draft a reply”, “push back on scope”, “ask for the missing details”. You get a grounded response using this project's memory.",
+    output: "Chat-Style Reply",
+    accent: "#B7B7FF",
     icon: Sparkles,
   },
   {
-    tag: "04 · EXECUTION",
-    title: "Scope. Message. Ready to send.",
+    tag: "05 · TRACK",
+    title: "Every decision. Every change.",
     body:
-      "Your scope, client message, deliverables and documentation are drafted in your voice — ready to review and share.",
-    output: "Client-Ready Deliverables",
-    accent: "#B7B7FF",
-    icon: ListChecks,
-  },
-  {
-    tag: "05 · DECISION",
-    title: "Locked. Signed. Shipped.",
-    body:
-      "Export polished documents, share with clients, and keep every assumption and decision in one place for future reference.",
-    output: "Complete Decision Record",
+      "Bracket keeps a full history of what changed, when, and from which source — with scope-creep alerts and change digests so nothing slips.",
+    output: "Decision Provenance",
     accent: "#4BE39B",
-    icon: AlertTriangle,
+    icon: ListChecks,
   },
 ];
 
@@ -690,8 +692,8 @@ function Showcase() {
       <SectionBleed />
       <div className="relative max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
-          tag="THE FLOW"
-          title="From mess to decision, in five chapters."
+          tag="HOW IT WORKS"
+          title="Connect once. Bracket does the rest."
         />
       </div>
 
@@ -795,57 +797,57 @@ function ShowcaseCard({ card }) {
 const BENTO = [
   {
     span: "col-span-2 md:row-span-2",
-    tag: "DASHBOARD",
-    title: "Everything starts here.",
-    hint: "Paste one client conversation. Bracket turns it into a structured project workspace.",
+    tag: "PROJECT MEMORY",
+    title: "Six categories, one live memory.",
+    hint: "Deliverables, Scope, Timelines, Requirements, Decisions, Deadlines — extracted continuously from your connected sources.",
     icon: "LayoutDashboard",
     ghost: "cards",
   },
   {
     span: "col-span-1 md:col-span-1",
-    tag: "SCOPE",
-    title: "Scope. Ready to send.",
-    hint: "Deliverables, timeline and assumptions drafted automatically.",
-    icon: "ListChecks",
-    ghost: "checklist",
-  },
-  {
-    span: "col-span-1 md:col-span-1",
-    tag: "RISKS",
-    title: "Risks your client never mentioned.",
-    hint: "Spot hidden risks before they become expensive revisions.",
+    tag: "SCOPE CREEP",
+    title: "See scope creep the moment it starts.",
+    hint: "Bracket flags every change with a red badge so you catch drift before it costs you.",
     icon: "AlertTriangle",
     ghost: "risk",
   },
   {
-    span: "col-span-1 md:col-span-1 md:row-span-2",
-    tag: "DECISION",
-    title: "Decisions backed by evidence.",
-    hint: "Understand trade-offs and move forward with confidence.",
+    span: "col-span-1 md:col-span-1",
+    tag: "SOURCES",
+    title: "Gmail. Slack. Figma. GitHub.",
+    hint: "One-click OAuth. Bracket only reads the specific threads, channels or files you pick.",
     icon: "GitBranch",
-    ghost: "tree",
+    ghost: "checklist",
   },
   {
-    span: "col-span-1 md:col-span-1",
-    tag: "MESSAGE",
-    title: "The client email, in your voice.",
-    hint: "Generate polished responses from everything Bracket already knows.",
+    span: "col-span-1 md:col-span-1 md:row-span-2",
+    tag: "ASK BRACKET",
+    title: "Chat-style replies, on demand.",
+    hint: "Tell Bracket what to do — draft a reply, push back on scope, or ask for missing details — grounded in the project.",
     icon: "Mail",
     ghost: "bubbles",
   },
   {
+    span: "col-span-1 md:col-span-1",
+    tag: "HISTORY",
+    title: "Every decision, provenance-tracked.",
+    hint: "See exactly when a decision changed, and from which source it came.",
+    icon: "GitBranch",
+    ghost: "tree",
+  },
+  {
     span: "col-span-2 md:col-span-2",
-    tag: "SPEED",
-    title: "From brief to project in under a minute.",
-    hint: "Skip the setup. Get straight to the work.",
+    tag: "10-SEC SYNC",
+    title: "Always fresh. Always live.",
+    hint: "Bracket polls your sources every 10 seconds so the project reflects the newest conversation, not last week's.",
     icon: "Zap",
     ghost: "timeline",
   },
   {
     span: "col-span-1 md:col-span-1",
-    tag: "LOCK",
-    title: "Locked. Signed. Shipped.",
-    hint: "Export polished documents and keep every decision documented.",
+    tag: "PRIVACY",
+    title: "Only the sources you pick.",
+    hint: "Bracket never reads your whole workspace. Disconnect a source anytime.",
     icon: "Lock",
     ghost: "signed",
   },
@@ -867,7 +869,7 @@ function Bento() {
       <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10">
         <SectionHeading
           tag="WHAT'S INSIDE"
-          title="Everything you need before you hit send."
+          title="Everything a project keeps forgetting."
         />
         <div className="mt-14 grid grid-cols-2 md:grid-cols-4 grid-flow-dense auto-rows-[190px] md:auto-rows-[220px] gap-4">
           {BENTO.map((b, i) => (
