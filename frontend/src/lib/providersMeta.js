@@ -31,29 +31,31 @@ export const PROVIDER_META = {
   linear:   { label: "Linear",          icon: Layers,        color: "#3B82F6", slug: "linear", brandColor: "#3B82F6" },
 };
 
-export function ProviderIcon({ provider, size = 16 }) {
+export function ProviderIcon({ provider, size = 16, bare = false }) {
   const meta = PROVIDER_META[provider] || {};
   const Icon = meta.icon || Layers;
   const path = meta.slug ? BRAND_PATHS[meta.slug] : null;
   const fill = meta.brandColor || meta.color || "var(--text-2)";
+  const glyph = path ? (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block" }} fill={fill}>
+      <path d={path} />
+    </svg>
+  ) : (
+    <Icon size={size} strokeWidth={1.75} style={{ color: meta.color || "var(--text-2)" }} />
+  );
+  if (bare) return glyph;
   return (
     <span
-      className="inline-flex items-center justify-center rounded-lg shrink-0"
+      className="inline-flex items-center justify-center shrink-0"
       style={{
-        width: size + 14, height: size + 14,
+        width: size + 14, height: size + 14, borderRadius: "6px",
         background: "rgba(255,255,255,0.04)",
         border: "1px solid var(--hairline)",
         color: meta.color || "var(--text-2)",
       }}
       aria-hidden="true"
     >
-      {path ? (
-        <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block" }} fill={fill}>
-          <path d={path} />
-        </svg>
-      ) : (
-        <Icon size={size} strokeWidth={1.75} />
-      )}
+      {glyph}
     </span>
   );
 }

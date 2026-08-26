@@ -69,6 +69,11 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v19 — composer CTA cleanup + direct Gmail send + provider-icon polish) —
+  - **Composer CTAs de-duped**: removed the redundant "Connect work" button (it opened the same `/app/connect` as "Start a new project"). Dashboard composer now has just **Ask Bracket** (accent-tinted) + **Start a new project**.
+  - **Ask Bracket reply — one mail action, direct send**: removed the duplicate mail options (Gmail-web + mailto) and the Slack redirect. A single **Send email** button now opens an inline compose form (To + subject) and sends the reply **directly through the user's connected Gmail** — no redirect. New backend endpoint `POST /api/projects/{id}/send-email` (connectors.py) builds an RFC822 message and calls Gmail `users.messages.send`; the Gmail OAuth scope now includes `gmail.send` (was readonly only). Handles 403 (insufficient scope → "reconnect Gmail") and 401 (expired). NOTE: existing Gmail connections were linked with readonly scope — users must disconnect + reconnect Gmail once to grant send permission; Google may require app verification for the send scope in production.
+  - **Provider-icon polish**: `ProviderIcon` gained a `bare` mode (glyph only, no bordered box); the "ADD A SOURCE" chips now use bare brand marks and a cleaner `.quick-connect-chip` (30px, 6px radius) — fixes the ugly box-in-box icons.
+
 - 2026-06 (design v18 — subtle dashboard composer + project-card cleanup + app legal links) —
   - **Subtle composer**: `NewProjectComposer.jsx` rewritten from the loud rounded/glowing hero into a quiet flat bar (6px, hairline, no shadow/orb, smaller title, small squared tool chips). **"Ask Bracket" now presented well** — an accent-tinted violet button (accent-soft bg + brand border) so the AI action reads clearly alongside "Connect work" and the primary "Start a new project".
   - **Project card cleanup**: removed the legacy "Step X / 5" text and the orphaned step progress bar from dashboard project cards (`Dashboard.jsx ProjectCard`) — cards now show just name · stage · date.

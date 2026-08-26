@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Loader2, ExternalLink, AlertTriangle,
-  Sparkles, History, Copy, Mail, Slack, Pencil, RefreshCw,
+  Sparkles, History, Copy, Mail, Pencil, RefreshCw,
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown,
 } from "lucide-react";
@@ -501,10 +501,6 @@ function SuggestedReplyChat({ projectId, clientName }) {
     setEditingDraft("");
   };
 
-  const encodedForLink = (t) => encodeURIComponent(t || "");
-  const gmailLink = (t) => `https://mail.google.com/mail/?view=cm&fs=1&su=Re:%20your%20project&body=${encodedForLink(t)}`;
-  const mailtoLink = (t) => `mailto:?subject=Re:%20your%20project&body=${encodedForLink(t)}`;
-
   return (
     <section
       className="rounded-xl overflow-hidden flex flex-col"
@@ -558,6 +554,8 @@ function SuggestedReplyChat({ projectId, clientName }) {
             key={i}
             idx={i}
             turn={t}
+            projectId={projectId}
+            clientName={clientName}
             editing={editingIdx === i}
             editingDraft={editingDraft}
             editRef={editRef}
@@ -568,8 +566,6 @@ function SuggestedReplyChat({ projectId, clientName }) {
             onCopy={(content) => copyReply(i, content)}
             copied={copiedId === i}
             onRegenerate={() => regenerate(i)}
-            gmailLink={gmailLink}
-            mailtoLink={mailtoLink}
           />
         ))}
 
@@ -622,10 +618,30 @@ function SuggestedReplyChat({ projectId, clientName }) {
 }
 
 function ChatTurn({
-  idx, turn, editing, editingDraft, editRef,
+  idx, turn, projectId, clientName, editing, editingDraft, editRef,
   onEdit, onEditChange, onEditSave, onEditCancel,
-  onCopy, copied, onRegenerate, gmailLink, mailtoLink,
+  onCopy, copied, onRegenerate,
 }) {
+  const [showSend, setShowSend] = useState(false);
+  const [to, setTo] = useState("");
+  const [subject, setSubject] = useState(clientName ? `Re: ${clientName}` : "Re: your project");
+  const [sending, setSending] = useState(false);
+
+  const sendEmail = async () => {
+    if (!to.trim() || sending) return;
+    setSending(true);
+    try {
+      await api.post(`/projects/${projectId}/send-email`, { to: to.trim(), subject: subject.trim(), body: turn.content });
+      toast.success(`Email sent to ${to.trim()}`);
+      setShowSend(false);
+      setTo("");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
   if (turn.role === "user") {
     return (
       <div className="flex items-start gap-3" data-testid={`chat-turn-user-${idx}`}>
@@ -647,9 +663,6 @@ function ChatTurn({
 
   // Assistant turn
   const based = turn.meta?.based_on || null;
-  const gmailWeb = turn.meta?.deep_links?.gmail_web || gmailLink(turn.content);
-  const mailto = turn.meta?.deep_links?.mailto || mailtoLink(turn.content);
-  const slackWeb = turn.meta?.deep_links?.slack_web || "slack://open";
 
   return (
     <div className="flex items-start gap-3" data-testid={`chat-turn-assistant-${idx}`}>
@@ -707,44 +720,77 @@ function ChatTurn({
             </div>
 
             {turn.content && (
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <button type="button" onClick={() => onCopy(turn.content)}
-                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
-                        style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
-                        data-testid={`chat-turn-copy-${idx}`}>
-                  {copied ? <><Check size={10} /> Copied</> : <><Copy size={10} /> Copy</>}
-                </button>
-                <button type="button" onClick={onEdit}
-                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
-                        style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                        data-testid={`chat-turn-edit-${idx}`}>
-                  <Pencil size={10} /> Edit
-                </button>
-                <button type="button" onClick={onRegenerate}
-                        className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
-                        style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                        data-testid={`chat-turn-regenerate-${idx}`}>
-                  <RefreshCw size={10} /> Regenerate
-                </button>
-                <a href={gmailWeb} target="_blank" rel="noreferrer"
-                   className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
-                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                   data-testid={`chat-turn-gmail-${idx}`}>
-                  <Mail size={10} /> Gmail
-                </a>
-                <a href={mailto}
-                   className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
-                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                   data-testid={`chat-turn-mailto-${idx}`}>
-                  <Mail size={10} /> Mail
-                </a>
-                <a href={slackWeb}
-                   className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full"
-                   style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
-                   data-testid={`chat-turn-slack-${idx}`}>
-                  <Slack size={10} /> Slack
-                </a>
-              </div>
+              <>
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  <button type="button" onClick={() => onCopy(turn.content)}
+                          className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md"
+                          style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                          data-testid={`chat-turn-copy-${idx}`}>
+                    {copied ? <><Check size={10} /> Copied</> : <><Copy size={10} /> Copy</>}
+                  </button>
+                  <button type="button" onClick={onEdit}
+                          className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md"
+                          style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                          data-testid={`chat-turn-edit-${idx}`}>
+                    <Pencil size={10} /> Edit
+                  </button>
+                  <button type="button" onClick={onRegenerate}
+                          className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md"
+                          style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                          data-testid={`chat-turn-regenerate-${idx}`}>
+                    <RefreshCw size={10} /> Regenerate
+                  </button>
+                  <button type="button" onClick={() => setShowSend((v) => !v)}
+                          className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-md font-medium"
+                          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+                          data-testid={`chat-turn-send-${idx}`}>
+                    <Mail size={10} /> Send email
+                  </button>
+                </div>
+
+                {showSend && (
+                  <div className="mt-2 rounded-md p-2.5 flex flex-col gap-2"
+                       style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}
+                       data-testid={`chat-turn-send-form-${idx}`}>
+                    <input
+                      type="email"
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
+                      placeholder="Client email — e.g. client@company.com"
+                      className="jira-filter-input"
+                      style={{ width: "100%" }}
+                      data-testid={`chat-turn-send-to-${idx}`}
+                    />
+                    <input
+                      type="text"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="Subject"
+                      className="jira-filter-input"
+                      style={{ width: "100%" }}
+                      data-testid={`chat-turn-send-subject-${idx}`}
+                    />
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={sendEmail} disabled={sending || !to.trim()}
+                              className="inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-md font-medium disabled:opacity-40"
+                              style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
+                              data-testid={`chat-turn-send-confirm-${idx}`}>
+                        {sending ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                        {sending ? "Sending…" : "Send from Gmail"}
+                      </button>
+                      <button type="button" onClick={() => setShowSend(false)}
+                              className="text-[11px] px-2.5 py-1.5 rounded-md"
+                              style={{ background: "transparent", border: "1px solid var(--hairline)", color: "var(--text-2)" }}
+                              data-testid={`chat-turn-send-cancel-${idx}`}>
+                        Cancel
+                      </button>
+                    </div>
+                    <p className="text-[10px]" style={{ color: "var(--text-3)" }}>
+                      Sends directly through your connected Gmail — the client gets it as a normal email.
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -1395,7 +1441,7 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
                 title={`Connect ${meta.label || p}`}
                 data-testid={`project-memory-quick-connect-${p}`}
               >
-                {connecting === p ? <Loader2 size={11} className="animate-spin" /> : <ProviderIcon provider={p} size={11} />}
+                {connecting === p ? <Loader2 size={13} className="animate-spin" /> : <ProviderIcon provider={p} size={14} bare />}
                 {meta.label || p}
               </button>
             );

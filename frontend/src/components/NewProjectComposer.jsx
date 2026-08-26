@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Plug, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { PROVIDER_META } from "../lib/providersMeta";
 
 /**
@@ -79,18 +79,6 @@ export default function NewProjectComposer({ onAskOpen, hasProjects }) {
               <Sparkles size={13} /> Ask Bracket
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => openConnect(null)}
-            className="inline-flex items-center gap-1.5 px-3 h-9 text-[12.5px] transition-colors"
-            style={{ border: "1px solid var(--hairline)", color: "var(--text-2)", background: "var(--surface-2)", borderRadius: "6px" }}
-            onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text)"; e.currentTarget.style.borderColor = "var(--hairline-hover)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-2)"; e.currentTarget.style.borderColor = "var(--hairline)"; }}
-            data-testid="dashboard-connect-work-btn"
-            title="Bring a conversation, design or file into Bracket"
-          >
-            <Plug size={13} /> Connect work
-          </button>
           <button
             type="button"
             onClick={() => openConnect(null)}

@@ -251,7 +251,7 @@ def _auth_url_for(provider: str, state: str, ru: str) -> str:
     if provider == "gmail":
         return "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
             "client_id": conf["id"], "redirect_uri": ru, "response_type": "code",
-            "scope": "https://www.googleapis.com/auth/gmail.readonly",
+            "scope": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
             "access_type": "offline", "prompt": "consent", "state": state})
     if provider == "slack":
         return "https://slack.com/oauth/v2/authorize?" + urlencode({
@@ -1087,6 +1087,53 @@ async def project_suggest_reply(project_id: str, request: Request):
         },
         "deep_links": {"mailto": mailto, "gmail_web": gmail_web, "slack_web": slack_web},
     }
+
+
+@router.post("/projects/{project_id}/send-email")
+async def project_send_email(project_id: str, request: Request):
+    """Send an email to the client DIRECTLY via the user's connected Gmail —
+    no redirect, no mailto. Requires the gmail.send scope (reconnect Gmail if it
+    was linked before send was enabled)."""
+    await _owned_project(project_id, request)
+    user = await current_user(request, db)
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    to = (body.get("to") or "").strip()
+    subject = (body.get("subject") or "").strip() or "Re: your project"
+    text = (body.get("body") or "").strip()
+    if not to or "@" not in to:
+        raise HTTPException(400, "Enter the client's email address to send.")
+    if not text:
+        raise HTTPException(400, "Nothing to send — the reply is empty.")
+
+    account = await _get_account(user["user_id"], "gmail")
+    token = await _access_token(account)
+
+    raw_msg = (
+        f"To: {to}\r\n"
+        f"Subject: {subject}\r\n"
+        "MIME-Version: 1.0\r\n"
+        "Content-Type: text/plain; charset=utf-8\r\n\r\n"
+        f"{text}"
+    )
+    raw_b64 = base64.urlsafe_b64encode(raw_msg.encode("utf-8")).decode("utf-8")
+
+    async with await _http() as c:
+        r = await c.post(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json={"raw": raw_b64},
+        )
+    if r.status_code == 403:
+        raise HTTPException(400, "Bracket can read this Gmail but isn't allowed to send yet. Disconnect and reconnect Gmail to grant send permission.")
+    if r.status_code == 401:
+        raise HTTPException(400, "Your Gmail connection expired — reconnect Gmail and try again.")
+    if r.status_code not in (200, 201):
+        logger.warning("gmail send failed %s: %s", r.status_code, r.text[:300])
+        raise HTTPException(502, "Gmail wouldn't send the message right now.")
+    return {"sent": True, "to": to}
 
 
 @router.get("/projects/{project_id}/memory")
