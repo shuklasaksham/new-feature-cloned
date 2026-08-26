@@ -32,6 +32,7 @@ import NotificationBell from "../components/NotificationBell";
 import GlobalAskModal from "../components/GlobalAskModal";
 import NewProjectComposer from "../components/NewProjectComposer";
 import OnboardingWelcome from "../components/OnboardingWelcome";
+import FirstRunChecklist from "../components/FirstRunChecklist";
 import { EmptyState } from "../components/EmptyState";
 
 
@@ -296,6 +297,10 @@ export default function Dashboard() {
             hasProjects={hasProjects}
           />
         </motion.section>
+
+        <motion.div variants={item}>
+          <FirstRunChecklist />
+        </motion.div>
 
         {/* ─── With projects: projects list. Without: onboarding tiles. ─ */}
         {loading ? (

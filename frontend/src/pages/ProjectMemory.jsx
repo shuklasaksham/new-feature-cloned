@@ -55,6 +55,10 @@ export default function ProjectMemory() {
       setProject(projRes.data.project || projRes.data);
       setMemory(memRes.data);
       setConnections(connRes.data.connections || []);
+      if ((memRes.data?.total || 0) > 0) {
+        try { localStorage.setItem("bracket.fr.sawMemory", "1"); } catch { /* ignore */ }
+        window.dispatchEvent(new Event("bracket-firstrun-update"));
+      }
     } catch (e) {
       if (!silent) toast.error(formatApiError(e));
     } finally {
@@ -188,11 +192,10 @@ export default function ProjectMemory() {
 
             {/* Horizontal pill tabs — Overview + 6 categories */}
             <nav
-              className="flex items-center gap-1 mb-8 overflow-x-auto no-scrollbar"
+              className="memory-tabs mb-8 overflow-x-auto no-scrollbar"
               data-testid="project-memory-pills"
               role="tablist"
               aria-label="Memory categories"
-              style={{ borderBottom: "1px solid var(--hairline)" }}
             >
               <PillTab
                 active={view === "overview"}
@@ -268,9 +271,8 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
       role="tab"
       aria-selected={active ? "true" : "false"}
       onClick={onClick}
-      className="memory-tab relative inline-flex items-center gap-2 px-3.5 py-3 text-[13px] font-medium whitespace-nowrap"
+      className="memory-tab inline-flex items-center gap-2 px-3.5 py-2.5 text-[13px] font-medium whitespace-nowrap"
       data-active={active ? "true" : "false"}
-      style={{ color: active ? "var(--text)" : "var(--text-3)" }}
       data-testid={testid}
     >
       {Icon && <Icon size={13} style={{ color: active ? (color || "var(--accent)") : "var(--text-3)" }} />}
@@ -285,14 +287,6 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
         >
           {count}
         </span>
-      )}
-      {active && (
-        <motion.span
-          layoutId="pill-underline"
-          className="absolute -bottom-px left-0 right-0 h-[2px] rounded-full"
-          style={{ background: "var(--accent)" }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        />
       )}
     </button>
   );
@@ -418,6 +412,8 @@ function SuggestedReplyChat({ projectId }) {
         },
       };
       setThread((cur) => [...cur, assistantTurn]);
+      try { localStorage.setItem("bracket.fr.draftedReply", "1"); } catch { /* ignore */ }
+      window.dispatchEvent(new Event("bracket-firstrun-update"));
     } catch (e) {
       toast.error(formatApiError(e));
       // Roll the user turn back if the request failed — nothing to reply to.

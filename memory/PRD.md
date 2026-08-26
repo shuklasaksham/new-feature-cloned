@@ -69,6 +69,13 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `/start` → redirects to `/app`. Catch-all `*` → `/`.
 
 ## Changelog (recent)
+- 2026-06 (design v12 — boxed folder tabs + Activity redesign + first-run checklist + Activity filters; testing agent iteration_47 100% frontend, no console errors) —
+  - **Boxed (JIRA folder) tabs**: Project Memory category nav restyled from underline tabs to BOXED folder tabs — each tab a bordered box with rounded top corners; the active tab gets a blue top accent strip, shares the content background and "breaks" the divider line to connect to the panel below (`.memory-tabs`/`.memory-tab` in index.css; PillTab markup in ProjectMemory.jsx).
+  - **Activity page redesign**: full rebuild into a cinematic timeline feed — hero count header ("N changes across M projects", blue number), 24h/7d window toggle, scope-alert banner, six clickable category counter tiles, and a vertical timeline of change cards with node dots (`.activity-feed`/`.activity-card`).
+  - **Activity filters**: filter the feed by project (dropdown), by tool (provider chips), and by change type (counter tiles), with an "x of y shown" count, a Clear reset, and a "No changes match" state. Digest items cap raised 12→60 (connectors.py) for a richer feed.
+  - **First-run checklist**: dismissible 3-step Dashboard guide (connect a tool → see your first memory → draft a reply) with a progress bar; "connect" derives from real connections, the other two from milestone flags set by ProjectMemory (memory loaded / reply drafted) via a `bracket-firstrun-update` event. Auto-hides when complete or dismissed (localStorage).
+
+## Changelog (history)
 - 2026-06 (design v11 — disconnect UX + JIRA tabs + activity badge + copy + reduced-motion; testing agent iteration_46 100% frontend, no console errors) —
   - **Disconnect UX**: each connected source now shows an ALWAYS-VISIBLE "Disconnect" button (Unplug icon + label, `.disconnect-btn`, danger-on-hover) instead of a hover-only trash icon. Multiple sources per project are independently disconnectable (verified with 2 sources).
   - **JIRA-style category tabs**: Project Memory nav restyled from pills to tabs — label + count chip badge + animated blue accent underline on the active tab; added `role=tablist`/`role=tab`/`aria-selected` a11y.

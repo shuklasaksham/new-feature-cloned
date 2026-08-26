@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend regression for Bracket batch 47 (boxed folder tabs, Activity redesign + filters, First-run checklist) fully verified. All acceptance criteria pass; no console errors on /app, /app/activity, or /project/:id.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Activity.jsx: WindowToggle refetches on toggle; consider caching per-window data client-side to avoid re-render flicker (non-blocking).",
+    "FirstRunChecklist.jsx uses a `tick` state that only forces a re-render (via `const _ = tick`); this is fragile — prefer reading localStorage flags into state on the `bracket-firstrun-update` event for clarity (non-blocking).",
+    "Activity project <option> value is the raw project_id; long IDs are fine, but consider truncation for a11y screen reader UX (non-blocking)."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a", "frontend": "100%" },
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 via /login -> 'I have a password ->'",
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified on demo seed: (1) Boxed tabs on /project/9ea97afb-...: 7 .memory-tab elements (Overview + 6 categories); clicking project-memory-pill-decision sets data-active='true' and switches content; Decisions/Scope/Deadlines each show a '2' count chip (seed increased). Screenshot confirms visible border, rounded top corners, active tab has blue top accent strip and border-bottom blends into content area (JIRA folder look). (2) /app/activity hero renders '6 changes across 2 projects' with 6 in blue; activity-window-24h shows '3 changes across 1 project'; activity-scope-banner visible with '1 scope alert'; all 6 counter tiles (decision/deadline/scope_change/requirement/deliverable/question) each show count 1; feed has 6 activity-item cards with category tag + provider icon + project name + relative time; project filter narrows 6 -> 3 items; clicking activity-count-scope_change narrows to 1; activity-filter-clear resets to 6; 'x of y shown' updates ('3 of 6 shown'). All 4 tool chips (gmail/slack/figma/github) render. activity-no-match not triggered in tested combo (github+deliverable overlap in seed); component is present in code. (3) First-run checklist on /app: progress 1/3 (connect DONE via green check), CTA visible pointing to next step, dismiss hides card and persists across reload (localStorage bracket.fr.dismissed). After visiting project memory, localStorage bracket.fr.sawMemory=1 and progress becomes 2/3. No console errors.",
+  "rca of the issue": "n/a"
+}

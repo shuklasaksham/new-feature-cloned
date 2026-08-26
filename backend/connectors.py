@@ -1515,7 +1515,7 @@ async def change_digest(request: Request, window: str = "24h"):
             scope_alerts += 1
         proj_touched.add(m["project_id"])
         proj = projects_by_id.get(m["project_id"], {})
-        if len(items) < 12:
+        if len(items) < 60:
             items.append({
                 "id": m["id"], "project_id": m["project_id"],
                 "project_name": proj.get("name", ""),

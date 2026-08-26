@@ -3983,10 +3983,46 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 }
 .disconnect-btn:disabled { opacity: 0.6; cursor: default; }
 
-/* Memory category tabs (JIRA-style) — hover affordance on inactive tabs. */
-.memory-tab { transition: color .18s var(--ease-out); }
-.memory-tab[data-active="false"]:hover { color: var(--text-2); }
+/* Memory category tabs — JIRA-style BOXED folder tabs. Each tab is a
+   bordered box with rounded top corners; the active tab shares the content
+   background and "breaks" the nav divider so it connects to the panel below. */
+.memory-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  border-bottom: 1px solid var(--hairline);
+  padding: 0 2px;
+}
+.memory-tab {
+  position: relative;
+  border: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  border-radius: 9px 9px 0 0;
+  background: var(--surface);
+  margin-bottom: -1px;
+  transition: background .18s var(--ease-out), color .18s var(--ease-out), border-color .18s var(--ease-out);
+}
+.memory-tab[data-active="false"] { color: var(--text-3); }
+.memory-tab[data-active="false"]:hover {
+  color: var(--text-2);
+  background: var(--surface-2);
+}
 .memory-tab[data-active="false"]:hover .memory-tab-count { color: var(--text-2); }
+.memory-tab[data-active="true"] {
+  color: var(--text);
+  background: var(--bg);
+  border-color: var(--hairline);
+  border-bottom-color: var(--bg);
+}
+/* Accent top strip on the active tab — the JIRA blue signal. */
+.memory-tab[data-active="true"]::before {
+  content: "";
+  position: absolute;
+  top: -1px; left: -1px; right: -1px;
+  height: 2px;
+  border-radius: 9px 9px 0 0;
+  background: var(--accent);
+}
 
 /* Sidebar unread badge (Activity) */
 .nav-item { position: relative; }
@@ -4044,4 +4080,90 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ============================================================
+   Activity feed — cinematic timeline + filters
+   ============================================================ */
+.activity-stat:not(:disabled):hover { transform: translateY(-2px); }
+
+.activity-select {
+  height: 30px;
+  padding: 0 26px 0 10px;
+  border-radius: 8px;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%23888' stroke-width='1.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;
+  border: 1px solid var(--hairline);
+  color: var(--text-2);
+  font-size: 12px;
+  font-family: 'Geist', sans-serif;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  max-width: 220px;
+}
+.activity-select:hover { border-color: var(--hairline-hover); }
+
+.activity-chip {
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  transition: background .15s var(--ease-out), border-color .15s var(--ease-out), color .15s var(--ease-out);
+}
+.activity-chip:hover { border-color: var(--hairline-hover); color: var(--text); }
+.activity-chip[data-active="true"] {
+  background: var(--accent-soft);
+  border-color: rgba(59,130,246,0.4);
+  color: var(--accent);
+}
+
+.activity-feed {
+  position: relative;
+  padding-left: 22px;
+  list-style: none;
+}
+.activity-feed::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--hairline);
+}
+.activity-feed-row {
+  position: relative;
+  margin-bottom: 10px;
+}
+.activity-node {
+  position: absolute;
+  left: -22px;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transform: translateX(0.5px);
+}
+.activity-card {
+  display: block;
+  border-radius: 12px;
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  transition: transform .35s var(--ease-cinematic), border-color .25s ease, box-shadow .35s var(--ease-cinematic);
+}
+.activity-card:hover {
+  transform: translateX(2px);
+  border-color: var(--hairline-hover);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 34px -22px rgba(0,0,0,0.6);
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity-stat:not(:disabled):hover,
+  .activity-card:hover { transform: none !important; }
+  .activity-card, .activity-stat { transition: none !important; }
 }
