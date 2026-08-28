@@ -95,12 +95,35 @@ This is deliberately the opposite of traditional project tools, which make *you*
 
 **Honest take:** no single one of Bracket's features is impossible to copy. The edge is the *combination* — and that edge is 🔵 not yet proven to be defensible.
 
+**Who's actually out there (real players & prices, 2026):**
+- **Freelancer/agency client-management incumbents:** **HoneyBook** (client-experience/proposals-to-payment; US/Canada only; ~$29–$49/mo after an ~89% price rise in early 2025), **Bonsai** (ledger-first, per-user; acquired by Zoom Dec 2025), **Dubsado** (deep automation, steep 2–3 week setup). Cheaper alternatives: **Moxie** (~$10/mo), **Plutio** (workspace pricing), **Agiled**, **Bloom**. _(The Stack Architects; FirmTools; Agiled)_
+- **Execution/PM & docs:** ClickUp, Asana, Jira, monday, ONES; Notion, Confluence, Google Docs.
+- **The gap none of them close [KEY]:** all of the above are **manual-entry** — you feed them. **None reads your Gmail/Slack/Figma/GitHub and maintains the project record for you.** That is exactly where Bracket sits. Bracket is closer to a "**layer on top of the tools you already use**" than a replacement CRM or task board — which is both its differentiation and its dependency risk (§11).
+
 ---
 
-## 6. Market & opportunity 🔵 (all guesses — no market sizes are claimed)
-- **Start here (beachhead):** small design/creative studios and freelancers who feel scope-creep pain and already live in Gmail/Slack/Figma — exactly the tools Bracket already supports. The ₹ (rupee) framing suggests an **India-first** start.
-- **Grow into:** marketing agencies, dev shops, consultancies, then small teams generally.
-- **Biggest unknowns:** Is the pain big enough to switch? Will people connect their real inbox to a new tool? Is the AI accurate enough to trust? Will anyone pay?
+## 6. Market & opportunity
+
+> These are **external, sourced market facts (2025–2026)** — real data about the *market*, not about Bracket's own traction. They validate that the problem is large and unsolved; they do **not** prove Bracket has won any of it.
+
+**How big is the space Bracket touches?**
+- **Project management software:** ~**$9.1B in 2025 → ~$16.9B by 2030** (~12.6% CAGR). The project-portfolio segment is growing even faster (~14% CAGR). _(The Business Research Company; Grand View Research)_
+- **Freelance economy (Bracket's core users):** ~**1.57B freelancers globally** (~47% of the workforce, broad definition); **76.4M in the US** (~38% of the US workforce). Total freelance earnings estimated **$1.3–1.5 trillion/yr**. _(Upwork; multiple 2025–26 trackers)_
+- **Creative work is the biggest freelance slice:** design/creative is ~**32.5% of demand** on major freelance platforms; the global freelance **creative-services market was ~$248B (2023)**. _(ENTEEF; Gitnux)_
+- **India (Bracket's likely first market, given the ₹ framing):** ~**12M gig/platform workers** (Economic Survey 2025-26) and ~**15M professional freelancers** (industry). India's freelance-platform market: **$265M (2025) → ~$1.5B by 2033 (~25% CAGR)**; project-based hiring **up 38% in FY25**; India is the **2nd-largest talent supplier on Upwork**. _(Economic Survey; Flexable; xFlow)_
+
+**Is the problem real? The data says clearly yes:**
+- **Scope creep hits ~52% of projects.** Of those, **85% finish over budget**, with an **average 27% overrun** — and this has barely improved in a decade. _(PMI-aligned research; PM Study Circle)_
+- **Communication is the #1 delay driver for agencies: 32%** of agencies name client communication as the top cause of project delays; **46%** struggle with scoping; **79%** over-service clients. _(WifiTalents; setup.us; FunctionFox 2025)_
+- **The record is a mess by default: 44% of agencies still manage briefs over email, and 16% communicate them verbally with no formal record.** _(Decision Marketing)_ — this is almost a direct description of the gap Bracket fills.
+- **Tool sprawl is the norm:** the average marketing team runs **14 disconnected tools**; knowledge workers lose **~12 hours/week** to context-switching and hunting for info, toggling apps **~1,200×/day**. _(Switch to Landing 2026; AgencyPro)_
+- **AI is already in the workflow: 60% of freelancers use AI** (saving ~12 hrs/week) and **34% of agencies** have adopted it business-wide. The 2026 differentiator is shifting to **AI-native tools with a single data layer** that remove manual handoffs. _(Karbon; HyperscaleAI)_
+
+**Where this leaves Bracket [HYPOTHESIS, but well-supported]**
+- **Beachhead:** small design/creative studios and freelancers who feel scope-creep and "lost the thread" pain, already live in Gmail/Slack/Figma, and are open to AI — an **India-first** wedge is plausible and cheaper to reach.
+- **The whitespace:** every incumbent (see §5) is **manual-entry** — CRMs, proposals, invoices, or task boards you must maintain. **None auto-builds a project record by reading the client's actual communication.** That specific gap is what the "44% email / 16% verbal / no formal record" stat exposes.
+- **Grow into:** marketing agencies, dev shops, consultancies, then small teams; more integrations widen the funnel.
+- **Still to validate:** switch-pain vs. inertia, trust to connect a real inbox, AI accuracy, and willingness to pay.
 
 ---
 
@@ -125,6 +148,8 @@ Possible later:
 - A **team/agency plan** with shared projects and multiple members.
 - Note: the AI costs real money per project, so any price has to cover that.
 
+**Price anchors from the market (2026):** comparable freelancer tools sit at roughly **$10–$49/month** — Moxie ~$10, HoneyBook ~$29–49, Bonsai per-user. That's the realistic band for an individual Bracket plan; team/agency plans typically price higher per workspace. **In India, willingness-to-pay is lower** and adoption skews to tools that help with client acquisition, payments, and automation — so India-first pricing likely needs to be well below the US band. _(The Stack Architects; Karbon)_
+
 **Charge for things like:** active projects, connected tools, team members, or AI actions (drafting/sending replies).
 
 **Must find out:** the right price, and whether individuals or agencies pay more reliably.
@@ -136,7 +161,9 @@ Possible later:
 - 🔵 There is **no confirmed paying customer, no revenue, and no proof people love it** in the data I can see.
 - **Good sign:** the app already measures the right things — weekly active users, 4-week retention, client accept rate, NPS, and where traffic comes from. ✅ (Most early startups don't bother; Bracket does.)
 
-**Test-version numbers only (NOT real customers, June 2026):** ~133 accounts and ~108 projects exist in the *development* database, but only **16 accounts ever connected a real tool** (mostly Gmail). Takeaway: **getting people to connect a tool is the main drop-off to fix** — not proof of demand.
+**Live production numbers (use-bracket.com):** _⏳ Being retrieved from the production database via the deployment environment (requested June 2026). This section will be filled with the real figures — total users, how many connected a real tool (by provider), active users, retention, and client accept rate — as soon as they're returned. Until then, do **not** quote the development numbers below as traction._
+
+**Development/test database only (NOT customers, June 2026):** ~133 accounts and ~108 projects exist in the *preview/dev* database (which includes the team's own test and QA accounts), but only **16 accounts ever connected a real tool** (mostly Gmail). Even as throwaway data, the shape is instructive: **getting someone to connect their first tool is the main drop-off to fix.**
 
 ---
 
@@ -205,3 +232,16 @@ Possible later:
 ---
 
 *Everything marked ✅ was checked directly in the app's code. Everything marked 🔵 is a plan or a guess and still needs proof. No customers, revenue, or market sizes were made up.*
+
+---
+
+### Market-research sources (external, 2025–2026)
+Figures in §5, §6 and §8 are drawn from public research and are about the **market**, not Bracket:
+- **PM software market size:** The Business Research Company; Grand View Research; IDC; Mordor Intelligence.
+- **Scope creep / project failure:** PMI *Pulse of the Profession 2025*; PM Study Circle; PM World Library (2026 IT failure-rate update).
+- **Freelance economy:** Upwork resources; whatsthebigdata; trybiut; invopilot; ENTEEF Global Freelancer Market Report; Gitnux.
+- **Agency tool sprawl & communication pain:** Switch to Landing "Tool Sprawl Report 2026"; AgencyPro; HyperscaleAI; WifiTalents; setup.us "2025 Marketing Relationship Survey"; FunctionFox "2025 Creative Agency Industry Report"; Decision Marketing.
+- **Competitors & pricing:** The Stack Architects (Bonsai vs HoneyBook / alternatives); FirmTools; Agiled; ratethetool; ONES.com AI-PM tools guide.
+- **India market & willingness to pay:** India Economic Survey 2025-26; Flexable; xFlow; Karbon; Outsized "Talent on Demand 2025"; ISB "India's Creator Economy."
+
+_Note: research estimates vary by methodology and definition; treat single figures as directional, not precise._
