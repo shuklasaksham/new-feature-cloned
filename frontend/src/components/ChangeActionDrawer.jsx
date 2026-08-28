@@ -21,7 +21,7 @@ import { CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
  * Trust model: Bracket recommends, the user approves. Nothing ever sends
  * without an explicit click. When the user hits Copy or a deep-link, the
  * final send happens in the user's own tool — Bracket cannot post anywhere
- * on its own (read-only OAuth scopes today).
+ * on its own — sending always requires the user's explicit approval.
  */
 export default function ChangeActionDrawer({ item, open, onClose, onChanged, onReviewUpdate }) {
   const [loading, setLoading] = useState(false);
@@ -305,7 +305,7 @@ export default function ChangeActionDrawer({ item, open, onClose, onChanged, onR
                 <p className="mt-2 text-[10.5px]" style={{ color: "var(--text-3)" }}>
                   {isChange
                     ? "Changes are approved together in one Project Update — no separate approvals per item."
-                    : "Bracket never sends messages on your behalf. Nothing goes out until you click Send in your email or chat app."}
+                    : "Bracket only sends when you explicitly approve it — nothing goes out on its own."}
                 </p>
               </section>
             </div>

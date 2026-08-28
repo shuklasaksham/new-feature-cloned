@@ -45,11 +45,11 @@ export default function Terms() {
 
           <H2>1. The service</H2>
           <P>
-            Bracket is an AI decision workspace for client projects. It helps you turn briefs, conversations, designs
-            and files into structured project decisions and client-ready documents. Features include the 5-step
-            decision flow, client review links, and Connect Work — connecting specific external sources (such as a
-            Gmail conversation, Figma file, GitHub repository, Notion page or Slack channel) to a project so Bracket
-            can understand them.
+            Bracket is an AI workspace for client projects. You connect the tools where client work happens (a specific
+            Gmail conversation, Slack channel, Figma file, GitHub repository or Notion page) and Bracket builds a live
+            "Project Memory" — an organised record of your deliverables, scope, timelines, requirements, decisions and
+            deadlines — and surfaces what needs your attention. Bracket can also draft and send client replies for you
+            (with your explicit approval), and includes an optional decision flow with client review and sign-off links.
           </P>
 
           <H2>2. Your account</H2>
@@ -65,7 +65,7 @@ export default function Terms() {
             "You have the right to connect that source. You are responsible for ensuring that sharing its content with Bracket doesn't violate agreements you have with clients, employers or workspace owners.",
             "Authorization happens through the provider's own sign-in (OAuth). You can revoke it anytime — from Bracket (disconnect) or from the provider's security settings.",
             "Bracket only ingests the specific sources you select, as described in our Privacy Policy.",
-            "Connected sources are read-only for Bracket: we never send, edit or delete anything in your Gmail, Figma, GitHub, Notion or Slack.",
+            "Bracket never edits or deletes anything in your connected sources. Gmail and Slack are read + send: Bracket sends a message only when you explicitly review and approve it, never on its own. Figma, GitHub and Notion are read-only.",
             "Availability of an integration depends on the provider's API. If a provider changes or restricts its API, the related Bracket features may change or stop working.",
           ]} />
 

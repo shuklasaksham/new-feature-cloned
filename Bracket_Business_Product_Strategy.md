@@ -15,16 +15,17 @@
 
 ---
 
-## ⚠️ 3 things that are inconsistent (read these first)
-These matter for strategy, so they go at the top:
+## ✅ 2 inconsistencies — now FIXED (June 2026)
+These were flagged in an earlier draft and have since been corrected in the product:
 
-1. **The website and the app are selling different things.** ✅ Real today
-   The app's main screen is now the "Project Memory" (auto-built from your connected tools). But the marketing site still explains an older "5-step" process. New visitors get confused about what Bracket is.
+1. **Website vs. app story — FIXED.** ✅
+   The marketing site now leads with the real product. The Landing page was already "The Project Memory OS for client work"; **How it Works** now opens with "Connect once. Bracket keeps up." and a 4-step everyday loop (connect → Bracket reads → 5-second briefing → approve & reply), with the old 5-step flow clearly relabelled as the *optional* decision & sign-off flow. **FAQ** and **Terms** updated to match.
 
-2. **The site says "Bracket never sends messages for you" — that's no longer true.** ✅ Real today
-   The app can now draft *and send* client replies through Gmail and Slack. Good feature, but the promise on the site needs updating.
+2. **"Bracket never sends messages for you" — FIXED.** ✅
+   Copy now tells the truth: Bracket **can** draft and send client replies through Gmail and Slack, but **only when you explicitly approve** — never on its own, and it never edits or deletes. Updated in the FAQ, Terms, Privacy policy (incl. the Google Limited-Use section), the in-app change drawer, and the onboarding welcome. Figma/GitHub/Notion remain read-only.
 
-3. **The example customers on the website (e.g. the "₹1 lakh order" story) are illustrations, not real documented customers.** Don't use them as proof of traction.
+### Still worth watching
+- **Illustrative testimonials.** The landing/case-study stories (e.g. the "₹1 lakh order") read as examples, not documented customers. Don't cite them as traction until you have named, permissioned cases.
 
 ---
 
@@ -174,7 +175,7 @@ Possible later:
 5. **Is the AI accurate enough to trust** on scope and decisions? Must be measured.
 6. **We depend on Gmail/Slack/Figma/GitHub approvals.** (Figma's app review already caused a live outage.) This is a real, ongoing dependency. ✅ risk
 7. **Will people connect their real inbox** to a young tool? Big trust hurdle.
-8. **The website and app tell different stories** — needs fixing.
+8. **Website vs. app story — now fixed (June 2026).** The marketing site (How it Works / FAQ / Terms) and the "never sends" claim have been corrected to match the current product. ✅ Keep the whole site aligned as the product evolves.
 
 ---
 

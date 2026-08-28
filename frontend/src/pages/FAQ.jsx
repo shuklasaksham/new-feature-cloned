@@ -9,15 +9,15 @@ const FAQS = [
   {
     cat: "Getting started",
     items: [
-      { q: "What is Bracket?", a: "Bracket is the AI decision workspace for client projects — built for anyone who works with clients: freelancers, consultants, agencies, developers, and creative pros. It sits between your input (a vague client ask) and your output (a defensible deliverable). Five steps. One stance. A document you can send." },
+      { q: "What is Bracket?", a: "Bracket keeps one clear, always-updated record of your client project. You connect the tools where the work happens — a Gmail thread, a Slack channel, a Figma file, a GitHub repo — and Bracket reads them automatically and organises everything into six buckets: deliverables, scope, timelines, requirements, decisions and deadlines. It shows you the one thing that needs your attention, and can even draft and send client replies for you (with your approval). Built for freelancers, consultants, agencies, developers and creative pros." },
       { q: "How is it different from ChatGPT?", a: "ChatGPT will execute. Bracket helps you decide. It mirrors the situation, surfaces tensions, takes a stance with trade-offs, and produces an artifact you can defend in a room." },
-      { q: "Do I need to sign up?", a: "No. Click \"Try it without an account\" on the login page and start a project as a guest. We'll ask for your email at step 5, when you lock the document." },
+      { q: "Do I need to sign up?", a: "No. Click \"Try it without an account\" on the login page and start as a guest. We'll ask for your email when you connect your first tool or lock a document, so your work is saved to you." },
     ],
   },
   {
     cat: "Workflow",
     items: [
-      { q: "What are the 5 steps?", a: "Situation framing → Context compression → Decision engine → Artifacts → Confidence lock-in. Each step has its own AI prompt tuned for that mode of thinking." },
+      { q: "Is there still a step-by-step decision flow?", a: "Yes — it's now one optional part of Bracket, not the whole thing. When you want to lock a decision and get client sign-off, the flow goes: situation framing → context compression → decision → artifacts → confidence lock-in. Day to day, most of the value comes from the auto-built Project Memory from your connected tools." },
       { q: "Can I edit AI suggestions?", a: "Yes. Bracket suggests; you decide. Every AI output is editable inline. Your text is what gets locked into the final document." },
       { q: "What happens after I lock?", a: "You get a shareable client review URL. The client can accept (with e-signature) or raise concerns (which Bracket helps you respond to). Locked documents are read-only and exportable." },
     ],
@@ -78,7 +78,7 @@ export default function FAQ() {
     <div data-testid="faq-page" className="page-enter landing-page-bg">
       <Seo
         title="FAQ"
-        description="Answers to common questions about Bracket — how the 5-step decision loop works, what makes it different from ChatGPT, pricing, privacy, and support."
+        description="Answers to common questions about Bracket — how it turns your connected tools into a live project memory, what makes it different from ChatGPT, pricing, privacy, and support."
         path="/faq"
       />
       {/* HERO */}

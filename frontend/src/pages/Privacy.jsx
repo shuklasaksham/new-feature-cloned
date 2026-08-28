@@ -100,7 +100,7 @@ export default function Privacy() {
 
           <H2>5. Google API Services — Limited Use disclosure</H2>
           <P>
-            Bracket's use of information received from Google APIs (including Gmail data, accessed read-only) adheres to the{" "}
+            Bracket's use of information received from Google APIs (including Gmail data — read to understand the threads you connect, and used to send a reply only when you explicitly approve it) adheres to the{" "}
             <a className="link-accent" href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">
               Google API Services User Data Policy
             </a>, including the Limited Use requirements. Specifically:
@@ -114,11 +114,11 @@ export default function Privacy() {
 
           <H2>6. Provider-specific notes</H2>
           <UL items={[
-            "Gmail: read-only access; only the conversations you select are stored and analyzed.",
+            "Gmail: we read only the conversations you select. When you explicitly approve it, Bracket can also send a reply into that same thread on your behalf. Bracket never edits or deletes your email and never sends without your approval.",
             "Figma: read-only file access; we read file structure (pages, frames, components), comments and version history of the files you select.",
             "GitHub: we read repository metadata, README, issues and commit messages of the repositories you select.",
             "Notion: we read only pages you grant access to during Notion's own authorization, and store only the pages you select.",
-            "Slack: we read only the channels/conversations you select, using permissions scoped to your own user account.",
+            "Slack: we read only the channels/conversations you select, and — only when you explicitly approve it — post a reply as you, using permissions scoped to your own user account.",
           ]} />
 
           <H2>7. Security</H2>

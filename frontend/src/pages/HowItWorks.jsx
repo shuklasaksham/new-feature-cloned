@@ -21,7 +21,7 @@ export default function HowItWorks() {
     <div data-testid="how-it-works-page" className="page-enter landing-page-bg">
       <Seo
         title="How it works"
-        description="See how Bracket's five-step decision loop turns messy briefs into a locked-in scope, decision doc, and client-ready message — in under 20 minutes."
+        description="See how Bracket connects your tools (Gmail, Slack, Figma, GitHub), builds a live Project Memory of every deliverable, scope change, decision and deadline, tells you the one thing that needs your attention, and even drafts client replies for you."
         path="/how-it-works"
       />
 
@@ -52,9 +52,67 @@ export default function HowItWorks() {
             transition={{ duration: 0.7, delay: 0.35 }}
             className="mt-6 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[600px]"
           >
-            Every Bracket project moves through the same five steps. Same for a ₹15k landing page.
-            Same for a Series-A dashboard. The rigour doesn&apos;t change — the stakes do.
+            Connect the tools where your client work already happens — email, Slack, Figma, GitHub — and Bracket keeps
+            a live record of what was agreed, what changed, and what needs you next. No manual updating. When you need
+            to lock a decision, an optional step-by-step flow gets you to client sign-off.
           </motion.p>
+        </div>
+      </section>
+
+      {/* HOW IT ACTUALLY WORKS — Project Memory from connected tools */}
+      <section className="relative overflow-x-clip isolate">
+        <SectionBleed className="-z-20" />
+        <div className="max-w-[1200px] mx-auto px-5 sm:px-6 md:px-10 py-24 md:py-32">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="section-label"
+          >
+            <span className="dot" />The everyday loop
+          </motion.span>
+          <motion.h2
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="t-hero mt-6"
+          >
+            Connect once. Bracket keeps up.
+          </motion.h2>
+          <div className="mt-14 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { n: "01", title: "Connect your tools", copy: "Link a specific Gmail thread, Slack channel, Figma file or GitHub repo. You pick exactly what Bracket sees — nothing more." },
+              { n: "02", title: "Bracket reads it for you", copy: "It reads the conversations automatically and sorts everything into six buckets: deliverables, scope, timelines, requirements, decisions and deadlines." },
+              { n: "03", title: "See the one thing that matters", copy: "Open a project and read a 5-second briefing: what needs you, what changed since last time, and what's due this week. If nothing needs you, it says so." },
+              { n: "04", title: "Approve — and reply — in one move", copy: "Review every change together and approve or reject it all at once. Ask Bracket to draft a client reply and send it straight into the thread." },
+            ].map((s, i) => (
+              <motion.div
+                key={s.n}
+                custom={i}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: "-60px" }}
+                className="card-linear card-linear-hover p-7"
+              >
+                <p
+                  className="font-display font-semibold text-[34px] leading-none tracking-[-0.03em] tabular-nums"
+                  style={{
+                    color: "transparent",
+                    backgroundImage: "linear-gradient(135deg, #8184C4 0%, #989BE0 100%)",
+                    WebkitBackgroundClip: "text",
+                    backgroundClip: "text",
+                  }}
+                >
+                  {s.n}
+                </p>
+                <h3 className="font-display text-[18px] mt-3 font-semibold tracking-[-0.02em]">{s.title}</h3>
+                <p className="mt-3 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{s.copy}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -145,7 +203,7 @@ export default function HowItWorks() {
             transition={{ duration: 0.6 }}
             className="section-label"
           >
-            <span className="dot" />The project flow
+            <span className="dot" />The decision &amp; sign-off flow (optional)
           </motion.span>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}

@@ -193,7 +193,7 @@ export default function OnboardingWelcome({ open, onClose, onFinish }) {
                     </h2>
                     <p className="mt-2 text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
                       Pick every tool your client uses. You'll authorize them next — Bracket only
-                      reads what you connect and never posts on your behalf.
+                      reads what you connect and only sends a reply when you ask it to.
                     </p>
                     <ul className="mt-4 grid grid-cols-1 gap-1.5" data-testid="onboarding-tools-list">
                       {TOOLS.map((t) => {
