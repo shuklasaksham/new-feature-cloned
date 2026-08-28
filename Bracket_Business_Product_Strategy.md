@@ -6,7 +6,7 @@
 - ✅ **Real today** — this actually exists in the product right now (I checked the code).
 - 🔵 **Not proven / planned** — this is a guess, a plan, or a hope. Not a fact yet.
 
-**One honesty note before you read:** I could not see the live site's real user numbers. Any numbers below are from the **test/development version** of the app and include the team's own test accounts. Treat them as "the buttons work," **not** as "customers love us."
+**One honesty note before you read:** the traction numbers in **§9 are now REAL production data** from use-bracket.com (measured **2026-08-28**, guests excluded). The market-size and industry figures in §5/§6/§8 are **external research** (sources listed at the end). Everything else is either code-verified (✅) or a clearly-marked guess (🔵). Nothing was invented.
 
 ---
 
@@ -161,9 +161,32 @@ Possible later:
 - 🔵 There is **no confirmed paying customer, no revenue, and no proof people love it** in the data I can see.
 - **Good sign:** the app already measures the right things — weekly active users, 4-week retention, client accept rate, NPS, and where traffic comes from. ✅ (Most early startups don't bother; Bracket does.)
 
-**Live production numbers (use-bracket.com):** _⏳ Being retrieved from the production database via the deployment environment (requested June 2026). This section will be filled with the real figures — total users, how many connected a real tool (by provider), active users, retention, and client accept rate — as soon as they're returned. Until then, do **not** quote the development numbers below as traction._
+**Live production numbers — use-bracket.com (measured 2026-08-28, read-only from the production database).** Guest/anonymous accounts are excluded so these are *real* people.
 
-**Development/test database only (NOT customers, June 2026):** ~133 accounts and ~108 projects exist in the *preview/dev* database (which includes the team's own test and QA accounts), but only **16 accounts ever connected a real tool** (mostly Gmail). Even as throwaway data, the shape is instructive: **getting someone to connect their first tool is the main drop-off to fix.**
+| Metric | Real figure | What it means |
+|---|---|---|
+| Registered users | **63** (73 incl. 10 guests) | Very early. |
+| New signups, last 30 days | **5** real (10 of 15 recent were guests) | Growth is slow right now. |
+| Users who connected ≥1 tool | **7** | ⚠️ The big one — only ~11% of signups ever connected a tool. |
+| — by provider | Gmail 7, Slack 1, GitHub 1, Figma 0, Notion 0 | Gmail is the only real entry point so far. |
+| Projects created | **62** | People make projects… |
+| Projects with a tool connected | **7** | …but few connect anything to them. |
+| Projects with memory extracted | **4** | Only 4 projects ever became "live memory." |
+| Weekly active users | **5** | |
+| Monthly active users | **8** | |
+| Retention (loose proxy) | **~2–5%** of the 4-week-old cohort still active | Low; not a real cohort-retention calc (see note). |
+| Client sign-off | 5 shared, **2 accepted** (~40%) | Sample too small to read into. |
+| NPS | n=**2** (avg 9.0) | Not meaningful at n=2. |
+| Website traffic | ~2,893 sessions, **94% direct**, ~4% Google | Mostly anonymous/crawler; not signups. |
+
+**The honest read of this data:**
+- **Bracket is at the very beginning** — ~63 real users, ~5 weekly actives. No traction claim is justified yet.
+- **The #1 problem is crystal clear: activation.** 63 people signed up, but only **7 connected a tool** and only **4 projects ever got a live memory.** The value only exists after you connect something — and almost nobody does. **Fixing "connect your first tool" is priority number one.**
+- **Retention is low** (single-digit actives) and **there is no paying customer, no revenue, and no proof of product-market fit.**
+- **Gmail is effectively the only working front door** (7 of 7 connectors). Slack/GitHub barely used; Figma/Notion unused in production.
+- **Positive:** the plumbing works in production (projects → connected sources → 52 auto-extracted memory items), and the app genuinely measures the right things (WAU, retention, accept rate, NPS, sources).
+
+_Notes: figures are a point-in-time read on 2026-08-28. "Retention" is a rough lower-bound (current activity of users who joined ≥4 weeks ago), not a true per-user week-4 calculation — the production data store couldn't compute the exact window. Acquisition is by referrer, not paid/organic tags, so paid spend can't be isolated. There is no message-send log, so reply-send volume isn't reported._
 
 ---
 
@@ -195,14 +218,15 @@ Possible later:
 ---
 
 ## 11. Biggest risks / open questions 🔵
-1. **Which customer type is really the best fit?** Not known.
-2. **Will anyone pay, and how much?** Not tested.
-3. **Do people come back weekly?** Unknown on the real site.
-4. **How do we reliably find customers?** No proven channel.
-5. **Is the AI accurate enough to trust** on scope and decisions? Must be measured.
-6. **We depend on Gmail/Slack/Figma/GitHub approvals.** (Figma's app review already caused a live outage.) This is a real, ongoing dependency. ✅ risk
-7. **Will people connect their real inbox** to a young tool? Big trust hurdle.
-8. **Website vs. app story — now fixed (June 2026).** The marketing site (How it Works / FAQ / Terms) and the "never sends" claim have been corrected to match the current product. ✅ Keep the whole site aligned as the product evolves.
+1. **Activation is the #1 proven problem.** Real production data (2026-08-28): 63 users, but only **7 connected a tool** and **4 projects got a memory**. Until "connect your first tool" is fixed, nothing else matters.
+2. **Which customer type is really the best fit?** Not known.
+3. **Do people come back weekly?** Now measured and **low** — ~5 weekly actives, single-digit retention on the live site. No PMF yet.
+4. **Will anyone pay, and how much?** Not tested (market anchor: ~$10–49/mo, lower in India).
+5. **How do we reliably find customers?** No proven channel.
+6. **Is the AI accurate enough to trust** on scope and decisions? Must be measured.
+7. **We depend on Gmail/Slack/Figma/GitHub approvals.** (Figma's app review already caused a live outage.) This is a real, ongoing dependency. ✅ risk
+8. **Will people connect their real inbox** to a young tool? Big trust hurdle.
+9. **Website vs. app story — now fixed (June 2026).** The marketing site (How it Works / FAQ / Terms) and the "never sends" claim have been corrected to match the current product. ✅ Keep the whole site aligned as the product evolves.
 
 ---
 
