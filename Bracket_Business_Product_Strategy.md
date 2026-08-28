@@ -1,6 +1,6 @@
 # Bracket — Business & Product Strategy (Plain-English Version)
 
-**Date:** June 2026
+**Date:** August 2026
 
 **Two simple markers used in this doc:**
 - ✅ **Real today** — this actually exists in the product right now (I checked the code).
@@ -12,20 +12,6 @@
 
 ## In one line
 **Bracket connects to the tools where client work happens (email, Slack, Figma, GitHub), reads the mess, and keeps one clean, always-updated record of your project — then tells you the one thing you need to deal with.** ✅ Real today
-
----
-
-## ✅ 2 inconsistencies — now FIXED (June 2026)
-These were flagged in an earlier draft and have since been corrected in the product:
-
-1. **Website vs. app story — FIXED.** ✅
-   The marketing site now leads with the real product. The Landing page was already "The Project Memory OS for client work"; **How it Works** now opens with "Connect once. Bracket keeps up." and a 4-step everyday loop (connect → Bracket reads → 5-second briefing → approve & reply), with the old 5-step flow clearly relabelled as the *optional* decision & sign-off flow. **FAQ** and **Terms** updated to match.
-
-2. **"Bracket never sends messages for you" — FIXED.** ✅
-   Copy now tells the truth: Bracket **can** draft and send client replies through Gmail and Slack, but **only when you explicitly approve** — never on its own, and it never edits or deletes. Updated in the FAQ, Terms, Privacy policy (incl. the Google Limited-Use section), the in-app change drawer, and the onboarding welcome. Figma/GitHub/Notion remain read-only.
-
-### Still worth watching
-- **Illustrative testimonials.** The landing/case-study stories (e.g. the "₹1 lakh order") read as examples, not documented customers. Don't cite them as traction until you have named, permissioned cases.
 
 ---
 
@@ -226,7 +212,7 @@ _Notes: figures are a point-in-time read on 2026-08-28. "Retention" is a rough l
 6. **Is the AI accurate enough to trust** on scope and decisions? Must be measured.
 7. **We depend on Gmail/Slack/Figma/GitHub approvals.** (Figma's app review already caused a live outage.) This is a real, ongoing dependency. ✅ risk
 8. **Will people connect their real inbox** to a young tool? Big trust hurdle.
-9. **Website vs. app story — now fixed (June 2026).** The marketing site (How it Works / FAQ / Terms) and the "never sends" claim have been corrected to match the current product. ✅ Keep the whole site aligned as the product evolves.
+9. **Website vs. app story — now fixed (August 2026).** The marketing site (How it Works / FAQ / Terms) and the "never sends" claim have been corrected to match the current product. ✅ Keep the whole site aligned as the product evolves.
 
 ---
 
