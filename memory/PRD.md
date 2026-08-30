@@ -1,5 +1,13 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (workspace panel rebuild — RESOLVED "entire plot" blocker)
+- Reworked the project workspace to match the reference mockup exactly. Shell bg now pure black `#0a0a0a`; sidebar bg `#0a0a0a` (border removed); `.project-main` is now a **floating rounded panel** — surface `#151515`, `margin:16px 16px 0 0` (black gutter top+right), `border-radius:20px 20px 0 0`, `min-height:calc(100vh - 16px)`. This fixes the flat/empty "entire plot" look the user rejected.
+- **Active-tab docking redone (replaced the rejected concave `::before/::after` curve hack)**: active nav item now shares the panel surface `#151515`, `border-radius:9999px 0 0 9999px`, `margin-right:-16px` so its flat right edge sits flush against the panel's left edge → seamless dock. Inactive hover bumped to `#171717` so it never reads as docked. Applied to ALL tabs (Overview, Conversations, Scope, etc.).
+- User choices for this change: NO grain texture (kept clean flat surface); apply to ALL tabs.
+- `.project-main-inner` → `max-width:1100px; padding:36px 52px 72px`. Sidebar width `288px`.
+- Verified live (demo account) on Overview + Scope tabs via screenshots — panel + docked tab render correctly, no layout breakage.
+
+
 ## Changelog — 2026-06 (connected-tab polish + Overview whitespace fix)
 - **Sidebar↔workspace connection** made pronounced like the reference: sidebar darkened to `#070707`, workspace panel lightened to `#0f0f10`, active nav item now shares the panel colour, uses `24px` left radius, extends flush to the boundary, and larger `18px` concave `::before/::after` corner curves carve into the sidebar — so the active tab visibly docks into the content panel.
 - **Overview whitespace**: `.project-main-inner` now `max-width:1160px; margin:0 auto` and `.ov-wrap` `max-width:880px; margin:0 auto`, so content is centred with balanced margins (removed the ugly one-sided right void) and cards are wider. Verified live.

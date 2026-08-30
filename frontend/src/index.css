@@ -4532,14 +4532,20 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 /* ============================================================
    Project workspace — left sidebar shell (/project/:id)
    ============================================================ */
-.project-shell { display: flex; min-height: 100vh; background: #000; }
-.project-main { flex: 1; min-width: 0; background: #0f0f10; }
-.project-main-inner { max-width: 1160px; margin: 0 auto; padding: 30px 44px 64px; }
+.project-shell { display: flex; min-height: 100vh; background: #0a0a0a; }
+.project-main {
+  flex: 1; min-width: 0;
+  background: #151515;
+  margin: 16px 16px 0 0;
+  border-radius: 20px 20px 0 0;
+  min-height: calc(100vh - 16px);
+}
+.project-main-inner { max-width: 1100px; margin: 0 auto; padding: 36px 52px 72px; }
 .project-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
 
 .project-sidebar {
-  width: 300px; flex-shrink: 0;
-  background: #070707; border-right: 1px solid #161616;
+  width: 288px; flex-shrink: 0;
+  background: #0a0a0a; border-right: none;
   display: flex; flex-direction: column; gap: 14px;
   padding: 20px 16px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
 }
@@ -4579,7 +4585,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 
 .psb-nav { display: flex; flex-direction: column; gap: 4px; }
 .psb-nav-item { display: flex; align-items: center; gap: 14px; height: 50px; padding: 0 16px; border-radius: 9999px; color: #8a8a8a; font-family: "Geist", sans-serif; font-size: 15.5px; font-weight: 500; transition: background .16s ease, color .16s ease; }
-.psb-nav-item:hover { background: #141414; color: #d8d8d8; }
+.psb-nav-item:hover { background: #171717; color: #d8d8d8; }
 .psb-nav-item[data-active="true"] { background: #1c1c1c; color: #fff; }
 .psb-nav-item svg { flex-shrink: 0; }
 .psb-count { margin-left: auto; min-width: 22px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #242424; color: #a1a1a1; font-size: 11px; font-weight: 600; }
@@ -4614,41 +4620,24 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 @media (max-width: 900px) {
   .project-shell { flex-direction: column; }
   .project-sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid #161616; }
+  .project-main { margin: 0; border-radius: 0; min-height: 0; }
   .project-main-inner { padding: 20px; }
 }
 
 /* ============================================================
-   Connected active tab — sidebar docks into the workspace
+   Connected active tab — docks seamlessly into the workspace
    ============================================================ */
-.project-sidebar { border-right: none !important; }
 .project-main { border-left: none !important; }
 .project-sidebar .psb-nav-item[data-active="true"] {
-  background: #0f0f10 !important;   /* == workspace panel */
+  background: #151515 !important;   /* == workspace panel surface */
   color: #fff !important;
-  border-radius: 24px 0 0 24px !important;
-  margin-right: -16px;
-  padding-right: 22px;
+  border-radius: 9999px 0 0 9999px !important;
+  margin-right: -16px;              /* cancels sidebar right padding */
+  padding-right: 26px;
   position: relative;
 }
-.project-sidebar .psb-nav-item[data-active="true"]::before,
-.project-sidebar .psb-nav-item[data-active="true"]::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  width: 18px;
-  height: 18px;
-  background: transparent;
-  z-index: 1;
-}
-.project-sidebar .psb-nav-item[data-active="true"]::before {
-  top: -18px;
-  border-bottom-right-radius: 18px;
-  box-shadow: 6px 6px 0 0 #0f0f10;
-}
-.project-sidebar .psb-nav-item[data-active="true"]::after {
-  bottom: -18px;
-  border-top-right-radius: 18px;
-  box-shadow: 6px -6px 0 0 #0f0f10;
+.project-sidebar .psb-nav-item[data-active="true"] .psb-count {
+  background: #262626; color: #fff;
 }
 
 /* ── Overview (Right now / Upcoming / Latest) ── */
