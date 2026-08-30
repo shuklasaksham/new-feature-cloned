@@ -6,7 +6,7 @@ import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
 
 const MONO = { fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" };
-const MAX_TRIES = 8;
+const MAX_TRIES = 6;
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
@@ -19,22 +19,25 @@ export default function PaymentSuccess() {
     const sessionId = params.get("session_id");
     if (!sessionId) { setState("error"); return; }
     let timer;
-    const poll = async () => {
+    const confirm = async () => {
       if (tries.current >= MAX_TRIES) { setState("timeout"); return; }
       tries.current += 1;
       try {
-        const { data } = await api.get(`/payments/status/${sessionId}`);
+        const { data } = await api.post(`/payments/confirm/${sessionId}`);
         if (data.payment_status === "paid") {
           setState("paid");
           await refresh();
           setTimeout(() => navigate("/welcome", { replace: true }), 1400);
           return;
         }
-        if (["failed", "expired"].includes(data.payment_status)) { setState("error"); return; }
-      } catch { /* keep polling */ }
-      timer = setTimeout(poll, 2000);
+      } catch (e) {
+        const code = e?.response?.status;
+        if (code === 403 || code === 404) { setState("error"); return; }
+        // 402 (not completed yet) or transient — retry
+      }
+      timer = setTimeout(confirm, 2000);
     };
-    poll();
+    confirm();
     return () => clearTimeout(timer);
   }, [navigate, refresh]);
 

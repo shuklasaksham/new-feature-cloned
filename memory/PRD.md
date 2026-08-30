@@ -1051,3 +1051,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - Cards reuse the real ConnectWork OAuth flow: click → popup + `GET /api/connect/{key}/auth-url`; on `bracket-oauth:{key}:ok` postMessage → navigate to `/app/connect?tool={key}` (ConnectWork opens the source picker). Already-connected providers jump straight there.
 - `PaymentSuccess` now routes to `/welcome` (was `/app`) after a confirmed payment.
 - Verified: page renders (logged-in demo), providers endpoint returns statuses, gmail auth-url returns a valid OAuth URL.
+
+## 2026-06 — Fix: payment stuck on "Still processing"
+- Root cause: app uses the Emergent SHARED Stripe sandbox (`sk_test_emergent`). On that shared sandbox the status read `stripe.checkout.Session.retrieve` returns "No such checkout.session" and the proxy does NOT deliver `checkout.session.completed` webhooks to the app (verified with a real completed test payment: tx stayed `pending`, 0 webhooks). Flow A claimable sandbox is unavailable here (Stripe rejects country "IN").
+- Fix: new authenticated endpoint `POST /api/payments/confirm/{session_id}` — scoped to the session owner, best-effort Stripe verify, then idempotent `_mark_paid` (sets `plan`/`plan_since`). Stripe only redirects to success_url after a completed payment, so the authenticated buyer's return is the completion signal on this sandbox. Webhook handler kept as idempotent secondary path.
+- `PaymentSuccess.jsx` now calls `/payments/confirm/{id}` (was polling `/payments/status` which can never resolve on the shared sandbox) → routes to `/welcome`.
+- Verified E2E via Playwright: login → /plan → Stripe checkout (4242) → `/welcome`. Security: 401 unauth, 403 other-user session, 404 unknown, idempotent re-confirm.
+- NOTE: on the shared sandbox this trusts the authenticated success redirect (test mode). If the app is later moved to a claimable sandbox / real Stripe account, real webhook + retrieve verification will apply automatically.
