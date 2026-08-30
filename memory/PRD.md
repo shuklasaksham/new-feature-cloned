@@ -1,5 +1,15 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (marketing pages → auth aesthetic)
+- **All 4 public pages (Home, Pricing, Privacy, Terms) restyled to match Login/ChoosePlan**: pure-black `#000` canvas, full-bleed animated particle hero, monospace labels, monochrome accents. Screenshot-verified on `/`, `/pricing`, `/privacy`.
+- **`ParticleField.jsx`**: added `variant="fill"` — a uniform, sparse, full-bleed flow-field (no image dependency) used as the hero background. Image variant (skull) unchanged for auth pages.
+- **`HeroParticles.jsx`** (new): wrapper = `<ParticleField variant="fill" .../>` + radial `.marketing-hero-scrim` for text legibility. Dropped `.hero-ambient` in each marketing hero (scoped `display:none` under `.marketing-shell` only — authenticated app's `hero-ambient--dashboard` untouched).
+- **White pill CTAs everywhere**: `.landing-cta-primary`/`.cinema-cta-pill` overridden to white pill (mirror `.login-submit`).
+- **Navbar + Footer**: pure black bg, monospace links, scroll-accent removed. **Logo swapped** from `BracketMark` SVG to the auth-page logo PNG (`jl2k3bid_new-logo-1.png`).
+- **Monochrome sweep**: violet checkmarks/POPULAR badge/step icons/legal bullets/`link-accent` neutralized to white/gray on marketing pages.
+- Files: `ParticleField.jsx`, `HeroParticles.jsx`, `Landing.jsx`, `Pricing.jsx`, `Privacy.jsx`, `Terms.jsx`, `Navbar.jsx`, `Footer.jsx`, `MarketingLayout.jsx` (root gains `marketing-shell`), `index.css` (marketing→auth block).
+
+
 ## Changelog — 2026-08 (plan selection + Stripe test payments)
 - **New login redesign** (`Login.jsx`): split dark layout, custom logo + halftone image, Google/Apple/email-password, monospace styling. Google → real Emergent auth; Apple → "coming soon" toast (not wired); Create Account/Forgot Password → real email-code flow.
 - **"Choose your plan" page** (`/plan`, `ChoosePlan.jsx`): shown after sign-in/sign-up when the user has no `plan`. Two plans — $29/month, $9/project. Matches reference.

@@ -1,10 +1,7 @@
 // Static content for Bracket marketing pages.
 
 export const NAV_LINKS = [
-  { to: "/how-it-works", label: "Product" },
-  { to: "/use-cases", label: "Use Cases" },
-  { to: "/case-studies", label: "Case Studies" },
-  { to: "/faq", label: "FAQ" },
+  { to: "/pricing", label: "Pricing" },
 ];
 
 export const LAYERS = [

@@ -9,15 +9,11 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AppShell from "./components/AppShell";
 import ScrollToTop from "./components/ScrollToTop";
 import InstallPrompt from "./components/InstallPrompt";
-import PageLoader from "./components/PageLoader";
 import { DialogProvider } from "./components/Dialog";
 import { AuthProvider } from "./lib/AuthContext";
 
 import Landing from "./pages/Landing";
-import HowItWorks from "./pages/HowItWorks";
-import UseCases from "./pages/UseCases";
-import CaseStudies from "./pages/CaseStudies";
-import FAQ from "./pages/FAQ";
+import Pricing from "./pages/Pricing";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 
@@ -56,7 +52,6 @@ export default function App() {
   return (
     <HelmetProvider>
       <MotionConfig reducedMotion="user">
-      <PageLoader />
       <AuthProvider>
         <DialogProvider>
         <BrowserRouter>
@@ -68,10 +63,7 @@ export default function App() {
           {/* Marketing — public */}
           <Route element={<MarketingLayout />}>
             <Route path="/" element={<Landing />} />
-            <Route path="/how-it-works" element={<HowItWorks />} />
-            <Route path="/use-cases" element={<UseCases />} />
-            <Route path="/case-studies" element={<CaseStudies />} />
-            <Route path="/faq" element={<FAQ />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
           </Route>

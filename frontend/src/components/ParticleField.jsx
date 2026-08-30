@@ -1,17 +1,20 @@
 import React, { useEffect, useRef } from "react";
 
 /**
- * ParticleField — a living halftone. Particles are seeded from the brightness
- * of a source image so a form (the sculptural skull) emerges, then each one
- * drifts and swirls through a curl-like flow field while a soft spring tugs it
- * back toward its home cell. The result is constant, wind-blown particle motion
- * that never dissolves the underlying shape. Denser/brighter to the right,
- * fading into pure black on the left.
+ * ParticleField — a living halftone flow-field.
+ *
+ * variant="image" (default): particles are seeded from the brightness of a
+ * source image so a sculptural form emerges, then drift through a curl-like
+ * flow field while a soft spring tugs them home. Used on the auth split layout.
+ *
+ * variant="fill": a uniform, full-bleed particle field (no image dependency)
+ * flowing through the same wind — used as a cinematic hero background on the
+ * public marketing pages. Denser/quieter than the image variant so headings
+ * stay readable.
  */
 const SOURCE = "/halftone-source.png";
-const GRID = 8; // px between seed points
 
-export default function ParticleField({ className = "", style = {} }) {
+export default function ParticleField({ className = "", style = {}, variant = "image" }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -20,6 +23,12 @@ export default function ParticleField({ className = "", style = {} }) {
     const ctx = canvas.getContext("2d");
     const reduce =
       window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const fill = variant === "fill";
+    const GRID = fill ? 16 : 8;
+    const ALPHA_BASE = fill ? 0.14 : 0.26;
+    const ALPHA_L = fill ? 0.6 : 0.85;
+    const SIZE_MUL = fill ? 2.4 : 3.0;
 
     let W = 0,
       H = 0,
@@ -40,7 +49,40 @@ export default function ParticleField({ className = "", style = {} }) {
       canvas.width = Math.floor(W * dpr);
       canvas.height = Math.floor(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (imgReady) seed();
+      if (fill) seedFill();
+      else if (imgReady) seed();
+    };
+
+    const seedFill = () => {
+      const cols = Math.ceil(W / GRID);
+      const rows = Math.ceil(H / GRID);
+      parts = [];
+      for (let gy = 0; gy < rows; gy++) {
+        for (let gx = 0; gx < cols; gx++) {
+          // sparse, organic scatter
+          if (Math.random() < 0.52) continue;
+          const nx = gx / cols;
+          const ny = gy / rows;
+          // soft clusters via layered sines so it never looks like a flat grid
+          const cluster =
+            0.5 + 0.5 * Math.sin(nx * 6.0 + ny * 4.0) * Math.cos(ny * 5.0 - nx * 3.0);
+          let lum = 0.12 + Math.random() * 0.55 * (0.45 + cluster * 0.55);
+          lum = Math.min(1, lum);
+          const hx = gx * GRID + GRID / 2 + (Math.random() - 0.5) * GRID * 0.6;
+          const hy = gy * GRID + GRID / 2 + (Math.random() - 0.5) * GRID * 0.6;
+          parts.push({
+            hx,
+            hy,
+            x: hx,
+            y: hy,
+            vx: 0,
+            vy: 0,
+            l: lum,
+            phase: (gx * 0.6 + gy * 0.9) % (Math.PI * 2),
+            diamond: lum > 0.66 && ((gx + gy) & 1) === 0,
+          });
+        }
+      }
     };
 
     const seed = () => {
@@ -103,7 +145,6 @@ export default function ParticleField({ className = "", style = {} }) {
       for (let k = 0; k < parts.length; k++) {
         const p = parts[k];
         if (!reduce) {
-          // curl-like flow angle from layered sines
           const a =
             (Math.sin(p.x * 0.012 + t * 0.5) +
               Math.cos(p.y * 0.014 - t * 0.4) +
@@ -118,8 +159,8 @@ export default function ParticleField({ className = "", style = {} }) {
         }
 
         const shimmer = reduce ? 1 : 0.75 + 0.25 * Math.sin(t * 1.4 + p.phase);
-        const size = 0.9 + p.l * 3.0;
-        const alpha = Math.min(1, (0.26 + p.l * 0.85) * shimmer);
+        const size = 0.9 + p.l * SIZE_MUL;
+        const alpha = Math.min(1, (ALPHA_BASE + p.l * ALPHA_L) * shimmer);
         ctx.globalAlpha = alpha;
         ctx.fillStyle = p.l > 0.7 ? "#eef0f4" : "#c7c9d2";
 
@@ -141,13 +182,19 @@ export default function ParticleField({ className = "", style = {} }) {
       if (!reduce) raf = requestAnimationFrame(draw);
     };
 
-    img.onload = () => {
-      imgReady = true;
+    if (fill) {
       rebuild();
       if (reduce) draw(performance.now());
       else raf = requestAnimationFrame(draw);
-    };
-    img.src = SOURCE;
+    } else {
+      img.onload = () => {
+        imgReady = true;
+        rebuild();
+        if (reduce) draw(performance.now());
+        else raf = requestAnimationFrame(draw);
+      };
+      img.src = SOURCE;
+    }
 
     let ro;
     let roRaf = 0;
@@ -176,7 +223,7 @@ export default function ParticleField({ className = "", style = {} }) {
       if (ro) ro.disconnect();
       else window.removeEventListener("resize", onResize);
     };
-  }, []);
+  }, [variant]);
 
   return (
     <canvas

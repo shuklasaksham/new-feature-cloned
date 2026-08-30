@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Seo from "../components/Seo";
+import HeroParticles from "../components/HeroParticles";
 
 const H2 = ({ children }) => (
   <h2 className="font-display font-semibold tracking-[-0.02em] text-[19px] md:text-[21px] text-[var(--text)] mt-12 first:mt-0">{children}</h2>
@@ -15,7 +16,7 @@ const UL = ({ items }) => (
   <ul className="mt-3 space-y-2">
     {items.map((it, i) => (
       <li key={i} className="text-[13.5px] leading-[1.7] text-[var(--text-2)] pl-4 relative">
-        <span className="absolute left-0 top-[9px] w-1.5 h-1.5 rounded-full" style={{ background: "var(--signal, #8184C4)" }} />
+        <span className="absolute left-0 top-[9px] w-1.5 h-1.5 rounded-full" style={{ background: "#7a7a7a" }} />
         {it}
       </li>
     ))}
@@ -31,7 +32,7 @@ export default function Privacy() {
         path="/privacy"
       />
       <section className="relative overflow-x-clip isolate">
-        <div className="hero-ambient" aria-hidden="true" />
+        <HeroParticles />
         <div className="relative z-10 max-w-[760px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-10">
           <span className="section-label"><span className="dot" />LEGAL</span>
           <h1 className="t-display mt-6">Privacy <span className="landing-hero-gradient">Policy</span></h1>
@@ -155,7 +156,7 @@ export default function Privacy() {
 
           <div className="mt-14 pt-8 border-t border-[var(--hairline)] flex flex-wrap gap-x-6 gap-y-2">
             <Link to="/terms" className="link-accent text-[13px]" data-testid="privacy-to-terms">Terms of Service →</Link>
-            <Link to="/faq" className="link-accent text-[13px]">FAQ →</Link>
+            <Link to="/pricing" className="link-accent text-[13px]">Pricing →</Link>
           </div>
         </div>
       </section>

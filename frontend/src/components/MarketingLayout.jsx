@@ -11,7 +11,7 @@ export default function MarketingLayout() {
   const { pathname } = useLocation();
   const isLanding = pathname === "/";
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col relative isolate">
+    <div className="marketing-shell min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col relative isolate">
       {!isLanding && (
         <>
           <div className="marketing-ambient" aria-hidden="true" />

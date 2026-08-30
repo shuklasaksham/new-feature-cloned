@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { Menu, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import BracketMark from "./BracketMark";
 import { NAV_LINKS } from "../lib/constants";
 import { useAuth } from "../lib/AuthContext";
+
+const BRACKET_LOGO =
+  "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
 
 // Cinematic Navbar — matches Landing design language.
 // - Glass panel, hairline border, subtle backdrop-blur
@@ -65,7 +67,7 @@ export default function Navbar() {
       <div className="cinema-nav-inner">
         {/* Brand */}
         <Link to={logoHref} className="cinema-nav-brand group" data-testid="nav-logo-link">
-          <BracketMark size={30} label={true} />
+          <img src={BRACKET_LOGO} alt="Bracket" width={30} height={30} style={{ display: "block" }} />
         </Link>
 
         {/* Center nav */}
@@ -92,11 +94,11 @@ export default function Navbar() {
           ) : (
             <>
               <Link to="/login" className="cinema-nav-link" data-testid="nav-login-link">
-                <span>Log in</span>
+                <span>Sign in</span>
                 <span className="cinema-nav-underline" aria-hidden="true" />
               </Link>
-              <Link to="/app" className="cinema-cta-pill" data-testid="nav-start-btn">
-                <span>Start a project</span> <ArrowRight size={12} />
+              <Link to="/login" className="cinema-cta-pill" data-testid="nav-start-btn">
+                <span>Get started</span> <ArrowRight size={12} />
               </Link>
             </>
           )}
@@ -104,7 +106,7 @@ export default function Navbar() {
 
         {/* Mobile */}
         <div className="cinema-nav-mobile lg:hidden">
-          <Link to="/app" className="cinema-cta-pill cinema-cta-pill--sm" data-testid="nav-mobile-start-cta">
+          <Link to="/login" className="cinema-cta-pill cinema-cta-pill--sm" data-testid="nav-mobile-start-cta">
             {user ? "App" : "Start"}
           </Link>
           <button
@@ -144,15 +146,15 @@ export default function Navbar() {
               <div className="cinema-nav-divider" />
               {!user && (
                 <Link to="/login" className="cinema-nav-mobile-link" data-testid="nav-mobile-login">
-                  Log in
+                  Sign in
                 </Link>
               )}
               <Link
-                to="/app"
+                to={user ? "/app" : "/login"}
                 className="cinema-cta-pill mt-2 justify-center"
                 data-testid="nav-mobile-start-btn"
               >
-                <span>{user ? "Open app" : "Start a project"}</span>
+                <span>{user ? "Open app" : "Get started"}</span>
                 <ArrowRight size={12} />
               </Link>
             </div>

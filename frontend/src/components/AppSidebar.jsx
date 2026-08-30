@@ -201,12 +201,12 @@ export default function AppSidebar() {
           dataTestId="sidebar-nav-settings"
         />
         <NavItem
-          to="/faq"
+          to="/pricing"
           icon={HelpCircle}
-          label="FAQ"
+          label="Pricing"
           collapsed={collapsed}
-          active={path === "/faq"}
-          dataTestId="sidebar-nav-faq"
+          active={path === "/pricing"}
+          dataTestId="sidebar-nav-pricing"
         />
         {isAdmin && (
           <NavItem

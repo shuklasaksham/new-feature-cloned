@@ -4410,3 +4410,112 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .first-project-card:active { transform: translateY(1px); }
 .first-project-arrow { transition: transform 0.18s ease, color 0.18s ease; }
 .first-project-card:hover .first-project-arrow { transform: translateX(4px); color: #d0d0d0; }
+
+.landing-shot {
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0b0b0d;
+  box-shadow: 0 40px 120px -40px rgba(0,0,0,0.8);
+}
+
+/* ============================================================
+   Marketing → auth (Login / Plan) look & feel
+   Pure-black canvas, mono labels, white pill CTAs, particle hero.
+   ============================================================ */
+.marketing-shell { background: #000 !important; }
+.landing-page-bg { background: #000 !important; }
+[data-testid="site-footer"] { background: #000 !important; }
+
+/* Flat black — drop the marketing wash + film grain so the particle field
+   is the only motion on the canvas (matches the auth pages). */
+.marketing-ambient,
+.marketing-grain { display: none !important; }
+
+/* Full-bleed animated particle hero background */
+.marketing-hero-canvas {
+  position: absolute !important;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.marketing-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 62% 62% at 50% 42%, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.28) 46%, rgba(0,0,0,0) 78%),
+    linear-gradient(to bottom, rgba(0,0,0,0) 60%, #000 100%);
+}
+
+/* White pill CTAs — mirror .login-submit on the auth pages */
+.landing-cta-primary,
+.landing-cta-primary--xl,
+.cinema-cta-pill {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+  border-radius: 9999px !important;
+  font-family: var(--font-mono, "Geist Mono", ui-monospace, monospace) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  box-shadow: none !important;
+}
+.landing-cta-primary:hover,
+.landing-cta-primary--xl:hover,
+.cinema-cta-pill:hover { background: #e8e8e8 !important; transform: none !important; }
+.cinema-cta-pill--sm { height: 40px !important; }
+
+/* Hero eyebrow + headings — monochrome, mono label like the auth pages */
+.section-label {
+  color: #7a7a7a !important;
+  border-color: #242424 !important;
+  background: rgba(255,255,255,0.02) !important;
+  font-family: var(--font-mono, "Geist Mono", ui-monospace, monospace) !important;
+}
+.section-label .dot { background: #7a7a7a !important; }
+.landing-hero-gradient { color: #ffffff !important; -webkit-text-fill-color: #ffffff !important; }
+
+/* Quiet the cinematic blue dot-wash so the canvas stays flat black (marketing only) */
+.marketing-shell .hero-ambient,
+.marketing-shell .hero-ambient::before,
+.marketing-shell .hero-ambient::after { display: none !important; }
+
+/* ── Navbar → pure black + monospace (matches auth pages) ── */
+.cinema-nav-bg {
+  background: #000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.cinema-nav-border {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.10) 50%, transparent 100%) !important;
+}
+.cinema-nav-accent { display: none !important; }
+.cinema-nav-link {
+  font-family: var(--font-mono, "Geist Mono", ui-monospace, monospace) !important;
+  font-size: 12.5px !important;
+  letter-spacing: 0.02em !important;
+  color: #8a8a8a !important;
+}
+.cinema-nav-link:hover,
+.cinema-nav-link.is-active { color: #f5f5f5 !important; }
+.cinema-nav-underline {
+  background: linear-gradient(90deg, transparent 0%, #f5f5f5 50%, transparent 100%) !important;
+}
+.cinema-nav-mobile-link {
+  font-family: var(--font-mono, "Geist Mono", ui-monospace, monospace) !important;
+  letter-spacing: 0.02em !important;
+}
+.cinema-icon-tile { background: #0d0d0d !important; border-color: #262626 !important; }
+
+/* Footer → monospace links */
+[data-testid="site-footer"] a,
+[data-testid="site-footer"] span {
+  font-family: var(--font-mono, "Geist Mono", ui-monospace, monospace) !important;
+  letter-spacing: 0.02em !important;
+}
+
+/* Monochrome links + legal bullets on marketing (match the auth pages) */
+.marketing-shell a.link-accent { color: #ededed !important; }
+.marketing-shell a.link-accent:hover { color: #ffffff !important; }
