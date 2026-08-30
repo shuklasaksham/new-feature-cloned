@@ -1,5 +1,11 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 ("Building your project" → "ready" transition)
+- **New `BuildingProject.jsx`** (route `/welcome/building`, protected): after "Add to Bracket", `SelectSource` now navigates here with `{provider, sources}` in router state instead of doing the work inline. This screen runs `POST /connect/preview` → `POST /connect/establish` (mode "new") while showing an animated checklist (Reading conversations → Finding project details → Organizing your project; spinner → green check) over the halftone `ParticleField` (image variant, right-biased, gradient-faded to black on the left).
+- **"Your project is ready." state** (same component, framer-motion crossfade): a card with the AI project name, `N {conversations|channels|files|repositories} · Added just now`, `{deliverables} · {requirements} · {decisions}` counts (from preview), and an "Open Project →" white pill → `/project/{id}`.
+- **Smoother transitions**: entrance fades/slides via framer-motion + `.page-enter`; min 2.4s dwell on the checklist so it never flashes; final step ties to the real establish completion. Verified E2E (select → building → ready → project).
+
+
 ## Changelog — 2026-06 (post-connect "Select a source" picker)
 - **New full-page source picker** (`SelectSource.jsx`, route `/welcome/select?tool={provider}`, protected) in the auth aesthetic (pure black, split layout): left = logo + adaptive heading + connected-account card (green check + email + edit→`/welcome`) + privacy card + Back; right = bordered panel with search, a table (checkbox · Conversation/Channel/File/Repository · Messages/Members/Issues · Last Activity), footer "Add to Bracket" white pill + selected count.
 - **Provider-adaptive labels**: gmail→"Select a conversation"/"Search emails"/Messages; slack→"Select a channel"/"Search channels"/Members; figma→"Select a file" (no count col); github→"Select a repository"/Issues. Config in `SelectSource.jsx` `CFG`.

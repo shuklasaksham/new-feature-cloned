@@ -113,15 +113,7 @@ export default function SelectSource() {
       .map((s) => ({ id: s.id, name: s.name, url: s.url || "" }));
     if (!chosen.length) return;
     setSubmitting(true);
-    try {
-      const { data: prev } = await api.post("/connect/preview", { provider, sources: chosen });
-      const { data: est } = await api.post("/connect/establish", { preview_id: prev.preview_id, mode: "new" });
-      toast.success("Added to Bracket.");
-      navigate(`/project/${est.project_id}`);
-    } catch (e) {
-      toast.error(formatApiError(e));
-      setSubmitting(false);
-    }
+    navigate("/welcome/building", { state: { provider, sources: chosen } });
   };
 
   const count = selected.size;

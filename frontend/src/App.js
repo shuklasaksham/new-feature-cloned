@@ -25,6 +25,7 @@ import AuthCallback from "./pages/AuthCallback";
 import Onboarding from "./pages/Onboarding";
 import FirstProject from "./pages/FirstProject";
 import SelectSource from "./pages/SelectSource";
+import BuildingProject from "./pages/BuildingProject";
 import ClaimProjects from "./pages/ClaimProjects";
 import Dashboard from "./pages/Dashboard";
 import ConnectWork from "./pages/ConnectWork";
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="/payment/cancel" element={<ProtectedRoute><PaymentCancel /></ProtectedRoute>} />
           <Route path="/welcome" element={<ProtectedRoute><FirstProject /></ProtectedRoute>} />
           <Route path="/welcome/select" element={<ProtectedRoute><SelectSource /></ProtectedRoute>} />
+          <Route path="/welcome/building" element={<ProtectedRoute><BuildingProject /></ProtectedRoute>} />
           <Route path="/claim" element={<ProtectedRoute><ClaimProjects /></ProtectedRoute>} />
 
           {/* Tool (auth required) — wrapped in AppShell w/ collapsible sidebar */}
