@@ -1037,3 +1037,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
     - New `connect_ai.suggest_project_reply(project_name, client_name, latest_client_message, memory_items)` — strict-JSON Haiku prompt, 3-5 sentence output, first-person, no fabricated context.
   - **Verified**: dark palette across dashboard + project page; horizontal pills switch instantly (layout animation); overview surfaces a real reply grounded in the seeded scope-change item ("Great — thanks for the green light on v2..."); backend endpoint returns confidence:high with a `based_on` chip pointing at the correct source; 10-second live polling still active.
 
+
+## 2026-06 — ParticleField halftone (Login / Plan visual)
+- Rebuilt `ParticleField.jsx` from random drifting diamonds into a true halftone dot-matrix.
+- Traces brightness of the reference image (`/frontend/public/halftone-source.png`, derived from `right-img.png`) onto a 7px grid; dot size ∝ luminance so the sculptural form emerges — dense/bright right, pure black left.
+- Mixed glyphs (dot / diamond / occasional "x"), subtle global "breathing" + per-cell shimmer; respects prefers-reduced-motion.
+- Fixed a "ResizeObserver loop" runtime overlay error by guarding the observer to rebuild only on real dimension changes (rAF-debounced).
+- Verified via screenshot on /login.
