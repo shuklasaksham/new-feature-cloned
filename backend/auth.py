@@ -243,6 +243,7 @@ async def get_or_create_user_by_email(
         "updated_at": iso(now_utc()),
     }
     await db.users.insert_one(doc)
+    doc.pop("_id", None)
     return doc
 
 

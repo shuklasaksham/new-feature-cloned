@@ -1,5 +1,11 @@
 # Bracket — PRD
 
+## Changelog — 2026-08 (plan selection + Stripe test payments)
+- **New login redesign** (`Login.jsx`): split dark layout, custom logo + halftone image, Google/Apple/email-password, monospace styling. Google → real Emergent auth; Apple → "coming soon" toast (not wired); Create Account/Forgot Password → real email-code flow.
+- **"Choose your plan" page** (`/plan`, `ChoosePlan.jsx`): shown after sign-in/sign-up when the user has no `plan`. Two plans — $29/month, $9/project. Matches reference.
+- **Stripe test payment flow** (Flow B, shared sandbox key `sk_test_emergent` — Flow A claimable sandbox unavailable because the account country is IN/unsupported): `POST /api/payments/checkout` (fixed server-side pricing), `GET /api/payments/status/{session_id}` (with inline Stripe fallback), webhook at `POST /api/webhook/stripe`. On paid, sets `users.plan`. Success/cancel pages at `/payment/success` and `/payment/cancel`. Test card 4242 4242 4242 4242. Verified: checkout session creation + redirect to Stripe + status polling.
+
+
 ## Changelog — 2026-06 (Project Update: glance-and-decide)
 - **Simplified the Project Update review** (was overwhelming — 6-line paragraph + 6 impacts + 12 changes dumped at once). Default now shows only: a ONE-sentence bottom line (AI prompt updated in `connect_ai.py::build_project_update`), a tiny meta line (`N changes · biggest risk: …`), and Approve / Reject. Full impacts + all changes + downstream collapse behind a "See what's inside" toggle (`ProjectUpdateReview.jsx`, data-testid `project-update-details-toggle`). Decide in ~5 seconds; detail on demand. Backend flow unchanged.
 

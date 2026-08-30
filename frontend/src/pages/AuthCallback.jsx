@@ -31,7 +31,9 @@ export default function AuthCallback() {
         const { data } = await api.post("/auth/google/exchange", { session_id: sessionId });
         setUser(data.user);
         await refresh();
-        if (data.is_new || !data.user?.designation) {
+        if (!data.user?.plan) {
+          navigate("/plan", { replace: true });
+        } else if (data.is_new || !data.user?.designation) {
           navigate("/onboarding", { replace: true });
         } else {
           navigate("/app", { replace: true });

@@ -69,7 +69,7 @@ export default function Login() {
       const { data } = await api.post("/auth/login", { email: email.trim().toLowerCase(), password });
       setUser(data.user);
       await refresh();
-      navigate("/app");
+      navigate(data.user?.plan ? "/app" : "/plan");
     } catch (e) {
       const msg = formatApiError(e);
       setError(msg);
@@ -88,7 +88,8 @@ export default function Login() {
       });
       setUser(data.user);
       await refresh();
-      if (data.is_new || !data.user?.name || !data.user?.designation) navigate("/onboarding?next=%2Fapp");
+      if (!data.user?.plan) navigate("/plan");
+      else if (data.is_new || !data.user?.name || !data.user?.designation) navigate("/onboarding?next=%2Fapp");
       else navigate("/app");
     } catch (e) {
       setError(formatApiError(e));

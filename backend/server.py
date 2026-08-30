@@ -4199,6 +4199,105 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
     return _public_view(project)
 
 
+# ─── Payments (Stripe Checkout — test flow) ──────────────────────────────
+# Fixed, server-side pricing. The client only sends a plan id; amounts are
+# never trusted from the frontend.
+from emergentintegrations.payments.stripe.checkout import (  # noqa: E402
+    StripeCheckout, CheckoutSessionRequest,
+)
+
+PLANS = {
+    "monthly": {"amount": 29.0, "label": "Bracket Monthly", "kind": "monthly"},
+    "project": {"amount": 9.0, "label": "Bracket Single Project", "kind": "project"},
+}
+
+
+class CheckoutIn(BaseModel):
+    plan_id: str
+    origin_url: str
+
+
+@api.post("/payments/checkout")
+async def payments_checkout(body: CheckoutIn, request: Request):
+    plan = PLANS.get(body.plan_id)
+    if not plan:
+        raise HTTPException(status_code=400, detail="Unknown plan.")
+    user = await current_user(request, db)
+    host_url = str(request.base_url)
+    webhook_url = f"{host_url}api/webhook/stripe"
+    stripe_checkout = StripeCheckout(api_key=os.environ["STRIPE_API_KEY"], webhook_url=webhook_url)
+    origin = body.origin_url.rstrip("/")
+    req = CheckoutSessionRequest(
+        amount=plan["amount"],
+        currency="usd",
+        success_url=f"{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{origin}/payment/cancel",
+        metadata={"user_id": user["user_id"], "plan_id": body.plan_id},
+    )
+    session = await stripe_checkout.create_checkout_session(req)
+    await db.payment_transactions.insert_one({
+        "session_id": session.session_id,
+        "user_id": user["user_id"],
+        "plan_id": body.plan_id,
+        "amount": plan["amount"],
+        "currency": "usd",
+        "status": "initiated",
+        "payment_status": "pending",
+        "created_at": auth_iso(auth_now()),
+        "updated_at": auth_iso(auth_now()),
+    })
+    return {"checkout_url": session.url, "session_id": session.session_id}
+
+
+async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
+    rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+    if not rec or rec.get("payment_status") == "paid":
+        return
+    await db.payment_transactions.update_one(
+        {"session_id": session_id, "payment_status": {"$ne": "paid"}},
+        {"$set": {"status": "completed", "payment_status": "paid", "updated_at": auth_iso(auth_now())}},
+    )
+    uid = user_id or rec.get("user_id")
+    pid = plan_id or rec.get("plan_id")
+    if uid and pid:
+        await db.users.update_one(
+            {"user_id": uid},
+            {"$set": {"plan": pid, "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
+        )
+
+
+@api.get("/payments/status/{session_id}")
+async def payments_status(session_id: str):
+    rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+    if not rec:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if rec.get("payment_status") != "paid":
+        try:
+            sc = StripeCheckout(api_key=os.environ["STRIPE_API_KEY"], webhook_url="https://x/api/webhook/stripe")
+            st = await sc.get_checkout_status(session_id)
+            if st.payment_status == "paid" or st.status == "complete":
+                await _mark_paid(session_id)
+                rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+        except Exception:
+            pass
+    return {"session_id": rec["session_id"], "status": rec["status"], "payment_status": rec["payment_status"]}
+
+
+@api.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    body_bytes = await request.body()
+    sc = StripeCheckout(api_key=os.environ["STRIPE_API_KEY"], webhook_url="https://x/api/webhook/stripe")
+    try:
+        wr = await sc.handle_webhook(body_bytes, request.headers.get("Stripe-Signature"))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if wr.payment_status == "paid" and wr.session_id:
+        md = wr.metadata or {}
+        await _mark_paid(wr.session_id, md.get("plan_id"), md.get("user_id"))
+    return {"status": "ok"}
+
+
+
 # --- Mount router ---
 app.include_router(api)
 

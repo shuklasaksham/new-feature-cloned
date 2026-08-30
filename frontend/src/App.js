@@ -22,6 +22,9 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 
 import Login from "./pages/Login";
+import ChoosePlan from "./pages/ChoosePlan";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancel from "./pages/PaymentCancel";
 import AuthCallback from "./pages/AuthCallback";
 import Onboarding from "./pages/Onboarding";
 import ClaimProjects from "./pages/ClaimProjects";
@@ -77,6 +80,9 @@ export default function App() {
           <Route path="/signup" element={<Navigate to="/login" replace />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+          <Route path="/plan" element={<ProtectedRoute><ChoosePlan /></ProtectedRoute>} />
+          <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+          <Route path="/payment/cancel" element={<ProtectedRoute><PaymentCancel /></ProtectedRoute>} />
           <Route path="/claim" element={<ProtectedRoute><ClaimProjects /></ProtectedRoute>} />
 
           {/* Tool (auth required) — wrapped in AppShell w/ collapsible sidebar */}
