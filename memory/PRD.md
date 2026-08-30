@@ -1,5 +1,15 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (post-connect "Select a source" picker)
+- **New full-page source picker** (`SelectSource.jsx`, route `/welcome/select?tool={provider}`, protected) in the auth aesthetic (pure black, split layout): left = logo + adaptive heading + connected-account card (green check + email + edit→`/welcome`) + privacy card + Back; right = bordered panel with search, a table (checkbox · Conversation/Channel/File/Repository · Messages/Members/Issues · Last Activity), footer "Add to Bracket" white pill + selected count.
+- **Provider-adaptive labels**: gmail→"Select a conversation"/"Search emails"/Messages; slack→"Select a channel"/"Search channels"/Members; figma→"Select a file" (no count col); github→"Select a repository"/Issues. Config in `SelectSource.jsx` `CFG`.
+- **Flow**: after OAuth completes in `FirstProject.jsx` (`/welcome`), it now routes to `/welcome/select?tool={key}` (was `/app/connect`). Picker fetches `GET /connect/{provider}/sources?q=` (debounced search), multi-select capped at 5, then `POST /connect/preview` → `POST /connect/establish` (mode `"new"`, always creates a NEW project) → navigates to `/project/{id}`. First-time-user flow only.
+- **Backend demo fallback** (`connectors.py`): `list_sources` returns realistic `_demo_sources(provider)` when the user has no real connected account (i.e. the demo account); `_fetch_digest` returns a coherent `_demo_digest` for `demo-*` ids; `preview_sources` tolerates a missing account when all sources are demo. Real connected accounts always hit the live provider adapters. Lets the demo account run the whole picker → project-creation flow (verified E2E: created "Acme Corp Website + Dashboard Redesign" with AI-extracted memory).
+- **Shared brand glyphs** extracted to `components/BrandGlyphs.jsx` (Gmail/Slack/Figma/GitHub SVGs).
+- Verified via screenshots + a full click-through (gmail + slack variants, 2-select → Add to Bracket → project page).
+- NOTE: user will supply the post-"Add to Bracket" screen next; currently lands on the existing `/project/{id}` memory view.
+
+
 ## Changelog — 2026-06 (marketing pages → auth aesthetic)
 - **All 4 public pages (Home, Pricing, Privacy, Terms) restyled to match Login/ChoosePlan**: pure-black `#000` canvas, full-bleed animated particle hero, monospace labels, monochrome accents. Screenshot-verified on `/`, `/pricing`, `/privacy`.
 - **`ParticleField.jsx`**: added `variant="fill"` — a uniform, sparse, full-bleed flow-field (no image dependency) used as the hero background. Image variant (skull) unchanged for auth pages.

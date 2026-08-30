@@ -46,7 +46,7 @@ export default function FirstProject() {
       setBusy(null);
       if (result === "ok") {
         toast.success(`${PROVIDER_META[key]?.label || key} connected.`);
-        navigate(`/app/connect?tool=${key}`);
+        navigate(`/welcome/select?tool=${key}`);
       } else {
         toast.error("Authorization didn't complete — please try again.");
       }
@@ -58,7 +58,7 @@ export default function FirstProject() {
 
   const pick = async (card) => {
     const status = statuses[card.key];
-    if (status === "connected") { navigate(`/app/connect?tool=${card.key}`); return; }
+    if (status === "connected") { navigate(`/welcome/select?tool=${card.key}`); return; }
     if (status === "setup_required") {
       toast.info(`${card.title} isn't enabled yet — it needs one-time admin configuration.`);
       return;

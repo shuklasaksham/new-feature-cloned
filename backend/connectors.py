@@ -18,7 +18,7 @@ import os
 import re
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -688,8 +688,89 @@ async def gmail_fetch_digest(account: dict, thread_id: str) -> str:
     return "\n".join(lines)[:18000]
 
 
+# ---- Demo sources (first-run / demo account has no real OAuth token) -------
+def _demo_sources(provider: str) -> List[dict]:
+    """Realistic sample sources so the picker renders for the demo account.
+    Real connected accounts always hit the live provider adapters instead."""
+    now = datetime.now(timezone.utc)
+
+    def rfc(d):
+        return d.strftime("%a, %d %b %Y %H:%M:%S +0000")
+
+    def iso(d):
+        return d.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    if provider == "gmail":
+        rows = [
+            ("Website redesign — final scope", "Sarah Chen <chensarah34@gmail.com>", 14, 0),
+            ("Re: Mobile App Redesign", "Alex Morgan <morganalex10@gmail.com>", 27, 1),
+            ("Brand identity project", "Hiro Ishida <ishidaheroo@gmail.com>", 11, 3),
+            ("New landing page campaign", "James R <james.r@vertex.com>", 9, 4),
+            ("Scope clarification", "Sarah Chen <chensarah34@gmail.com>", 18, 5),
+            ("UI Feedback round 1", "Dana Lee <dana.lee@brightco.com>", 8, 6),
+            ("Q3 marketing site refresh", "Priya N <priya@northstar.io>", 22, 9),
+        ]
+        return [{"id": f"demo-gmail-{i+1}", "name": n, "url": "",
+                 "meta": {"updated": rfc(now - timedelta(days=d)), "detail": frm, "extra": f"{msgs} messages"}}
+                for i, (n, frm, msgs, d) in enumerate(rows)]
+    if provider == "slack":
+        rows = [
+            ("#project-acme", "Channel", 12, 0),
+            ("#design-reviews", "Channel", 8, 1),
+            ("#client-vertex", "Private channel", 5, 2),
+            ("DM — Sarah Chen", "Direct message", 2, 3),
+            ("#brand-identity", "Channel", 9, 5),
+            ("#launch-planning", "Channel", 14, 7),
+        ]
+        return [{"id": f"demo-slack-{i+1}", "name": n, "url": "",
+                 "meta": {"updated": iso(now - timedelta(days=d)), "detail": kind, "extra": f"{mem} members"}}
+                for i, (n, kind, mem, d) in enumerate(rows)]
+    if provider == "figma":
+        rows = [
+            ("Acme Dashboard.fig", "Acme Corp", 0),
+            ("Mobile App Redesign", "Product", 1),
+            ("Brand Identity System", "Brand", 4),
+            ("Landing Page v3", "Marketing", 6),
+            ("Design System — Core", "Foundations", 8),
+        ]
+        return [{"id": f"demo-figma-{i+1}", "name": n, "url": "",
+                 "meta": {"updated": iso(now - timedelta(days=d)), "detail": proj, "extra": ""}}
+                for i, (n, proj, d) in enumerate(rows)]
+    if provider == "github":
+        rows = [
+            ("nordwind/acme-dashboard", "Client dashboard redesign", 6, 0),
+            ("nordwind/mobile-app", "iOS + Android app", 12, 1),
+            ("nordwind/brand-site", "Marketing website", 3, 4),
+            ("nordwind/design-tokens", "Shared design tokens", 1, 7),
+            ("nordwind/api-gateway", "Backend services", 9, 10),
+        ]
+        return [{"id": f"demo-github-{i+1}", "name": n, "url": "",
+                 "meta": {"updated": iso(now - timedelta(days=d)), "detail": desc, "extra": f"{iss} open issues"}}
+                for i, (n, desc, iss, d) in enumerate(rows)]
+    return []
+
+
+def _demo_digest(source_id: str, provider: str) -> str:
+    """Canned but coherent content for a demo source so preview/establish can
+    build a real (AI-extracted) project without a live provider token."""
+    label = {"gmail": "email conversation", "slack": "channel", "figma": "file", "github": "repository"}.get(provider, "source")
+    return (
+        f"CLIENT {label.upper()} (demo sample):\n"
+        "Client: Sarah Chen (Acme Corp). Project: website + dashboard redesign.\n"
+        "- Client confirmed the scope covers the marketing site (hero + 4 sections) and the analytics dashboard.\n"
+        "- Decision: ship the mobile breakpoint in phase 2, not the initial launch.\n"
+        "- Deliverables: Figma file, a Loom walkthrough, and one revision round.\n"
+        "- Deadline: first review draft due in two weeks; final sign-off by month end.\n"
+        "- Open question: is the illustration pass in scope, or handled by the client's team?\n"
+        "- Client asked to 'just add one more page' — potential scope creep to flag.\n"
+        "- Requirement: brand system is locked; no new type or palette exploration.\n"
+    )
+
+
 # ---- Dispatch --------------------------------------------------------------
 async def _fetch_digest(provider: str, account: dict, source_id: str) -> str:
+    if source_id.startswith("demo-"):
+        return _demo_digest(source_id, provider)
     if provider == "figma":
         return await figma_fetch_digest(account, source_id)
     if provider == "github":
@@ -785,7 +866,16 @@ async def delete_account(provider: str, request: Request):
 @router.get("/connect/{provider}/sources")
 async def list_sources(provider: str, request: Request, q: str = "", url: str = ""):
     user = await current_user(request, db)
-    account = await _get_account(user["user_id"], provider)
+    try:
+        account = await _get_account(user["user_id"], provider)
+    except HTTPException as e:
+        # No real connected account (e.g. the demo account) → show sample sources.
+        if e.status_code == 400:
+            rows = _demo_sources(provider)
+            if q:
+                rows = [s for s in rows if q.lower() in (s["name"] + " " + (s["meta"].get("detail") or "")).lower()]
+            return {"sources": rows, "demo": True}
+        raise
     if provider == "figma":
         return {"sources": await figma_list_sources(account, q, url)}
     if provider == "github":
@@ -802,7 +892,14 @@ async def list_sources(provider: str, request: Request, q: str = "", url: str = 
 @router.post("/connect/preview")
 async def preview_sources(body: PreviewIn, request: Request):
     user = await current_user(request, db)
-    account = await _get_account(user["user_id"], body.provider)
+    all_demo = all(s.id.startswith("demo-") for s in body.sources)
+    try:
+        account = await _get_account(user["user_id"], body.provider)
+    except HTTPException:
+        if all_demo:
+            account = {"provider": body.provider, "is_demo": True}
+        else:
+            raise
     candidates = []
     async for p in db.projects.find({"owner_user_id": user["user_id"]}, {"_id": 0, "id": 1, "name": 1, "client_name": 1}).sort("updated_at", -1).limit(25):
         candidates.append({"id": p["id"], "name": p.get("name", ""), "client": p.get("client_name", "")})
