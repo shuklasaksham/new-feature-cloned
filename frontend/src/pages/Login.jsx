@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
@@ -26,6 +26,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [needsCodeFallback, setNeedsCodeFallback] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
@@ -180,16 +181,30 @@ export default function Login() {
                       Forgot Password?
                     </button>
                   </div>
-                  <input
-                    className="login-input"
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
-                    placeholder="Enter your password"
-                    data-testid="login-password-input"
-                    onKeyDown={(e) => { if (e.key === "Enter") handlePrimary(); }}
-                  />
+                  <div className="relative">
+                    <input
+                      className="login-input"
+                      style={{ paddingRight: 48 }}
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => { setPassword(e.target.value); if (error) setError(""); }}
+                      placeholder="Enter your password"
+                      data-testid="login-password-input"
+                      onKeyDown={(e) => { if (e.key === "Enter") handlePrimary(); }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute top-1/2 -translate-y-1/2 right-4 inline-flex items-center justify-center"
+                      style={{ color: "#8a8a8a" }}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      data-testid="login-password-toggle"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                    </button>
+                  </div>
                 </div>
               )}
 
