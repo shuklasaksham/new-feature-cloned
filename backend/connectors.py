@@ -984,6 +984,24 @@ def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str
     return docs
 
 
+# ---- Plan-gated project quota --------------------------------------------
+# monthly subscription → unlimited; single-project ($9) → 1; no/unknown → 1.
+PLAN_PROJECT_LIMITS = {"monthly": None, "project": 1}
+
+
+def _plan_limit(plan):
+    return PLAN_PROJECT_LIMITS.get(plan, 1)
+
+
+@router.get("/project-quota")
+async def projects_quota(request: Request):
+    user = await current_user(request, db)
+    plan = user.get("plan")
+    limit = _plan_limit(plan)
+    used = await db.projects.count_documents({"owner_user_id": user["user_id"]})
+    return {"plan": plan, "limit": limit, "used": used, "can_create": (limit is None or used < limit)}
+
+
 @router.post("/connect/establish")
 async def establish_connection(body: EstablishIn, request: Request):
     user = await current_user(request, db)
@@ -1010,6 +1028,11 @@ async def establish_connection(body: EstablishIn, request: Request):
         if proj_info.get("client") and not project.get("client_name"):
             await db.projects.update_one({"id": project_id}, {"$set": {"client_name": proj_info["client"], "updated_at": now}})
     else:
+        limit = _plan_limit(user.get("plan"))
+        if limit is not None:
+            used = await db.projects.count_documents({"owner_user_id": user["user_id"]})
+            if used >= limit:
+                raise HTTPException(402, "You've reached your plan's project limit. Upgrade to add more projects.")
         project_id = _uuid()
         combined_digest = "\n\n".join((it.get("digest") or "")[:4500] for it in items)[:9000]
         await db.projects.insert_one({

@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
+import { api } from "../lib/api";
 
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
@@ -32,8 +33,13 @@ export default function ProjectSidebar({
   const { user, logout } = useAuth();
   const [switchOpen, setSwitchOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
+  const [quota, setQuota] = useState(null);
   const switchRef = useRef(null);
   const userRef = useRef(null);
+
+  useEffect(() => {
+    api.get("/project-quota").then(({ data }) => setQuota(data)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -81,9 +87,22 @@ export default function ProjectSidebar({
               </button>
             ))}
             <div className="psb-switch-div" />
-            <button type="button" className="psb-switch-item" onClick={() => navigate("/app")} data-testid="psb-all-projects">
-              All projects
-            </button>
+            {quota && !quota.can_create ? (
+              <>
+                <button type="button" className="psb-switch-item" onClick={() => { setSwitchOpen(false); navigate("/pricing"); }} data-testid="psb-upgrade">
+                  <span className="truncate">Upgrade to add projects</span>
+                  <Sparkles size={13} />
+                </button>
+                <p className="psb-switch-hint" data-testid="psb-quota-hint">
+                  {quota.used} of {quota.limit} project{quota.limit === 1 ? "" : "s"} on your plan
+                </p>
+              </>
+            ) : (
+              <button type="button" className="psb-switch-item psb-switch-new" onClick={() => { setSwitchOpen(false); navigate("/welcome"); }} data-testid="psb-new-project">
+                <span>New project</span>
+                <Plus size={14} />
+              </button>
+            )}
           </div>
         )}
       </div>

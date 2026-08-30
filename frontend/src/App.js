@@ -27,7 +27,7 @@ import FirstProject from "./pages/FirstProject";
 import SelectSource from "./pages/SelectSource";
 import BuildingProject from "./pages/BuildingProject";
 import ClaimProjects from "./pages/ClaimProjects";
-import Dashboard from "./pages/Dashboard";
+import AppEntry from "./pages/AppEntry";
 import ConnectWork from "./pages/ConnectWork";
 import Activity from "./pages/Activity";
 import Settings from "./pages/Settings";
@@ -84,8 +84,9 @@ export default function App() {
           <Route path="/claim" element={<ProtectedRoute><ClaimProjects /></ProtectedRoute>} />
 
           {/* Tool (auth required) — wrapped in AppShell w/ collapsible sidebar */}
-          <Route path="/app" element={<ProtectedRoute><AppShell><Dashboard /></AppShell></ProtectedRoute>} />
-          <Route path="/app/new" element={<ProtectedRoute><AppShell><Dashboard /></AppShell></ProtectedRoute>} />
+          {/* /app → straight into the latest project (old dashboard removed) */}
+          <Route path="/app" element={<ProtectedRoute><AppEntry /></ProtectedRoute>} />
+          <Route path="/app/new" element={<ProtectedRoute><AppEntry /></ProtectedRoute>} />
           <Route path="/app/connect" element={<ProtectedRoute><AppShell><ConnectWork /></AppShell></ProtectedRoute>} />
           <Route path="/app/activity" element={<ProtectedRoute><AppShell><Activity /></AppShell></ProtectedRoute>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />

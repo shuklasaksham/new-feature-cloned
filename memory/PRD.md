@@ -1,5 +1,12 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (old dashboard removed + plan-gated project creation)
+- **Old projects-grid dashboard removed.** `/app` and `/app/new` now render `AppEntry.jsx`, which redirects into the most recent project (`/project/{id}`) or `/welcome` when the user has none. The project workspace is the new home. `Dashboard.jsx` no longer routed (file kept, import dropped from `App.js`).
+- **Plan-gated "New project" in the project switcher dropdown** (`ProjectSidebar.jsx`): replaced "All projects" with a create action. When the plan allows more (monthly = unlimited) → "New project" → `/welcome`. When at limit (single-`project` plan = 1) → "Upgrade to add projects" → `/pricing`, plus a "{used} of {limit} projects on your plan" hint.
+- **Backend**: new `GET /api/project-quota` → `{plan, limit, used, can_create}` (`PLAN_PROJECT_LIMITS = {monthly: None(unlimited), project: 1}`, default 1). Enforced in `POST /connect/establish` for `mode:"new"` → **402** when the plan limit is reached (BuildingProject shows the error state). Route named `/project-quota` (not `/projects/quota`) to avoid the `/projects/{id}` param collision.
+- Verified live: `/app` redirects into the latest project; switcher lists all projects with current checked; demo (`project` plan, used 23) shows the Upgrade action.
+
+
 ## Changelog — 2026-06 (global app shell → new flat-black aesthetic)
 - **Global sidebar (`AppSidebar.jsx`) rebranded to match the project sidebar**: new cube logo + "bracket." wordmark (was `BracketMark` `<>` glyph), pure-black `#0a0a0a` bg, rounded pill nav (active = filled `#1c1c1c`, no accent bar), monospace WORKSPACE/ACCOUNT labels, bordered user card at bottom, collapse toggle. Expanded width 240→280px, collapsed 64→76px. CSS overrides added under the project-shell block in `index.css` (`.app-shell*`, `.app-sidebar*`, dashboard surfaces/filters).
 - **Dashboard**: `.app-shell-main` now `#080808`, stat/project/composer cards flat `#0b0b0b` w/ `#1c1c1c` borders; **white pill CTAs** — "Start a new project" (solid white), "Ask Bracket" (outlined white) in `NewProjectComposer.jsx`; filter tabs monochrome (active = light pill); stat-card accents neutralized (were `#989BE0`/`#8184C4`). **Status tags kept colored** (green accepted / amber awaiting, etc.) per request.
