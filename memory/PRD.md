@@ -1,5 +1,17 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (connected-tab polish + Overview whitespace fix)
+- **Sidebar↔workspace connection** made pronounced like the reference: sidebar darkened to `#070707`, workspace panel lightened to `#0f0f10`, active nav item now shares the panel colour, uses `24px` left radius, extends flush to the boundary, and larger `18px` concave `::before/::after` corner curves carve into the sidebar — so the active tab visibly docks into the content panel.
+- **Overview whitespace**: `.project-main-inner` now `max-width:1160px; margin:0 auto` and `.ov-wrap` `max-width:880px; margin:0 auto`, so content is centred with balanced margins (removed the ugly one-sided right void) and cards are wider. Verified live.
+
+
+## Changelog — 2026-06 (Overview / Scope / Conversations → exact spec content)
+- **Overview** trimmed to exactly the spec: header (PROJECT · title · subtitle · "Gmail connected" pill + bell-with-dot + menu), **Right now** (single "Scope may have changed" card + Review), **Upcoming** (single "Homepage concepts due Sep 4 · 3 days left"), **Latest** (3 items: Additional landing page requested 12m ago / Homepage deadline confirmed Yesterday / Option B selected for homepage Aug 28). Removed the connected-sources block from the Overview body.
+- **Scope** — new `components/ScopeView.jsx` matching the mockup 1:1: Target header, 4 stat cards (12/9/2/1), filter tabs + "Add scope item", 6-row table (exact titles/descriptions + In-scope violet / Needs-clarification amber / Out-of-scope grey tags, drag handles, row menus), "Show 6 of 12 items", right rail = Scope insights (75% violet donut + "Clear scope · 9 of 12…"), Needs your attention (2 items), Recent scope activity (3 items, coloured icons), View scope history.
+- **Conversations** — new `components/ConversationsView.jsx` (self-contained, replaces the dynamic one which is kept as `ConversationsViewLegacy`): 4 linked-email threads, full chat thread with left/right bubbles + avatars + timestamps (exact copy), reply bar, and the Ask Bracket panel (prompt chip, Bracket's draft, copy/regen/edit, Send-to checkboxes for Sarah + Alex, "Send to 2 linked emails" pill, "Send only to Sarah"). Content is curated/static per the spec; copy/send actions give toasts.
+- CSS added for chat bubbles, Ask-Bracket panel, and the full Scope view. Verified live — all three match the mockups.
+
+
 ## Changelog — 2026-06 (Overview + Conversations redesign + connected sidebar tab)
 - **Connected active tab**: the active sidebar nav item now docks into the workspace — its background matches the main surface (`--bg`), rounds only on the left, and uses concave `::before/::after` corner notches (box-shadow trick) so sidebar + content read as one continuous surface. Removed the sidebar right border / main left border.
 - **Overview redesigned** (`OverviewView`): per-view header (PROJECT eyebrow, large title, "Here's what's happening…" + top-right source pill / bell / menu) then **Right now** (scope-change / needs-action cards with amber flag + Review), **Upcoming** (deadline cards, "N days left", chevron), **Latest** (activity dots + relative time), and the connected-sources manager. Shared topbar now hidden for Overview & Conversations (each renders its own header).

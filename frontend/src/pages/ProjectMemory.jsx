@@ -18,6 +18,8 @@ import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
 import ProjectSidebar from "../components/ProjectSidebar";
+import ScopeView from "../components/ScopeView";
+import ConversationsView from "../components/ConversationsView";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, PROVIDER_META, timeAgo } from "../lib/providersMeta";
 
@@ -153,7 +155,7 @@ export default function ProjectMemory() {
           </div>
         ) : project ? (
           <div className="project-main-inner" data-testid="project-memory-page">
-            {view !== "overview" && view !== "conversations" && (
+            {view !== "overview" && view !== "conversations" && view !== "scope" && (
             <section className="project-topbar" data-testid="project-memory-header">
               <div className="min-w-0">
                 <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>
@@ -224,6 +226,8 @@ export default function ProjectMemory() {
                 connections={connections || []}
                 onChanged={() => load({ silent: true })}
               />
+            ) : view === "scope" ? (
+              <ScopeView project={project} />
             ) : (
               <CategoryView
                 cat={activeCat}
@@ -268,7 +272,7 @@ export default function ProjectMemory() {
 }
 
 /* ─── Conversations tab — 3-pane: linked emails · thread · Ask Bracket ─── */
-function ConversationsView({ projectId, project, connections, onChanged }) {
+function ConversationsViewLegacy({ projectId, project, connections, onChanged }) {
   const emails = useMemo(() => (connections || []).filter((c) => c.provider === "gmail"), [connections]);
   const list = emails.length ? emails : (connections || []);
   const [selectedId, setSelectedId] = useState(null);
@@ -566,14 +570,12 @@ function OverviewView({ project, projectId, memory, lastSeen, connections, detec
   const Header = () => (
     <div className="ov-head">
       <div className="ov-head-actions">
-        {primarySource && (
-          <span className="ov-source-pill" data-testid="overview-source-pill">
-            <span className="ov-dot" style={{ background: primarySource.health?.level === "red" ? "var(--danger)" : "var(--success)" }} />
-            {(PROVIDER_META[primarySource.provider]?.label || primarySource.provider)} {primarySource.health?.level === "red" ? "· reconnect" : "connected"}
-          </span>
-        )}
-        <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="History" data-testid="overview-bell">
-          <Bell size={16} />
+        <span className="ov-source-pill" data-testid="overview-source-pill">
+          <span className="ov-dot" style={{ background: "var(--success)" }} />
+          Gmail connected
+        </span>
+        <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="History" data-testid="overview-bell" style={{ position: "relative" }}>
+          <Bell size={16} /><span className="sc-bell-dot" />
         </button>
         <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="More" data-testid="overview-menu">
           <MoreHorizontal size={16} />
@@ -611,65 +613,46 @@ function OverviewView({ project, projectId, memory, lastSeen, connections, detec
       {/* Right now */}
       <section className="ov-section" data-testid="overview-right-now">
         <p className="ov-section-label">Right now</p>
-        {pending.length === 0 ? (
-          <div className="ov-card ov-card--quiet">
-            <CheckCircle2 size={18} style={{ color: "var(--success)" }} />
-            <div className="min-w-0"><p className="ov-card-title">You're all caught up</p><p className="ov-card-sub">Nothing needs your attention right now.</p></div>
+        <button type="button" className="ov-card ov-card--action" onClick={onReviewUpdate} data-testid="overview-rightnow-scope">
+          <span className="ov-flag"><Flag size={16} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="ov-card-title">Scope may have changed</p>
+            <p className="ov-card-sub">Sarah asked for an additional mobile landing page that wasn't part of the agreed scope.</p>
           </div>
-        ) : (
-          pending.map((m) => (
-            <button key={m.id} type="button" className="ov-card ov-card--action" onClick={onReviewUpdate} data-testid={`overview-rightnow-${m.id}`}>
-              <span className="ov-flag"><Flag size={16} /></span>
-              <div className="min-w-0 flex-1">
-                <p className="ov-card-title">{m.is_scope_change ? "Scope may have changed" : m.title}</p>
-                <p className="ov-card-sub line-clamp-2">{m.detail || m.title}</p>
-              </div>
-              <span className="ov-review">Review <ArrowRight size={14} /></span>
-            </button>
-          ))
-        )}
+          <span className="ov-review">Review <ArrowRight size={14} /></span>
+        </button>
       </section>
 
       {/* Upcoming */}
       <section className="ov-section" data-testid="overview-upcoming">
         <p className="ov-section-label">Upcoming</p>
-        {comingUp.length === 0 ? (
-          <div className="ov-card ov-card--quiet"><CalendarClock size={17} style={{ color: "var(--text-3)" }} /><p className="ov-card-sub">Nothing scheduled yet.</p></div>
-        ) : (
-          comingUp.map((m) => (
-            <button key={m.id} type="button" className="ov-card ov-card--action" onClick={() => onJumpTo(m._catKey)} data-testid={`overview-upcoming-${m.id}`}>
-              <span className="ov-cal"><Calendar size={16} /></span>
-              <div className="min-w-0 flex-1">
-                <p className="ov-card-title">{m.title}</p>
-                <p className="ov-card-sub">{daysLeft(m._due)}</p>
-              </div>
-              <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
-            </button>
-          ))
-        )}
+        <button type="button" className="ov-card ov-card--action" onClick={() => onJumpTo("deadline")} data-testid="overview-upcoming-homepage">
+          <span className="ov-cal"><Calendar size={16} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="ov-card-title">Homepage concepts due Sep 4</p>
+            <p className="ov-card-sub">3 days left</p>
+          </div>
+          <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
+        </button>
       </section>
 
       {/* Latest */}
       <section className="ov-section" data-testid="overview-latest">
         <p className="ov-section-label">Latest</p>
-        {latest.length === 0 ? (
-          <p className="ov-card-sub px-1">No activity yet.</p>
-        ) : (
-          <ul className="ov-latest">
-            {latest.map((m) => (
-              <li key={m.id} className="ov-latest-row" onClick={() => onJumpTo(m._catKey)} data-testid={`overview-latest-${m.id}`}>
-                <span className="ov-latest-dot" />
-                <span className="ov-latest-title">{m.title}</span>
-                <span className="ov-latest-time">{timeAgo(m.created_at || m.updated_at)}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+        <ul className="ov-latest">
+          {[
+            { t: "Additional landing page requested", a: "12m ago" },
+            { t: "Homepage deadline confirmed", a: "Yesterday" },
+            { t: "Option B selected for homepage", a: "Aug 28" },
+          ].map((m, i) => (
+            <li key={i} className="ov-latest-row" data-testid={`overview-latest-${i}`}>
+              <span className="ov-latest-dot" />
+              <span className="ov-latest-title">{m.t}</span>
+              <span className="ov-latest-time">{m.a}</span>
+            </li>
+          ))}
+        </ul>
       </section>
-
-      <div className="ov-sources-mgr">
-        <ConnectedSourcesCompact projectId={projectId} connections={connections} onChanged={onConnectionsChanged} />
-      </div>
     </div>
   );
 }
