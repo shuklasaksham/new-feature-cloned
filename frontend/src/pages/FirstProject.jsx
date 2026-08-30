@@ -83,17 +83,17 @@ export default function FirstProject() {
       <Seo title="Bring your first project into Bracket" path="/welcome" noindex />
 
       {/* LEFT — content */}
-      <div className="relative flex flex-col justify-center w-full lg:w-[52%] xl:w-[48%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
-        <div className="max-w-[600px] w-full">
+      <div className="relative flex flex-col justify-center w-full lg:w-[54%] xl:w-[52%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
+        <div className="max-w-[820px] w-full page-enter">
           <img src={BRACKET_LOGO} alt="Bracket" width={52} height={52} style={{ display: "block" }} />
-          <h1 className="mt-6 font-display font-semibold tracking-[-0.025em] text-[38px] sm:text-[44px] leading-[1.05]" style={{ color: "#fff" }}>
+          <h1 className="mt-6 font-display font-semibold tracking-[-0.025em] text-[34px] sm:text-[40px] leading-[1.05] xl:whitespace-nowrap" style={{ color: "#fff" }}>
             Bring your first project into bracket
           </h1>
           <p className="mt-3 text-[13px]" style={{ ...MONO, color: "#7a7a7a" }}>
             Connect where the conversation is already happening.
           </p>
 
-          <div className="mt-9 flex flex-col gap-4">
+          <div className="mt-9 flex flex-col gap-4 max-w-[600px]">
             {CARDS.map(({ key, title, desc, Icon }) => (
               <button
                 key={key}
@@ -133,7 +133,7 @@ export default function FirstProject() {
       </div>
 
       {/* RIGHT — animated particle field */}
-      <div className="hidden lg:block relative flex-1 overflow-hidden" style={{ background: "#000" }} aria-hidden="true" data-testid="first-project-visual">
+      <div className="hidden lg:block relative flex-1 overflow-hidden fade-in" style={{ background: "#000" }} aria-hidden="true" data-testid="first-project-visual">
         <ParticleField />
         <div className="absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(to right, #000 0%, transparent 100%)" }} />
       </div>

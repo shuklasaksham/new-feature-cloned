@@ -1058,3 +1058,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - `PaymentSuccess.jsx` now calls `/payments/confirm/{id}` (was polling `/payments/status` which can never resolve on the shared sandbox) → routes to `/welcome`.
 - Verified E2E via Playwright: login → /plan → Stripe checkout (4242) → `/welcome`. Security: 401 unauth, 403 other-user session, 404 unknown, idempotent re-confirm.
 - NOTE: on the shared sandbox this trusts the authenticated success redirect (test mode). If the app is later moved to a claimable sandbox / real Stripe account, real webhook + retrieve verification will apply automatically.
+
+## 2026-06 — Subscriptions, Billing, transitions, /welcome heading
+- **Real subscription**: `/api/payments/checkout` rewritten to raw Stripe SDK (proxy-aware). `monthly` → `mode=subscription` with a recurring monthly price; `project` → one-time `mode=payment`. Verified E2E: monthly creates a subscription (tx.kind=subscription), confirm sets plan, billing shows recurring + renews +30d.
+- **Billing screen**: Settings → Billing card via new `GET /api/payments/billing` (plan, label, amount, started, renews_on = +30d monthly / +60d project, recurring). `POST /api/payments/cancel` clears the plan (local; shared sandbox can't hold a Stripe sub id). Change plan → /plan. Verified UI + cancel.
+- **Smooth transitions**: added `page-enter` to Login/ChoosePlan/FirstProject/PaymentSuccess content, `fade-in` on particle panels, and a keyed `fade-in` between PaymentSuccess states.
+- **/welcome heading**: widened left column (lg:54% / xl:52%, max-w 820) + `xl:whitespace-nowrap` → "Bring your first project into bracket" now one line at desktop, matching the reference.
+- `_mark_paid` now stores `plan_kind` on the user. Demo account left with no plan (re-testable).

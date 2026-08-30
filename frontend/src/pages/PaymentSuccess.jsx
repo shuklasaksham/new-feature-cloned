@@ -44,7 +44,8 @@ export default function PaymentSuccess() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-6" style={{ background: "#000" }} data-testid="payment-success-page">
       <Seo title="Payment" path="/payment/success" noindex />
-      <div className="text-center max-w-[420px]">
+      <div className="text-center max-w-[420px] page-enter">
+        <div key={state} className="fade-in">
         {state === "checking" && (
           <>
             <Loader2 size={30} className="animate-spin" style={{ color: "#8184C4", margin: "0 auto" }} />
@@ -56,7 +57,7 @@ export default function PaymentSuccess() {
           <>
             <CheckCircle2 size={34} style={{ color: "#16A34A", margin: "0 auto" }} />
             <p className="mt-5 font-display text-[24px] font-semibold" style={{ color: "#fff" }}>You're in.</p>
-            <p className="mt-2 text-[12.5px]" style={{ ...MONO, color: "#7a7a7a" }}>Taking you to your dashboard…</p>
+            <p className="mt-2 text-[12.5px]" style={{ ...MONO, color: "#7a7a7a" }}>Setting up your workspace…</p>
           </>
         )}
         {(state === "timeout" || state === "error") && (
@@ -73,6 +74,7 @@ export default function PaymentSuccess() {
             </button>
           </>
         )}
+        </div>
       </div>
     </div>
   );

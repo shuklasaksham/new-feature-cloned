@@ -4205,11 +4205,21 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
 from emergentintegrations.payments.stripe.checkout import (  # noqa: E402
     StripeCheckout, CheckoutSessionRequest,
 )
+import stripe as _stripe  # noqa: E402
 
 PLANS = {
-    "monthly": {"amount": 29.0, "label": "Bracket Monthly", "kind": "monthly"},
-    "project": {"amount": 9.0, "label": "Bracket Single Project", "kind": "project"},
+    "monthly": {"amount": 29.0, "label": "Bracket Monthly", "kind": "subscription", "interval": "month"},
+    "project": {"amount": 9.0, "label": "Bracket Single Project", "kind": "payment"},
 }
+
+
+def _init_stripe():
+    """Point the raw Stripe SDK at the Emergent proxy when using the shared key."""
+    key = os.environ["STRIPE_API_KEY"]
+    _stripe.api_key = key
+    if "sk_test_emergent" in key:
+        _stripe.api_base = "https://integrations.emergentagent.com/stripe"
+    return _stripe
 
 
 class CheckoutIn(BaseModel):
@@ -4223,30 +4233,40 @@ async def payments_checkout(body: CheckoutIn, request: Request):
     if not plan:
         raise HTTPException(status_code=400, detail="Unknown plan.")
     user = await current_user(request, db)
+    origin = body.origin_url.rstrip("/")
     host_url = str(request.base_url)
     webhook_url = f"{host_url}api/webhook/stripe"
-    stripe_checkout = StripeCheckout(api_key=os.environ["STRIPE_API_KEY"], webhook_url=webhook_url)
-    origin = body.origin_url.rstrip("/")
-    req = CheckoutSessionRequest(
-        amount=plan["amount"],
-        currency="usd",
+
+    stripe = _init_stripe()
+    price_data = {
+        "currency": "usd",
+        "product_data": {"name": plan["label"]},
+        "unit_amount": int(plan["amount"] * 100),
+    }
+    is_sub = plan["kind"] == "subscription"
+    if is_sub:
+        price_data["recurring"] = {"interval": plan["interval"]}
+
+    session = stripe.checkout.Session.create(
+        mode="subscription" if is_sub else "payment",
+        line_items=[{"price_data": price_data, "quantity": 1}],
         success_url=f"{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{origin}/payment/cancel",
-        metadata={"user_id": user["user_id"], "plan_id": body.plan_id},
+        metadata={"user_id": user["user_id"], "plan_id": body.plan_id, "webhook_url": webhook_url},
     )
-    session = await stripe_checkout.create_checkout_session(req)
     await db.payment_transactions.insert_one({
-        "session_id": session.session_id,
+        "session_id": session.id,
         "user_id": user["user_id"],
         "plan_id": body.plan_id,
         "amount": plan["amount"],
         "currency": "usd",
+        "kind": plan["kind"],
         "status": "initiated",
         "payment_status": "pending",
         "created_at": auth_iso(auth_now()),
         "updated_at": auth_iso(auth_now()),
     })
-    return {"checkout_url": session.url, "session_id": session.session_id}
+    return {"checkout_url": session.url, "session_id": session.id}
 
 
 async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
@@ -4260,9 +4280,10 @@ async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
     uid = user_id or rec.get("user_id")
     pid = plan_id or rec.get("plan_id")
     if uid and pid:
+        kind = (PLANS.get(pid) or {}).get("kind", "payment")
         await db.users.update_one(
             {"user_id": uid},
-            {"$set": {"plan": pid, "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
+            {"$set": {"plan": pid, "plan_kind": kind, "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
         )
 
 
@@ -4312,6 +4333,51 @@ async def payments_confirm(session_id: str, request: Request):
         await _mark_paid(session_id)
         rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
     return {"session_id": rec["session_id"], "status": rec["status"], "payment_status": rec["payment_status"]}
+
+
+def _renewal_iso(plan_id: str, plan_since: str):
+    from datetime import datetime, timedelta
+    if not plan_since:
+        return None
+    try:
+        start = datetime.fromisoformat(plan_since)
+    except Exception:
+        return None
+    if plan_id == "monthly":
+        return (start + timedelta(days=30)).isoformat()
+    if plan_id == "project":
+        return (start + timedelta(days=60)).isoformat()
+    return None
+
+
+@api.get("/payments/billing")
+async def payments_billing(request: Request):
+    user = await current_user(request, db)
+    u = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0}) or {}
+    plan_id = u.get("plan")
+    plan_meta = PLANS.get(plan_id) if plan_id else None
+    return {
+        "plan": plan_id,
+        "plan_kind": u.get("plan_kind") or (plan_meta or {}).get("kind"),
+        "label": (plan_meta or {}).get("label"),
+        "amount": (plan_meta or {}).get("amount"),
+        "since": u.get("plan_since"),
+        "renews_on": _renewal_iso(plan_id, u.get("plan_since")) if plan_id else None,
+        "recurring": bool(plan_meta and plan_meta.get("kind") == "subscription"),
+    }
+
+
+@api.post("/payments/cancel")
+async def payments_cancel(request: Request):
+    # Clears the user's plan. On the shared sandbox we can't hold a Stripe
+    # subscription id (status reads are unavailable), so cancellation is applied
+    # locally; a real Stripe account would also cancel the subscription here.
+    user = await current_user(request, db)
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"plan": None, "plan_kind": None, "plan_since": None, "updated_at": auth_iso(auth_now())}},
+    )
+    return {"ok": True}
 
 
 @api.post("/webhook/stripe")

@@ -40,7 +40,7 @@ export default function ChoosePlan() {
       <Seo title="Choose your plan" path="/plan" noindex />
 
       <div className="relative flex flex-col justify-center w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
-        <div className="max-w-[480px] w-full">
+        <div className="max-w-[480px] w-full page-enter">
           <Link to="/" aria-label="Bracket home" className="inline-flex mb-6">
             <img src={BRACKET_LOGO} alt="Bracket" width={46} height={46} style={{ display: "block" }} />
           </Link>
@@ -94,7 +94,7 @@ export default function ChoosePlan() {
         </div>
       </div>
 
-      <div className="hidden lg:block relative flex-1 overflow-hidden" style={{ background: "#000" }} aria-hidden="true">
+      <div className="hidden lg:block relative flex-1 overflow-hidden fade-in" style={{ background: "#000" }} aria-hidden="true">
         <ParticleField />
         <div className="absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(to right, #000 0%, transparent 100%)" }} />
       </div>
