@@ -1,5 +1,11 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (full alignment to login design language)
+- **Inputs now match `.login-input`** (the login page's pill fields): `.input-line`/`.input-linear`/`.input-brut`/`.dashboard-search-input`/`.psb-switch-search` all set to `border-radius: 9999px`, height ~46px, monospace, `#0b0b0b` bg, `#262626` border, neutral `#4a4a4a` focus (no violet glow). No textareas use these classes, so multi-line stays rectangular.
+- Confirms the earlier `full → 9999px` Tailwind fix (pills) + monochrome token retune. Cards/panels intentionally keep 6px (same as the login error panel). Status colours (green/amber/red) preserved.
+- Verified live: Settings (pill inputs + white-pill CTAs), Connect Work (pill search + pill status tags), project view + switcher — all consistent with Login / Plan.
+
+
 ## Changelog — 2026-06 (fix: CTAs were rectangular — restore real pills)
 - **Root cause**: `tailwind.config.js` had `borderRadius.full = "6px"` (and `--radius-full: 6px` in `index.css`), so every `rounded-full` CTA rendered as a 6px rectangle instead of a pill.
 - **Fix**: `full → 9999px` in both the Tailwind config and the `--radius-full` token; `.btn-primary` set to `border-radius: 9999px`. Card/input radii (`sm/md/lg/xl/2xl/3xl` = 6px) unchanged, matching the login page's rounded-rectangle fields/cards.
