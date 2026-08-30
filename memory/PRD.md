@@ -1,5 +1,13 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (Overview + Conversations redesign + connected sidebar tab)
+- **Connected active tab**: the active sidebar nav item now docks into the workspace — its background matches the main surface (`--bg`), rounds only on the left, and uses concave `::before/::after` corner notches (box-shadow trick) so sidebar + content read as one continuous surface. Removed the sidebar right border / main left border.
+- **Overview redesigned** (`OverviewView`): per-view header (PROJECT eyebrow, large title, "Here's what's happening…" + top-right source pill / bell / menu) then **Right now** (scope-change / needs-action cards with amber flag + Review), **Upcoming** (deadline cards, "N days left", chevron), **Latest** (activity dots + relative time), and the connected-sources manager. Shared topbar now hidden for Overview & Conversations (each renders its own header).
+- **Conversations 3-pane** (`ConversationsView`): left "Linked emails" (search + thread list w/ avatars, subject, time, provider glyph) · middle thread (clean reading view of stored content + locally-appended sent replies + functional reply bar: emoji/attach/zap + input + white send pill) · right "Ask Bracket" (`SuggestedReplyChat`). Reply bar and Ask-Bracket "Send" call the existing real **`POST /projects/{id}/send-email`** (Gmail send scope already granted) with graceful demo fallback (no token → saved locally).
+- New CSS: `.psb-nav-item[data-active]` connected-tab, `.ov-*` overview, `.cv-*` conversations.
+- Verified live: Overview, Conversations, and the docked active tab all render per the mockups.
+
+
 ## Changelog — 2026-06 (full alignment to login design language)
 - **Inputs now match `.login-input`** (the login page's pill fields): `.input-line`/`.input-linear`/`.input-brut`/`.dashboard-search-input`/`.psb-switch-search` all set to `border-radius: 9999px`, height ~46px, monospace, `#0b0b0b` bg, `#262626` border, neutral `#4a4a4a` focus (no violet glow). No textareas use these classes, so multi-line stays rectangular.
 - Confirms the earlier `full → 9999px` Tailwind fix (pills) + monochrome token retune. Cards/panels intentionally keep 6px (same as the login error panel). Status colours (green/amber/red) preserved.

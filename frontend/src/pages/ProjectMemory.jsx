@@ -7,6 +7,7 @@ import {
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown, Search,
   ArrowRight, Clock, CheckCircle2, CalendarClock,
+  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -152,6 +153,7 @@ export default function ProjectMemory() {
           </div>
         ) : project ? (
           <div className="project-main-inner" data-testid="project-memory-page">
+            {view !== "overview" && view !== "conversations" && (
             <section className="project-topbar" data-testid="project-memory-header">
               <div className="min-w-0">
                 <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>
@@ -199,6 +201,7 @@ export default function ProjectMemory() {
                 )}
               </div>
             </section>
+            )}
 
             {view === "overview" ? (
               <OverviewView
@@ -207,6 +210,9 @@ export default function ProjectMemory() {
                 memory={memory}
                 lastSeen={lastSeen}
                 connections={connections || []}
+                detectedCount={detectedCount}
+                onHistory={() => setHistoryOpen(true)}
+                onReview={openReview}
                 onConnectionsChanged={() => load({ silent: true })}
                 onJumpTo={(cat) => { setView(cat); setStatusFilter("all"); }}
                 onReviewUpdate={() => setUpdateOpen(true)}
@@ -261,83 +267,160 @@ export default function ProjectMemory() {
   );
 }
 
-/* ─── Conversations tab — read-only source threads + Ask Bracket ──────── */
+/* ─── Conversations tab — 3-pane: linked emails · thread · Ask Bracket ─── */
 function ConversationsView({ projectId, project, connections, onChanged }) {
-  const [selected, setSelected] = useState(null);
+  const emails = useMemo(() => (connections || []).filter((c) => c.provider === "gmail"), [connections]);
+  const list = emails.length ? emails : (connections || []);
+  const [selectedId, setSelectedId] = useState(null);
   const [content, setContent] = useState(null);
   const [loadingC, setLoadingC] = useState(false);
+  const [q, setQ] = useState("");
+  const [targets, setTargets] = useState([]);
+  const [replies, setReplies] = useState({});
+  const [reply, setReply] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
 
-  const openThread = async (c) => {
-    setSelected(c.id);
-    setContent(null);
-    setLoadingC(true);
+  const selected = list.find((c) => c.id === selectedId) || null;
+  const primary = connections?.[0];
+
+  useEffect(() => {
+    if (!selectedId && list.length) setSelectedId(list[0].id);
+    // eslint-disable-next-line
+  }, [list.length]);
+
+  useEffect(() => {
+    api.get(`/projects/${projectId}/send-targets`).then((r) => setTargets(r.data.targets || [])).catch(() => {});
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    setContent(null); setLoadingC(true);
+    api.get(`/projects/${projectId}/connections/${selectedId}/content`)
+      .then((r) => setContent(r.data)).catch(() => setContent({ content: "" }))
+      .finally(() => setLoadingC(false));
+  }, [selectedId, projectId]);
+
+  const initial = (s) => (s || "?").trim().charAt(0).toUpperCase();
+  const filtered = q ? list.filter((c) => (c.source_name || "").toLowerCase().includes(q.toLowerCase())) : list;
+
+  const target = targets.find((t) => t.thread_id === selected?.source_id);
+
+  const sendReply = async () => {
+    const text = reply.trim();
+    if (!text || sendingReply) return;
+    setSendingReply(true);
     try {
-      const { data } = await api.get(`/projects/${projectId}/connections/${c.id}/content`);
-      setContent(data);
-    } catch {
-      setContent({ content: "" });
+      if (selected?.provider === "gmail" && target?.to) {
+        await api.post(`/projects/${projectId}/send-email`, { body: text, targets: [{ to: target.to, thread_id: target.thread_id }] });
+      }
+      setReplies((r) => ({ ...r, [selectedId]: [...(r[selectedId] || []), { text, at: new Date().toISOString() }] }));
+      setReply("");
+      toast.success(selected?.provider === "gmail" && target?.to ? "Reply sent." : "Reply saved.");
+    } catch (e) {
+      toast.error(formatApiError(e));
     } finally {
-      setLoadingC(false);
+      setSendingReply(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6" data-testid="project-conversations">
-      <div className="min-w-0 flex flex-col gap-5">
-        <div>
-          <p className="mono-tag text-[9.5px] mb-3" style={{ color: "var(--text-3)" }}>CONVERSATIONS</p>
-          {(connections || []).length === 0 ? (
-            <div className="rounded-lg px-4 py-6 text-[13px]" style={{ border: "1px dashed var(--hairline-strong)", color: "var(--text-2)" }}>
-              No conversations connected yet. Use “+ Sources” to bring one in.
-            </div>
-          ) : (
-            <ul className="flex flex-col rounded-xl overflow-hidden" style={{ border: "1px solid var(--hairline)" }}>
-              {(connections || []).map((c, i) => (
-                <li key={c.id}>
-                  <button
-                    type="button"
-                    onClick={() => openThread(c)}
-                    className="w-full text-left flex items-center gap-3 px-4 py-3.5 transition-colors"
-                    style={{ background: selected === c.id ? "var(--surface-2)" : "transparent", borderTop: i ? "1px solid var(--hairline)" : "none" }}
-                    data-testid={`conversation-row-${c.id}`}
-                  >
-                    <ProviderIcon provider={c.provider} size={18} bare />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[14px] font-medium truncate" style={{ color: "var(--text)" }}>{c.source_name || c.provider}</span>
-                      <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>{PROVIDER_META[c.provider]?.label || c.provider}{c.last_activity_at ? ` · ${timeAgo(c.last_activity_at)}` : ""}</span>
-                    </span>
-                    <ArrowRight size={14} style={{ color: "var(--text-3)" }} />
-                  </button>
-                </li>
-              ))}
-            </ul>
+    <div className="cv-wrap" data-testid="project-conversations">
+      <div className="cv-head">
+        <div className="ov-head-actions">
+          {primary && (
+            <span className="ov-source-pill">
+              <span className="ov-dot" style={{ background: primary.health?.level === "red" ? "var(--danger)" : "var(--success)" }} />
+              {(PROVIDER_META[primary.provider]?.label || primary.provider)} {primary.health?.level === "red" ? "· reconnect" : "connected"}
+            </span>
           )}
+          <button type="button" className="ov-icon-btn" aria-label="Notifications"><Bell size={16} /></button>
+          <button type="button" className="ov-icon-btn" aria-label="More"><MoreHorizontal size={16} /></button>
         </div>
-
-        {selected && (
-          <div className="rounded-xl" style={{ border: "1px solid var(--hairline)", background: "var(--surface)" }} data-testid="conversation-reader">
-            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid var(--hairline)" }}>
-              <ProviderIcon provider={content?.provider || ""} size={16} bare />
-              <span className="text-[13px] font-medium truncate" style={{ color: "var(--text)" }}>{content?.source_name || "Conversation"}</span>
-            </div>
-            <div className="px-4 py-4 max-h-[440px] overflow-y-auto">
-              {loadingC ? (
-                <div className="flex items-center gap-2 text-[12.5px]" style={{ color: "var(--text-3)" }}><Loader2 size={13} className="animate-spin" /> Loading…</div>
-              ) : content?.content ? (
-                <pre className="whitespace-pre-wrap text-[12.5px] leading-[1.7]" style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", color: "var(--text-2)", margin: 0 }}>{content.content}</pre>
-              ) : (
-                <p className="text-[12.5px]" style={{ color: "var(--text-3)" }}>No cached content for this source yet.</p>
-              )}
-            </div>
-          </div>
-        )}
-
-        <ConnectedSourcesCompact projectId={projectId} connections={connections} onChanged={onChanged} />
+        <h1 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>Conversations</h1>
+        <p className="mt-1 text-[13.5px]" style={{ color: "var(--text-3)" }}>Ask Bracket what to send, then send it to one or multiple linked emails.</p>
       </div>
 
-      <aside className="min-w-0 lg:sticky lg:top-6 self-start">
-        <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
-      </aside>
+      {list.length === 0 ? (
+        <div className="ov-card ov-card--quiet mt-6"><Mail size={16} style={{ color: "var(--text-3)" }} /><p className="ov-card-sub">No conversations connected yet. Use “+” in the sidebar to add one.</p></div>
+      ) : (
+      <div className="cv-grid">
+        {/* Left — linked emails */}
+        <div className="cv-col cv-left">
+          <p className="cv-col-title">Linked emails</p>
+          <div className="cv-search">
+            <Search size={14} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search emails" data-testid="cv-search" />
+          </div>
+          <ul className="cv-thread-list">
+            {filtered.map((c) => (
+              <li key={c.id}>
+                <button type="button" onClick={() => setSelectedId(c.id)} className="cv-thread" data-active={selectedId === c.id ? "true" : "false"} data-testid={`cv-thread-${c.id}`}>
+                  <span className="cv-avatar">{initial(c.source_name)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="cv-thread-name">{c.client_email || c.source_name || c.provider}</span>
+                    <span className="cv-thread-sub">{c.source_name || "Conversation"}</span>
+                  </span>
+                  <span className="cv-thread-meta"><span className="cv-thread-time">{c.last_activity_at ? timeAgo(c.last_activity_at) : ""}</span><ProviderIcon provider={c.provider} size={14} bare /></span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Middle — thread reading + reply */}
+        <div className="cv-col cv-mid">
+          <div className="cv-mid-head">
+            <span className="min-w-0 flex items-center gap-2">
+              <span className="cv-mid-title">{selected?.source_name || "Conversation"}</span>
+              <ProviderIcon provider={selected?.provider || ""} size={14} bare />
+            </span>
+            <span className="flex items-center gap-1">
+              <button type="button" className="ov-icon-btn ov-icon-btn--sm" aria-label="Star"><Star size={14} /></button>
+              <button type="button" className="ov-icon-btn ov-icon-btn--sm" aria-label="More"><MoreHorizontal size={14} /></button>
+            </span>
+          </div>
+          <div className="cv-mid-body">
+            {loadingC ? (
+              <div className="flex items-center gap-2 text-[12.5px]" style={{ color: "var(--text-3)" }}><Loader2 size={13} className="animate-spin" /> Loading…</div>
+            ) : (
+              <>
+                {content?.content ? (
+                  <div className="cv-reading">{content.content}</div>
+                ) : (
+                  <p className="text-[12.5px]" style={{ color: "var(--text-3)" }}>No cached content for this conversation yet.</p>
+                )}
+                {(replies[selectedId] || []).map((r, i) => (
+                  <div key={i} className="cv-sent-bubble">
+                    <p className="whitespace-pre-wrap">{r.text}</p>
+                    <span className="cv-sent-meta">You · {timeAgo(r.at)}</span>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+          <div className="cv-reply">
+            <button type="button" className="cv-reply-ico" aria-label="Emoji"><Smile size={16} /></button>
+            <button type="button" className="cv-reply-ico" aria-label="Attach"><Paperclip size={16} /></button>
+            <button type="button" className="cv-reply-ico" aria-label="Quick"><Zap size={16} /></button>
+            <input
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
+              placeholder={`Reply to ${(selected?.client_email || selected?.source_name || "conversation")}…`}
+              data-testid="cv-reply-input"
+            />
+            <button type="button" className="cv-reply-send" onClick={sendReply} disabled={!reply.trim() || sendingReply} data-testid="cv-reply-send" aria-label="Send">
+              {sendingReply ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+            </button>
+          </div>
+        </div>
+
+        {/* Right — Ask Bracket */}
+        <div className="cv-col cv-right">
+          <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
+        </div>
+      </div>
+      )}
     </div>
   );
 }
@@ -446,152 +529,147 @@ function FocusRow({ item, onClick, right }) {
 }
 
 /* ─── Overview — "Today's Focus": Needs Action · What Changed · Coming Up ── */
-function OverviewView({ project, projectId, memory, lastSeen, connections, onConnectionsChanged, onJumpTo, onReviewUpdate }) {
+function OverviewView({ project, projectId, memory, lastSeen, connections, detectedCount, onHistory, onReview, onConnectionsChanged, onJumpTo, onReviewUpdate }) {
   const noSources = connections.length === 0;
-
   const all = useMemo(() => flattenMemory(memory), [memory]);
 
   const pending = useMemo(
-    () => all.filter((m) => m.status === "detected" || m.status === "review"),
+    () => all.filter((m) => m.status === "detected" || m.status === "review" || m.is_scope_change).slice(0, 4),
     [all],
   );
 
-  const changed = useMemo(() => {
-    const now = Date.now();
-    const baseline = lastSeen ? new Date(lastSeen).getTime() : now - 7 * 86400_000;
-    const seen = new Set();
-    return all
-      .filter((m) => {
-        const t = Math.max(
-          new Date(m.updated_at || m.created_at || 0).getTime(),
-          new Date(m.created_at || 0).getTime(),
-        );
-        return t > baseline;
-      })
-      .filter((m) => (seen.has(m.id) ? false : seen.add(m.id)))
-      .sort((a, b) => {
-        const pa = a.is_scope_change ? 0 : (a.status === "detected" || a.status === "review") ? 1 : 2;
-        const pb = b.is_scope_change ? 0 : (b.status === "detected" || b.status === "review") ? 1 : 2;
-        if (pa !== pb) return pa - pb;
-        return String(b.created_at || "").localeCompare(String(a.created_at || ""));
-      })
-      .slice(0, 4);
-  }, [all, lastSeen]);
-
   const comingUp = useMemo(() => {
     const now = new Date();
-    const in7 = new Date(now); in7.setDate(in7.getDate() + 7);
     return all
       .filter((m) => m._catKey === "deadline" || m._catKey === "timeline")
       .map((m) => ({ ...m, _due: parseDueDate(`${m.title} ${m.detail || ""}`, now) }))
-      .filter((m) => m._due && m._due >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && m._due <= in7)
+      .filter((m) => m._due && m._due >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
       .sort((a, b) => a._due - b._due)
       .slice(0, 3);
   }, [all]);
 
+  const latest = useMemo(() => {
+    const seen = new Set();
+    return [...all]
+      .filter((m) => (seen.has(m.id) ? false : seen.add(m.id)))
+      .sort((a, b) => String(b.created_at || b.updated_at || "").localeCompare(String(a.created_at || a.updated_at || "")))
+      .slice(0, 6);
+  }, [all]);
+
+  const primarySource = connections[0];
+  const daysLeft = (d) => {
+    const ms = d - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    const n = Math.round(ms / 86400000);
+    return n <= 0 ? "Today" : n === 1 ? "1 day left" : `${n} days left`;
+  };
+
+  const Header = () => (
+    <div className="ov-head">
+      <div className="ov-head-actions">
+        {primarySource && (
+          <span className="ov-source-pill" data-testid="overview-source-pill">
+            <span className="ov-dot" style={{ background: primarySource.health?.level === "red" ? "var(--danger)" : "var(--success)" }} />
+            {(PROVIDER_META[primarySource.provider]?.label || primarySource.provider)} {primarySource.health?.level === "red" ? "· reconnect" : "connected"}
+          </span>
+        )}
+        <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="History" data-testid="overview-bell">
+          <Bell size={16} />
+        </button>
+        <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="More" data-testid="overview-menu">
+          <MoreHorizontal size={16} />
+        </button>
+      </div>
+      <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>PROJECT</p>
+      <h1 className="mt-2 text-[28px] sm:text-[34px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="project-memory-title">
+        {project.name}
+      </h1>
+      <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Here's what's happening in your project.</p>
+    </div>
+  );
+
   if (noSources) {
     return (
-      <EmptyState
-        icon={Plug}
-        title="Your project memory is waiting"
-        description="Connect Gmail, Slack, Figma or GitHub and Bracket starts extracting deliverables, scope, timelines, requirements, decisions and deadlines from your client conversations."
-        cta="Connect your first tool"
-        ctaTo={`/app/connect?project=${projectId}`}
-        footnote="GMAIL · SLACK · FIGMA · GITHUB"
-        testid="overview-empty-state"
-      />
+      <>
+        <Header />
+        <EmptyState
+          icon={Plug}
+          title="Your project memory is waiting"
+          description="Connect Gmail, Slack, Figma or GitHub and Bracket starts extracting deliverables, scope, timelines, requirements, decisions and deadlines from your client conversations."
+          cta="Connect your first tool"
+          ctaTo={`/app/connect?project=${projectId}`}
+          footnote="GMAIL · SLACK · FIGMA · GITHUB"
+          testid="overview-empty-state"
+        />
+      </>
     );
   }
 
-  const allCaughtUp = pending.length === 0 && changed.length === 0 && comingUp.length === 0;
-  const dueLabel = (d) => d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
-      <div className="min-w-0" data-testid="todays-focus">
-        {allCaughtUp ? (
-          <div className="rounded-xl p-10 text-center" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="focus-caught-up">
-            <CheckCircle2 size={26} style={{ color: "var(--success)", margin: "0 auto" }} />
-            <p className="mt-3 text-[15px] font-medium" style={{ color: "var(--text)" }}>You're all caught up</p>
-            <p className="mt-1 text-[12.5px]" style={{ color: "var(--text-3)" }}>Nothing needs your attention right now. Bracket keeps watching your connected work.</p>
+    <div className="ov-wrap">
+      <Header />
+
+      {/* Right now */}
+      <section className="ov-section" data-testid="overview-right-now">
+        <p className="ov-section-label">Right now</p>
+        {pending.length === 0 ? (
+          <div className="ov-card ov-card--quiet">
+            <CheckCircle2 size={18} style={{ color: "var(--success)" }} />
+            <div className="min-w-0"><p className="ov-card-title">You're all caught up</p><p className="ov-card-sub">Nothing needs your attention right now.</p></div>
           </div>
         ) : (
-          <>
-            {/* 1 · Needs Your Action */}
-            <FocusSection label="NEEDS YOUR ACTION" icon={Sparkles} accent="var(--accent)" count={pending.length}>
-              {pending.length === 0 ? (
-                <div className="rounded-xl px-4 py-3.5 text-[12.5px]" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "var(--text-3)" }} data-testid="focus-action-none">
-                  Nothing to approve. You're clear.
-                </div>
-              ) : (
-                <button type="button" onClick={onReviewUpdate}
-                        className="w-full text-left rounded-xl px-4 py-4 flex items-center justify-between gap-3 transition-colors"
-                        style={{ background: "var(--surface)", border: "1px solid var(--brand-border)" }}
-                        data-testid="focus-review-update">
-                  <div className="min-w-0">
-                    <p className="text-[13.5px] font-semibold" style={{ color: "var(--text)" }}>
-                      Review project update
-                    </p>
-                    <p className="text-[12px] mt-0.5" style={{ color: "var(--text-2)" }}>
-                      {pending.length} change{pending.length === 1 ? "" : "s"} bundled into one review — approve or reject at once.
-                    </p>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 text-[12px] font-medium shrink-0 px-3 py-1.5 rounded-md"
-                        style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}>
-                    Review <ArrowRight size={12} />
-                  </span>
-                </button>
-              )}
-            </FocusSection>
-
-            {/* 2 · What Changed */}
-            <FocusSection label="WHAT CHANGED SINCE YOUR LAST VISIT" icon={History} count={changed.length}>
-              {changed.length === 0 ? (
-                <div className="rounded-xl px-4 py-3.5 text-[12.5px]" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "var(--text-3)" }} data-testid="focus-changed-none">
-                  No new updates since you were last here.
-                </div>
-              ) : (
-                <ul className="flex flex-col rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="focus-changed-list">
-                  {changed.map((m) => (
-                    <li key={m.id}>
-                      <FocusRow item={m} onClick={() => onJumpTo(m._catKey)}
-                                right={<span className="text-[10px] inline-flex items-center gap-1" style={{ color: "var(--text-3)" }}><ProviderIcon provider={m.provider} size={9} /> {timeAgo(m.created_at)}</span>} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </FocusSection>
-
-            {/* 3 · Coming Up */}
-            <FocusSection label="COMING UP · NEXT 7 DAYS" icon={CalendarClock} count={comingUp.length}>
-              {comingUp.length === 0 ? (
-                <div className="rounded-xl px-4 py-3.5 text-[12.5px]" style={{ background: "var(--surface)", border: "1px solid var(--hairline)", color: "var(--text-3)" }} data-testid="focus-coming-none">
-                  Nothing due in the next 7 days.
-                </div>
-              ) : (
-                <ul className="flex flex-col rounded-xl overflow-hidden" style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }} data-testid="focus-coming-list">
-                  {comingUp.map((m) => (
-                    <li key={m.id}>
-                      <FocusRow item={m} onClick={() => onJumpTo(m._catKey)}
-                                right={<span className="mono-tag text-[9px] inline-flex items-center gap-1" style={{ color: "var(--warning)" }}><Clock size={9} /> {dueLabel(m._due)}</span>} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </FocusSection>
-          </>
+          pending.map((m) => (
+            <button key={m.id} type="button" className="ov-card ov-card--action" onClick={onReviewUpdate} data-testid={`overview-rightnow-${m.id}`}>
+              <span className="ov-flag"><Flag size={16} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="ov-card-title">{m.is_scope_change ? "Scope may have changed" : m.title}</p>
+                <p className="ov-card-sub line-clamp-2">{m.detail || m.title}</p>
+              </div>
+              <span className="ov-review">Review <ArrowRight size={14} /></span>
+            </button>
+          ))
         )}
-      </div>
+      </section>
 
-      {/* Right — subtle Ask Bracket + connected sources */}
-      <aside className="min-w-0 flex flex-col gap-5 lg:sticky lg:top-24">
-        <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
-        <ConnectedSourcesCompact
-          projectId={projectId}
-          connections={connections}
-          onChanged={onConnectionsChanged}
-        />
-      </aside>
+      {/* Upcoming */}
+      <section className="ov-section" data-testid="overview-upcoming">
+        <p className="ov-section-label">Upcoming</p>
+        {comingUp.length === 0 ? (
+          <div className="ov-card ov-card--quiet"><CalendarClock size={17} style={{ color: "var(--text-3)" }} /><p className="ov-card-sub">Nothing scheduled yet.</p></div>
+        ) : (
+          comingUp.map((m) => (
+            <button key={m.id} type="button" className="ov-card ov-card--action" onClick={() => onJumpTo(m._catKey)} data-testid={`overview-upcoming-${m.id}`}>
+              <span className="ov-cal"><Calendar size={16} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="ov-card-title">{m.title}</p>
+                <p className="ov-card-sub">{daysLeft(m._due)}</p>
+              </div>
+              <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
+            </button>
+          ))
+        )}
+      </section>
+
+      {/* Latest */}
+      <section className="ov-section" data-testid="overview-latest">
+        <p className="ov-section-label">Latest</p>
+        {latest.length === 0 ? (
+          <p className="ov-card-sub px-1">No activity yet.</p>
+        ) : (
+          <ul className="ov-latest">
+            {latest.map((m) => (
+              <li key={m.id} className="ov-latest-row" onClick={() => onJumpTo(m._catKey)} data-testid={`overview-latest-${m.id}`}>
+                <span className="ov-latest-dot" />
+                <span className="ov-latest-title">{m.title}</span>
+                <span className="ov-latest-time">{timeAgo(m.created_at || m.updated_at)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <div className="ov-sources-mgr">
+        <ConnectedSourcesCompact projectId={projectId} connections={connections} onChanged={onConnectionsChanged} />
+      </div>
     </div>
   );
 }
