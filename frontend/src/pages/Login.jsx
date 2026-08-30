@@ -111,12 +111,11 @@ export default function Login() {
       <Seo title="Sign in" path="/login" noindex />
 
       {/* LEFT — form */}
-      <div className="relative flex flex-col w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
-        <Link to="/" aria-label="Bracket home" className="inline-flex">
-          <img src={BRACKET_LOGO} alt="Bracket" width={46} height={46} style={{ display: "block" }} />
-        </Link>
-
-        <div className="flex-1 flex flex-col justify-center max-w-[420px] w-full py-10">
+      <div className="relative flex flex-col justify-center w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
+        <div className="max-w-[420px] w-full">
+          <Link to="/" aria-label="Bracket home" className="inline-flex mb-6">
+            <img src={BRACKET_LOGO} alt="Bracket" width={46} height={46} style={{ display: "block" }} />
+          </Link>
           <h1 className="font-display font-semibold tracking-[-0.02em] text-[40px] leading-none" style={{ color: "#fff" }}>
             {phase === "code" ? "Check your email" : isSignup ? "Create Account" : "Sign In"}
           </h1>

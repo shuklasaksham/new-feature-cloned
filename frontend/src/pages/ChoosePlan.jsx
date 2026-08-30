@@ -38,12 +38,11 @@ export default function ChoosePlan() {
     <div className="min-h-screen w-full flex" style={{ background: "#000" }} data-testid="choose-plan-page">
       <Seo title="Choose your plan" path="/plan" noindex />
 
-      <div className="relative flex flex-col w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
-        <Link to="/" aria-label="Bracket home" className="inline-flex">
-          <img src={BRACKET_LOGO} alt="Bracket" width={46} height={46} style={{ display: "block" }} />
-        </Link>
-
-        <div className="flex-1 flex flex-col justify-center max-w-[480px] w-full py-10">
+      <div className="relative flex flex-col justify-center w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
+        <div className="max-w-[480px] w-full">
+          <Link to="/" aria-label="Bracket home" className="inline-flex mb-6">
+            <img src={BRACKET_LOGO} alt="Bracket" width={46} height={46} style={{ display: "block" }} />
+          </Link>
           <h1 className="font-display font-semibold tracking-[-0.02em] text-[40px] leading-none" style={{ color: "#fff" }}>
             Choose your plan
           </h1>
@@ -59,17 +58,17 @@ export default function ChoosePlan() {
                   key={p.id}
                   type="button"
                   onClick={() => setSelected(p.id)}
-                  className="text-left rounded-2xl px-6 py-5 transition-colors"
-                  style={{ background: "#0a0a0a", border: `1px solid ${active ? "#5f5f5f" : "#242424"}` }}
+                  className="text-left px-6 py-5 transition-colors"
+                  style={{ background: "#0a0a0a", border: `1px solid ${active ? "#5f5f5f" : "#242424"}`, borderRadius: 16 }}
                   data-testid={`plan-${p.id}`}
                   aria-pressed={active}
                 >
                   <div className="flex items-start gap-4">
                     <span
-                      className="mt-1 shrink-0 rounded-full inline-flex items-center justify-center"
-                      style={{ width: 18, height: 18, border: `1px solid ${active ? "#fff" : "#3a3a3a"}` }}
+                      className="mt-1 shrink-0 inline-flex items-center justify-center"
+                      style={{ width: 18, height: 18, borderRadius: "50%", border: `1.5px solid ${active ? "#fff" : "#3a3a3a"}` }}
                     >
-                      {active && <span style={{ width: 9, height: 9, borderRadius: 999, background: "#fff" }} />}
+                      {active && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#fff" }} />}
                     </span>
                     <div className="min-w-0">
                       <p className="leading-none">
