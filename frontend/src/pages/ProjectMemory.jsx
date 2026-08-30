@@ -360,7 +360,7 @@ function PillTab({ active, onClick, label, count, icon: Icon, color, testid }) {
         <span
           className="memory-tab-count inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold"
           style={{
-            background: active ? "var(--accent-soft, rgba(129, 132, 196,0.14))" : "var(--surface-2)",
+            background: active ? "var(--accent-soft, rgba(255,255,255,0.14))" : "var(--surface-2)",
             color: active ? "var(--accent)" : "var(--text-3)",
           }}
         >

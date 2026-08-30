@@ -40,7 +40,7 @@ export default function ApplyingChangesOverlay({ open }) {
       data-testid="applying-changes-overlay"
     >
       <div className="review-modal-panel card-linear card-linear--solid" style={{ maxWidth: 460, textAlign: "center", padding: "40px 32px", background: "rgba(10, 11, 13, 0.97)" }}>
-        <div className="mx-auto w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(129, 132, 196,0.12)", border: "1px solid rgba(129, 132, 196,0.35)" }}>
+        <div className="mx-auto w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.35)" }}>
           <Loader2 size={22} className="animate-spin text-signal" />
         </div>
         <p className="mono-tag text-signal text-[10.5px] mt-5">APPLYING THE CHANGES</p>

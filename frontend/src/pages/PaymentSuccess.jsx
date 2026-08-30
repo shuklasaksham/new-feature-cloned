@@ -48,7 +48,7 @@ export default function PaymentSuccess() {
         <div key={state} className="fade-in">
         {state === "checking" && (
           <>
-            <Loader2 size={30} className="animate-spin" style={{ color: "#8184C4", margin: "0 auto" }} />
+            <Loader2 size={30} className="animate-spin" style={{ color: "#E4E4E7", margin: "0 auto" }} />
             <p className="mt-5 font-display text-[22px] font-semibold" style={{ color: "#fff" }}>Confirming your payment…</p>
             <p className="mt-2 text-[12.5px]" style={{ ...MONO, color: "#7a7a7a" }}>This only takes a moment.</p>
           </>

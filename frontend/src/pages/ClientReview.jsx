@@ -443,7 +443,7 @@ function AcceptForm({ doc, token, onDone, onCancel }) {
             style={
               allChecked
                 ? { border: "1px solid var(--hairline)", background: "transparent", color: "var(--text-2)" }
-                : { background: "#8184C4", color: "#FFFFFF", border: "1px solid #989BE0", boxShadow: "0 8px 24px rgba(129, 132, 196,0.40)" }
+                : { background: "#2E2E2E", color: "#FFFFFF", border: "1px solid #FFFFFF", boxShadow: "0 8px 24px rgba(255,255,255,0.40)" }
             }
             data-testid="review-toggle-all"
           >

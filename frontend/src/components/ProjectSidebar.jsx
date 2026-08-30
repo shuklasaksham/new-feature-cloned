@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
@@ -34,6 +34,7 @@ export default function ProjectSidebar({
   const [switchOpen, setSwitchOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [quota, setQuota] = useState(null);
+  const [projQuery, setProjQuery] = useState("");
   const switchRef = useRef(null);
   const userRef = useRef(null);
 
@@ -71,21 +72,41 @@ export default function ProjectSidebar({
           <span className="psb-switch-name">{project?.name || "Project"}</span>
           <ChevronDown size={18} style={{ opacity: 0.7 }} />
         </button>
-        {switchOpen && (
+        {switchOpen && (() => {
+          const q = projQuery.trim().toLowerCase();
+          const filtered = q ? projects.filter((p) => (p.name || "").toLowerCase().includes(q)) : projects;
+          return (
           <div className="psb-switch-menu" data-testid="psb-switcher-menu">
-            {projects.length === 0 && <p className="psb-switch-empty">No other projects</p>}
-            {projects.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                className={`psb-switch-item${p.id === project?.id ? " is-current" : ""}`}
-                onClick={() => { setSwitchOpen(false); if (p.id !== project?.id) onSwitchProject?.(p.id); }}
-                data-testid={`psb-switch-item-${p.id}`}
-              >
-                <span className="truncate">{p.name}</span>
-                {p.id === project?.id && <Check size={14} />}
-              </button>
-            ))}
+            {projects.length > 6 && (
+              <div className="psb-switch-search">
+                <Search size={14} />
+                <input
+                  autoFocus
+                  value={projQuery}
+                  onChange={(e) => setProjQuery(e.target.value)}
+                  placeholder="Search projects"
+                  data-testid="psb-switch-search"
+                />
+              </div>
+            )}
+            <div className="psb-switch-scroll">
+              {filtered.length === 0 ? (
+                <p className="psb-switch-empty">{projects.length === 0 ? "No other projects" : "No matches"}</p>
+              ) : (
+                filtered.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`psb-switch-item${p.id === project?.id ? " is-current" : ""}`}
+                    onClick={() => { setSwitchOpen(false); setProjQuery(""); if (p.id !== project?.id) onSwitchProject?.(p.id); }}
+                    data-testid={`psb-switch-item-${p.id}`}
+                  >
+                    <span className="truncate">{p.name}</span>
+                    {p.id === project?.id && <Check size={14} />}
+                  </button>
+                ))
+              )}
+            </div>
             <div className="psb-switch-div" />
             {quota && !quota.can_create ? (
               <>
@@ -104,7 +125,8 @@ export default function ProjectSidebar({
               </button>
             )}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Nav */}

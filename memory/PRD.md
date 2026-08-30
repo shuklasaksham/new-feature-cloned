@@ -1,5 +1,13 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (full monochrome sweep + Settings polish + sidebar search)
+- **Site-wide monochrome (matches Login / Plan).** Retuned base theme tokens in `index.css`: brand `--accent`→`#E4E4E7`, `--accent-2`→`#fff`, soft/glow/border → white-translucent; `--info`→neutral; **CTA `--primary-bg`→`#fff` / `--primary-fg`→`#000`** (white pill). Darkened surfaces: `--bg`→`#080808`, `--surface`→`#0e0e0e`, `--surface-2`→`#171717`. **Status colours kept** (`--success` green, `--warning` amber, `--danger` red). `.btn-primary` now a rounded-full white pill. This flips every `var(--accent)/--primary` element app-wide (Review/Generate/Send buttons, active nav, focus rings, links).
+- **Hardcoded violet purged** from routed pages via sweep: translucent `rgba(129,132,196,α)`→`rgba(255,255,255,α)` and `#989BE0`→`#fff` across Activity, ConnectWork, ProjectMemory/Flow/Document/Overview, ClientReview, ClaimProjects, GlobalAskModal, AutoBuild/ApplyingChanges overlays; solid violet pills `#8184C4`→`#2E2E2E` (locked/selected) and `#8184C4`→`#E4E4E7` for `providersMeta` glyphs + PaymentSuccess spinner. (Admin analytics + unrouted marketing pages left untouched.)
+- **Settings & Billing** now render flat-black with white-pill CTAs (inherit tokens; `.btn-primary` pill). Verified.
+- **Sidebar project search** (`ProjectSidebar.jsx`): a "Search projects" input appears atop the switcher dropdown once >6 projects; filters the list live; list scrolls; resets on select. New CSS `.psb-switch-search/.psb-switch-scroll`.
+- Verified live: project view (no blue), switcher search present + quota action, Settings monochrome.
+
+
 ## Changelog — 2026-06 (old dashboard removed + plan-gated project creation)
 - **Old projects-grid dashboard removed.** `/app` and `/app/new` now render `AppEntry.jsx`, which redirects into the most recent project (`/project/{id}`) or `/welcome` when the user has none. The project workspace is the new home. `Dashboard.jsx` no longer routed (file kept, import dropped from `App.js`).
 - **Plan-gated "New project" in the project switcher dropdown** (`ProjectSidebar.jsx`): replaced "All projects" with a create action. When the plan allows more (monthly = unlimited) → "New project" → `/welcome`. When at limit (single-`project` plan = 1) → "Upgrade to add projects" → `/pricing`, plus a "{used} of {limit} projects on your plan" hint.

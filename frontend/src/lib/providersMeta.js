@@ -30,8 +30,8 @@ export const PROVIDER_META = {
   dropbox:  { label: "Dropbox",         icon: Package,       color: "#0061FF", slug: "dropbox" },
   github:   { label: "GitHub",          icon: Github,        color: "#E6EDF3", slug: "github", brandColor: "#E6EDF3" },
   linear:   { label: "Linear",          icon: Layers,        color: "#3B82F6", slug: "linear", brandColor: "#3B82F6" },
-  bracket:  { label: "Bracket",          icon: Sparkles,      color: "#8184C4", slug: null },
-  manual:   { label: "Added by you",     icon: Sparkles,      color: "#8184C4", slug: null },
+  bracket:  { label: "Bracket",          icon: Sparkles,      color: "#E4E4E7", slug: null },
+  manual:   { label: "Added by you",     icon: Sparkles,      color: "#E4E4E7", slug: null },
 };
 
 export function ProviderIcon({ provider, size = 16, bare = false }) {

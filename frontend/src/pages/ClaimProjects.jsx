@@ -113,7 +113,7 @@ export default function ClaimProjects() {
                           className="px-3 py-2 border rounded mono-tag inline-flex items-center gap-2 transition-colors"
                           style={
                             choice === "keep"
-                              ? { backgroundColor: "#8184C4", color: "#FFFFFF", borderColor: "#8184C4" }
+                              ? { backgroundColor: "#2E2E2E", color: "#FFFFFF", borderColor: "#2E2E2E" }
                               : { backgroundColor: "var(--surface-2)", color: "var(--text-2)", borderColor: "var(--hairline)" }
                           }
                           data-testid={`claim-keep-${p.id}`}

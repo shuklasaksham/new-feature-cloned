@@ -137,7 +137,7 @@ export default function GlobalAskModal({ open, onClose }) {
           {result && (
             <div
               className="mt-4 p-4 rounded-xl"
-              style={{ background: "rgba(129, 132, 196,0.06)", border: "1px solid rgba(129, 132, 196,0.2)" }}
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.2)" }}
               data-testid="global-ask-answer"
             >
               <p className="text-[13px] text-[var(--text)] leading-relaxed whitespace-pre-wrap">{result.answer}</p>
@@ -152,7 +152,7 @@ export default function GlobalAskModal({ open, onClose }) {
                   <div className="flex flex-col gap-1">
                     {result.sources.map((s, i) => (
                       <p key={i} className="text-[11.5px] text-[var(--text-3)] leading-snug">
-                        <span className="text-signal" style={{ color: "#989BE0" }}>
+                        <span className="text-signal" style={{ color: "#FFFFFF" }}>
                           {PROVIDER_META[s.provider]?.label || s.provider || "Source"}
                         </span>
                         {" · "}{s.label}{s.detail ? ` — ${s.detail}` : ""}

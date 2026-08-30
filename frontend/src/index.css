@@ -15,14 +15,14 @@
      Every visual value in the app comes from a token here — never inline.
      ========================================================== */
 
-  /* --- Core surfaces (Linear near-black) ------------------- */
-  --bg:            #111111;   /* Main background            */
-  --surface:       #181818;   /* Card / panel default        */
-  --surface-1:     #181818;
-  --surface-2:     #222222;   /* Hover / sub-surface        */
-  --surface-3:     #2C2C2C;   /* Active                      */
-  --surface-hover: #222222;
-  --surface-active:#2C2C2C;
+  /* --- Core surfaces (pure-black — matches Login / Plan) --- */
+  --bg:            #080808;   /* Main background            */
+  --surface:       #0e0e0e;   /* Card / panel default        */
+  --surface-1:     #0e0e0e;
+  --surface-2:     #171717;   /* Hover / sub-surface        */
+  --surface-3:     #1f1f1f;   /* Active                      */
+  --surface-hover: #171717;
+  --surface-active:#1f1f1f;
 
   /* --- Borders (hairline only — depth comes from these) ---- */
   --hairline:        rgba(255, 255, 255, 0.08);
@@ -35,28 +35,28 @@
   --text-3:  #71717A;         /* Metadata                    */
   --text-4:  #52525B;         /* Disabled                    */
 
-  /* --- Brand (single muted-violet accent) ------------------ */
-  --accent:       #8184C4;
-  --accent-2:     #989BE0;
-  --accent-soft:  rgba(129, 132, 196, 0.15);
-  --accent-glow:  rgba(129, 132, 196, 0.28);
-  --brand-border: rgba(129, 132, 196, 0.35);
+  /* --- Brand (monochrome — matches Login / Plan-selection) - */
+  --accent:       #E4E4E7;
+  --accent-2:     #FFFFFF;
+  --accent-soft:  rgba(255, 255, 255, 0.08);
+  --accent-glow:  rgba(255, 255, 255, 0.16);
+  --brand-border: rgba(255, 255, 255, 0.22);
 
-  /* --- Semantic (muted for dark) --------------------------- */
+  /* --- Semantic (status colours kept for legibility) ------- */
   --success:        #52A874;
   --success-soft:   rgba(82, 168, 116, 0.12);
   --warning:        #D4A72C;
   --warning-soft:   rgba(212, 167, 44, 0.12);
   --danger:         #D95757;
   --danger-soft:    rgba(217, 87, 87, 0.12);
-  --info:           #8184C4;
-  --info-soft:      rgba(129, 132, 196, 0.14);
+  --info:           #E4E4E7;
+  --info-soft:      rgba(255, 255, 255, 0.10);
 
-  /* --- CTAs ------------------------------------------------ */
-  --primary-bg:     #8184C4;
-  --primary-fg:     #111111;
-  --primary-bg-hov: #989BE0;
-  --primary-bg-act: #6f72b0;
+  /* --- CTAs (white pill) ----------------------------------- */
+  --primary-bg:     #FFFFFF;
+  --primary-fg:     #000000;
+  --primary-bg-hov: #E8E8E8;
+  --primary-bg-act: #D8D8D8;
 
   --secondary-bg:     #222222;
   --secondary-fg:     #F4F4F5;
@@ -209,14 +209,14 @@ body::after { content: none; }
 .btn-brut,
 .btn-primary {
   height: 40px;
-  padding: 0 20px;
+  padding: 0 22px;
   background: var(--primary-bg);
   color: var(--primary-fg);
   border: 1px solid var(--primary-bg);
-  border-radius: 6px;
+  border-radius: 9999px;
   font-family: "Geist", sans-serif;
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: -0.005em;
   text-transform: none;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -4561,7 +4561,11 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .psb-switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; height: 52px; padding: 0 18px; border-radius: 14px; background: #0a0a0a; border: 1px solid #3d3d3d; color: #fff; }
 .psb-switch:hover { border-color: #575757; }
 .psb-switch-name { font-family: "Geist", sans-serif; font-weight: 600; font-size: 16px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.psb-switch-menu { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0; background: #111; border: 1px solid #262626; border-radius: 12px; padding: 6px; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.8); max-height: 320px; overflow-y: auto; }
+.psb-switch-menu { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0; background: #111; border: 1px solid #262626; border-radius: 12px; padding: 6px; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.8); max-height: 380px; overflow: hidden; }
+.psb-switch-search { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 4px; border-radius: 8px; background: #0a0a0a; border: 1px solid #242424; color: #6b6b6b; }
+.psb-switch-search input { flex: 1; background: transparent; border: none; outline: none; color: #ededed; font-size: 13px; font-family: var(--font-mono, ui-monospace, monospace); }
+.psb-switch-search input::placeholder { color: #5f5f5f; }
+.psb-switch-scroll { max-height: 260px; overflow-y: auto; }
 .psb-switch-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; color: #cfcfcf; transition: background .15s; }
 .psb-switch-item:hover { background: #1b1b1b; color: #fff; }
 .psb-switch-item.is-current { color: #fff; }

@@ -479,7 +479,7 @@ function DocSection({ num, label, children }) {
       <div className="flex items-center gap-3 mb-3">
         <span
           className="font-mono px-2 py-0.5 text-[10px] rounded"
-          style={{ background: "rgba(129, 132, 196, 0.16)", color: "var(--accent)" }}
+          style={{ background: "rgba(255,255,255, 0.16)", color: "var(--accent)" }}
         >
           {num}
         </span>
@@ -610,7 +610,7 @@ function FeedbackInline({ project, setProject, onDismiss }) {
           className="flex-1 py-2 border rounded flex items-center justify-center gap-2 transition-colors"
           style={
             sentiment === "up"
-              ? { backgroundColor: "#8184C4", color: "#FFFFFF", borderColor: "#8184C4" }
+              ? { backgroundColor: "#2E2E2E", color: "#FFFFFF", borderColor: "#2E2E2E" }
               : { backgroundColor: "var(--surface-2)", color: "var(--text-2)", borderColor: "var(--hairline)" }
           }
           data-testid="feedback-up-btn"
