@@ -69,10 +69,10 @@ export default function NewProjectComposer({ onAskOpen, hasProjects }) {
             <button
               type="button"
               onClick={onAskOpen}
-              className="inline-flex items-center gap-1.5 px-3 h-9 text-[12.5px] font-medium transition-colors"
-              style={{ background: "var(--accent-soft)", border: "1px solid var(--brand-border)", color: "var(--accent)", borderRadius: "6px" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(129,132,196,0.22)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent-soft)"; }}
+              className="inline-flex items-center gap-1.5 px-4 h-10 text-[12.5px] font-semibold transition-colors"
+              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.35)", color: "#fff", borderRadius: "9999px", fontFamily: "var(--font-mono, ui-monospace, monospace)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
               data-testid="dashboard-ask-bracket-btn"
               title="Ask Bracket across every connected source"
             >
@@ -82,10 +82,10 @@ export default function NewProjectComposer({ onAskOpen, hasProjects }) {
           <button
             type="button"
             onClick={() => openConnect(null)}
-            className="inline-flex items-center gap-1.5 px-3.5 h-9 text-[12.5px] font-medium transition-colors"
-            style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", border: "1px solid var(--primary-bg)", borderRadius: "6px" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--primary-bg-hov)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "var(--primary-bg)"; }}
+            className="inline-flex items-center gap-1.5 px-5 h-10 text-[12.5px] font-semibold transition-colors"
+            style={{ background: "#fff", color: "#000", border: "1px solid #fff", borderRadius: "9999px", fontFamily: "var(--font-mono, ui-monospace, monospace)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#e8e8e8"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; }}
             data-testid="dashboard-new-project-start"
           >
             Start a new project <ArrowRight size={13} />

@@ -1,5 +1,12 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (global app shell → new flat-black aesthetic)
+- **Global sidebar (`AppSidebar.jsx`) rebranded to match the project sidebar**: new cube logo + "bracket." wordmark (was `BracketMark` `<>` glyph), pure-black `#0a0a0a` bg, rounded pill nav (active = filled `#1c1c1c`, no accent bar), monospace WORKSPACE/ACCOUNT labels, bordered user card at bottom, collapse toggle. Expanded width 240→280px, collapsed 64→76px. CSS overrides added under the project-shell block in `index.css` (`.app-shell*`, `.app-sidebar*`, dashboard surfaces/filters).
+- **Dashboard**: `.app-shell-main` now `#080808`, stat/project/composer cards flat `#0b0b0b` w/ `#1c1c1c` borders; **white pill CTAs** — "Start a new project" (solid white), "Ask Bracket" (outlined white) in `NewProjectComposer.jsx`; filter tabs monochrome (active = light pill); stat-card accents neutralized (were `#989BE0`/`#8184C4`). **Status tags kept colored** (green accepted / amber awaiting, etc.) per request.
+- **`FirstRunChecklist.jsx`** neutralized: white progress bar, white step-check (black tick), white "Open a project"/CTA pill (were violet `--accent`/`--primary-bg`).
+- Connect Work / Activity / Settings now render on the new black shell. Verified live (demo): Dashboard, Connect Work, checklist all consistent with auth + project views.
+
+
 ## Changelog — 2026-06 (project workspace → left-sidebar shell)
 - **Project view (`/project/:id`) rebuilt** around a project-scoped left sidebar (`components/ProjectSidebar.jsx`) replacing the global `AppShell` + top boxed-tabs. Route no longer wrapped in `AppShell`. Sidebar: "bracket." wordmark + collapse toggle (icon-rail at ≤76px), **project switcher dropdown** (lists all `/projects`, switches via navigate), nav (Overview, Conversations, Scope, Deliverables, Timeline, Requirements, Decisions, Deadlines — active pill + per-category count badges), **Sources** section (read-only connected list w/ health dot + "+" → opens Conversations where the existing connect+attach chips live), Settings/Help, and a user card (name/email + logout).
 - **New "Conversations" tab** (`ConversationsView` in `ProjectMemory.jsx`): read-only thread list → click loads cached content via new `GET /projects/{id}/connections/{conn_id}/content`; plus the existing `ConnectedSourcesCompact` (add/disconnect) and the `SuggestedReplyChat` "Ask Bracket" panel.

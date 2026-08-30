@@ -4607,3 +4607,87 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
   .project-sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid #161616; }
   .project-main-inner { padding: 20px; }
 }
+
+/* ============================================================
+   Global app shell → new flat-black aesthetic (matches project sidebar)
+   Overrides the older .app-sidebar / dashboard styling.
+   ============================================================ */
+.app-shell { background: #000 !important; }
+.app-shell-main { background: #080808 !important; }
+
+.app-sidebar {
+  background: #0a0a0a !important;
+  border-right: 1px solid #161616 !important;
+  padding: 20px 16px !important;
+  gap: 12px;
+}
+.app-sidebar.is-collapsed { padding: 20px 12px !important; }
+
+.app-sidebar .sidebar-brand { padding: 2px 4px; margin-bottom: 4px; }
+.app-sidebar .brand-mark { display: inline-flex; align-items: center; gap: 10px; }
+.app-sidebar .brand-text { font-family: "Geist", sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -0.02em; color: #fff; }
+.app-sidebar .collapse-btn {
+  width: 34px; height: 34px; border-radius: 8px; color: #7a7a7a;
+  background: transparent; border: none;
+}
+.app-sidebar .collapse-btn:hover { background: #161616; color: #e5e5e5; }
+
+.app-sidebar .sidebar-section-label {
+  font-family: var(--font-mono, ui-monospace, monospace) !important;
+  color: #5f5f5f !important; font-size: 10px !important; letter-spacing: 0.13em !important;
+  text-transform: uppercase; padding: 0 10px !important; margin-top: 10px;
+}
+
+.app-sidebar .sidebar-nav { gap: 4px; }
+.app-sidebar .nav-item {
+  display: flex; align-items: center; gap: 14px;
+  height: 48px; padding: 0 16px !important; border-radius: 9999px !important;
+  color: #8a8a8a !important; background: transparent !important;
+  font-family: "Geist", sans-serif; font-size: 15px !important; font-weight: 500 !important;
+  transition: background .16s ease, color .16s ease;
+}
+.app-sidebar .nav-item:hover { background: #141414 !important; color: #d8d8d8 !important; }
+.app-sidebar .nav-item.is-active { background: #1c1c1c !important; color: #fff !important; }
+.app-sidebar .nav-item .nav-icon { color: inherit !important; width: auto; }
+.app-sidebar .nav-item.is-active .nav-icon { color: #fff !important; }
+.app-sidebar .nav-item .nav-active-bar { display: none !important; }
+.app-sidebar .nav-item .nav-label { font-weight: 500 !important; }
+.app-sidebar .nav-badge {
+  margin-left: auto; background: #242424; color: #a1a1a1;
+  min-width: 22px; height: 20px; padding: 0 6px; border-radius: 9999px;
+  font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center;
+}
+.app-sidebar .nav-item.is-active .nav-badge { background: #2e2e2e; color: #fff; }
+
+.app-sidebar .sidebar-legal { padding: 0 6px; }
+.app-sidebar .sidebar-legal-link { color: #6f6f6f; }
+.app-sidebar .sidebar-legal-link:hover { color: #e5e5e5; }
+
+.app-sidebar .sidebar-user {
+  padding: 10px 12px !important; border-radius: 14px !important;
+  background: #0a0a0a !important; border: 1px solid #262626 !important; gap: 10px;
+}
+.app-sidebar .sidebar-user:hover { border-color: #363636 !important; }
+.app-sidebar .user-name { color: #fff !important; font-size: 13.5px; font-weight: 600; }
+.app-sidebar .user-email { color: #8a8a8a !important; font-size: 11px; }
+.app-sidebar .user-logout { color: #8a8a8a !important; }
+.app-sidebar .user-logout:hover { color: #fff !important; background: #1a1a1a !important; }
+
+/* Dashboard surfaces → flat black cards */
+[data-testid="dashboard-new-project-composer"],
+.dashboard-stat-card,
+.dashboard-project-card,
+.dashboard-tile {
+  background: #0b0b0b !important;
+  border-color: #1c1c1c !important;
+}
+.dashboard-project-card:hover { border-color: #2c2c2c !important; }
+
+/* Filter tabs → monochrome (active = light pill) */
+.dashboard-filter-tab { color: #8a8a8a !important; }
+.dashboard-filter-tab:hover { color: #d8d8d8 !important; }
+.dashboard-filter-tab.active {
+  background: #1c1c1c !important; color: #fff !important; border-color: #2a2a2a !important;
+}
+/* Open button on project cards → subtle white-ish */
+.dashboard-project-action { border-color: #262626 !important; }

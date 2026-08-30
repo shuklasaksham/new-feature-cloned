@@ -95,7 +95,7 @@ export default function FirstRunChecklist() {
 
         {/* progress bar */}
         <div className="h-[3px] w-full" style={{ background: "var(--surface-2)" }}>
-          <motion.div className="h-full" style={{ background: "var(--accent)" }}
+          <motion.div className="h-full" style={{ background: "#ffffff" }}
                       initial={false} animate={{ width: `${(doneCount / steps.length) * 100}%` }}
                       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }} />
         </div>
@@ -106,11 +106,11 @@ export default function FirstRunChecklist() {
             return (
               <div key={s.key}
                    className="rounded-xl px-3.5 py-3 flex flex-col gap-1.5"
-                   style={{ background: s.done ? "var(--accent-soft)" : "var(--surface-2)", border: `1px solid ${s.done ? "rgba(129, 132, 196,0.3)" : "var(--hairline)"}` }}
+                   style={{ background: s.done ? "rgba(255,255,255,0.05)" : "var(--surface-2)", border: `1px solid ${s.done ? "rgba(255,255,255,0.18)" : "var(--hairline)"}` }}
                    data-testid={`first-run-step-${s.key}`}>
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center justify-center w-6 h-6 rounded-full shrink-0"
-                        style={{ background: s.done ? "var(--accent)" : "var(--bg)", color: s.done ? "#fff" : "var(--text-3)", border: s.done ? "none" : "1px solid var(--hairline)" }}>
+                        style={{ background: s.done ? "#ffffff" : "var(--bg)", color: s.done ? "#000" : "var(--text-3)", border: s.done ? "none" : "1px solid var(--hairline)" }}>
                     {s.done ? <Check size={12} /> : <Icon size={12} />}
                   </span>
                   <span className="mono-tag text-[9px]" style={{ color: "var(--text-3)" }}>STEP {i + 1}</span>
@@ -124,8 +124,8 @@ export default function FirstRunChecklist() {
 
         <div className="px-3 pb-3">
           <Link to={next.to}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-medium"
-                style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(129, 132, 196,0.5)" }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-semibold"
+                style={{ background: "#ffffff", color: "#000", fontFamily: "var(--font-mono, ui-monospace, monospace)" }}
                 data-testid="first-run-cta">
             {next.key === "connect" ? "Connect your first tool" : next.key === "memory" ? "Open a project" : "Draft a reply"} <ArrowRight size={13} />
           </Link>

@@ -285,8 +285,8 @@ export default function Dashboard() {
         {hasProjects && (
           <motion.div variants={item} className="grid grid-cols-3 gap-3" data-testid="dashboard-stats">
             <StatCard label="Total projects" value={stats.total} icon={FolderOpen} accent="var(--text-2)" />
-            <StatCard label="In progress" value={stats.inProgress} icon={CircleDot} accent="#989BE0" />
-            <StatCard label="Locked" value={stats.locked} icon={Lock} accent="#8184C4" />
+            <StatCard label="In progress" value={stats.inProgress} icon={CircleDot} accent="var(--text-2)" />
+            <StatCard label="Locked" value={stats.locked} icon={Lock} accent="var(--text-3)" />
           </motion.div>
         )}
 
