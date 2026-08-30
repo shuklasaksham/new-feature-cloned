@@ -2,13 +2,14 @@ import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import BracketMark from "../components/BracketMark";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
 
 const HALFTONE_IMG =
-  "https://static.prod-images.emergentagent.com/jobs/924d0756-a607-436d-9175-7507d42548a0/images/d66adf8902b58b426bc3a1ff7ac81763dee65acf6126b272845f6dd4dc136613.jpeg";
+  "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/hvro4m6p_right-img.png";
+const BRACKET_LOGO =
+  "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
 
 const MONO = { fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" };
 
@@ -110,7 +111,7 @@ export default function Login() {
       {/* LEFT — form */}
       <div className="relative flex flex-col w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
         <Link to="/" aria-label="Bracket home" className="inline-flex">
-          <BracketMark size={44} label={false} />
+          <img src={BRACKET_LOGO} alt="Bracket" width={46} height={46} style={{ display: "block" }} />
         </Link>
 
         <div className="flex-1 flex flex-col justify-center max-w-[420px] w-full py-10">
@@ -261,8 +262,8 @@ export default function Login() {
 
       {/* RIGHT — halftone visual */}
       <div className="hidden lg:block relative flex-1 overflow-hidden" style={{ background: "#000" }} aria-hidden="true" data-testid="login-visual">
-        <img src={HALFTONE_IMG} alt="" className="absolute inset-0 w-full h-full object-cover object-right" />
-        <div className="absolute inset-y-0 left-0 w-1/3" style={{ background: "linear-gradient(to right, #000 0%, rgba(0,0,0,0.6) 40%, transparent 100%)" }} />
+        <img src={HALFTONE_IMG} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
+        <div className="absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(to right, #000 0%, transparent 100%)" }} />
       </div>
     </div>
   );
