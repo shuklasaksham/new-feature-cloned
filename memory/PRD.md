@@ -1044,3 +1044,10 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - Mixed glyphs (dot / diamond / occasional "x"), subtle global "breathing" + per-cell shimmer; respects prefers-reduced-motion.
 - Fixed a "ResizeObserver loop" runtime overlay error by guarding the observer to rebuild only on real dimension changes (rAF-debounced).
 - Verified via screenshot on /login.
+
+## 2026-06 — Post-purchase "first project" landing (/welcome)
+- New page `frontend/src/pages/FirstProject.jsx` at route `/welcome` (ProtectedRoute, standalone — no AppShell).
+- Replicates the provided reference: Bracket logo, "Bring your first project into bracket" heading, mono subhead, and 4 full-width connect cards (Gmail / Slack / Figma / GitHub) with authentic multicolor brand SVGs + hover arrow, over the flow-field ParticleField (right panel).
+- Cards reuse the real ConnectWork OAuth flow: click → popup + `GET /api/connect/{key}/auth-url`; on `bracket-oauth:{key}:ok` postMessage → navigate to `/app/connect?tool={key}` (ConnectWork opens the source picker). Already-connected providers jump straight there.
+- `PaymentSuccess` now routes to `/welcome` (was `/app`) after a confirmed payment.
+- Verified: page renders (logged-in demo), providers endpoint returns statuses, gmail auth-url returns a valid OAuth URL.

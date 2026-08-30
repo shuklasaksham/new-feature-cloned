@@ -4404,3 +4404,9 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 }
 .login-link:hover { text-decoration-color: #ededed; }
 
+
+.first-project-card { transition: background-color 0.18s ease, border-color 0.18s ease; }
+.first-project-card:hover { background: #101010 !important; border-color: #3a3a3a !important; }
+.first-project-card:active { transform: translateY(1px); }
+.first-project-arrow { transition: transform 0.18s ease, color 0.18s ease; }
+.first-project-card:hover .first-project-arrow { transform: translateX(4px); color: #d0d0d0; }

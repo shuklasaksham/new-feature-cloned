@@ -27,7 +27,7 @@ export default function PaymentSuccess() {
         if (data.payment_status === "paid") {
           setState("paid");
           await refresh();
-          setTimeout(() => navigate("/app", { replace: true }), 1400);
+          setTimeout(() => navigate("/welcome", { replace: true }), 1400);
           return;
         }
         if (["failed", "expired"].includes(data.payment_status)) { setState("error"); return; }
