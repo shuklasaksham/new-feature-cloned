@@ -4,6 +4,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import Seo from "../components/Seo";
+import ParticleField from "../components/ParticleField";
 
 const HALFTONE_IMG =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/hvro4m6p_right-img.png";
@@ -65,10 +66,10 @@ export default function ChoosePlan() {
                 >
                   <div className="flex items-start gap-4">
                     <span
-                      className="mt-1 shrink-0 inline-flex items-center justify-center"
-                      style={{ width: 18, height: 18, borderRadius: "50%", border: `1.5px solid ${active ? "#fff" : "#3a3a3a"}` }}
+                      className="mt-1 shrink-0"
+                      style={{ width: 18, height: 18, borderRadius: "50%", border: `1.5px solid ${active ? "#fff" : "#3a3a3a"}`, boxSizing: "border-box", display: "grid", placeItems: "center" }}
                     >
-                      {active && <span style={{ width: 9, height: 9, borderRadius: "50%", background: "#fff" }} />}
+                      {active && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff", display: "block" }} />}
                     </span>
                     <div className="min-w-0">
                       <p className="leading-none">
@@ -94,7 +95,7 @@ export default function ChoosePlan() {
       </div>
 
       <div className="hidden lg:block relative flex-1 overflow-hidden" style={{ background: "#000" }} aria-hidden="true">
-        <img src={HALFTONE_IMG} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
+        <ParticleField />
         <div className="absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(to right, #000 0%, transparent 100%)" }} />
       </div>
     </div>

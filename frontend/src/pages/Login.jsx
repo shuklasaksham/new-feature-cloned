@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
+import ParticleField from "../components/ParticleField";
 
 const HALFTONE_IMG =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/hvro4m6p_right-img.png";
@@ -275,9 +276,9 @@ export default function Login() {
         </div>
       </div>
 
-      {/* RIGHT — halftone visual */}
+      {/* RIGHT — animated particle field */}
       <div className="hidden lg:block relative flex-1 overflow-hidden" style={{ background: "#000" }} aria-hidden="true" data-testid="login-visual">
-        <img src={HALFTONE_IMG} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
+        <ParticleField />
         <div className="absolute inset-y-0 left-0 w-1/4" style={{ background: "linear-gradient(to right, #000 0%, transparent 100%)" }} />
       </div>
     </div>
