@@ -41,7 +41,7 @@ module.exports = {
         body:    ["'Geist'", "sans-serif"],
         mono:    ["'Geist Mono'", "ui-monospace", "monospace"],
       },
-      borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "6px", lg: "6px", xl: "6px", "2xl": "6px", "3xl": "6px", full: "6px" },
+      borderRadius: { none: "0", DEFAULT: "6px", sm: "4px", md: "6px", lg: "6px", xl: "6px", "2xl": "6px", "3xl": "6px", full: "9999px" },
       boxShadow: {
         // Flat Linear system — no elevation, depth via hairline borders only
         sm: "none", DEFAULT: "none", md: "none", lg: "none", xl: "none", "2xl": "none", inner: "none", none: "none",

@@ -1,5 +1,11 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (fix: CTAs were rectangular — restore real pills)
+- **Root cause**: `tailwind.config.js` had `borderRadius.full = "6px"` (and `--radius-full: 6px` in `index.css`), so every `rounded-full` CTA rendered as a 6px rectangle instead of a pill.
+- **Fix**: `full → 9999px` in both the Tailwind config and the `--radius-full` token; `.btn-primary` set to `border-radius: 9999px`. Card/input radii (`sm/md/lg/xl/2xl/3xl` = 6px) unchanged, matching the login page's rounded-rectangle fields/cards.
+- Result: all CTAs are now pills site-wide (Settings Save/Change-plan, project History/Generate, Ask-Bracket suggestion chips, source chips + Disconnect, nav pills). Required a frontend restart to rebuild Tailwind. Verified live (Settings + project view).
+
+
 ## Changelog — 2026-06 (full monochrome sweep + Settings polish + sidebar search)
 - **Site-wide monochrome (matches Login / Plan).** Retuned base theme tokens in `index.css`: brand `--accent`→`#E4E4E7`, `--accent-2`→`#fff`, soft/glow/border → white-translucent; `--info`→neutral; **CTA `--primary-bg`→`#fff` / `--primary-fg`→`#000`** (white pill). Darkened surfaces: `--bg`→`#080808`, `--surface`→`#0e0e0e`, `--surface-2`→`#171717`. **Status colours kept** (`--success` green, `--warning` amber, `--danger` red). `.btn-primary` now a rounded-full white pill. This flips every `var(--accent)/--primary` element app-wide (Review/Generate/Send buttons, active nav, focus rings, links).
 - **Hardcoded violet purged** from routed pages via sweep: translucent `rgba(129,132,196,α)`→`rgba(255,255,255,α)` and `#989BE0`→`#fff` across Activity, ConnectWork, ProjectMemory/Flow/Document/Overview, ClientReview, ClaimProjects, GlobalAskModal, AutoBuild/ApplyingChanges overlays; solid violet pills `#8184C4`→`#2E2E2E` (locked/selected) and `#8184C4`→`#E4E4E7` for `providersMeta` glyphs + PaymentSuccess spinner. (Admin analytics + unrouted marketing pages left untouched.)
