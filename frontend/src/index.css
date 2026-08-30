@@ -4526,3 +4526,84 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 /* Monochrome links + legal bullets on marketing (match the auth pages) */
 .marketing-shell a.link-accent { color: #ededed !important; }
 .marketing-shell a.link-accent:hover { color: #ffffff !important; }
+
+/* ============================================================
+   Project workspace — left sidebar shell (/project/:id)
+   ============================================================ */
+.project-shell { display: flex; min-height: 100vh; background: #000; }
+.project-main { flex: 1; min-width: 0; background: #080808; }
+.project-main-inner { max-width: 1120px; padding: 28px 32px 64px; }
+.project-topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+
+.project-sidebar {
+  width: 300px; flex-shrink: 0;
+  background: #0a0a0a; border-right: 1px solid #161616;
+  display: flex; flex-direction: column; gap: 14px;
+  padding: 20px 16px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.project-sidebar.is-collapsed { width: 76px; padding: 20px 12px; align-items: stretch; }
+.project-sidebar.is-collapsed .psb-label { display: none; }
+.project-sidebar.is-collapsed .psb-count { display: none; }
+.project-sidebar.is-collapsed .psb-switch { justify-content: center; padding: 0; }
+.project-sidebar.is-collapsed .psb-wordmark { display: none; }
+.project-sidebar.is-collapsed .psb-nav-item { justify-content: center; padding: 0; }
+.project-sidebar.is-collapsed .psb-section-head { justify-content: center; }
+.project-sidebar.is-collapsed .psb-source-row { justify-content: center; }
+.project-sidebar.is-collapsed .psb-user { justify-content: center; padding: 8px; }
+
+.psb-brand { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px; }
+.psb-logo { display: inline-flex; align-items: center; gap: 10px; }
+.psb-wordmark { font-family: "Geist", sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: #fff; }
+.psb-collapse { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; color: #7a7a7a; transition: background .18s, color .18s; }
+.psb-collapse:hover { background: #161616; color: #e5e5e5; }
+
+.psb-switch-wrap { position: relative; }
+.psb-switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; height: 52px; padding: 0 18px; border-radius: 14px; background: #0a0a0a; border: 1px solid #3d3d3d; color: #fff; }
+.psb-switch:hover { border-color: #575757; }
+.psb-switch-name { font-family: "Geist", sans-serif; font-weight: 600; font-size: 16px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psb-switch-menu { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0; background: #111; border: 1px solid #262626; border-radius: 12px; padding: 6px; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.8); max-height: 320px; overflow-y: auto; }
+.psb-switch-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; padding: 9px 12px; border-radius: 8px; font-size: 13.5px; color: #cfcfcf; transition: background .15s; }
+.psb-switch-item:hover { background: #1b1b1b; color: #fff; }
+.psb-switch-item.is-current { color: #fff; }
+.psb-switch-empty { padding: 10px 12px; font-size: 12.5px; color: #6b6b6b; }
+.psb-switch-div { height: 1px; background: #1e1e1e; margin: 6px 4px; }
+
+.psb-nav { display: flex; flex-direction: column; gap: 4px; }
+.psb-nav-item { display: flex; align-items: center; gap: 14px; height: 50px; padding: 0 16px; border-radius: 9999px; color: #8a8a8a; font-family: "Geist", sans-serif; font-size: 15.5px; font-weight: 500; transition: background .16s ease, color .16s ease; }
+.psb-nav-item:hover { background: #141414; color: #d8d8d8; }
+.psb-nav-item[data-active="true"] { background: #1c1c1c; color: #fff; }
+.psb-nav-item svg { flex-shrink: 0; }
+.psb-count { margin-left: auto; min-width: 22px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; border-radius: 9999px; background: #242424; color: #a1a1a1; font-size: 11px; font-weight: 600; }
+.psb-nav-item[data-active="true"] .psb-count { background: #2e2e2e; color: #fff; }
+
+.psb-divider { height: 1px; background: #161616; margin: 4px 6px; }
+
+.psb-sources { display: flex; flex-direction: column; gap: 10px; }
+.psb-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
+.psb-section-label { font-family: "Geist", sans-serif; font-weight: 700; font-size: 15px; color: #fff; }
+.psb-add { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; border: 1px solid #2a2a2a; color: #cfcfcf; transition: background .16s, border-color .16s; }
+.psb-add:hover { background: #161616; border-color: #3a3a3a; color: #fff; }
+.psb-source-list { display: flex; flex-direction: column; gap: 2px; }
+.psb-source-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 8px; }
+.psb-source-icon { width: 22px; display: grid; place-items: center; flex-shrink: 0; }
+.psb-source-name { display: block; font-size: 13.5px; font-weight: 600; color: #ededed; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psb-source-status { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #8a8a8a; }
+.psb-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.psb-source-empty { padding: 8px 6px; font-size: 12.5px; color: #6b6b6b; }
+
+.psb-foot-nav { display: flex; flex-direction: column; gap: 4px; margin-top: auto; }
+
+.psb-user-wrap { position: relative; }
+.psb-user { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 14px; background: #0a0a0a; border: 1px solid #262626; }
+.psb-user:hover { border-color: #363636; }
+.psb-avatar { width: 32px; height: 32px; border-radius: 50%; background: #232323; color: #e5e5e5; display: grid; place-items: center; font-size: 13px; font-weight: 600; overflow: hidden; flex-shrink: 0; }
+.psb-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.psb-user-name { display: block; font-size: 13.5px; font-weight: 600; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psb-user-email { display: block; font-size: 11px; color: #8a8a8a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psb-user-menu { position: absolute; bottom: calc(100% + 6px); left: 0; right: 0; background: #111; border: 1px solid #262626; border-radius: 12px; padding: 6px; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.8); }
+
+@media (max-width: 900px) {
+  .project-shell { flex-direction: column; }
+  .project-sidebar { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid #161616; }
+  .project-main-inner { padding: 20px; }
+}

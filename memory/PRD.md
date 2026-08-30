@@ -1,5 +1,13 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (project workspace → left-sidebar shell)
+- **Project view (`/project/:id`) rebuilt** around a project-scoped left sidebar (`components/ProjectSidebar.jsx`) replacing the global `AppShell` + top boxed-tabs. Route no longer wrapped in `AppShell`. Sidebar: "bracket." wordmark + collapse toggle (icon-rail at ≤76px), **project switcher dropdown** (lists all `/projects`, switches via navigate), nav (Overview, Conversations, Scope, Deliverables, Timeline, Requirements, Decisions, Deadlines — active pill + per-category count badges), **Sources** section (read-only connected list w/ health dot + "+" → opens Conversations where the existing connect+attach chips live), Settings/Help, and a user card (name/email + logout).
+- **New "Conversations" tab** (`ConversationsView` in `ProjectMemory.jsx`): read-only thread list → click loads cached content via new `GET /projects/{id}/connections/{conn_id}/content`; plus the existing `ConnectedSourcesCompact` (add/disconnect) and the `SuggestedReplyChat` "Ask Bracket" panel.
+- `ProjectMemory.jsx`: kept `OverviewView`/`CategoryView`/`SuggestedReplyChat`/`ConnectedSourcesCompact` intact; swapped only the outer chrome. `view` state now driven by the sidebar (adds `conversations`). Top bar keeps title + LIVE + History/Review changes.
+- **CSS**: new `.project-shell` / `.project-sidebar` (`.psb-*`) block in `index.css`; responsive stack ≤900px.
+- Verified live (demo account): Overview, Conversations (with reader), and Scope tabs render; nav/switcher/sources/user card all present; reached via "Open Project" from the ready screen.
+
+
 ## Changelog — 2026-06 ("Building your project" → "ready" transition)
 - **New `BuildingProject.jsx`** (route `/welcome/building`, protected): after "Add to Bracket", `SelectSource` now navigates here with `{provider, sources}` in router state instead of doing the work inline. This screen runs `POST /connect/preview` → `POST /connect/establish` (mode "new") while showing an animated checklist (Reading conversations → Finding project details → Organizing your project; spinner → green check) over the halftone `ParticleField` (image variant, right-biased, gradient-faded to black on the left).
 - **"Your project is ready." state** (same component, framer-motion crossfade): a card with the AI project name, `N {conversations|channels|files|repositories} · Added just now`, `{deliverables} · {requirements} · {decisions}` counts (from preview), and an "Open Project →" white pill → `/project/{id}`.

@@ -1102,6 +1102,25 @@ async def project_connections(project_id: str, request: Request):
     return {"connections": conns}
 
 
+@router.get("/projects/{project_id}/connections/{conn_id}/content")
+async def connection_content(project_id: str, conn_id: str, request: Request):
+    """Read-only cached thread/message content for one connected source
+    (powers the project 'Conversations' tab)."""
+    await _owned_project(project_id, request)
+    c = await db.source_connections.find_one(
+        {"id": conn_id, "project_id": project_id},
+        {"_id": 0, "content_cache": 1, "source_name": 1, "provider": 1, "source_url": 1},
+    )
+    if not c:
+        raise HTTPException(404, "Source not found on this project.")
+    return {
+        "content": c.get("content_cache", "") or "",
+        "source_name": c.get("source_name", ""),
+        "provider": c.get("provider", ""),
+        "source_url": c.get("source_url", ""),
+    }
+
+
 @router.get("/connect/connections")
 async def all_user_connections(request: Request):
     """Every active connection across every project the current user owns.

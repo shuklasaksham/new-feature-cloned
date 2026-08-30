@@ -16,6 +16,7 @@ import ProjectUpdateReview from "../components/ProjectUpdateReview";
 import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
+import ProjectSidebar from "../components/ProjectSidebar";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, PROVIDER_META, timeAgo } from "../lib/providersMeta";
 
@@ -48,6 +49,12 @@ export default function ProjectMemory() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [updateOpen, setUpdateOpen] = useState(false);
   const [lastSeen, setLastSeen] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    api.get("/projects").then(({ data }) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
+  }, []);
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -122,42 +129,35 @@ export default function ProjectMemory() {
   const openReview = () => setUpdateOpen(true);
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--bg)" }}>
+    <div className="project-shell" data-testid="project-shell">
       <Seo title={project ? `${project.name} · Bracket` : "Project · Bracket"} />
 
-      <header className="sticky top-0 z-20" style={{ background: "var(--bg)", borderBottom: "1px solid var(--hairline)" }}>
-        <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-3 flex items-center justify-between gap-3">
-          <button type="button" onClick={() => navigate("/app")}
-                  className="inline-flex items-center gap-1.5 text-[12.5px]"
-                  style={{ color: "var(--text-2)" }} data-testid="project-memory-back">
-            <ArrowLeft size={13} /> Dashboard
-          </button>
-          {project?.is_demo && (
-            <span className="mono-tag px-2 py-0.5 rounded-full text-[9.5px]"
-                  style={{ color: "var(--accent)", background: "var(--accent-soft)", border: "1px solid var(--brand-border)" }}
-                  data-testid="project-memory-demo-tag">DEMO</span>
-          )}
-        </div>
-      </header>
+      <ProjectSidebar
+        project={project}
+        projects={projects}
+        onSwitchProject={(pid) => navigate(`/project/${pid}`)}
+        view={view}
+        setView={(v) => { setView(v); if (CATEGORY_BY_KEY[v]) setStatusFilter("all"); }}
+        counts={visibleCounts.by}
+        connections={connections || []}
+        onAddSource={() => setView("conversations")}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
 
-      <main className="max-w-[1200px] mx-auto px-6 md:px-8 py-8 lg:py-10" data-testid="project-memory-page">
+      <main className="project-main">
         {loading ? (
-          <div className="flex items-center gap-2 py-8" style={{ color: "var(--text-3)" }}>
+          <div className="flex items-center gap-2 py-8 px-8" style={{ color: "var(--text-3)" }}>
             <Loader2 size={14} className="animate-spin" /> Loading…
           </div>
         ) : project ? (
-          <>
-            {/* Project header — minimal Notion-style */}
-            <motion.section
-              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.32 }}
-              className="flex items-start justify-between gap-4 flex-wrap mb-8"
-              data-testid="project-memory-header"
-            >
+          <div className="project-main-inner" data-testid="project-memory-page">
+            <section className="project-topbar" data-testid="project-memory-header">
               <div className="min-w-0">
                 <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>
                   {(project.client_name || "Client").toUpperCase()} · {(project.project_type || "Project").toUpperCase()}
                 </p>
-                <h1 className="mt-2 text-[32px] sm:text-[40px] font-semibold tracking-[-0.028em] leading-[1.05]"
+                <h1 className="mt-1.5 text-[26px] sm:text-[30px] font-semibold tracking-[-0.028em] leading-[1.05]"
                     style={{ color: "var(--text)" }} data-testid="project-memory-title">
                   {project.name}
                 </h1>
@@ -175,6 +175,11 @@ export default function ProjectMemory() {
                     </span>
                     LIVE
                   </span>
+                  {project?.is_demo && (
+                    <span className="mono-tag px-2 py-0.5 rounded-full text-[9.5px]"
+                          style={{ color: "var(--accent)", background: "var(--accent-soft)", border: "1px solid var(--brand-border)" }}
+                          data-testid="project-memory-demo-tag">DEMO</span>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -187,40 +192,13 @@ export default function ProjectMemory() {
                 {detectedCount > 0 && (
                   <button type="button" onClick={openReview}
                           className="inline-flex items-center gap-1.5 text-[12.5px] px-3.5 py-2 rounded-full font-medium"
-                          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)", boxShadow: "0 8px 20px -8px rgba(129, 132, 196,0.5)" }}
+                          style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }}
                           data-testid="project-memory-review-cta">
                     <Sparkles size={12} /> Review changes
                   </button>
                 )}
               </div>
-            </motion.section>
-
-            {/* Horizontal pill tabs — Overview + 6 categories */}
-            <nav
-              className="memory-tabs mb-8 overflow-x-auto no-scrollbar"
-              data-testid="project-memory-pills"
-              role="tablist"
-              aria-label="Memory categories"
-            >
-              <PillTab
-                active={view === "overview"}
-                onClick={() => setView("overview")}
-                label="Overview"
-                testid="project-memory-pill-overview"
-              />
-              {MEMORY_CATEGORIES.map((c) => (
-                <PillTab
-                  key={c.key}
-                  active={view === c.key}
-                  onClick={() => { setView(c.key); setStatusFilter("all"); }}
-                  label={c.label}
-                  count={visibleCounts.by[c.key] || 0}
-                  icon={c.icon}
-                  color={c.color}
-                  testid={`project-memory-pill-${c.key}`}
-                />
-              ))}
-            </nav>
+            </section>
 
             {view === "overview" ? (
               <OverviewView
@@ -233,6 +211,13 @@ export default function ProjectMemory() {
                 onJumpTo={(cat) => { setView(cat); setStatusFilter("all"); }}
                 onReviewUpdate={() => setUpdateOpen(true)}
               />
+            ) : view === "conversations" ? (
+              <ConversationsView
+                projectId={id}
+                project={project}
+                connections={connections || []}
+                onChanged={() => load({ silent: true })}
+              />
             ) : (
               <CategoryView
                 cat={activeCat}
@@ -242,9 +227,9 @@ export default function ProjectMemory() {
                 onOpen={(m) => setDrawerItem(m)}
               />
             )}
-          </>
+          </div>
         ) : (
-          <p style={{ color: "var(--text-3)" }}>Project not found.</p>
+          <p className="px-8 py-8" style={{ color: "var(--text-3)" }}>Project not found.</p>
         )}
       </main>
 
@@ -272,6 +257,87 @@ export default function ProjectMemory() {
           }
         }}
       />
+    </div>
+  );
+}
+
+/* ─── Conversations tab — read-only source threads + Ask Bracket ──────── */
+function ConversationsView({ projectId, project, connections, onChanged }) {
+  const [selected, setSelected] = useState(null);
+  const [content, setContent] = useState(null);
+  const [loadingC, setLoadingC] = useState(false);
+
+  const openThread = async (c) => {
+    setSelected(c.id);
+    setContent(null);
+    setLoadingC(true);
+    try {
+      const { data } = await api.get(`/projects/${projectId}/connections/${c.id}/content`);
+      setContent(data);
+    } catch {
+      setContent({ content: "" });
+    } finally {
+      setLoadingC(false);
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6" data-testid="project-conversations">
+      <div className="min-w-0 flex flex-col gap-5">
+        <div>
+          <p className="mono-tag text-[9.5px] mb-3" style={{ color: "var(--text-3)" }}>CONVERSATIONS</p>
+          {(connections || []).length === 0 ? (
+            <div className="rounded-lg px-4 py-6 text-[13px]" style={{ border: "1px dashed var(--hairline-strong)", color: "var(--text-2)" }}>
+              No conversations connected yet. Use “+ Sources” to bring one in.
+            </div>
+          ) : (
+            <ul className="flex flex-col rounded-xl overflow-hidden" style={{ border: "1px solid var(--hairline)" }}>
+              {(connections || []).map((c, i) => (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => openThread(c)}
+                    className="w-full text-left flex items-center gap-3 px-4 py-3.5 transition-colors"
+                    style={{ background: selected === c.id ? "var(--surface-2)" : "transparent", borderTop: i ? "1px solid var(--hairline)" : "none" }}
+                    data-testid={`conversation-row-${c.id}`}
+                  >
+                    <ProviderIcon provider={c.provider} size={18} bare />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14px] font-medium truncate" style={{ color: "var(--text)" }}>{c.source_name || c.provider}</span>
+                      <span className="block text-[11.5px]" style={{ color: "var(--text-3)" }}>{PROVIDER_META[c.provider]?.label || c.provider}{c.last_activity_at ? ` · ${timeAgo(c.last_activity_at)}` : ""}</span>
+                    </span>
+                    <ArrowRight size={14} style={{ color: "var(--text-3)" }} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {selected && (
+          <div className="rounded-xl" style={{ border: "1px solid var(--hairline)", background: "var(--surface)" }} data-testid="conversation-reader">
+            <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom: "1px solid var(--hairline)" }}>
+              <ProviderIcon provider={content?.provider || ""} size={16} bare />
+              <span className="text-[13px] font-medium truncate" style={{ color: "var(--text)" }}>{content?.source_name || "Conversation"}</span>
+            </div>
+            <div className="px-4 py-4 max-h-[440px] overflow-y-auto">
+              {loadingC ? (
+                <div className="flex items-center gap-2 text-[12.5px]" style={{ color: "var(--text-3)" }}><Loader2 size={13} className="animate-spin" /> Loading…</div>
+              ) : content?.content ? (
+                <pre className="whitespace-pre-wrap text-[12.5px] leading-[1.7]" style={{ fontFamily: "var(--font-mono, ui-monospace, monospace)", color: "var(--text-2)", margin: 0 }}>{content.content}</pre>
+              ) : (
+                <p className="text-[12.5px]" style={{ color: "var(--text-3)" }}>No cached content for this source yet.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <ConnectedSourcesCompact projectId={projectId} connections={connections} onChanged={onChanged} />
+      </div>
+
+      <aside className="min-w-0 lg:sticky lg:top-6 self-start">
+        <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
+      </aside>
     </div>
   );
 }
