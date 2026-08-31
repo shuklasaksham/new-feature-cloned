@@ -166,9 +166,18 @@ async def current_user(request: Request, db) -> Dict[str, Any]:
 
 # ---------- admin guard ----------
 def admin_emails() -> set[str]:
-    """Comma-separated allowlist from env. All comparisons lowercased."""
-    raw = os.environ.get("ADMIN_EMAILS", "")
-    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+    """Effective admin allowlist (comma-separated, lowercased).
+
+    Prefers ADMIN_EMAILS_OVERRIDE — a *fresh* env key used to correct a frozen
+    production ADMIN_EMAILS secret (redeploys never overwrite existing secret
+    values, but new keys DO propagate). Falls back to ADMIN_EMAILS. Any email in
+    PURGE_USER_EMAILS is always removed — a decommissioned account can never be
+    an admin."""
+    raw = (os.environ.get("ADMIN_EMAILS_OVERRIDE", "").strip()
+           or os.environ.get("ADMIN_EMAILS", ""))
+    emails = {e.strip().lower() for e in raw.split(",") if e.strip()}
+    purge = {e.strip().lower() for e in os.environ.get("PURGE_USER_EMAILS", "").split(",") if e.strip()}
+    return emails - purge
 
 
 def is_admin(user: Dict[str, Any]) -> bool:

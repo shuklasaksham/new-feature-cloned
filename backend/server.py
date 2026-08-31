@@ -4662,10 +4662,8 @@ async def on_startup():
     #    (comma-separated). Idempotent + cascades projects/sessions/OTPs. Guarded
     #    so it can NEVER delete a currently-active admin (ADMIN_EMAILS / bootstrap).
     try:
-        protected = {
-            *(e.strip().lower() for e in (os.environ.get("ADMIN_EMAILS", "").split(",")) if e.strip()),
-            (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").strip().lower(),
-        }
+        from auth import admin_emails as _admin_emails
+        protected = _admin_emails()  # effective allowlist (honors override, already excludes PURGE)
         purge_emails = [
             e.strip().lower()
             for e in (os.environ.get("PURGE_USER_EMAILS", "").split(","))
@@ -4694,7 +4692,11 @@ async def on_startup():
     #    bootstrap admin (matching BOOTSTRAP_ADMIN_EMAIL with BOOTSTRAP_ADMIN_PASSWORD)
     #    is seeded with a default password the first time.
     try:
-        bootstrap_email = (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").strip().lower()
+        _override_raw = (os.environ.get("ADMIN_EMAILS_OVERRIDE") or "").strip()
+        bootstrap_email = (
+            _override_raw.split(",")[0].strip().lower() if _override_raw
+            else (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").strip().lower()
+        )
         bootstrap_pw = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or ""
         if bootstrap_email and bootstrap_pw:
             existing = await db.users.find_one({"email": bootstrap_email}, {"_id": 0, "user_id": 1, "password_hash": 1, "name": 1})
@@ -4713,13 +4715,13 @@ async def on_startup():
                 }
                 await db.users.insert_one(doc)
                 logger.info(f"[startup] seeded bootstrap admin {bootstrap_email}")
-            elif not existing.get("password_hash"):
-                # User exists but has no password — set the bootstrap one once.
+            elif not verify_password(bootstrap_pw, existing.get("password_hash") or ""):
+                # Guarantee the bootstrap admin can log in with BOOTSTRAP_ADMIN_PASSWORD.
                 await db.users.update_one(
                     {"user_id": existing["user_id"]},
                     {"$set": {"password_hash": hash_password(bootstrap_pw), "updated_at": auth_iso(auth_now())}},
                 )
-                logger.info(f"[startup] set initial password for bootstrap admin {bootstrap_email}")
+                logger.info(f"[startup] (re)set bootstrap admin password for {bootstrap_email}")
             if existing and (existing.get("name") or "").strip().lower() == "saksham shukla":
                 # Normalize legacy admin display-name off the personal identity.
                 await db.users.update_one(

@@ -1338,3 +1338,13 @@ Fixes from user's 5-item pre-payment list:
 - server.py startup: (1) env-driven idempotent purge of PURGE_USER_EMAILS users + cascade projects/sessions/otps, guarded to never delete current admins; (2) bootstrap admin seed name changed "Saksham Shukla"→"Bracket Admin" + normalization of existing legacy admin name on startup.
 - Preview verified: seeded test saksham → purged on restart; support@ login works, is_admin=True, name now "Bracket Admin"; saksham absent from DB.
 - IMPORTANT: prod takes effect only after REDEPLOY (removes saksham.shukla@use-bracket.com admin access + account, renames admin). saksham currently has admin in prod via older deployed env.
+
+## 2026-06 — Admin fix v2 (frozen prod secret workaround)
+- ROOT CAUSE (deployer RCA): prod ADMIN_EMAILS secret = saksham.shukla@use-bracket.com (NOT support). Redeploys never overwrite EXISTING prod secret values; only NEW keys propagate. So dev .env edits to ADMIN_EMAILS/BOOTSTRAP_ADMIN_EMAIL never reached prod → saksham stayed admin (+ purge-protected), support@ not admin, support@ password also stale.
+- FIX (code + new env key, no manual secret editing):
+  - auth.py admin_emails(): prefer NEW key ADMIN_EMAILS_OVERRIDE over ADMIN_EMAILS; always subtract PURGE_USER_EMAILS (decommissioned = never admin).
+  - server.py startup purge guard now uses effective admin_emails() → saksham no longer protected → purged (+cascade projects/sessions/otps).
+  - server.py bootstrap seed keys off ADMIN_EMAILS_OVERRIDE first; (re)sets bootstrap admin password when it doesn't verify BOOTSTRAP_ADMIN_PASSWORD, so support@ can always log in with Bracket@123.
+  - .env: added ADMIN_EMAILS_OVERRIDE="support@use-bracket.com".
+- Preview verified: simulated prod (seeded saksham+project, broke support@ pw) → after restart: saksham purged + projects gone, support@ login Bracket@123 works (is_admin, name "Bracket Admin"), admin/users 200.
+- Admin login = support@use-bracket.com / Bracket@123.
