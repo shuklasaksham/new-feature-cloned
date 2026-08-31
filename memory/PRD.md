@@ -1324,3 +1324,6 @@ Fixes from user's 5-item pre-payment list:
 
 ## 2026-06 — Razorpay switched to LIVE keys
 - backend/.env RAZORPAY_KEY_ID/SECRET updated to live (rzp_live_TWNj3lffba3d0J). RAZORPAY_WEBHOOK_SECRET unchanged. Verified live order creation returns rzp_live key + order_id. Preview now transacts real money. Redeploy required to carry live keys to production; dashboard webhook must use the same RAZORPAY_WEBHOOK_SECRET.
+
+## 2026-06 — Unified CTA shape (pill everywhere)
+- .btn-ghost/.btn-secondary border-radius 6px → 9999px so secondary/Cancel buttons match the primary pill. Standardizes CTA shape across all modals/dialogs (admin delete/reset, disconnect confirm, useDialog). Verified via disconnect confirm dialog screenshot (Cancel + Disconnect both pills). Ships to prod on next redeploy.
