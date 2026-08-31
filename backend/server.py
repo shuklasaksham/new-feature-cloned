@@ -4278,10 +4278,16 @@ from emergentintegrations.payments.stripe.checkout import (  # noqa: E402
 )
 import stripe as _stripe  # noqa: E402
 
+# amount = USD, amount_inr = INR. INR unlocks UPI at Stripe Checkout (India acct only).
 PLANS = {
-    "monthly": {"amount": 29.0, "label": "Bracket Monthly", "kind": "subscription", "interval": "month"},
-    "project": {"amount": 9.0, "label": "Bracket Single Project", "kind": "payment"},
+    "monthly": {"amount": 29.0, "amount_inr": 2499.0, "label": "Bracket Monthly", "kind": "subscription", "interval": "month"},
+    "project": {"amount": 9.0, "amount_inr": 749.0, "label": "Bracket Single Project", "kind": "payment"},
 }
+SUPPORTED_CURRENCIES = {"usd", "inr"}
+
+
+def _plan_amount(plan: dict, currency: str) -> float:
+    return plan["amount_inr"] if currency == "inr" else plan["amount"]
 
 
 def _init_stripe():
@@ -4296,6 +4302,7 @@ def _init_stripe():
 class CheckoutIn(BaseModel):
     plan_id: str
     origin_url: str
+    currency: str = "usd"
 
 
 @api.post("/payments/checkout")
@@ -4303,21 +4310,28 @@ async def payments_checkout(body: CheckoutIn, request: Request):
     plan = PLANS.get(body.plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail="Unknown plan.")
+    currency = (body.currency or "usd").lower()
+    if currency not in SUPPORTED_CURRENCIES:
+        raise HTTPException(status_code=400, detail="Unsupported currency.")
     user = await current_user(request, db)
     origin = body.origin_url.rstrip("/")
     host_url = str(request.base_url)
     webhook_url = f"{host_url}api/webhook/stripe"
 
+    amount = _plan_amount(plan, currency)
     stripe = _init_stripe()
     price_data = {
-        "currency": "usd",
+        "currency": currency,
         "product_data": {"name": plan["label"]},
-        "unit_amount": int(plan["amount"] * 100),
+        "unit_amount": int(amount * 100),
     }
     is_sub = plan["kind"] == "subscription"
     if is_sub:
         price_data["recurring"] = {"interval": plan["interval"]}
 
+    # payment_method_types is intentionally omitted so Stripe Checkout renders
+    # every method enabled in the connected account's dashboard that supports the
+    # currency — e.g. UPI appears automatically for INR on an Indian account.
     session = stripe.checkout.Session.create(
         mode="subscription" if is_sub else "payment",
         line_items=[{"price_data": price_data, "quantity": 1}],
@@ -4329,8 +4343,8 @@ async def payments_checkout(body: CheckoutIn, request: Request):
         "session_id": session.id,
         "user_id": user["user_id"],
         "plan_id": body.plan_id,
-        "amount": plan["amount"],
-        "currency": "usd",
+        "amount": amount,
+        "currency": currency,
         "kind": plan["kind"],
         "status": "initiated",
         "payment_status": "pending",
@@ -4354,7 +4368,7 @@ async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
         kind = (PLANS.get(pid) or {}).get("kind", "payment")
         await db.users.update_one(
             {"user_id": uid},
-            {"$set": {"plan": pid, "plan_kind": kind, "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
+            {"$set": {"plan": pid, "plan_kind": kind, "plan_currency": rec.get("currency", "usd"), "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
         )
 
 
@@ -4427,11 +4441,13 @@ async def payments_billing(request: Request):
     u = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0}) or {}
     plan_id = u.get("plan")
     plan_meta = PLANS.get(plan_id) if plan_id else None
+    currency = u.get("plan_currency") or "usd"
     return {
         "plan": plan_id,
         "plan_kind": u.get("plan_kind") or (plan_meta or {}).get("kind"),
         "label": (plan_meta or {}).get("label"),
-        "amount": (plan_meta or {}).get("amount"),
+        "amount": _plan_amount(plan_meta, currency) if plan_meta else None,
+        "currency": currency,
         "since": u.get("plan_since"),
         "renews_on": _renewal_iso(plan_id, u.get("plan_since")) if plan_id else None,
         "recurring": bool(plan_meta and plan_meta.get("kind") == "subscription"),

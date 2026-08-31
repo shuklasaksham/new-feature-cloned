@@ -1268,3 +1268,11 @@ Brand promise: "Designers don't need more tools. They need better decisions."
 - **Smooth transitions**: added `page-enter` to Login/ChoosePlan/FirstProject/PaymentSuccess content, `fade-in` on particle panels, and a keyed `fade-in` between PaymentSuccess states.
 - **/welcome heading**: widened left column (lg:54% / xl:52%, max-w 820) + `xl:whitespace-nowrap` → "Bring your first project into bracket" now one line at desktop, matching the reference.
 - `_mark_paid` now stores `plan_kind` on the user. Demo account left with no plan (re-testable).
+
+## 2026-06 — Multi-currency checkout (USD + INR) for UPI go-live
+- User going LIVE with real money via Emergent's built-in Stripe (Indian Stripe account); wants UPI + cards. UPI on Stripe is India-only, INR-only; recurring UPI (AutoPay) capped at ₹15,000/mandate (₹2,499/mo fine).
+- Backend `server.py`: `PLANS` now hold `amount` (USD) + `amount_inr`; new `_plan_amount(plan, currency)` + `SUPPORTED_CURRENCIES={usd,inr}`. `/api/payments/checkout` accepts optional `currency` (default usd, validated). `payment_method_types` intentionally omitted so Stripe Checkout auto-renders every method enabled in the connected account for the currency (UPI shows for INR on the live Indian account). Transaction + user `plan_currency` persisted; `/payments/billing` returns `currency` and correct amount.
+- INR amounts: ₹749 single-project, ₹2,499 monthly (matches $9/$29 price points; adjustable in PLANS).
+- Frontend: currency toggle ($ USD / ₹ INR) on `ChoosePlan.jsx` (`/plan`, drives checkout) and marketing `Pricing.jsx`; Settings billing renders ₹/$ per stored currency. Monochrome pill toggle.
+- Verified: curl — USD & INR checkout both create valid Stripe sessions on the shared sandbox; `eur` rejected 400. Screenshot — /pricing toggle switches $29/$9 ↔ ₹2,499/₹749.
+- GO-LIVE (still test mode / not deployed): deploy → claim own Indian Stripe account (STRIPE_API_KEY becomes sk_live_ automatically, code unchanged) → enable UPI in Stripe Dashboard (Settings→Payment methods). UPI only appears when currency=INR. Test card 4242 4242 4242 4242 (any future expiry/CVC).

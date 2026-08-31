@@ -12,14 +12,22 @@ const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
 const MONO = { fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" };
 
+const CURRENCIES = {
+  usd: { code: "usd", symbol: "$", label: "USD", methods: "Cards" },
+  inr: { code: "inr", symbol: "₹", label: "INR", methods: "UPI & cards" },
+};
+
 const PLANS = [
-  { id: "monthly", price: "$29", unit: "/month", features: "Upto 10 active projects • Unlimited team members", desc: "Best for ongoing client work" },
-  { id: "project", price: "$9", unit: "/project", features: "1 project • Active for 60 days", desc: "Best for occasional client work" },
+  { id: "monthly", price: { usd: "29", inr: "2,499" }, unit: "/month", features: "Upto 10 active projects • Unlimited team members", desc: "Best for ongoing client work" },
+  { id: "project", price: { usd: "9", inr: "749" }, unit: "/project", features: "1 project • Active for 60 days", desc: "Best for occasional client work" },
 ];
 
 export default function ChoosePlan() {
   const [selected, setSelected] = useState("monthly");
+  const [currency, setCurrency] = useState("usd");
   const [loading, setLoading] = useState(false);
+
+  const cur = CURRENCIES[currency];
 
   const goToCheckout = async () => {
     setLoading(true);
@@ -27,6 +35,7 @@ export default function ChoosePlan() {
       const { data } = await api.post("/payments/checkout", {
         plan_id: selected,
         origin_url: window.location.origin,
+        currency,
       });
       window.location.href = data.checkout_url;
     } catch (e) {
@@ -51,7 +60,27 @@ export default function ChoosePlan() {
             Choose monthly or pay for a single project
           </p>
 
-          <div className="mt-8 flex flex-col gap-4">
+          {/* Currency toggle */}
+          <div className="mt-6 inline-flex p-1 rounded-full" style={{ background: "#0a0a0a", border: "1px solid #242424" }} data-testid="currency-toggle">
+            {Object.values(CURRENCIES).map((c) => {
+              const on = currency === c.code;
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => setCurrency(c.code)}
+                  className="px-4 py-1.5 rounded-full text-[12px] transition-colors"
+                  style={{ ...MONO, background: on ? "#fff" : "transparent", color: on ? "#000" : "#8a8a8a" }}
+                  data-testid={`currency-${c.code}`}
+                  aria-pressed={on}
+                >
+                  {c.symbol} {c.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-6 flex flex-col gap-4">
             {PLANS.map((p) => {
               const active = selected === p.id;
               return (
@@ -73,7 +102,7 @@ export default function ChoosePlan() {
                     </span>
                     <div className="min-w-0">
                       <p className="leading-none">
-                        <span className="font-display font-semibold text-[26px]" style={{ color: "#fff" }}>{p.price}</span>
+                        <span className="font-display font-semibold text-[26px]" style={{ color: "#fff" }}>{cur.symbol}{p.price[currency]}</span>
                         <span className="text-[15px]" style={{ ...MONO, color: "#9a9a9a" }}>{p.unit}</span>
                       </p>
                       <p className="mt-3 text-[12.5px]" style={{ ...MONO, color: "#b8b8b8" }}>{p.features}</p>
@@ -89,7 +118,7 @@ export default function ChoosePlan() {
             {loading ? <Loader2 size={16} className="animate-spin" /> : <>Continue <ArrowRight size={15} /></>}
           </button>
           <p className="text-center mt-4 text-[11px]" style={{ ...MONO, color: "#565656" }}>
-            Test mode · use card 4242 4242 4242 4242
+            {cur.methods} accepted · Test mode · card 4242 4242 4242 4242
           </p>
         </div>
       </div>

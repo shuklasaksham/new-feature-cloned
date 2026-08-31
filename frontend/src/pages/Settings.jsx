@@ -167,7 +167,7 @@ export default function Settings({ embedded = false, onBack }) {
                 <div>
                   <p className="font-display font-semibold text-[18px] text-[var(--text)]" data-testid="billing-plan-label">{billing.label}</p>
                   <p className="text-[13px] text-[var(--text-2)] mt-0.5">
-                    ${billing.amount}{billing.recurring ? " / month" : " · one-time"}
+                    {billing.currency === "inr" ? "₹" : "$"}{billing.amount}{billing.recurring ? " / month" : " · one-time"}
                   </p>
                 </div>
                 <span className="mono-tag px-2 py-0.5 rounded text-[9.5px]" style={{ background: "rgba(34,197,94,0.10)", color: "#22C55E", border: "1px solid rgba(34,197,94,0.25)" }}>

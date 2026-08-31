@@ -6,10 +6,15 @@ import Seo from "../components/Seo";
 import HeroParticles from "../components/HeroParticles";
 import { useAuth } from "../lib/AuthContext";
 
+const CURRENCIES = {
+  usd: { code: "usd", symbol: "$", label: "USD" },
+  inr: { code: "inr", symbol: "₹", label: "INR" },
+};
+
 const PLANS = [
   {
     id: "monthly",
-    price: "$29",
+    price: { usd: "29", inr: "2,499" },
     unit: "/month",
     tagline: "Best for ongoing client work",
     features: ["Up to 10 active projects", "Unlimited connected tools", "Live project memory & updates", "Draft & send client replies"],
@@ -17,7 +22,7 @@ const PLANS = [
   },
   {
     id: "project",
-    price: "$9",
+    price: { usd: "9", inr: "749" },
     unit: "/project",
     tagline: "Best for occasional client work",
     features: ["One project, active for 60 days", "Unlimited connected tools", "Live project memory & updates", "Draft & send client replies"],
@@ -54,6 +59,8 @@ function Faq({ q, a }) {
 export default function Pricing() {
   const { user } = useAuth();
   const startHref = user ? "/plan" : "/login";
+  const [currency, setCurrency] = useState("usd");
+  const cur = CURRENCIES[currency];
 
   return (
     <div data-testid="pricing-page" className="page-enter landing-page-bg">
@@ -68,6 +75,24 @@ export default function Pricing() {
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
             Pay monthly if client work is your day-to-day, or pay once for a single project. Cancel anytime.
           </p>
+          <div className="mt-7 inline-flex p-1 rounded-full" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)" }} data-testid="pricing-currency-toggle">
+            {Object.values(CURRENCIES).map((c) => {
+              const on = currency === c.code;
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  onClick={() => setCurrency(c.code)}
+                  className="px-4 py-1.5 rounded-full text-[12px] font-mono transition-colors"
+                  style={{ background: on ? "#fff" : "transparent", color: on ? "#000" : "var(--text-3)" }}
+                  data-testid={`pricing-currency-${c.code}`}
+                  aria-pressed={on}
+                >
+                  {c.symbol} {c.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -85,7 +110,7 @@ export default function Pricing() {
                 <span className="mono-tag absolute top-5 right-5 px-2 py-0.5 rounded text-[9.5px]" style={{ background: "rgba(255,255,255,0.06)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.18)" }}>POPULAR</span>
               )}
               <p className="leading-none">
-                <span className="font-display font-semibold text-[38px] tracking-[-0.02em]">{p.price}</span>
+                <span className="font-display font-semibold text-[38px] tracking-[-0.02em]">{cur.symbol}{p.price[currency]}</span>
                 <span className="text-[15px] text-[var(--text-3)] font-mono">{p.unit}</span>
               </p>
               <p className="mt-2 text-[13px] text-[var(--text-2)]">{p.tagline}</p>
