@@ -1,0 +1,26 @@
+{
+  "summary": "Verified 3 fixes for iteration 57: (1) STUCK-LIST — the AddSourceDialog provider list no longer stays disabled after the OAuth popup is closed without completing sign-in; (2) DISCONNECT — DELETE /api/connect/connections/{id} now returns account_removed=true when the disconnected connection was the last active one for that provider and account_removed=false otherwise; after a full disconnect the provider goes back to 'available' and /connect/{provider}/sources returns HTTP 400; (3) OAUTH-PROMPT — GET /api/connect/gmail/auth-url URL contains prompt=consent+select_account. All 4 pytest tests pass and all 4 Playwright scenarios pass.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_57_disconnect_fix.py",
+    "/app/test_reports/pytest/iter57.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "backend/connectors.py disconnect() at /connect/connections/{connection_id}: correctly marks connection 'disconnected', counts remaining active connections (status != disconnected) and drops the integration_accounts doc only when zero remain. Returns {ok:true, account_removed:bool}. Confirmed via seeded mongo docs for both single-connection (removed) and dual-connection (kept, then removed on 2nd delete) paths.",
+    "backend/connectors.py _auth_url_for gmail branch uses prompt='consent select_account' which url-encodes to 'consent+select_account' in the returned URL — verified.",
+    "frontend/src/components/AddSourceDialog.jsx startOAuth() uses a setInterval(600ms) watching popupRef.current.closed which correctly clears `connecting`/`pendingRef` when the popup is closed without finishing. The [open] effect fully resets transient state on close — confirmed no residual disabled=true on gmail/slack/figma/github after (a) closing the OAuth popup, (b) clicking another provider immediately, (c) closing the dialog via X and reopening, or (d) closing via overlay click and reopening.",
+    "Coverage: seed_admin (support@) has plan='test' but no projects — main agent may want to seed a demo project for admin so manual testing hits the dashboard without needing to create/seed one."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_57_disconnect_fix.py"
+  ],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "100% (4/4 scenarios)"},
+  "test_credentials": "admin support@use-bracket.com / Bracket@123 (password login) — session_token returned at top-level in /api/auth/login response; /api/auth/me returns user object flat (user_id at root, not nested under 'user').",
+  "seed_data_creation": "Temporary project TEST_uifront_45b68941 owned by admin (user_72246a04c3d2) for UI test; per-test seeded source_connections + integration_accounts for figma/github providers in the backend test. All TEST_-prefixed docs cleaned up in fixture teardowns and a final sweep.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Auth response shape: POST /api/auth/login returns {user:{...}, session_token, is_new}; but GET /api/auth/me returns user fields at TOP LEVEL (user_id, email, plan, is_admin) — not nested. Admin has no seeded projects, so to reach the /project/:id dashboard you must insert a project doc in mongo (bracket_db.projects) with user_id=user_72246a04c3d2. window.open popups will trigger a Cross-Origin-Opener-Policy warning when the OAuth URL loads Google's domain — harmless; the popup.closed watch interval still fires correctly.",
+  "rca of the issue": "STUCK-LIST root cause was that `connecting` state remained set to the provider key after the user closed the OAuth popup without completing sign-in — there was no cleanup path since only the postMessage 'bracket-oauth:*' completion callback cleared it. Fix in AddSourceDialog.jsx startOAuth adds a 600ms setInterval that watches popupRef.current.closed and clears both connecting and pendingRef; the [open] effect also resets these when the dialog closes. DISCONNECT fix in backend/connectors.py disconnect(): after marking the connection disconnected, count remaining active connections for (user_id, provider) with status != 'disconnected'; if 0, delete integration_accounts doc so future reconnect goes through fresh OAuth. Verified: seeding 1 conn + account → disconnect returns account_removed=true and account row is gone; seeding 2 conns + 1 account → first disconnect returns false and account persists, second disconnect returns true and account is gone."
+}

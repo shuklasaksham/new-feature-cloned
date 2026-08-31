@@ -260,7 +260,7 @@ def _auth_url_for(provider: str, state: str, ru: str) -> str:
         return "https://accounts.google.com/o/oauth2/v2/auth?" + urlencode({
             "client_id": conf["id"], "redirect_uri": ru, "response_type": "code",
             "scope": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
-            "access_type": "offline", "prompt": "consent", "state": state})
+            "access_type": "offline", "prompt": "consent select_account", "state": state})
     if provider == "slack":
         return "https://slack.com/oauth/v2/authorize?" + urlencode({
             "client_id": conf["id"], "redirect_uri": ru, "state": state,
@@ -2128,7 +2128,18 @@ async def disconnect(connection_id: str, request: Request):
         "event_type": "SOURCE_DISCONNECTED", "summary": f"Disconnected {conn['source_name']}.",
         "occurred_at": now, "created_at": now,
     })
-    return {"ok": True}
+    # If that was the user's last active source for this provider, also drop the
+    # stored OAuth account so the tool is fully disconnected — a later reconnect
+    # then forces a fresh sign-in and account selection (rather than silently
+    # reusing the old token / account).
+    remaining = await db.source_connections.count_documents({
+        "user_id": user["user_id"], "provider": conn["provider"], "status": {"$ne": "disconnected"},
+    })
+    account_removed = False
+    if remaining == 0:
+        res = await db.integration_accounts.delete_one({"user_id": user["user_id"], "provider": conn["provider"]})
+        account_removed = bool(res.deleted_count)
+    return {"ok": True, "account_removed": account_removed}
 
 
 # ---------------------------------------------------------------------------

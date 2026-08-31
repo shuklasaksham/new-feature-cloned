@@ -26,7 +26,13 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
     if (open && providers.length === 0) {
       api.get("/connect/providers").then(({ data }) => setProviders(data.providers || [])).catch(() => {});
     }
-    if (!open) { setPicker(null); setSelected([]); setStatus({}); setQuery(""); }
+    if (!open) {
+      // Fully reset transient state so a reopened dialog never gets stuck with a
+      // disabled list (e.g. after an OAuth popup was closed without finishing).
+      setPicker(null); setSelected([]); setStatus({}); setQuery("");
+      setConnecting(null); pendingRef.current = null;
+      try { popupRef.current?.close?.(); } catch { /* ignore */ }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -83,10 +89,22 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
     popupRef.current = popup;
     setConnecting(key);
     pendingRef.current = key;
+    // Watch for the user closing the OAuth popup without finishing — otherwise
+    // `connecting` stays set and the whole provider list looks stuck (disabled).
+    const watch = setInterval(() => {
+      if (!popupRef.current || popupRef.current.closed) {
+        clearInterval(watch);
+        if (pendingRef.current === key) {
+          pendingRef.current = null;
+          setConnecting(null);
+        }
+      }
+    }, 600);
     try {
       const { data } = await api.get(`/connect/${key}/auth-url`);
       if (popup) popup.location = data.url; else window.open(data.url, "_blank");
     } catch (e) {
+      clearInterval(watch);
       try { popup?.close?.(); } catch { /* ignore */ }
       setConnecting(null); pendingRef.current = null;
       toast.error(formatApiError(e));
