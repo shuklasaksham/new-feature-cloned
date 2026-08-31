@@ -113,7 +113,7 @@ MODEL_MAP = {
     # need Sonnet can pass engine="sonnet".
     "claude": ("anthropic", "claude-haiku-4-5-20251001"),
     "haiku":  ("anthropic", "claude-haiku-4-5-20251001"),
-    "sonnet": ("anthropic", "claude-sonnet-4-5-20250929"),
+    "sonnet": ("anthropic", "claude-sonnet-4-6"),
     "gpt":    ("openai", "gpt-5.2"),
 }
 

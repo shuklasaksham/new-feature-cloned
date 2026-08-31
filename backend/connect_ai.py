@@ -48,7 +48,7 @@ Return STRICT JSON only:
   "open_questions": [{{"title": "the unresolved question", "detail": "", "status": "detected"}}],
   "match": {{"project_id": "id from existing projects list or null", "confidence": 0, "reason": "1 sentence"}}
 }}"""
-    data = await _run(prompt, "haiku")
+    data = await _run(prompt, "sonnet")
     return data if isinstance(data, dict) else {}
 
 
@@ -77,7 +77,7 @@ Return STRICT JSON only:
   "events": [{{"summary": "1 short sentence, e.g. 'Client requested a testimonials section'", "event_type": "REQUIREMENT_DETECTED|DECISION_DETECTED|SCOPE_CHANGE_DETECTED|DEADLINE_CHANGED|DELIVERABLE_STATUS_DETECTED|ACTIVITY"}}],
   "new_items": [{{"category": "requirement|decision|deliverable|deadline|scope_change|question", "title": "short", "detail": "1 sentence with evidence", "status": "confirmed|detected"}}]
 }}"""
-    data = await _run(prompt, "haiku")
+    data = await _run(prompt, "sonnet")
     return data if isinstance(data, dict) else {"events": [], "new_items": []}
 
 

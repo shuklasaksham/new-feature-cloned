@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Plus, X, Search, Check, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -144,7 +145,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
   if (!open) return null;
   const provLabel = picker ? (PROVIDER_META[picker.provider]?.label || picker.provider) : "";
 
-  return (
+  return createPortal((
     <div className="bkt-modal-overlay" onClick={onClose} data-testid="add-source-dialog">
       <div className="bkt-modal" onClick={(e) => e.stopPropagation()}>
         <div className="bkt-modal-head">
@@ -169,15 +170,23 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
             {providers.length === 0 ? (
               <p className="text-[12.5px] py-6 text-center" style={{ color: "var(--text-3)" }}>Loading sources…</p>
             ) : providers.map((p) => {
-              const available = p.status === "available";
+              // "connected" (account already linked via OAuth) is still usable —
+              // it lets the user add more sources or reconnect. Only true
+              // "coming_soon"/"setup_required" providers are non-actionable.
+              const usable = p.status === "available" || p.status === "connected";
               const busy = connecting === p.key;
+              const badge = busy
+                ? <Loader2 size={13} className="animate-spin" />
+                : p.status === "connected" ? "Add"
+                : p.status === "available" ? "Connect"
+                : p.status === "setup_required" ? "Setup" : "Soon";
               return (
                 <button
                   key={p.key}
                   type="button"
                   className="src-dialog-row"
-                  disabled={!available || !!connecting}
-                  onClick={() => available && pick(p.key)}
+                  disabled={!usable || !!connecting}
+                  onClick={() => usable && pick(p.key)}
                   data-testid={`add-source-option-${p.key}`}
                 >
                   <ProviderIcon provider={p.key} size={16} />
@@ -186,7 +195,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
                     <span className="src-dialog-desc block truncate">{p.desc}</span>
                   </span>
                   <span className="src-dialog-badge">
-                    {busy ? <Loader2 size={13} className="animate-spin" /> : available ? "Connect" : "Soon"}
+                    {badge}
                   </span>
                 </button>
               );
@@ -250,5 +259,5 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
         )}
       </div>
     </div>
-  );
+  ), document.body);
 }

@@ -688,7 +688,36 @@ async def gmail_fetch_digest(account: dict, thread_id: str) -> str:
     return "\n".join(lines)[:18000]
 
 
-# ---- Demo sources (first-run / demo account has no real OAuth token) -------
+async def gmail_fetch_client_digest(account: dict, thread_id: str, client_email: str) -> str:
+    """Digest for a connected Gmail source that also captures NEW threads the
+    same client started after the source was connected. Without this, only the
+    originally-connected thread is re-polled, so brand-new client emails never
+    surface until the user manually reconnects. We fold the connected thread
+    together with the client's most recent threads into one digest."""
+    primary = await gmail_fetch_digest(account, thread_id)
+    email = (client_email or "").strip()
+    if not email:
+        return primary
+    at = await _access_token(account)
+    try:
+        async with await _http() as c:
+            r = await c.get(
+                "https://gmail.googleapis.com/gmail/v1/users/me/threads",
+                headers={"Authorization": f"Bearer {at}"},
+                params={"q": f"from:{email} newer_than:21d", "maxResults": 5},
+            )
+        if r.status_code != 200:
+            return primary
+        tids = [t["id"] for t in (r.json().get("threads") or []) if t.get("id") and t["id"] != thread_id]
+    except Exception:
+        return primary
+    parts = [primary]
+    for tid in tids[:3]:
+        try:
+            parts.append(await gmail_fetch_digest(account, tid))
+        except Exception:
+            continue
+    return "\n\n=== NEWER CLIENT THREAD ===\n".join(parts)[:24000]
 def _demo_sources(provider: str) -> List[dict]:
     """Realistic sample sources so the picker renders for the demo account.
     Real connected accounts always hit the live provider adapters instead."""
@@ -2022,7 +2051,18 @@ async def _sync_connection(conn: dict) -> dict:
         await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": "needs_attention", "updated_at": now}})
         return {"changed": False, "status": "needs_attention"}
     try:
-        digest = await _fetch_digest(conn["provider"], account, conn["source_id"])
+        if conn["provider"] == "gmail" and not str(conn.get("source_id", "")).startswith("demo-"):
+            ce = conn.get("client_email") or ""
+            if not ce:
+                try:
+                    ce = await _gmail_client_email(account, conn["source_id"])
+                except Exception:
+                    ce = ""
+                if ce:
+                    await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"client_email": ce}})
+            digest = await gmail_fetch_client_digest(account, conn["source_id"], ce)
+        else:
+            digest = await _fetch_digest(conn["provider"], account, conn["source_id"])
     except HTTPException as e:
         status = "expired" if e.status_code == 401 else "error"
         await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": status, "updated_at": now}})
@@ -2448,8 +2488,8 @@ async def demo_reset(request: Request):
 # up to 8 stale connections per cycle) while respecting provider rate limits.
 # Frontend polls the DB every 10s so the perceived refresh cadence is short.
 # ---------------------------------------------------------------------------
-POLL_INTERVAL_S = 60
-POLL_BATCH = 8
+POLL_INTERVAL_S = 30
+POLL_BATCH = 12
 
 
 async def poller_loop():
