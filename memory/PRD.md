@@ -1,3 +1,11 @@
+## Changelog — 2026-06 (working header controls, de-shelled connect, post-review send, undo)
+- **Header bell/··· now functional** (were static): shared `HeaderActions` in ProjectMemory.jsx renders a notifications popover (pending change → Review + View timeline) and an options menu (Home/Timeline/Refresh). Threaded via `headerActions` prop into Home/Conversations/Timeline. CSS `.ha-pop/.ha-menu-item`.
+- **Removed legacy page on add-source**: `/app/connect` route no longer wrapped in `<AppShell>` (App.js) — renders standalone, no old Dashboard/Activity/Pricing sidebar. Sources "+" dialog still deep-links `/app/connect?project=&tool=`.
+- **Post-review send prompt**: after approve, ProjectUpdateReview transitions to a compose step (AI draft via /suggest-reply summarizing kept changes) → Send (send-targets + send-email/send-slack) or Skip.
+- **Undo Accept**: approve now stores `applied{confirmed_ids,added_ids,event_id}` on project_updates + returns update_id; new `POST /projects/{id}/update/{uid}/undo` reverts confirmed→detected, deletes added memory + the CHANGE_ACCEPTED event, reopens the snapshot. Toast shows an "Undo" action. Verified: build→approve(confirmed 8/added 4/impact)→history event→undo ok.
+- NOT DONE — "Requested by Sarah" author: memory items don't capture the message sender in the sync/extraction pipeline, so there is no name to display without a backend/data change (no fabrication). Flagged as backlog.
+
+
 ## Changelog — 2026-06 (Project Change review: one request = one review, partial-accept)
 - Backend `/update/{id}/approve` now accepts optional body `{exclude_direct:[ids], exclude_downstream:["cat|title"]}` for PARTIAL acceptance — excluded direct items → ignored, excluded downstream → skipped. Writes ONE grouped `source_events` `CHANGE_ACCEPTED` (summary + impact `Scope +1 · Deliverables +2 …`) counting only KEPT parts; `/history` now surfaces `event.detail`.
 - `ProjectUpdateReview.jsx` rebuilt into a large, roomy centered dialog (`.pu-modal` min(94vw,860px), 92vh, 2-column `.pu-cats`) — monochrome, mono CTAs, with per-item keep/remove checkboxes (`.pu-item/.pu-check`). Accept button reads "Accept N changes" reflecting kept items. Footer: View conversation | Not part of project | Accept changes.

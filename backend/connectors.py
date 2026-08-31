@@ -1596,6 +1596,7 @@ async def project_update_approve(project_id: str, update_id: str, request: Reque
 
     added = 0
     kept_down = []
+    added_ids = []
     for d in snap.get("downstream", []):
         canon = _canonical_category(d.get("category", ""))
         if canon not in _VISIBLE_CATS:
@@ -1612,6 +1613,7 @@ async def project_update_approve(project_id: str, update_id: str, request: Reque
         }
         await db.project_memory.insert_one(doc)
         added += 1
+        added_ids.append(doc["id"])
         kept_down.append({"category": canon, "title": d.get("title", "")})
 
     await db.project_updates.update_one(
@@ -1630,9 +1632,10 @@ async def project_update_approve(project_id: str, update_id: str, request: Reque
         tally[d["category"]] = tally.get(d["category"], 0) + 1
     impact = " · ".join(f"{_CAT_LABEL.get(k, k.title())} +{v}" for k, v in tally.items() if k)
     first = (kept_direct or snap.get("direct") or [{}])[0]
+    evt_id = _uuid()
     if confirmed or added:
         await db.source_events.insert_one({
-            "id": _uuid(), "project_id": project_id, "event_type": "CHANGE_ACCEPTED",
+            "id": evt_id, "project_id": project_id, "event_type": "CHANGE_ACCEPTED",
             "summary": snap.get("summary") or "Project change accepted",
             "detail": impact,
             "provider": first.get("provider", "bracket"),
@@ -1640,7 +1643,36 @@ async def project_update_approve(project_id: str, update_id: str, request: Reque
             "by": user["user_id"],
             "occurred_at": now, "created_at": now,
         })
-    return {"ok": True, "confirmed": confirmed, "added": added, "dismissed": dismissed}
+    await db.project_updates.update_one(
+        {"id": update_id},
+        {"$set": {"applied": {"confirmed_ids": [p["id"] for p in kept_direct],
+                              "added_ids": added_ids, "event_id": evt_id if (confirmed or added) else None}}})
+    return {"ok": True, "update_id": update_id, "confirmed": confirmed, "added": added, "dismissed": dismissed, "impact": impact}
+
+
+@router.post("/projects/{project_id}/update/{update_id}/undo")
+async def project_update_undo(project_id: str, update_id: str, request: Request):
+    """Roll back a just-accepted change: revert confirmed items to pending,
+    delete added items, drop the history event, reopen the snapshot."""
+    await _owned_project(project_id, request)
+    snap = await db.project_updates.find_one(
+        {"id": update_id, "project_id": project_id}, {"_id": 0})
+    if not snap or snap.get("status") != "approved":
+        raise HTTPException(409, "Nothing to undo for this change.")
+    applied = snap.get("applied") or {}
+    now = _now_iso()
+    for mid in applied.get("confirmed_ids", []):
+        await db.project_memory.update_one(
+            {"id": mid, "project_id": project_id},
+            {"$set": {"status": "detected", "updated_at": now},
+             "$push": {"history": {"to": "detected", "via": "undo", "at": now}}})
+    if applied.get("added_ids"):
+        await db.project_memory.delete_many({"id": {"$in": applied["added_ids"]}, "project_id": project_id})
+    if applied.get("event_id"):
+        await db.source_events.delete_one({"id": applied["event_id"], "project_id": project_id})
+    await db.project_updates.update_one(
+        {"id": update_id}, {"$set": {"status": "pending"}, "$unset": {"applied": "", "resolved_at": ""}})
+    return {"ok": True}
 
 
 @router.post("/projects/{project_id}/update/{update_id}/reject")

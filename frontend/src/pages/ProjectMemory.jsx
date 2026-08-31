@@ -131,6 +131,15 @@ export default function ProjectMemory() {
   // "Today's Focus" sections (computed inside OverviewView from `memory`).
   const openReview = () => setUpdateOpen(true);
 
+  const headerActions = {
+    providerLabel: (connections && connections[0]) ? (PROVIDER_META[connections[0].provider]?.label || connections[0].provider) : null,
+    detectedCount,
+    onReview: () => setUpdateOpen(true),
+    onGoTimeline: () => setView("timeline"),
+    onGoHome: () => setView("overview"),
+    onRefresh: () => load({ silent: true }),
+  };
+
   return (
     <div className="project-shell" data-testid="project-shell">
       <Seo title={project ? `${project.name} · Bracket` : "Project · Bracket"} />
@@ -211,10 +220,11 @@ export default function ProjectMemory() {
                 project={project}
                 connections={connections || []}
                 memory={memory}
+                headerActions={headerActions}
                 onChanged={() => load({ silent: true })}
               />
             ) : view === "timeline" ? (
-              <TimelineView projectId={id} project={project} memory={memory} />
+              <TimelineView projectId={id} project={project} memory={memory} headerActions={headerActions} />
             ) : (
               <OverviewView
                 project={project}
@@ -224,7 +234,7 @@ export default function ProjectMemory() {
                 detectedCount={detectedCount}
                 counts={visibleCounts.by}
                 updatedAt={updatedAt}
-                onHistory={() => setHistoryOpen(true)}
+                headerActions={headerActions}
                 onReviewUpdate={() => setUpdateOpen(true)}
               />
             )}
@@ -535,8 +545,56 @@ function dedupeByTitle(list) {
   return (list || []).filter((m) => (seen.has(m.title) ? false : seen.add(m.title)));
 }
 
+/* ─── Shared header controls: working notifications + options ─────────── */
+function HeaderActions({ providerLabel, detectedCount = 0, attentionTitle, onReview, onGoTimeline, onGoHome, onRefresh }) {
+  const [bell, setBell] = useState(false);
+  const [menu, setMenu] = useState(false);
+  return (
+    <div className="ov-head-actions">
+      {providerLabel && (
+        <span className="ov-source-pill"><span className="ov-dot" style={{ background: "var(--success)" }} />{providerLabel} connected</span>
+      )}
+      <div className="relative">
+        <button type="button" className="ov-icon-btn" style={{ position: "relative" }} onClick={() => { setBell((v) => !v); setMenu(false); }} aria-label="Notifications" data-testid="header-bell">
+          <Bell size={16} />{detectedCount > 0 && <span className="sc-bell-dot" />}
+        </button>
+        {bell && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setBell(false)} />
+            <div className="ha-pop" data-testid="header-bell-pop">
+              <p className="ha-pop-head">NOTIFICATIONS</p>
+              {detectedCount > 0 ? (
+                <button type="button" className="ha-pop-row" onClick={() => { setBell(false); onReview?.(); }} data-testid="header-bell-review">
+                  <span className="ha-pop-title">{attentionTitle || "Changes ready to review"}</span>
+                  <span className="ha-pop-sub">A client request affects this project · Review →</span>
+                </button>
+              ) : (
+                <p className="ha-pop-empty">You're all caught up.</p>
+              )}
+              <button type="button" className="ha-pop-link" onClick={() => { setBell(false); onGoTimeline?.(); }} data-testid="header-bell-timeline">View project timeline</button>
+            </div>
+          </>
+        )}
+      </div>
+      <div className="relative">
+        <button type="button" className="ov-icon-btn" onClick={() => { setMenu((v) => !v); setBell(false); }} aria-label="More" data-testid="header-menu"><MoreHorizontal size={16} /></button>
+        {menu && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />
+            <div className="ha-pop" data-testid="header-menu-pop">
+              <button type="button" className="ha-menu-item" onClick={() => { setMenu(false); onGoHome?.(); }}>Home</button>
+              <button type="button" className="ha-menu-item" onClick={() => { setMenu(false); onGoTimeline?.(); }}>Project timeline</button>
+              <button type="button" className="ha-menu-item" data-testid="header-menu-refresh" onClick={() => { setMenu(false); onRefresh?.(); toast.success("Refreshed"); }}>Refresh now</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Home — lightweight "where are we now" + drill-in details ─────────── */
-function OverviewView({ project, projectId, memory, connections, detectedCount, counts, updatedAt, onHistory, onReviewUpdate }) {
+function OverviewView({ project, projectId, memory, connections, detectedCount, counts, updatedAt, headerActions, onReviewUpdate }) {
   const [modalCat, setModalCat] = useState(null);
   const noSources = connections.length === 0;
   const all = useMemo(() => flattenMemory(memory), [memory]);
@@ -564,20 +622,7 @@ function OverviewView({ project, projectId, memory, connections, detectedCount, 
   const primary = connections[0];
   const Header = () => (
     <div className="ov-head">
-      <div className="ov-head-actions">
-        {primary && (
-          <span className="ov-source-pill" data-testid="overview-source-pill">
-            <span className="ov-dot" style={{ background: "var(--success)" }} />
-            {(PROVIDER_META[primary.provider]?.label || primary.provider)} connected
-          </span>
-        )}
-        <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="History" data-testid="overview-bell" style={{ position: "relative" }}>
-          <Bell size={16} />{detectedCount > 0 && <span className="sc-bell-dot" />}
-        </button>
-        <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="More" data-testid="overview-menu">
-          <MoreHorizontal size={16} />
-        </button>
-      </div>
+      <HeaderActions {...headerActions} attentionTitle={attention[0]?.title} />
       <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)", display: "none" }}>HOME</p>
       <h1 className="mt-1 text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="project-memory-title">
         {project.name}
@@ -701,7 +746,7 @@ function CategoryModal({ catKey, memory, onClose }) {
 }
 
 /* ─── Conversations — compressed client stream + Ask Bracket ──────────── */
-function ConversationsStream({ projectId, project, connections, memory }) {
+function ConversationsStream({ projectId, project, connections, memory, headerActions }) {
   const [orig, setOrig] = useState(null);
   const [showAll, setShowAll] = useState(false);
   const all = useMemo(() => flattenMemory(memory), [memory]);
@@ -716,16 +761,7 @@ function ConversationsStream({ projectId, project, connections, memory }) {
   return (
     <div className="ov-wrap conv-wrap" data-testid="project-conversations">
       <div className="ov-head">
-        <div className="ov-head-actions">
-          {primary && (
-            <span className="ov-source-pill">
-              <span className="ov-dot" style={{ background: "var(--success)" }} />
-              {(PROVIDER_META[primary.provider]?.label || primary.provider)} connected
-            </span>
-          )}
-          <button type="button" className="ov-icon-btn" aria-label="Notifications"><Bell size={16} /></button>
-          <button type="button" className="ov-icon-btn" aria-label="More"><MoreHorizontal size={16} /></button>
-        </div>
+        <HeaderActions {...(headerActions || {})} />
         <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>Conversations</h1>
         <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Bracket compresses client messages and helps you respond.</p>
       </div>
@@ -959,7 +995,7 @@ function ViewOriginalModal({ projectId, connId, connections, onClose }) {
 }
 
 /* ─── Timeline — Approaching deadlines + Project history + Ask Bracket ── */
-function TimelineView({ projectId, project, memory }) {
+function TimelineView({ projectId, project, memory, headerActions }) {
   const [history, setHistory] = useState([]);
   const [fullOpen, setFullOpen] = useState(false);
   useEffect(() => {
@@ -1010,11 +1046,7 @@ function TimelineView({ projectId, project, memory }) {
   return (
     <div className="ov-wrap conv-wrap" data-testid="project-timeline">
       <div className="ov-head">
-        <div className="ov-head-actions">
-          <span className="ov-source-pill"><span className="ov-dot" style={{ background: "var(--success)" }} />Gmail connected</span>
-          <button type="button" className="ov-icon-btn" aria-label="Notifications"><Bell size={16} /></button>
-          <button type="button" className="ov-icon-btn" aria-label="More"><MoreHorizontal size={16} /></button>
-        </div>
+        <HeaderActions {...(headerActions || {})} />
         <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>Timeline</h1>
         <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Deadlines, decisions, and everything that shaped this project.</p>
       </div>

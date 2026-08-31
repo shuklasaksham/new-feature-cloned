@@ -87,7 +87,7 @@ export default function App() {
           {/* /app → straight into the latest project (old dashboard removed) */}
           <Route path="/app" element={<ProtectedRoute><AppEntry /></ProtectedRoute>} />
           <Route path="/app/new" element={<ProtectedRoute><AppEntry /></ProtectedRoute>} />
-          <Route path="/app/connect" element={<ProtectedRoute><AppShell><ConnectWork /></AppShell></ProtectedRoute>} />
+          <Route path="/app/connect" element={<ProtectedRoute><ConnectWork /></ProtectedRoute>} />
           <Route path="/app/activity" element={<ProtectedRoute><AppShell><Activity /></AppShell></ProtectedRoute>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
           <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />

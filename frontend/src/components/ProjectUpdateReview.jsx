@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { X, Loader2, Check } from "lucide-react";
+import { X, Loader2, Check, Send, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { CATEGORY_BY_KEY } from "../lib/memoryCategories";
@@ -19,6 +19,38 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
   const [none, setNone] = useState(false);
   const [acting, setActing] = useState(null);
   const [removed, setRemoved] = useState({}); // item-key -> true (excluded)
+  const [compose, setCompose] = useState(null); // { titles } after accept → prompt to send client
+  const [draft, setDraft] = useState("");
+  const [gen, setGen] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const genDraft = async (titles) => {
+    setGen(true);
+    try {
+      const { data } = await api.post(`/projects/${projectId}/suggest-reply`, {
+        instruction: `Write a short, friendly note to the client confirming we've accommodated these changes: ${titles.join("; ")}. Keep it concise and professional.`,
+        history: [],
+      });
+      setDraft((data.reply || "").trim());
+    } catch (e) { /* leave draft empty; user can still write */ }
+    finally { setGen(false); }
+  };
+
+  const sendUpdate = async () => {
+    if (sending || !draft.trim()) return;
+    setSending(true);
+    try {
+      const { data } = await api.get(`/projects/${projectId}/send-targets`);
+      const targets = data.targets || [];
+      const gmail = targets.filter((t) => t.provider === "gmail").map((t) => ({ to: t.to, thread_id: t.thread_id }));
+      const slack = targets.filter((t) => t.provider === "slack");
+      if (gmail.length) await api.post(`/projects/${projectId}/send-email`, { targets: gmail, body: draft });
+      for (const s of slack) await api.post(`/projects/${projectId}/send-slack`, { channel_id: s.channel_id, body: draft });
+      toast.success("Update sent to your client");
+      onClose?.();
+    } catch (e) { toast.error(formatApiError(e)); }
+    finally { setSending(false); }
+  };
 
   useEffect(() => {
     if (!open || !projectId) return;
@@ -73,10 +105,27 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
           exclude_downstream: parts.filter((p) => p.kind === "down" && removed[p.key]).map((p) => p.downKey),
         };
       }
-      await api.post(`/projects/${projectId}/update/${update.id}/${action}`, payload);
-      toast.success(action === "approve" ? "Changes applied across your project" : "Change dismissed — not part of the project");
-      onResolved?.();
-      onClose?.();
+      const { data } = await api.post(`/projects/${projectId}/update/${update.id}/${action}`, payload);
+      if (action === "approve") {
+        onResolved?.();
+        toast.success("Changes applied across your project", {
+          duration: 8000,
+          action: {
+            label: "Undo",
+            onClick: async () => {
+              try { await api.post(`/projects/${projectId}/update/${data.update_id}/undo`); toast.success("Change reverted"); onResolved?.(); }
+              catch (e) { toast.error(formatApiError(e)); }
+            },
+          },
+        });
+        const titles = parts.filter((p) => !removed[p.key]).map((p) => p.title);
+        setCompose({ titles });
+        genDraft(titles);
+      } else {
+        toast.success("Change dismissed — not part of the project");
+        onResolved?.();
+        onClose?.();
+      }
     } catch (e) {
       toast.error(formatApiError(e));
     } finally {
@@ -85,6 +134,37 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
   };
 
   if (!open) return null;
+
+  if (compose) {
+    return (
+      <div className="bkt-modal-overlay" style={{ zIndex: 70 }} onClick={onClose} data-testid="project-update-overlay">
+        <div className="pu-modal" onClick={(e) => e.stopPropagation()} style={{ width: "min(94vw, 620px)" }} data-testid="update-compose">
+          <div className="bkt-modal-head">
+            <span className="flex items-center gap-2"><Sparkles size={15} style={{ color: "var(--accent)" }} /><span className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>Send your client an update</span></span>
+            <button type="button" className="bkt-modal-x" onClick={onClose} data-testid="update-compose-close"><X size={16} /></button>
+          </div>
+          <div className="pu-body">
+            <p className="text-[13px] mb-3" style={{ color: "var(--text-3)" }}>Changes applied. Let your client know what you accommodated — Bracket drafted this from the update.</p>
+            {gen ? (
+              <div className="flex items-center gap-2 text-[13px] py-8" style={{ color: "var(--text-3)" }}><Loader2 size={14} className="animate-spin" /> Drafting a message…</div>
+            ) : (
+              <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={8}
+                className="w-full resize-y rounded-xl p-3 text-[13.5px] leading-relaxed outline-none"
+                style={{ background: "var(--surface-2)", border: "1px solid var(--hairline-strong)", color: "var(--text)" }} data-testid="update-compose-text" />
+            )}
+          </div>
+          <div className="pu-foot">
+            <button type="button" onClick={onClose} className="cta-mono text-[12.5px]" style={{ color: "var(--text-2)" }} data-testid="update-compose-skip">Skip for now</button>
+            <button type="button" onClick={sendUpdate} disabled={sending || gen || !draft.trim()}
+              className="cta-mono inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-semibold disabled:opacity-40"
+              style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }} data-testid="update-compose-send">
+              {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={13} />} Send update
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bkt-modal-overlay" style={{ zIndex: 70 }} onClick={onClose} data-testid="project-update-overlay">
