@@ -1,3 +1,9 @@
+## Changelog — 2026-06 (Reconnect chip + Figma paste-and-go / team search)
+- **Reconnect chip**: `ProjectSidebar` source rows now show an ALWAYS-visible pill "Reconnect" the moment a token goes stale — red (`data-level=red`, "Token expired") or amber (`data-level=amber`, shows the health message). Healthy sources show no chip. Clicking it opens the Add-Source dialog and forces a fresh OAuth for that provider (new `reconnect` prop on `AddSourceDialog` → auto-`startOAuth`). New `.psb-reconnect-chip` CSS (not hover-gated, unlike `.psb-source-actions`).
+- **Figma Paste-and-Go + team search**: the picker's debounced `[query]` effect now sends figma-aware params — `{q, url}` for Figma (`url` resolves a pasted file/team link automatically after 350ms, no Enter; `q` filters the team's files by name) and `{q}` for other providers. A single resolved Figma file is auto-selected so "Add" lights up instantly.
+- Verified: testing_agent iter58 — 100% frontend (chip visibility + action, Figma both-params request, add-source regression). Note: Figma team-name search only returns results once the account has a remembered `figma_team_id` (paste a team link once) — a Figma API limitation.
+
+
 ## Changelog — 2026-06 (Add-Source Figma picker actually queries the backend)
 - **Bug**: In the dashboard `+` Add-Source dialog (`AddSourceDialog`), after connecting Figma the picker showed "Nothing matched" and pasting a Figma link did nothing. Root cause: the search box only held local `query` state — it never sent the pasted URL to `GET /connect/figma/sources`. (The onboarding modal `ConnectWork` did this correctly; the dashboard dialog didn't.)
 - **Fix (frontend)**: added `runPickerSearch()` in `AddSourceDialog.jsx` — pressing Enter now calls `/connect/{provider}/sources` with `url=` for Figma (or `q=` for others) and repopulates the list. Figma-aware placeholder + empty-state copy ("Paste a Figma file or team link… press Enter").

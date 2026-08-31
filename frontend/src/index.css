@@ -4748,6 +4748,11 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .psb-src-btn:hover { background: #1c1c1c; color: #e8e8e8; }
 .psb-src-btn--danger:hover { background: rgba(217,87,87,0.14); color: #e06767; }
 .project-sidebar.is-collapsed .psb-source-actions { display: none !important; }
+.psb-reconnect-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 9999px; font-size: 10.5px; font-weight: 600; line-height: 1; white-space: nowrap; flex-shrink: 0; cursor: pointer; transition: filter .14s, background .14s; }
+.psb-reconnect-chip[data-level="red"] { color: #e06767; border: 1px solid rgba(217,87,87,0.45); background: rgba(217,87,87,0.09); }
+.psb-reconnect-chip[data-level="amber"] { color: #d8b24a; border: 1px solid rgba(212,167,44,0.45); background: rgba(212,167,44,0.09); }
+.psb-reconnect-chip:hover { filter: brightness(1.18); }
+.project-sidebar.is-collapsed .psb-reconnect-chip { display: none !important; }
 
 /* Help FAQ */
 .help-faq { display: flex; flex-direction: column; }

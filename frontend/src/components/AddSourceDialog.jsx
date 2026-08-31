@@ -10,7 +10,7 @@ import { ProviderIcon, PROVIDER_META } from "../lib/providersMeta";
  * page. Provider list → inline OAuth popup (popup-blocker safe) → source picker
  * → attach to THIS project via /connect/preview + /connect/establish.
  */
-export default function AddSourceDialog({ open, onClose, projectId, onChanged }) {
+export default function AddSourceDialog({ open, onClose, projectId, onChanged, reconnect }) {
   const [providers, setProviders] = useState([]);
   const [connecting, setConnecting] = useState(null); // provider key while OAuth in flight
   const [picker, setPicker] = useState(null);          // { provider, sources }
@@ -63,26 +63,6 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
     } catch (err) { toast.error(formatApiError(err)); }
   };
 
-  // Server-side search / Figma-link lookup within the open picker.
-  const runPickerSearch = async (val) => {
-    const key = picker?.provider;
-    if (!key) return;
-    const isFig = key === "figma";
-    setPickerLoading(true);
-    try {
-      const { data } = await api.get(`/connect/${key}/sources`, { params: isFig ? { url: val } : { q: val } });
-      const sources = data?.sources || [];
-      setPicker({ provider: key, sources });
-      setSelected(sources.length === 1 ? [sources[0].id] : []);
-      setStatus({});
-      if (val && !sources.length) toast.info(isFig ? "Nothing found for that link." : "No matches — try different terms.");
-    } catch (e) {
-      toast.error(formatApiError(e));
-    } finally {
-      setPickerLoading(false);
-    }
-  };
-
   // Click a provider: list its sources if already linked, else OAuth popup.
   const pick = async (key) => {
     if (connecting) return;
@@ -131,18 +111,39 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
     }
   };
 
-  // Re-query the source list as the user types.
+  // One-click reconnect from the sidebar chip: force a fresh OAuth for the
+  // given provider the moment the dialog opens (re-mints a stale/expired token).
+  const reconnectFired = useRef(false);
+  useEffect(() => {
+    if (open && reconnect && !reconnectFired.current) {
+      reconnectFired.current = true;
+      startOAuth(reconnect);
+    }
+    if (!open) reconnectFired.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, reconnect]);
+
+  // Re-query the source list as the user types. Also powers Figma "paste-and-go"
+  // (a pasted link resolves to its file) and Figma team-file search by name.
   useEffect(() => {
     if (!picker) return;
     const prov = picker.provider;
+    const isFig = prov === "figma";
+    const val = query.trim();
     const t = setTimeout(async () => {
       setPickerLoading(true);
       try {
-        const { data } = await api.get(`/connect/${prov}/sources`, { params: { q: query } });
-        setPicker((cur) => (cur && cur.provider === prov ? { ...cur, sources: data?.sources || [] } : cur));
+        // Figma: send the text as BOTH url (resolves a pasted file/team link) and
+        // q (filters the team's files by name). Others just search by q.
+        const params = isFig ? { q: val, url: val } : { q: val };
+        const { data } = await api.get(`/connect/${prov}/sources`, { params });
+        const rows = data?.sources || [];
+        setPicker((cur) => (cur && cur.provider === prov ? { ...cur, sources: rows } : cur));
+        // Paste-and-Go: a valid Figma link resolves to exactly one file → auto-select it.
+        if (isFig && val && rows.length === 1) setSelected([rows[0].id]);
       } catch { /* keep previous */ }
       finally { setPickerLoading(false); }
-    }, 300);
+    }, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
@@ -246,8 +247,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) runPickerSearch(query.trim()); }}
-                placeholder={picker.provider === "figma" ? "Paste a Figma file or team link, then press Enter" : "Search, then press Enter"}
+                placeholder={picker.provider === "figma" ? "Paste a Figma link, or search your team files by name…" : "Search…"}
                 data-testid="add-source-search"
                 autoFocus
               />
@@ -257,8 +257,8 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
               {picker.sources.length === 0 ? (
                 <p className="text-[12.5px] py-8 text-center" style={{ color: "var(--text-3)" }}>
                   {picker.provider === "figma"
-                    ? "Paste a Figma file or team link above and press Enter to load it."
-                    : "No sources yet — type a search and press Enter."}
+                    ? "Paste a Figma file link, or type a name to search your team's files."
+                    : "Type to search your sources."}
                 </p>
               ) : picker.sources.map((s) => {
                 const on = selected.includes(s.id);

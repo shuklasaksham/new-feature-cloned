@@ -36,6 +36,7 @@ export default function ProjectSidebar({
   const [quota, setQuota] = useState(null);
   const [projQuery, setProjQuery] = useState("");
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [reconnectKey, setReconnectKey] = useState(null);
   const [busyConn, setBusyConn] = useState(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const dialog = useDialog();
@@ -62,7 +63,8 @@ export default function ProjectSidebar({
     }
   };
 
-  const reconnectSource = () => {
+  const reconnectSource = (conn) => {
+    setReconnectKey(conn?.provider || null);
     setSourcesOpen(true);
   };
 
@@ -259,23 +261,33 @@ export default function ProjectSidebar({
             <li className="psb-source-empty psb-label">No sources yet</li>
           ) : (
             (connections || []).map((c) => {
-              const bad = c.health?.level === "red";
+              const level = c.health?.level;
+              const stale = level === "red" || level === "amber";
+              const dot = level === "red" ? "#D95757" : level === "amber" ? "#D4A72C" : "#52A874";
+              const statusText = level === "red" ? "Token expired" : level === "amber" ? (c.health?.message || "Expiring soon") : "Connected";
               return (
               <li key={c.id} className="psb-source-row group" title={c.source_name} data-testid={`psb-source-${c.id}`}>
                 <span className="psb-source-icon"><ProviderIcon provider={c.provider} size={18} bare /></span>
                 <span className="psb-label min-w-0 flex-1">
                   <span className="psb-source-name">{c.source_name || c.provider}</span>
                   <span className="psb-source-status">
-                    <span className="psb-dot" style={{ background: bad ? "#D95757" : c.health?.level === "amber" ? "#D4A72C" : "#52A874" }} />
-                    {bad ? "Reconnect" : "Connected"}
+                    <span className="psb-dot" style={{ background: dot }} />
+                    {statusText}
                   </span>
                 </span>
+                {stale && (
+                  <button
+                    type="button"
+                    className="psb-reconnect-chip psb-label"
+                    data-level={level}
+                    title="Reconnect this tool"
+                    onClick={() => reconnectSource(c)}
+                    data-testid={`psb-source-reconnect-${c.id}`}
+                  >
+                    <RefreshCw size={11} /> Reconnect
+                  </button>
+                )}
                 <span className="psb-source-actions psb-label">
-                  {bad && (
-                    <button type="button" className="psb-src-btn" title="Reconnect" onClick={() => reconnectSource(c)} data-testid={`psb-source-reconnect-${c.id}`}>
-                      <RefreshCw size={13} />
-                    </button>
-                  )}
                   <button type="button" className="psb-src-btn psb-src-btn--danger" title="Disconnect" disabled={busyConn === c.id} onClick={() => disconnectSource(c)} data-testid={`psb-source-disconnect-${c.id}`}>
                     {busyConn === c.id ? <Loader2 size={13} className="animate-spin" /> : <Unplug size={13} />}
                   </button>
@@ -316,9 +328,10 @@ export default function ProjectSidebar({
       </div>
       <AddSourceDialog
         open={sourcesOpen}
-        onClose={() => setSourcesOpen(false)}
+        onClose={() => { setSourcesOpen(false); setReconnectKey(null); }}
         projectId={project?.id}
         onChanged={onSourcesChanged}
+        reconnect={reconnectKey}
       />
       <PlanModal
         open={planModalOpen}
