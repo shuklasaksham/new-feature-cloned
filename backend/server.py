@@ -175,6 +175,56 @@ class UpdateProfileIn(_BM):
     avatar: Optional[str] = _Fd(default=None, max_length=20)
 
 
+async def _heal_orphaned_identity(canonical_user_id: str, email: str) -> dict:
+    """Self-healing identity merge. Past DB resets left `integration_accounts`
+    and projects stranded under OLD user_ids (a new user_id is minted after a
+    reset, but old connections/projects survive under the previous id). On each
+    login we re-point that orphaned data onto the current canonical user_id,
+    resolved via strong email signals (a gmail connection's label == the login
+    email, or a project's creator_email). Idempotent and safe: only touches rows
+    tied to THIS person's email."""
+    email = (email or "").lower().strip()
+    if not email or not canonical_user_id:
+        return {"moved_accounts": 0, "moved_projects": 0}
+    orphan_ids = set()
+    async for a in db.integration_accounts.find({"provider": "gmail"}, {"_id": 0, "user_id": 1, "label": 1}):
+        if (a.get("label") or "").lower().strip() == email and a.get("user_id"):
+            orphan_ids.add(a["user_id"])
+    async for p in db.projects.find({"creator_email": email}, {"_id": 0, "owner_user_id": 1}):
+        if p.get("owner_user_id"):
+            orphan_ids.add(p["owner_user_id"])
+    orphan_ids.discard(canonical_user_id)
+    if not orphan_ids:
+        return {"moved_accounts": 0, "moved_projects": 0}
+    orphan_list = list(orphan_ids)
+    proj_res = await db.projects.update_many(
+        {"owner_user_id": {"$in": orphan_list}},
+        {"$set": {"owner_user_id": canonical_user_id}},
+    )
+    existing_providers = set()
+    async for c in db.integration_accounts.find({"user_id": canonical_user_id}, {"_id": 0, "provider": 1}):
+        existing_providers.add(c["provider"])
+    moved = 0
+    async for a in db.integration_accounts.find(
+        {"user_id": {"$in": orphan_list}}, {"_id": 1, "provider": 1, "updated_at": 1}
+    ).sort("updated_at", -1):
+        prov = a["provider"]
+        if prov in existing_providers:
+            # Canonical already has this provider connected — drop the stale copy.
+            await db.integration_accounts.delete_one({"_id": a["_id"]})
+        else:
+            await db.integration_accounts.update_one({"_id": a["_id"]}, {"$set": {"user_id": canonical_user_id}})
+            existing_providers.add(prov)
+            moved += 1
+    if moved or proj_res.modified_count:
+        logger.info(
+            "[identity-heal] email=%s canonical=%s moved_accounts=%s moved_projects=%s orphans=%s",
+            email, canonical_user_id, moved, proj_res.modified_count, orphan_list,
+        )
+    return {"moved_accounts": moved, "moved_projects": proj_res.modified_count, "orphans": orphan_list}
+
+
+
 @api.post("/auth/google/exchange")
 async def auth_google_exchange(body: GoogleSessionIn, request: Request, response: Response):
     """Exchange the Emergent session_id (from #session_id=... fragment) for an
@@ -189,6 +239,7 @@ async def auth_google_exchange(body: GoogleSessionIn, request: Request, response
         signup_ip=meta["signup_ip"],
         signup_user_agent=meta["signup_user_agent"],
     )
+    await _heal_orphaned_identity(user["user_id"], user.get("email", ""))
     token = await create_session(db, user["user_id"])
     set_session_cookie(response, token)
     return {"user": public_user(user), "session_token": token, "is_new": not bool(user.get("name"))}
@@ -254,6 +305,7 @@ async def auth_otp_verify(body: OtpVerifyIn, request: Request, response: Respons
             signup_user_agent=meta["signup_user_agent"],
         )
         is_new = True
+    await _heal_orphaned_identity(user["user_id"], user.get("email", ""))
     token = await create_session(db, user["user_id"])
     set_session_cookie(response, token)
     return {"user": public_user(user), "session_token": token, "is_new": is_new}
