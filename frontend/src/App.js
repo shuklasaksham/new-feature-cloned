@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 
 import MarketingLayout from "./components/MarketingLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RequirePlan from "./components/RequirePlan";
 import AppShell from "./components/AppShell";
 import ScrollToTop from "./components/ScrollToTop";
 import InstallPrompt from "./components/InstallPrompt";
@@ -50,6 +51,15 @@ function AnalyticsTrackerMount() {
   return null;
 }
 
+// Tool routes require BOTH auth and an active plan (admins exempt).
+function Tool({ children }) {
+  return (
+    <ProtectedRoute>
+      <RequirePlan>{children}</RequirePlan>
+    </ProtectedRoute>
+  );
+}
+
 export default function App() {
   return (
     <HelmetProvider>
@@ -78,23 +88,23 @@ export default function App() {
           <Route path="/plan" element={<ProtectedRoute><ChoosePlan /></ProtectedRoute>} />
           <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
           <Route path="/payment/cancel" element={<ProtectedRoute><PaymentCancel /></ProtectedRoute>} />
-          <Route path="/welcome" element={<ProtectedRoute><FirstProject /></ProtectedRoute>} />
-          <Route path="/welcome/select" element={<ProtectedRoute><SelectSource /></ProtectedRoute>} />
-          <Route path="/welcome/building" element={<ProtectedRoute><BuildingProject /></ProtectedRoute>} />
-          <Route path="/claim" element={<ProtectedRoute><ClaimProjects /></ProtectedRoute>} />
+          <Route path="/welcome" element={<Tool><FirstProject /></Tool>} />
+          <Route path="/welcome/select" element={<Tool><SelectSource /></Tool>} />
+          <Route path="/welcome/building" element={<Tool><BuildingProject /></Tool>} />
+          <Route path="/claim" element={<Tool><ClaimProjects /></Tool>} />
 
-          {/* Tool (auth required) — wrapped in AppShell w/ collapsible sidebar */}
+          {/* Tool (auth + active plan required) — wrapped in AppShell w/ collapsible sidebar */}
           {/* /app → straight into the latest project (old dashboard removed) */}
-          <Route path="/app" element={<ProtectedRoute><AppEntry /></ProtectedRoute>} />
-          <Route path="/app/new" element={<ProtectedRoute><AppEntry /></ProtectedRoute>} />
-          <Route path="/app/connect" element={<ProtectedRoute><ConnectWork /></ProtectedRoute>} />
-          <Route path="/app/activity" element={<ProtectedRoute><AppShell><Activity /></AppShell></ProtectedRoute>} />
+          <Route path="/app" element={<Tool><AppEntry /></Tool>} />
+          <Route path="/app/new" element={<Tool><AppEntry /></Tool>} />
+          <Route path="/app/connect" element={<Tool><ConnectWork /></Tool>} />
+          <Route path="/app/activity" element={<Tool><AppShell><Activity /></AppShell></Tool>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
           <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />
-          <Route path="/project/:id" element={<ProtectedRoute><ProjectMemory /></ProtectedRoute>} />
-          <Route path="/project/:id/legacy" element={<ProtectedRoute><AppShell><ProjectOverview /></AppShell></ProtectedRoute>} />
-          <Route path="/project/:id/flow" element={<ProtectedRoute><AppShell><ProjectFlow /></AppShell></ProtectedRoute>} />
-          <Route path="/project/:id/document" element={<ProtectedRoute><AppShell><ProjectDocument /></AppShell></ProtectedRoute>} />
+          <Route path="/project/:id" element={<Tool><ProjectMemory /></Tool>} />
+          <Route path="/project/:id/legacy" element={<Tool><AppShell><ProjectOverview /></AppShell></Tool>} />
+          <Route path="/project/:id/flow" element={<Tool><AppShell><ProjectFlow /></AppShell></Tool>} />
+          <Route path="/project/:id/document" element={<Tool><AppShell><ProjectDocument /></AppShell></Tool>} />
 
           {/* Public client review */}
           <Route path="/r/:token" element={<ClientReview />} />

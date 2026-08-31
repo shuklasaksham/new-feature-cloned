@@ -1348,3 +1348,8 @@ Fixes from user's 5-item pre-payment list:
   - .env: added ADMIN_EMAILS_OVERRIDE="support@use-bracket.com".
 - Preview verified: simulated prod (seeded saksham+project, broke support@ pw) → after restart: saksham purged + projects gone, support@ login Bracket@123 works (is_admin, name "Bracket Admin"), admin/users 200.
 - Admin login = support@use-bracket.com / Bracket@123.
+
+## 2026-06 — CRITICAL: paywall bypass on returning sessions (fixed)
+- BUG: after login, closing + reopening prod site and navigating to /app or /project/:id let a no-plan user reach the workspace, bypassing payment. ProtectedRoute only checked auth, not plan; plan-gating existed ONLY at login-time redirects (Login.jsx, AuthCallback.jsx).
+- FIX: new components/RequirePlan.jsx — redirects logged-in users with no `user.plan` (and not is_admin) to /plan. App.js: added <Tool> wrapper (ProtectedRoute + RequirePlan) applied to all tool routes: /app, /app/new, /app/connect, /app/activity, /welcome*, /claim, /project/:id (+legacy/flow/document). /plan, /payment/*, /onboarding, /settings remain auth-only (no plan required) so users can pay / manage account.
+- Verified in preview: fresh@ (no plan) → /app redirects to /plan; pro@ (plan) → reaches /project/:id workspace. Admins exempt.
