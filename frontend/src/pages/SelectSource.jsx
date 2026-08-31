@@ -121,7 +121,11 @@ export default function SelectSource() {
   const fetchSources = async (q = "") => {
     setLoading(true); setLoadError("");
     try {
-      const { data } = await api.get(`/connect/${provider}/sources`, { params: q ? { q } : {} });
+      // Figma resolves a pasted file/team LINK via the `url` param; plain text
+      // stays a search `q`. Other providers only ever use `q`.
+      const isFigmaLink = /figma\.com\//i.test(q);
+      const params = q ? (isFigmaLink ? { url: q } : { q }) : {};
+      const { data } = await api.get(`/connect/${provider}/sources`, { params });
       setSources(data.sources || []);
     } catch (e) {
       setLoadError(formatApiError(e));
