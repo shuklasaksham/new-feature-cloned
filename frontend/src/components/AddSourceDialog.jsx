@@ -63,20 +63,13 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
     } catch (err) { toast.error(formatApiError(err)); }
   };
 
-  // Click a provider: list its sources if already linked, else OAuth popup.
-  const pick = async (key) => {
+  // Adding a source ALWAYS runs OAuth for that provider — even if it's already
+  // linked — so the user picks/confirms which account this source belongs to
+  // each time (no silent reuse of a previously-connected account). On success
+  // we list that account's sources for attaching.
+  const pick = (key) => {
     if (connecting) return;
-    setConnecting(key);
-    try {
-      const { data } = await api.get(`/connect/${key}/sources`);
-      const sources = data?.sources || [];
-      setPicker({ provider: key, sources });
-      setSelected([]); setStatus({}); setQuery("");
-      setConnecting(null);
-    } catch (e) {
-      if (e?.response?.status === 400) startOAuth(key);
-      else { setConnecting(null); toast.error(formatApiError(e)); }
-    }
+    startOAuth(key);
   };
 
   const startOAuth = async (key) => {

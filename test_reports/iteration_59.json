@@ -1,0 +1,42 @@
+{
+  "summary": "Frontend-only verification of ALWAYS-OAUTH-ON-ADD (iter59). Logged in as admin (support@use-bracket.com), opened project 'Emergent Media Plan' (10db10f0-c0ed-427b-afd5-ad553da6b97e), opened Add-Source dialog via psb-add-source, and clicked provider tiles with window.open patched to capture calls. All three review requirements verified end-to-end via Playwright on the preview URL at 1920x800.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_results": {
+    "always_oauth_on_connected_provider_figma": {
+      "status": "PASS",
+      "details": "Figma tile renders with 'Add' badge (status=connected). Clicking add-source-option-figma triggered window.open('about:blank','bracket-oauth',...) AND a GET /api/connect/figma/auth-url; popup.location was then set to https://www.figma.com/oauth?... — real OAuth was launched. No GET /api/connect/figma/sources was fired before OAuth (would indicate silent reuse of old picker). add-source-list was NOT rendered."
+    },
+    "always_oauth_on_available_provider_gmail": {
+      "status": "PASS",
+      "details": "Second usable provider Gmail (status=available, badge 'Connect') → clicking add-source-option-gmail also fired window.open + GET /api/connect/gmail/auth-url; popup.location set to https://accounts.google.com/o/oauth2/v2/auth?... . Confirms every usable provider always OAuths."
+    },
+    "provider_status_badges": {
+      "status": "PASS",
+      "details": "Connected figma shows badge 'Add' (clickable, OAuths). Available gmail/slack/github show 'Connect' (clickable, OAuth). Notion shows 'Setup' (disabled). whatsapp/teams/adobe/gdrive/dropbox/linear show 'Soon' (disabled)."
+    },
+    "coming_soon_gating": {
+      "status": "PASS",
+      "details": "Clicking disabled whatsapp tile produced 0 window.open calls and 0 auth-url requests. All 'Soon'/'Setup' tiles have disabled=true attribute in DOM."
+    },
+    "regression_popup_close_and_reopen": {
+      "status": "PASS",
+      "details": "While OAuth was in flight for figma, all provider rows correctly showed disabled=true (list becomes non-interactive during connecting). After closing dialog via add-source-close and reopening via psb-add-source, provider disabled states reset — figma re-enabled ('Add'), gmail/slack/github re-enabled ('Connect'), soon providers still disabled. No stuck state. Confirms the setInterval popup-watch + open-effect reset chain from iter57 still works."
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AddSourceDialog.pick now unconditionally calls startOAuth — matches product intent. No dead code from old inline-sources path remains in pick().",
+    "loadSources is still invoked only after 'bracket-oauth:{key}:ok' postMessage, so a cancelled/closed popup correctly does NOT show the picker (verified: no /sources request after clicking figma).",
+    "setInterval watchdog (600ms) clears connecting state if popup is closed early — good UX guard against stuck disabled list.",
+    "reconnect chip flow (iter58) unchanged and still uses same startOAuth → consistent with new always-OAuth rule."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped)", "frontend": "100%"},
+  "test_credentials": "support@use-bracket.com / Bracket@123 (admin, password login).",
+  "seed_data_creation": "None — used existing admin project 'Emergent Media Plan' and existing figma integration_account (shuklasaksham01@gmail.com).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "iter59 always-OAuth verified: clicking ANY usable provider tile (including already-connected figma) fires window.open + GET /connect/{key}/auth-url. Picker only appears after the popup posts bracket-oauth:{key}:ok. Coming-soon tiles remain non-clickable. Regression: closing/reopening dialog resets disabled state properly."
+}
