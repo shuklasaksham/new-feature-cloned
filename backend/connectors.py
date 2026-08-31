@@ -435,6 +435,15 @@ async def figma_list_sources(account: dict, q: str, url: str) -> List[dict]:
             f = r.json()
             return [{"id": key, "name": f.get("name") or "Figma file", "url": f"https://www.figma.com/design/{key}",
                      "meta": {"updated": f.get("lastModified", ""), "detail": "Figma file"}}]
+        # Fallback: user pasted just the file key or a "key/name?…" path (no domain).
+        bare = re.match(r"^\s*([A-Za-z0-9]{15,})(?:[/?].*)?$", url or "")
+        if bare:
+            key = bare.group(1)
+            r = await c.get(f"https://api.figma.com/v1/files/{key}?depth=1", headers=h)
+            if r.status_code == 200:
+                f = r.json()
+                return [{"id": key, "name": f.get("name") or "Figma file", "url": f"https://www.figma.com/design/{key}",
+                         "meta": {"updated": f.get("lastModified", ""), "detail": "Figma file"}}]
         # A team link (or a remembered team) lists every file across its projects.
         tm = FIGMA_TEAM_RE.search(url or "")
         team_id = tm.group(1) if tm else (account.get("figma_team_id") or "")

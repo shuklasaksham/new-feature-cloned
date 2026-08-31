@@ -63,6 +63,26 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
     } catch (err) { toast.error(formatApiError(err)); }
   };
 
+  // Server-side search / Figma-link lookup within the open picker.
+  const runPickerSearch = async (val) => {
+    const key = picker?.provider;
+    if (!key) return;
+    const isFig = key === "figma";
+    setPickerLoading(true);
+    try {
+      const { data } = await api.get(`/connect/${key}/sources`, { params: isFig ? { url: val } : { q: val } });
+      const sources = data?.sources || [];
+      setPicker({ provider: key, sources });
+      setSelected(sources.length === 1 ? [sources[0].id] : []);
+      setStatus({});
+      if (val && !sources.length) toast.info(isFig ? "Nothing found for that link." : "No matches — try different terms.");
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setPickerLoading(false);
+    }
+  };
+
   // Click a provider: list its sources if already linked, else OAuth popup.
   const pick = async (key) => {
     if (connecting) return;
@@ -226,7 +246,8 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search"
+                onKeyDown={(e) => { if (e.key === "Enter" && query.trim()) runPickerSearch(query.trim()); }}
+                placeholder={picker.provider === "figma" ? "Paste a Figma file or team link, then press Enter" : "Search, then press Enter"}
                 data-testid="add-source-search"
                 autoFocus
               />
@@ -234,7 +255,11 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged })
             </div>
             <div className="asd-list" data-testid="add-source-list">
               {picker.sources.length === 0 ? (
-                <p className="text-[12.5px] py-8 text-center" style={{ color: "var(--text-3)" }}>Nothing matched.</p>
+                <p className="text-[12.5px] py-8 text-center" style={{ color: "var(--text-3)" }}>
+                  {picker.provider === "figma"
+                    ? "Paste a Figma file or team link above and press Enter to load it."
+                    : "No sources yet — type a search and press Enter."}
+                </p>
               ) : picker.sources.map((s) => {
                 const on = selected.includes(s.id);
                 const st = status[s.id];
