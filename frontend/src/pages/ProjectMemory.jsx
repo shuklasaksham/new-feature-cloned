@@ -751,7 +751,7 @@ function ConversationsStream({ projectId, project, connections, memory }) {
                     <span className="stream-time">{m.occurred_at ? timeAgo(m.occurred_at) : ""}</span>
                     {m.connection_id ? (
                       <button type="button" className="stream-orig2" onClick={() => setOrig(m.connection_id)} data-testid={`stream-orig-${m.id}`}>
-                        View original <ExternalLink size={12} />
+                        View original <span className="stream-orig-ic"><ExternalLink size={11} /></span>
                       </button>
                     ) : <span />}
                   </div>
@@ -957,9 +957,10 @@ function ViewOriginalModal({ projectId, connId, connections, onClose }) {
   );
 }
 
-/* ─── Timeline — Deadlines + Decisions + Scope changes + History ──────── */
+/* ─── Timeline — Approaching deadlines + Project history + Ask Bracket ── */
 function TimelineView({ projectId, project, memory }) {
   const [history, setHistory] = useState([]);
+  const [fullOpen, setFullOpen] = useState(false);
   useEffect(() => {
     api.get(`/projects/${projectId}/history`).then((r) => setHistory(r.data?.entries || [])).catch(() => {});
   }, [projectId]);
@@ -968,7 +969,7 @@ function TimelineView({ projectId, project, memory }) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const upcoming = useMemo(() => (
+  const deadlines = useMemo(() => (
     dedupeByTitle(all.filter((m) => m._catKey === "deadline" || m._catKey === "timeline"))
       .map((m) => ({ ...m, _due: parseDueDate(`${m.title} ${m.detail || ""}`, now) }))
       .filter((m) => m._due && m._due >= today)
@@ -978,7 +979,7 @@ function TimelineView({ projectId, project, memory }) {
   const past = useMemo(() => {
     const evs = [];
     dedupeByTitle(all).forEach((m) => {
-      evs.push({ id: m.id, kind: m._catKey, title: m.title, detail: m.detail, at: m.occurred_at || m.created_at, provider: m.provider });
+      evs.push({ id: m.id, kind: m._catKey, title: m.title, detail: m.detail, at: m.occurred_at || m.created_at, provider: m.provider, connection_id: m.connection_id });
     });
     (history || []).forEach((h) => {
       evs.push({ id: `h-${h.id}`, kind: "event", title: h.title, detail: h.detail, at: h.at, provider: h.provider });
@@ -987,77 +988,178 @@ function TimelineView({ projectId, project, memory }) {
   }, [all, history]);
 
   const iconFor = (kind) => CATEGORY_BY_KEY[kind]?.icon || History;
-  const colorFor = (kind) => CATEGORY_BY_KEY[kind]?.color || "#8a8a8a";
-  const [fullOpen, setFullOpen] = useState(false);
-  const recent = past.slice(0, 6);
+  const recent = past.slice(0, 4);
+  const [orig, setOrig] = useState(null);
+
+  const fmtDue = (d) => {
+    const days = Math.round((d - today) / 86400000);
+    const lbl = days <= 0 ? "Today" : days === 1 ? "Due in 1 day" : `Due in ${days} days`;
+    return `${lbl} · ${d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}`;
+  };
+  const fmtEyebrow = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400000);
+    if (diff <= 0) return "TODAY";
+    if (diff === 1) return "YESTERDAY";
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }).toUpperCase();
+  };
+  const fmtTime = (iso) => (iso ? new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "");
 
   return (
-    <div className="tl-wrap" data-testid="project-timeline">
+    <div className="ov-wrap conv-wrap" data-testid="project-timeline">
       <div className="ov-head">
-        <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>TIMELINE</p>
-        <h1 className="mt-2 text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>What happened &amp; what's coming</h1>
-        <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Deadlines, decisions, scope changes and key events in one place.</p>
+        <div className="ov-head-actions">
+          <span className="ov-source-pill"><span className="ov-dot" style={{ background: "var(--success)" }} />Gmail connected</span>
+          <button type="button" className="ov-icon-btn" aria-label="Notifications"><Bell size={16} /></button>
+          <button type="button" className="ov-icon-btn" aria-label="More"><MoreHorizontal size={16} /></button>
+        </div>
+        <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>Timeline</h1>
+        <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Deadlines, decisions, and everything that shaped this project.</p>
       </div>
 
-      <div className="tl-body-region">
-        {upcoming.length > 0 && (
-          <section className="tl-section" data-testid="timeline-upcoming">
-            <p className="ov-section-label">Upcoming</p>
-            {upcoming.slice(0, 3).map((m, i, arr) => (
-              <div key={m.id} className="tl-row" data-testid={`timeline-up-${m.id}`}>
-                <div className="tl-rail">
-                  <span className="tl-dot"><Calendar size={14} style={{ color: colorFor("deadline") }} /></span>
-                  {i < arr.length - 1 && <span className="tl-line" />}
-                </div>
-                <div className="tl-body">
-                  <p className="tl-title">{m.title}</p>
-                  {m.detail && <p className="tl-detail">{m.detail}</p>}
-                  <div className="tl-meta"><Clock size={11} /> {daysLeftLabel(m._due)}</div>
+      <div className="conv-stream-region">
+        {/* Approaching deadlines */}
+        <div className="tl-sec-head">
+          <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em" }}>APPROACHING DEADLINES</p>
+          {deadlines.length > 0 && (
+            <button type="button" className="tl-viewall" onClick={() => setFullOpen(true)} data-testid="timeline-view-all-deadlines">View all deadlines <ArrowRight size={13} /></button>
+          )}
+        </div>
+        <div className="tl-deadlines" data-testid="timeline-deadlines">
+          {deadlines.length === 0 ? (
+            <p className="tl-empty">No upcoming deadlines detected yet — Bracket adds them as dates appear in your conversations.</p>
+          ) : deadlines.slice(0, 3).map((m, i) => (
+            <React.Fragment key={m.id}>
+              {i > 0 && <span className="tl-dl-sep" />}
+              <div className="tl-dl" data-testid={`timeline-deadline-${m.id}`}>
+                <span className="tl-dl-ic"><Calendar size={15} /></span>
+                <div className="min-w-0">
+                  <p className="tl-dl-title">{m.title}</p>
+                  <p className="tl-dl-due">{fmtDue(m._due)}</p>
                 </div>
               </div>
-            ))}
-          </section>
-        )}
+            </React.Fragment>
+          ))}
+        </div>
 
-        <section className="tl-section" data-testid="timeline-history">
-          <div className="flex items-center justify-between">
-            <p className="ov-section-label" style={{ marginBottom: 0 }}>History</p>
-            {past.length > recent.length && (
-              <button type="button" className="tl-viewall" onClick={() => setFullOpen(true)} data-testid="timeline-view-all">
-                View full history ({past.length}) →
-              </button>
-            )}
-          </div>
-          <div className="mt-3">
-            {recent.length === 0 ? (
-              <p className="text-[13px]" style={{ color: "var(--text-3)" }}>No events yet.</p>
-            ) : recent.map((e, i) => {
-              const Icon = iconFor(e.kind);
-              return (
-                <div key={e.id} className="tl-row" data-testid={`timeline-hist-${e.id}`}>
-                  <div className="tl-rail">
-                    <span className="tl-dot"><Icon size={14} style={{ color: colorFor(e.kind) }} /></span>
-                    {i < recent.length - 1 && <span className="tl-line" />}
-                  </div>
-                  <div className="tl-body">
-                    <p className="tl-title">{e.title}</p>
-                    {e.detail && <p className="tl-detail">{e.detail}</p>}
-                    <div className="tl-meta">{e.at ? timeAgo(e.at) : ""}{e.provider ? ` · ${PROVIDER_META[e.provider]?.label || e.provider}` : ""}</div>
-                  </div>
+        {/* Project history */}
+        <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em", marginTop: 34, marginBottom: 6 }}>PROJECT HISTORY</p>
+        <div className="tl-hist">
+          {recent.length === 0 ? (
+            <p className="tl-empty">No events yet.</p>
+          ) : recent.map((e, i) => {
+            const Icon = iconFor(e.kind);
+            return (
+              <div key={e.id} className="tl-h-row" data-testid={`timeline-hist-${e.id}`}>
+                <div className="tl-rail">
+                  <span className="tl-dot"><Icon size={13} style={{ color: "var(--text-2)" }} /></span>
+                  {i < recent.length - 1 && <span className="tl-line" />}
                 </div>
-              );
-            })}
-          </div>
-        </section>
+                <div className="tl-h-body">
+                  <p className="tl-h-eyebrow">{fmtEyebrow(e.at)}</p>
+                  <p className="tl-h-title">{e.title}</p>
+                  {e.detail && <p className="tl-h-desc">{e.detail}</p>}
+                </div>
+                <div className="tl-h-meta">
+                  <span className="tl-h-who">{PROVIDER_META[e.provider]?.label || e.provider}</span>
+                  <span className="tl-h-time">{fmtTime(e.at)}</span>
+                  {e.connection_id ? (
+                    <button type="button" className="stream-orig2" onClick={() => setOrig(e.connection_id)} data-testid={`timeline-orig-${e.id}`}>
+                      View original <span className="stream-orig-ic"><ExternalLink size={11} /></span>
+                    </button>
+                  ) : <span className="tl-h-spacer" />}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {past.length > recent.length && (
+          <button type="button" className="tl-viewall" style={{ marginTop: 16 }} onClick={() => setFullOpen(true)} data-testid="timeline-view-earlier">View earlier history <ArrowRight size={13} /></button>
+        )}
       </div>
 
-      <TimelineHistoryModal open={fullOpen} past={past} iconFor={iconFor} colorFor={colorFor} onClose={() => setFullOpen(false)} />
+      <AskBracketHistory projectId={projectId} />
+
+      <ViewOriginalModal projectId={projectId} connId={orig} connections={[]} onClose={() => setOrig(null)} />
+      <TimelineHistoryModal open={fullOpen} past={past} iconFor={iconFor} onClose={() => setFullOpen(false)} />
+    </div>
+  );
+}
+
+/* Ask Bracket — history Q&A (full-width composer with search affordance) */
+const HISTORY_Q = ["When did the client first ask for mobile screens?", "Who approved Option B?", "What was the original homepage deadline?", "Why did the deadline change?"];
+const HISTORY_Q_MORE = ["What's still unresolved?", "Summarise the scope changes so far.", "What did the client confirm last week?"];
+
+function AskBracketHistory({ projectId }) {
+  const [q, setQ] = useState("");
+  const [asking, setAsking] = useState(false);
+  const [answer, setAnswer] = useState(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const ask = async (text) => {
+    const t = (text || "").trim();
+    if (!t || asking) return;
+    setAsking(true); setMoreOpen(false);
+    try {
+      const { data } = await api.post(`/projects/${projectId}/ask`, { question: t });
+      setAnswer({ q: t, a: (data.answer || data.reply || "").trim() });
+      setQ("");
+    } catch (e) { toast.error(formatApiError(e)); }
+    finally { setAsking(false); }
+  };
+
+  return (
+    <div className="ask-bar" data-testid="ask-bracket-history">
+      <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em", marginBottom: 12 }}>ASK BRACKET</p>
+      <form className="ask-bar-input ask-search" onSubmit={(e) => { e.preventDefault(); ask(q); }}>
+        <Search size={16} style={{ color: "#6f6f6f", marginTop: 3, flexShrink: 0 }} />
+        <textarea rows={1} value={q} onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(q); } }}
+          placeholder="Ask anything about this project's history…" data-testid="ask-history-input" />
+        <button type="submit" className="ask-bar-send" disabled={asking || !q.trim()} data-testid="ask-history-send" aria-label="Ask">
+          {asking ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+        </button>
+      </form>
+      <div className="ask-chips">
+        {HISTORY_Q.map((s) => (
+          <button key={s} type="button" className="ask-chip" disabled={asking} onClick={() => ask(s)} data-testid="ask-history-chip">{s}</button>
+        ))}
+        <div className="relative">
+          <button type="button" className="ask-chip" onClick={() => setMoreOpen((o) => !o)} data-testid="ask-history-more">More examples <ChevronDown size={12} /></button>
+          {moreOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
+              <div className="absolute z-40 rounded-xl p-1.5 min-w-[300px]" style={{ bottom: "calc(100% + 6px)", right: 0, background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.7)" }}>
+                {HISTORY_Q_MORE.map((s) => (
+                  <button key={s} type="button" onClick={() => ask(s)} className="w-full text-left px-2.5 py-2 rounded-lg text-[12.5px]" style={{ color: "var(--text-2)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>{s}</button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      {answer && (
+        <div className="bkt-modal-overlay" onClick={() => setAnswer(null)} data-testid="ask-history-answer">
+          <div className="bkt-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="bkt-modal-head">
+              <span className="flex items-center gap-2"><Sparkles size={15} style={{ color: "var(--accent)" }} /><span className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>Bracket answers</span></span>
+              <button type="button" className="bkt-modal-x" onClick={() => setAnswer(null)} data-testid="ask-history-answer-close"><X size={16} /></button>
+            </div>
+            <div className="bkt-modal-body" style={{ padding: "16px 18px" }}>
+              <p className="text-[13px] mb-3" style={{ color: "var(--text-3)" }}>{answer.q}</p>
+              <div style={{ whiteSpace: "pre-wrap", fontSize: "13.5px", lineHeight: 1.7, color: "var(--text)" }}>{answer.a || "Bracket couldn't find an answer in the connected work."}</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /* Full project history — opened deliberately; scrolls inside the modal only */
-function TimelineHistoryModal({ open, past, iconFor, colorFor, onClose }) {
+function TimelineHistoryModal({ open, past, iconFor, onClose }) {
   if (!open) return null;
   return (
     <div className="bkt-modal-overlay" onClick={onClose} data-testid="timeline-history-modal">
@@ -1076,7 +1178,7 @@ function TimelineHistoryModal({ open, past, iconFor, colorFor, onClose }) {
             return (
               <div key={e.id} className="drill-row" data-testid={`timeline-full-${e.id}`}>
                 <div className="flex items-start gap-3">
-                  <span className="stream-ico" style={{ width: 26, height: 26 }}><Icon size={13} style={{ color: colorFor(e.kind) }} /></span>
+                  <span className="stream-ico" style={{ width: 26, height: 26 }}><Icon size={13} style={{ color: "var(--text-2)" }} /></span>
                   <div className="min-w-0 flex-1">
                     <p className="drill-title">{e.title}</p>
                     {e.detail && <p className="drill-detail">{e.detail}</p>}

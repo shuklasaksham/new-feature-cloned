@@ -1,3 +1,12 @@
+## Changelog — 2026-06 (monochrome fix, full-width content, mono CTAs, Timeline redesign)
+- **Monochrome**: set all `MEMORY_CATEGORIES` colors + `STATUS_META` colors to greys (memoryCategories.js) so every category icon/status renders monochrome app-wide (removed violet/teal/green/etc.).
+- **Empty right space fixed**: `.project-main-inner` max-width → `none` (fills the workspace); stream/timeline rows now push meta to the far-right, Ask Bracket spans full width.
+- **CTA font = design-system mono**: added `font-family: var(--font-mono, ui-monospace,…)` to all CTAs/labels (attn-review, ask-chip, view-older/earlier/all, stream-orig2, section metas, deadline due, history eyebrow/who/time).
+- **Timeline redesigned to reference**: header + APPROACHING DEADLINES row (calendar cards w/ dividers, "View all deadlines →", graceful empty state) + PROJECT HISTORY rail (date eyebrow + title + desc + right meta `provider · time · View original`) + "View earlier history →" (opens full-history modal) + full-width **ASK BRACKET** history Q&A wired to real `POST /projects/{id}/ask` (returns {answer}) with suggestion chips + "More examples". `no-page-scroll` preserved.
+- New CSS: `.tl-sec-head/.tl-deadlines/.tl-dl*/.tl-hist/.tl-h-*`, `.ask-search`. New components: `AskBracketHistory`, answer modal; `TimelineHistoryModal` signature dropped `colorFor`.
+- Verified via screenshots (Timeline + Conversations): monochrome icons, full-width layout, mono CTAs, no page scroll; `/ask` returns grounded answers.
+
+
 # Bracket — PRD
 
 ## Changelog — 2026-06 (Home + Conversations redesign to reference, faster sync, Sources dialog)

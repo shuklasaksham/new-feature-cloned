@@ -15,12 +15,12 @@ import {
 // Assumptions, Commercials and Open Questions still live in the data model
 // (backend still writes them from the extractor) and can be surfaced later.
 export const MEMORY_CATEGORIES = [
-  { key: "deliverable", label: "Deliverables",  plural: "Deliverables",      icon: Package,        color: "#8B5CF6" },
-  { key: "scope",       label: "Scope",         plural: "Scope items",       icon: Target,         color: "#3B82F6" },
-  { key: "timeline",    label: "Timeline",      plural: "Timeline events",   icon: CalendarClock,  color: "#F59E0B" },
-  { key: "requirement", label: "Requirements",  plural: "Requirements",      icon: ListChecks,     color: "#22D3EE" },
-  { key: "decision",    label: "Decisions",     plural: "Decisions",         icon: Check,          color: "#4ADE80" },
-  { key: "deadline",    label: "Deadlines",     plural: "Deadlines",         icon: CalendarClock,  color: "#F87171" },
+  { key: "deliverable", label: "Deliverables",  plural: "Deliverables",      icon: Package,        color: "#A1A1AA" },
+  { key: "scope",       label: "Scope",         plural: "Scope items",       icon: Target,         color: "#A1A1AA" },
+  { key: "timeline",    label: "Timeline",      plural: "Timeline events",   icon: CalendarClock,  color: "#A1A1AA" },
+  { key: "requirement", label: "Requirements",  plural: "Requirements",      icon: ListChecks,     color: "#A1A1AA" },
+  { key: "decision",    label: "Decisions",     plural: "Decisions",         icon: Check,          color: "#A1A1AA" },
+  { key: "deadline",    label: "Deadlines",     plural: "Deadlines",         icon: CalendarClock,  color: "#A1A1AA" },
 ];
 
 export const CATEGORY_BY_KEY = MEMORY_CATEGORIES.reduce((acc, c) => {
@@ -30,10 +30,10 @@ export const CATEGORY_BY_KEY = MEMORY_CATEGORIES.reduce((acc, c) => {
 
 // Status pill styling used across memory rows + drawers.
 export const STATUS_META = {
-  confirmed:    { label: "CONFIRMED",   color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
-  detected:     { label: "DETECTED",    color: "#D97706", bg: "rgba(217,119,6,0.10)" },
-  review:       { label: "TO REVIEW",   color: "#4F46E5", bg: "rgba(79,70,229,0.10)" },
-  context:      { label: "CONTEXT",     color: "#7A7F92", bg: "rgba(122,127,146,0.10)" },
-  not_a_change: { label: "NOT A CHANGE",color: "#7A7F92", bg: "rgba(122,127,146,0.10)" },
-  ignored:      { label: "IGNORED",     color: "#7A7F92", bg: "rgba(122,127,146,0.10)" },
+  confirmed:    { label: "CONFIRMED",   color: "#C4C4C8", bg: "rgba(255,255,255,0.06)" },
+  detected:     { label: "DETECTED",    color: "#A1A1AA", bg: "rgba(255,255,255,0.06)" },
+  review:       { label: "TO REVIEW",   color: "#A1A1AA", bg: "rgba(255,255,255,0.06)" },
+  context:      { label: "CONTEXT",     color: "#7A7F92", bg: "rgba(255,255,255,0.04)" },
+  not_a_change: { label: "NOT A CHANGE",color: "#7A7F92", bg: "rgba(255,255,255,0.04)" },
+  ignored:      { label: "IGNORED",     color: "#7A7F92", bg: "rgba(255,255,255,0.04)" },
 };
