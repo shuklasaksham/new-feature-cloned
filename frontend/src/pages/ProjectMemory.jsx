@@ -7,7 +7,7 @@ import {
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown, Search,
   ArrowRight, Clock, CheckCircle2, CalendarClock,
-  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus, X,
+  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus, X, AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -52,6 +52,7 @@ export default function ProjectMemory() {
   const [lastSeen, setLastSeen] = useState(null);
   const [projects, setProjects] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState(null);
 
   useEffect(() => {
     api.get("/projects").then(({ data }) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
@@ -68,6 +69,7 @@ export default function ProjectMemory() {
       setProject(projRes.data.project || projRes.data);
       setMemory(memRes.data);
       setConnections(connRes.data.connections || []);
+      setUpdatedAt(new Date().toISOString());
       if ((memRes.data?.total || 0) > 0) {
         try { localStorage.setItem("bracket.fr.sawMemory", "1"); } catch { /* ignore */ }
         window.dispatchEvent(new Event("bracket-firstrun-update"));
@@ -88,7 +90,7 @@ export default function ProjectMemory() {
   }, [id]);
   useEffect(() => {
     if (!id) return;
-    const iv = setInterval(() => { if (!document.hidden) load({ silent: true }); }, 10_000);
+    const iv = setInterval(() => { if (!document.hidden) load({ silent: true }); }, 5_000);
     const onVis = () => { if (!document.hidden) load({ silent: true }); };
     document.addEventListener("visibilitychange", onVis);
     return () => { clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
@@ -221,6 +223,7 @@ export default function ProjectMemory() {
                 connections={connections || []}
                 detectedCount={detectedCount}
                 counts={visibleCounts.by}
+                updatedAt={updatedAt}
                 onHistory={() => setHistoryOpen(true)}
                 onReviewUpdate={() => setUpdateOpen(true)}
               />
@@ -532,7 +535,7 @@ function dedupeByTitle(list) {
 }
 
 /* ─── Home — lightweight "where are we now" + drill-in details ─────────── */
-function OverviewView({ project, projectId, memory, connections, detectedCount, counts, onHistory, onReviewUpdate }) {
+function OverviewView({ project, projectId, memory, connections, detectedCount, counts, updatedAt, onHistory, onReviewUpdate }) {
   const [modalCat, setModalCat] = useState(null);
   const noSources = connections.length === 0;
   const all = useMemo(() => flattenMemory(memory), [memory]);
@@ -574,11 +577,11 @@ function OverviewView({ project, projectId, memory, connections, detectedCount, 
           <MoreHorizontal size={16} />
         </button>
       </div>
-      <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>HOME</p>
-      <h1 className="mt-2 text-[28px] sm:text-[34px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="project-memory-title">
+      <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)", display: "none" }}>HOME</p>
+      <h1 className="mt-1 text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="project-memory-title">
         {project.name}
       </h1>
-      <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Where your project stands right now.</p>
+      <p className="mt-2 text-[14px]" style={{ color: "var(--text-3)" }} data-testid="home-updated">Updated {timeAgo(updatedAt)}</p>
     </div>
   );
 
@@ -603,56 +606,48 @@ function OverviewView({ project, projectId, memory, connections, detectedCount, 
     <div className="ov-wrap">
       <Header />
 
-      {/* Needs your attention */}
+      {/* Needs attention */}
       <section className="ov-section" data-testid="home-attention">
-        <p className="ov-section-label">Needs your attention</p>
+        <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em" }}>NEEDS ATTENTION</p>
         {attention.length === 0 ? (
-          <div className="ov-card ov-card--quiet" data-testid="home-caught-up">
-            <CheckCircle2 size={18} style={{ color: "var(--success)" }} />
-            <div className="min-w-0 flex-1">
-              <p className="ov-card-title">You're all caught up</p>
-              <p className="ov-card-sub">Nothing needs your review right now. Bracket will surface changes as new client messages arrive.</p>
+          <div className="attn-feat" style={{ marginTop: 20 }} data-testid="home-caught-up">
+            <span className="attn-ring"><CheckCircle2 size={22} style={{ color: "var(--success)" }} /></span>
+            <div className="min-w-0">
+              <p className="attn-feat-title">You're all caught up</p>
+              <p className="attn-feat-desc">Nothing needs your review right now.<br />Bracket will surface changes as new client messages arrive.</p>
             </div>
           </div>
-        ) : attention.map((m) => (
-          <button key={m.id} type="button" className="ov-card ov-card--action" onClick={onReviewUpdate} data-testid={`home-attention-${m.id}`}>
-            <span className="ov-flag"><Flag size={16} /></span>
-            <div className="min-w-0 flex-1">
-              <p className="ov-card-title">{m.title}</p>
-              <p className="ov-card-sub">{m.detail || (m.is_scope_change ? "Possible scope change detected in a client message." : "Bracket detected this — confirm or dismiss it.")}</p>
+        ) : (
+          <div className="attn-feat" style={{ marginTop: 20 }} data-testid={`home-attention-${attention[0].id}`}>
+            <span className="attn-ring"><AlertCircle size={22} /></span>
+            <div className="min-w-0">
+              <p className="attn-feat-title">{attention[0].title}</p>
+              <p className="attn-feat-desc">{attention[0].detail || (attention[0].is_scope_change ? "Bracket detected a possible scope change in a client message." : "Bracket detected this — confirm or dismiss it.")}</p>
+              <div className="attn-actions">
+                <button type="button" className="attn-review" onClick={onReviewUpdate} data-testid="home-attention-review">Review <ArrowRight size={16} /></button>
+                {attention.length > 1 && (
+                  <button type="button" className="attn-more" onClick={onReviewUpdate} data-testid="home-attention-more">+{attention.length - 1} more <ChevronRight size={15} /></button>
+                )}
+              </div>
             </div>
-            <span className="ov-review">Review <ArrowRight size={14} /></span>
-          </button>
-        ))}
+          </div>
+        )}
       </section>
 
-      {/* Upcoming */}
-      {nextDeadline && (
-        <section className="ov-section" data-testid="home-upcoming">
-          <p className="ov-section-label">Upcoming</p>
-          <button type="button" className="ov-card ov-card--action" onClick={() => setModalCat("deadline")} data-testid="home-next-deadline">
-            <span className="ov-cal"><Calendar size={16} /></span>
-            <div className="min-w-0 flex-1">
-              <p className="ov-card-title">{nextDeadline.title}</p>
-              <p className="ov-card-sub">{daysLeftLabel(nextDeadline._due)}{nextDeadline.detail ? ` · ${nextDeadline.detail}` : ""}</p>
-            </div>
-            <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
-          </button>
-        </section>
-      )}
-
-      {/* Project details — small controls that open a modal */}
-      <section className="ov-section" data-testid="home-details">
-        <p className="ov-section-label">Project details</p>
-        <div className="home-cats">
-          {CHIPS.map((ch) => {
-            const c = CATEGORY_BY_KEY[ch.key];
+      {/* Project memory — underlined tabs that open a drill-in modal */}
+      <section className="ov-section" style={{ marginTop: 44 }} data-testid="home-details">
+        <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em", marginBottom: 16 }}>PROJECT MEMORY</p>
+        <div className="mem-tabs">
+          {CHIPS.map((ch, i) => {
             const n = counts?.[ch.key] || 0;
             return (
-              <button key={ch.key} type="button" className="home-cat" onClick={() => setModalCat(ch.key)} data-testid={`home-cat-${ch.key}`}>
-                <c.icon size={15} style={{ color: c.color }} /> {ch.label}
-                {n > 0 && <span className="home-cat-count">{n}</span>}
-              </button>
+              <React.Fragment key={ch.key}>
+                {i > 0 && <span className="mem-sep" />}
+                <button type="button" className="mem-tab" onClick={() => setModalCat(ch.key)} data-testid={`home-cat-${ch.key}`}>
+                  <span className="mem-tab-label">{ch.label}</span>
+                  <span className="mem-tab-count">{n}</span>
+                </button>
+              </React.Fragment>
             );
           })}
         </div>
@@ -707,16 +702,18 @@ function CategoryModal({ catKey, memory, onClose }) {
 /* ─── Conversations — compressed client stream + Ask Bracket ──────────── */
 function ConversationsStream({ projectId, project, connections, memory }) {
   const [orig, setOrig] = useState(null);
+  const [showAll, setShowAll] = useState(false);
   const all = useMemo(() => flattenMemory(memory), [memory]);
-  const stream = useMemo(() => (
+  const full = useMemo(() => (
     dedupeByTitle([...all].sort((a, b) =>
       String(b.occurred_at || b.created_at || "").localeCompare(String(a.occurred_at || a.created_at || "")))
-    ).slice(0, 10)
+    ).slice(0, 12)
   ), [all]);
+  const stream = showAll ? full : full.slice(0, 4);
   const primary = connections[0];
 
   return (
-    <div className="ov-wrap" data-testid="project-conversations">
+    <div className="ov-wrap conv-wrap" data-testid="project-conversations">
       <div className="ov-head">
         <div className="ov-head-actions">
           {primary && (
@@ -725,49 +722,200 @@ function ConversationsStream({ projectId, project, connections, memory }) {
               {(PROVIDER_META[primary.provider]?.label || primary.provider)} connected
             </span>
           )}
+          <button type="button" className="ov-icon-btn" aria-label="Notifications"><Bell size={16} /></button>
+          <button type="button" className="ov-icon-btn" aria-label="More"><MoreHorizontal size={16} /></button>
         </div>
-        <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>CONVERSATIONS</p>
-        <h1 className="mt-2 text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>What your client said</h1>
-        <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Only the messages that matter — and a reply Bracket drafts for you.</p>
+        <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>Conversations</h1>
+        <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Bracket compresses client messages and helps you respond.</p>
       </div>
 
-      <div className="conv2-grid">
-        <div className="conv2-col conv2-col--stream">
-          {connections.length === 0 ? (
-            <div className="ov-card ov-card--quiet"><Mail size={16} style={{ color: "var(--text-3)" }} /><p className="ov-card-sub">No conversations connected yet. Use the “+” next to Sources to add one.</p></div>
-          ) : stream.length === 0 ? (
-            <div className="ov-card ov-card--quiet"><p className="ov-card-sub">Nothing important yet. Bracket will surface key client messages here as they arrive.</p></div>
-          ) : (
+      <p className="ov-section-label" style={{ flexShrink: 0, marginBottom: 4 }}>What your client said</p>
+
+      <div className="conv-stream-region">
+        {connections.length === 0 ? (
+          <div className="ov-card ov-card--quiet"><Mail size={16} style={{ color: "var(--text-3)" }} /><p className="ov-card-sub">No conversations connected yet. Use the “+” next to Sources to add one.</p></div>
+        ) : full.length === 0 ? (
+          <div className="ov-card ov-card--quiet"><p className="ov-card-sub">Nothing important yet. Bracket will surface key client messages here as they arrive.</p></div>
+        ) : (
+          <>
             <div className="stream" data-testid="conversation-stream">
               {stream.map((m) => {
                 const c = CATEGORY_BY_KEY[m._catKey] || CATEGORY_BY_KEY.decision;
                 return (
-                  <div key={m.id} className="stream-row" data-testid={`stream-row-${m.id}`}>
-                    <span className="stream-ico"><c.icon size={15} style={{ color: c.color }} /></span>
-                    <div className="stream-body">
-                      <p className="stream-title">{m.title}{m.detail ? ` — ${m.detail}` : ""}</p>
-                      <div className="stream-meta">
-                        <span>{m.occurred_at ? timeAgo(m.occurred_at) : ""}</span>
-                        <span>· {PROVIDER_META[m.provider]?.label || m.provider}</span>
-                        {m.connection_id && (
-                          <button type="button" className="stream-orig" onClick={() => setOrig(m.connection_id)} data-testid={`stream-orig-${m.id}`}>
-                            · View original <ExternalLink size={11} />
-                          </button>
-                        )}
-                      </div>
+                  <div key={m.id} className="stream-row2" data-testid={`stream-row-${m.id}`}>
+                    <span className="stream-ring"><c.icon size={16} style={{ color: c.color }} /></span>
+                    <div className="min-w-0">
+                      <p className="stream-t">{m.title}</p>
+                      {m.detail && <p className="stream-d">{m.detail}</p>}
                     </div>
+                    <span className="stream-time">{m.occurred_at ? timeAgo(m.occurred_at) : ""}</span>
+                    {m.connection_id ? (
+                      <button type="button" className="stream-orig2" onClick={() => setOrig(m.connection_id)} data-testid={`stream-orig-${m.id}`}>
+                        View original <ExternalLink size={12} />
+                      </button>
+                    ) : <span />}
                   </div>
                 );
               })}
             </div>
-          )}
-        </div>
-        <div className="conv2-col conv2-col--ask">
-          <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
-        </div>
+            {full.length > 4 && (
+              <button type="button" className="conv-view-older" onClick={() => setShowAll((v) => !v)} data-testid="conv-view-older">
+                {showAll ? "Show less" : "View older"} <ChevronDown size={14} style={{ transform: showAll ? "rotate(180deg)" : "none", transition: "transform .16s" }} />
+              </button>
+            )}
+          </>
+        )}
       </div>
 
+      <AskBracketBar projectId={projectId} connections={connections} />
+
       <ViewOriginalModal projectId={projectId} connId={orig} connections={connections} onClose={() => setOrig(null)} />
+    </div>
+  );
+}
+
+/* ─── Ask Bracket — bottom composer: Ask → Draft → Review → Select → Send ─ */
+const ASK_SUGGESTIONS = ["Tell them mobile isn't included.", "Confirm the new timeline.", "Thanks for the feedback."];
+const ASK_MORE = ["Ask for the missing details we still need.", "Push back politely on the new scope.", "Share a short status update.", "Confirm next steps and owners."];
+
+function AskBracketBar({ projectId, connections }) {
+  const [prompt, setPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  const generate = async (text) => {
+    const t = (text || "").trim();
+    if (!t || generating) return;
+    setGenerating(true); setMoreOpen(false);
+    try {
+      const { data } = await api.post(`/projects/${projectId}/suggest-reply`, { instruction: t, history: [] });
+      setDraft({ content: (data.reply || "").trim(), instruction: t });
+      setPrompt("");
+    } catch (e) { toast.error(formatApiError(e)); }
+    finally { setGenerating(false); }
+  };
+
+  return (
+    <div className="ask-bar" data-testid="ask-bracket-bar">
+      <div className="ask-bar-grid">
+        <div className="ask-bar-intro">
+          <p className="ask-bar-title"><Sparkles size={14} style={{ color: "var(--accent)" }} /> Ask Bracket</p>
+          <p className="ask-bar-desc">Ask Bracket to draft a reply using recent conversation and project context.</p>
+        </div>
+        <div className="ask-bar-main">
+          <form className="ask-bar-input" onSubmit={(e) => { e.preventDefault(); generate(prompt); }}>
+            <textarea rows={1} value={prompt} onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); generate(prompt); } }}
+              placeholder="Ask Bracket what to send…" data-testid="ask-bracket-input" />
+            <button type="submit" className="ask-bar-send" disabled={generating || !prompt.trim()} data-testid="ask-bracket-send" aria-label="Generate">
+              {generating ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+            </button>
+          </form>
+          <div className="ask-chips">
+            {ASK_SUGGESTIONS.map((s) => (
+              <button key={s} type="button" className="ask-chip" disabled={generating} onClick={() => generate(s)} data-testid="ask-chip">{s}</button>
+            ))}
+            <div className="relative">
+              <button type="button" className="ask-chip" onClick={() => setMoreOpen((o) => !o)} data-testid="ask-more">More suggestions <ChevronDown size={12} /></button>
+              {moreOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setMoreOpen(false)} />
+                  <div className="absolute z-40 rounded-xl p-1.5 min-w-[280px]" style={{ bottom: "calc(100% + 6px)", left: 0, background: "var(--surface)", border: "1px solid var(--hairline)", boxShadow: "0 20px 50px -20px rgba(0,0,0,0.7)" }}>
+                    {ASK_MORE.map((s) => (
+                      <button key={s} type="button" onClick={() => generate(s)} className="w-full text-left px-2.5 py-2 rounded-lg text-[12.5px]" style={{ color: "var(--text-2)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }} onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>{s}</button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      <DraftReviewModal projectId={projectId} connections={connections} draft={draft}
+        onChange={(v) => setDraft((d) => (d ? { ...d, content: v } : d))} onClose={() => setDraft(null)} />
+    </div>
+  );
+}
+
+function DraftReviewModal({ projectId, connections, draft, onChange, onClose }) {
+  const keyOf = (t) => `${t.provider}:${t.thread_id || t.channel_id || ""}`;
+  const [targets, setTargets] = useState([]);
+  const [checked, setChecked] = useState({});
+  const [toEdits, setToEdits] = useState({});
+  const [sending, setSending] = useState(false);
+  useEffect(() => {
+    if (!draft) return;
+    api.get(`/projects/${projectId}/send-targets`).then((r) => {
+      const ts = r.data.targets || [];
+      setTargets(ts);
+      const c = {}; const e = {};
+      ts.forEach((t) => { c[keyOf(t)] = true; if (t.provider === "gmail") e[keyOf(t)] = t.to || ""; });
+      setChecked(c); setToEdits(e);
+    }).catch(() => setTargets([]));
+  }, [draft, projectId]);
+  if (!draft) return null;
+
+  const doSend = async () => {
+    if (sending) return;
+    const picked = targets.filter((t) => checked[keyOf(t)]);
+    if (picked.length === 0) { toast.error("Tick at least one recipient."); return; }
+    const gmailTargets = picked.filter((t) => t.provider === "gmail").map((t) => ({ to: (toEdits[keyOf(t)] || "").trim(), thread_id: t.thread_id }));
+    const slackTargets = picked.filter((t) => t.provider === "slack");
+    if (gmailTargets.some((t) => !t.to || !t.to.includes("@"))) { toast.error("Add a valid email for each ticked Gmail thread."); return; }
+    setSending(true);
+    try {
+      const done = [];
+      if (gmailTargets.length) { await api.post(`/projects/${projectId}/send-email`, { targets: gmailTargets, body: draft.content }); done.push(`${gmailTargets.length} email${gmailTargets.length > 1 ? "s" : ""}`); }
+      for (const s of slackTargets) { await api.post(`/projects/${projectId}/send-slack`, { channel_id: s.channel_id, body: draft.content }); }
+      if (slackTargets.length) done.push(`${slackTargets.length} Slack post${slackTargets.length > 1 ? "s" : ""}`);
+      toast.success(`Sent — ${done.join(" · ")}`);
+      onClose();
+    } catch (e) { toast.error(formatApiError(e)); }
+    finally { setSending(false); }
+  };
+
+  return (
+    <div className="bkt-modal-overlay" onClick={onClose} data-testid="draft-review-modal">
+      <div className="bkt-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="bkt-modal-head">
+          <span className="flex items-center gap-2"><Sparkles size={15} style={{ color: "var(--accent)" }} /><span className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>Review &amp; send</span></span>
+          <button type="button" className="bkt-modal-x" onClick={onClose} data-testid="draft-review-close"><X size={16} /></button>
+        </div>
+        <div className="bkt-modal-body" style={{ padding: "16px 18px" }}>
+          <p className="mono-tag text-[9.5px] mb-2" style={{ color: "var(--text-3)" }}>BRACKET'S DRAFT</p>
+          <textarea value={draft.content} onChange={(e) => onChange(e.target.value)} rows={7}
+            className="w-full resize-y rounded-xl p-3 text-[13.5px] leading-relaxed outline-none"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--hairline-strong)", color: "var(--text)" }} data-testid="draft-review-text" />
+          {targets.length > 0 && (
+            <>
+              <p className="mono-tag text-[9.5px] mt-4 mb-2" style={{ color: "var(--text-3)" }}>SEND TO</p>
+              <div className="flex flex-col gap-1.5">
+                {targets.map((t) => {
+                  const k = keyOf(t); const on = !!checked[k];
+                  return (
+                    <div key={k} className="rounded-lg px-2.5 py-2" style={{ background: on ? "var(--surface-2)" : "transparent", border: "1px solid var(--hairline)" }}>
+                      <button type="button" onClick={() => setChecked((c) => ({ ...c, [k]: !c[k] }))} className="w-full flex items-center gap-2.5 text-left" data-testid={`draft-target-${k}`}>
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded shrink-0" style={{ background: on ? "var(--accent)" : "transparent", border: on ? "none" : "1px solid var(--hairline-strong)", color: "#fff" }}>{on && <Check size={11} />}</span>
+                        <ProviderIcon provider={t.provider} size={12} bare />
+                        <span className="text-[12.5px] truncate" style={{ color: "var(--text)" }}>{t.provider === "slack" ? (t.channel_name || "Slack channel") : (t.thread_name || "Gmail thread")}</span>
+                      </button>
+                      {t.provider === "gmail" && on && (
+                        <input type="email" value={toEdits[k] || ""} onChange={(e) => setToEdits((m) => ({ ...m, [k]: e.target.value }))} placeholder="client@company.com" className="jira-filter-input mt-2" style={{ width: "100%" }} data-testid={`draft-to-${k}`} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="px-5 py-3 flex items-center justify-between gap-3" style={{ borderTop: "1px solid var(--hairline)" }}>
+          <button type="button" onClick={onClose} className="text-[12.5px]" style={{ color: "var(--text-2)" }} data-testid="draft-review-cancel">Cancel</button>
+          <button type="button" onClick={doSend} disabled={sending} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-medium disabled:opacity-40" style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }} data-testid="draft-review-send">{sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}{sending ? "Sending…" : "Send"}</button>
+        </div>
+      </div>
     </div>
   );
 }

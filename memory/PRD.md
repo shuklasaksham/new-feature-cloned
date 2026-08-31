@@ -1,5 +1,13 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (Home + Conversations redesign to reference, faster sync, Sources dialog)
+- **Home** rebuilt to the provided mockup: large project title + "Updated {timeAgo}" indicator; NEEDS ATTENTION featured item (ring icon + title + description + "Review →" + "+N more"); PROJECT MEMORY underlined tab row (Scope · Deliverables · Requirements · Decisions with counts + dividers) opening the existing CategoryModal. (`OverviewView` in ProjectMemory.jsx; CSS `.attn-*`, `.mem-*`.)
+- **Conversations** rebuilt to the mockup: header "Conversations" + "Bracket compresses client messages and helps you respond."; "What your client said" 2-line compressed stream (icon | title+summary | timestamp | View original↗) capped to 4 with a "View older" toggle inside the fixed scroll region; Ask Bracket docked as a bottom composer (`AskBracketBar`) with input + suggestion chips + "More suggestions". Generating a reply opens `DraftReviewModal` (editable draft + recipient checklist + Send) — full Ask→Draft→Review→Select→Send, reusing suggest-reply/send-targets/send-email/send-slack. Old right-column SuggestedReplyChat no longer used here. CSS `.stream-row2`, `.conv-stream-region`, `.ask-bar*`.
+- **Faster realtime**: memory/connections polling interval reduced 10s → 5s (still visibility-gated + focus refresh); added `updatedAt` state → Home "Updated just now".
+- **Sources "+" dialog**: sidebar "+" now opens a dialog (`/connect/providers`) listing every source Bracket supports with Connect (Gmail/Slack/Figma/GitHub) or "Soon" (WhatsApp/Teams/Adobe/GDrive/Notion/Dropbox); Connect navigates to `/app/connect?project=<id>&tool=<key>` to add another source to the SAME project. (ProjectSidebar.jsx; CSS `.src-dialog-*`.)
+- Verified via screenshots on demo: Home + Conversations match refs, `no-page-scroll: True` on both, chip → real LLM draft → Review & send modal with 3 Gmail recipients. Note: real push (Gmail webhook) not wired — near-real-time via 5s polling.
+
+
 ## Changelog — 2026-06 (Fixed-viewport app shell — no page scroll)
 - Reworked the workspace into a fixed application surface. `.project-shell` = `height:100dvh; overflow:hidden`. `.project-main` = `height:calc(100dvh - 32px); overflow:hidden; display:flex; flex-direction:column` (never grows with content). `.project-main-inner` = flex column, `min-height:0; overflow:hidden`.
 - Verified via DOM measurement that Home/Conversations/Timeline all yield an IDENTICAL fixed workspace rect (top 16, left 288, width 1616, height 1048) and `pageScrollable:false` on every screen and with modals open — switching tabs never moves/resizes it.
