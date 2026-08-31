@@ -153,6 +153,7 @@ export default function ProjectMemory() {
         counts={visibleCounts.by}
         connections={connections || []}
         onAddSource={() => setView("conversations")}
+        onSourcesChanged={() => load({ silent: true })}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
       />
@@ -215,28 +216,34 @@ export default function ProjectMemory() {
             )}
 
             {view === "conversations" ? (
-              <ConversationsStream
-                projectId={id}
-                project={project}
-                connections={connections || []}
-                memory={memory}
-                headerActions={headerActions}
-                onChanged={() => load({ silent: true })}
-              />
+              <motion.div key="conversations" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+                <ConversationsStream
+                  projectId={id}
+                  project={project}
+                  connections={connections || []}
+                  memory={memory}
+                  headerActions={headerActions}
+                  onChanged={() => load({ silent: true })}
+                />
+              </motion.div>
             ) : view === "timeline" ? (
-              <TimelineView projectId={id} project={project} memory={memory} headerActions={headerActions} />
+              <motion.div key="timeline" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+                <TimelineView projectId={id} project={project} memory={memory} headerActions={headerActions} />
+              </motion.div>
             ) : (
-              <OverviewView
-                project={project}
-                projectId={id}
-                memory={memory}
-                connections={connections || []}
-                detectedCount={detectedCount}
-                counts={visibleCounts.by}
-                updatedAt={updatedAt}
-                headerActions={headerActions}
-                onReviewUpdate={() => setUpdateOpen(true)}
-              />
+              <motion.div key="overview" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+                <OverviewView
+                  project={project}
+                  projectId={id}
+                  memory={memory}
+                  connections={connections || []}
+                  detectedCount={detectedCount}
+                  counts={visibleCounts.by}
+                  updatedAt={updatedAt}
+                  headerActions={headerActions}
+                  onReviewUpdate={() => setUpdateOpen(true)}
+                />
+              </motion.div>
             )}
           </div>
         ) : (
@@ -612,22 +619,43 @@ function OverviewView({ project, projectId, memory, connections, detectedCount, 
       .sort((a, b) => a._due - b._due)[0] || null;
   }, [all]);
 
-  const CHIPS = [
+  const recent = useMemo(
+    () => dedupeByTitle([...all].sort((a, b) =>
+      String(b.occurred_at || b.created_at || "").localeCompare(String(a.occurred_at || a.created_at || "")),
+    )).slice(0, 5),
+    [all],
+  );
+
+  const STATS = [
     { key: "scope", label: "Scope" },
     { key: "deliverable", label: "Deliverables" },
     { key: "requirement", label: "Requirements" },
     { key: "decision", label: "Decisions" },
   ];
 
-  const primary = connections[0];
+  const container = { hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.04 } } };
+  const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } };
+
   const Header = () => (
     <div className="ov-head">
       <HeaderActions {...headerActions} attentionTitle={attention[0]?.title} />
-      <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)", display: "none" }}>HOME</p>
-      <h1 className="mt-1 text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="project-memory-title">
+      <motion.h1
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="mt-1 text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="project-memory-title">
         {project.name}
-      </h1>
-      <p className="mt-2 text-[14px]" style={{ color: "var(--text-3)" }} data-testid="home-updated">Updated {timeAgo(updatedAt)}</p>
+      </motion.h1>
+      <div className="ov-meta" data-testid="home-updated">
+        <span className="ov-live"><span className="ov-live-dot" /> Synced {timeAgo(updatedAt)}</span>
+        {connections.length > 0 && <span className="ov-meta-sep" />}
+        <span className="ov-chips">
+          {connections.slice(0, 4).map((c) => (
+            <span key={c.id} className="ov-chip" title={c.source_name || c.provider} data-testid={`home-source-chip-${c.id}`}>
+              <ProviderIcon provider={c.provider} size={13} bare />
+              <span className="ov-chip-name">{c.source_name || PROVIDER_META[c.provider]?.label || c.provider}</span>
+            </span>
+          ))}
+        </span>
+      </div>
     </div>
   );
 
@@ -652,52 +680,93 @@ function OverviewView({ project, projectId, memory, connections, detectedCount, 
     <div className="ov-wrap">
       <Header />
 
-      {/* Needs attention — one card per underlying client request (reviewed once) */}
-      <section className="ov-section" data-testid="home-attention">
-        <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em" }}>NEEDS ATTENTION</p>
-        {detectedCount === 0 ? (
-          <div className="attn-feat" style={{ marginTop: 20 }} data-testid="home-caught-up">
-            <span className="attn-ring"><CheckCircle2 size={22} style={{ color: "var(--success)" }} /></span>
-            <div className="min-w-0">
-              <p className="attn-feat-title">You're all caught up</p>
-              <p className="attn-feat-desc">Nothing needs your review right now.<br />Bracket will surface changes as new client messages arrive.</p>
-            </div>
-          </div>
-        ) : (
-          <div className="attn-feat" style={{ marginTop: 20 }} data-testid="home-attention-change">
-            <span className="attn-ring"><AlertCircle size={22} /></span>
-            <div className="min-w-0">
-              <p className="attn-feat-title">{attention[0]?.title || "Changes ready to review"}</p>
-              <p className="attn-feat-desc">{attention[0]?.detail || `A client request affects this project — review its full impact once and Bracket updates everything.`}</p>
-              <div className="attn-actions">
-                <button type="button" className="attn-review" onClick={onReviewUpdate} data-testid="home-attention-review">Review <ArrowRight size={16} /></button>
-                {detectedCount > 1 && (
-                  <button type="button" className="attn-more" onClick={onReviewUpdate} data-testid="home-attention-more">+{detectedCount - 1} more <ChevronRight size={15} /></button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
+      <motion.div className="ov-dash" variants={container} initial="hidden" animate="show">
+        {/* At-a-glance stats */}
+        <motion.section className="ov-stats" variants={item} data-testid="home-stats">
+          {STATS.map((s) => (
+            <button key={s.key} type="button" className="ov-stat" onClick={() => setModalCat(s.key)} data-testid={`home-stat-${s.key}`}>
+              <span className="ov-stat-num">{counts?.[s.key] || 0}</span>
+              <span className="ov-stat-label">{s.label}</span>
+            </button>
+          ))}
+        </motion.section>
 
-      {/* Project memory — underlined tabs that open a drill-in modal */}
-      <section className="ov-section" style={{ marginTop: 44 }} data-testid="home-details">
-        <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em", marginBottom: 16 }}>PROJECT MEMORY</p>
-        <div className="mem-tabs">
-          {CHIPS.map((ch, i) => {
-            const n = counts?.[ch.key] || 0;
-            return (
-              <React.Fragment key={ch.key}>
-                {i > 0 && <span className="mem-sep" />}
-                <button type="button" className="mem-tab" onClick={() => setModalCat(ch.key)} data-testid={`home-cat-${ch.key}`}>
-                  <span className="mem-tab-label">{ch.label}</span>
-                  <span className="mem-tab-count">{n}</span>
-                </button>
-              </React.Fragment>
-            );
-          })}
+        <div className="ov-grid">
+          {/* Needs attention */}
+          <motion.section className="ov-panel" variants={item} data-testid="home-attention">
+            <p className="ov-panel-label">NEEDS ATTENTION</p>
+            {detectedCount === 0 ? (
+              <div className="attn-feat" data-testid="home-caught-up">
+                <span className="attn-ring"><CheckCircle2 size={22} style={{ color: "var(--success)" }} /></span>
+                <div className="min-w-0">
+                  <p className="attn-feat-title">You're all caught up</p>
+                  <p className="attn-feat-desc">Nothing needs your review right now. Bracket will surface changes as new client messages arrive.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="attn-feat" data-testid="home-attention-change">
+                <span className="attn-ring attn-ring--alert"><AlertCircle size={22} /></span>
+                <div className="min-w-0">
+                  <p className="attn-feat-title">{attention[0]?.title || "Changes ready to review"}</p>
+                  <p className="attn-feat-desc">{attention[0]?.detail || `A client request affects this project — review its full impact once and Bracket updates everything.`}</p>
+                  <div className="attn-actions">
+                    <button type="button" className="attn-review" onClick={onReviewUpdate} data-testid="home-attention-review">Review <ArrowRight size={16} /></button>
+                    {detectedCount > 1 && (
+                      <button type="button" className="attn-more" onClick={onReviewUpdate} data-testid="home-attention-more">+{detectedCount - 1} more <ChevronRight size={15} /></button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.section>
+
+          {/* Up next — deadline */}
+          <motion.section className="ov-panel" variants={item} data-testid="home-upnext">
+            <p className="ov-panel-label">UP NEXT</p>
+            {nextDeadline ? (
+              <div className="ov-deadline" onClick={() => headerActions?.onGoTimeline?.()} data-testid="home-next-deadline">
+                <span className="ov-cal"><CalendarClock size={20} /></span>
+                <div className="min-w-0">
+                  <p className="ov-deadline-title">{nextDeadline.title}</p>
+                  <p className="ov-deadline-meta">
+                    {nextDeadline._due.toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {daysLeftLabel(nextDeadline._due)}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="ov-deadline ov-deadline--empty">
+                <span className="ov-cal"><CalendarClock size={20} /></span>
+                <div className="min-w-0">
+                  <p className="ov-deadline-title" style={{ color: "var(--text-2)" }}>No upcoming deadlines</p>
+                  <p className="ov-deadline-meta">Deadlines Bracket finds in your messages appear here.</p>
+                </div>
+              </div>
+            )}
+          </motion.section>
         </div>
-      </section>
+
+        {/* Recent activity */}
+        <motion.section className="ov-panel ov-panel--flush" variants={item} data-testid="home-recent">
+          <p className="ov-panel-label">RECENT ACTIVITY</p>
+          {recent.length === 0 ? (
+            <p className="text-[13px] py-2" style={{ color: "var(--text-3)" }}>Nothing yet.</p>
+          ) : (
+            <ul className="ov-recent">
+              {recent.map((m) => {
+                const c = CATEGORY_BY_KEY[m._catKey] || CATEGORY_BY_KEY.decision;
+                return (
+                  <li key={m.id} className="ov-recent-row" onClick={() => setModalCat(m._catKey)} data-testid={`home-recent-${m.id}`}>
+                    <span className="ov-recent-icon"><c.icon size={14} /></span>
+                    <span className="ov-recent-title">{m.title}</span>
+                    <span className="ov-recent-cat">{c.label}</span>
+                    <span className="ov-recent-time">{timeAgo(m.occurred_at || m.created_at)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </motion.section>
+      </motion.div>
 
       <CategoryModal catKey={modalCat} memory={memory} onClose={() => setModalCat(null)} />
     </div>

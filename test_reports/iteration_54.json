@@ -1,0 +1,42 @@
+{
+  "summary": "Frontend-only validation of Bracket 'Client OS' project page: rich Home dashboard, fixed-viewport (no doc scroll), smooth Home/Conversations/Timeline tab switch, collapsed sidebar cleanliness + tooltips, and the inline Add-Source flow with Gmail attach. All 7 features verified end-to-end (login → open project → dashboard interactions → collapse/expand → add-source dialog → provider pick → item select → attach → URL stays / sidebar refreshes).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AddSourceDialog.attach() loops sequentially over selected sources (await api.post /connect/preview then /connect/establish per source). Each source can take several seconds (backend LLM). For 3+ selections users could wait 15-30s while the button shows 'Adding…' with no per-item ETA. Consider parallelizing with Promise.allSettled or showing an aggregated progress indicator.",
+    "attach() sets setAttaching(false) BEFORE the setTimeout(onClose, 650). If the user re-clicks in that window the previous chosen array is retained — minor UX safety concern.",
+    "AddSourceDialog silently catches errors on preview/establish (per-source) and only surfaces a single generic toast.error('Couldn\\'t attach the selected sources.') if all fail. Partial failures (some 200, some 409) show only success toast — the user doesn't learn a subset failed. Recommend distinguishing anyErr and showing 'X attached, Y failed'.",
+    "In OverviewView 'Recent activity' rows use m._catKey; ensure this always resolves (some sources may lack a category). Not observed failing here."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a", "frontend": "100%" },
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026 (from review request; /app/memory/test_credentials.md not consulted since credentials were provided directly).",
+  "seed_data_creation": "Attached demo Gmail sources ('Brand identity project', 'New landing page campaign', 'UI Feedback round 1') to project ee6e16e7-bd23-4914-8af1-50713f7b839d during attach flow testing. These are demo-backend sources; deliverable/requirement/decision counts increased as expected.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Attach flow is SLOW: sequential per-source preview+establish, each call ~4-8s (backend AI). Wait ≥8s per selected source before asserting toast/dialog state. Toasts (sonner) auto-dismiss in ~4s so query [data-sonner-toast] within 2-3s of trigger. Selectors verified: psb-nav-overview/conversations/timeline, psb-collapse, psb-add-source, add-source-dialog, add-source-option-gmail, add-source-search, add-source-list, add-source-item-*, add-source-attach, add-source-back, add-source-close, home-stat-{scope|deliverable|requirement|decision}, home-recent-{id}, category-modal, category-modal-close. Collapsed rail tooltips use data-tip attribute (rendered via CSS ::after).",
+  "verified_flows": {
+    "home_dashboard_renders": true,
+    "stat_tile_opens_category_modal": true,
+    "recent_activity_opens_category_modal": true,
+    "document_no_vertical_scroll_home": true,
+    "document_no_vertical_scroll_conversations": true,
+    "document_no_vertical_scroll_timeline": true,
+    "tab_switching_no_console_errors": true,
+    "collapse_expand_sidebar_clean": true,
+    "collapsed_tooltip_present_via_data_tip": true,
+    "add_source_dialog_opens": true,
+    "gmail_inline_picker_opens_no_navigation": true,
+    "attach_stays_on_project_url": true,
+    "sidebar_sources_refresh_after_attach": true,
+    "back_arrow_returns_to_provider_list": true,
+    "close_button_closes_dialog": true
+  },
+  "rca of the issue": "N/A — no defects found. Initial false-positive 'no toast / dialog stays open' during attach was due to insufficient wait; the per-source /connect/preview + /connect/establish sequential loop can take 6-15s, after which the dialog auto-closes and the sonner toast may already have dismissed."
+}

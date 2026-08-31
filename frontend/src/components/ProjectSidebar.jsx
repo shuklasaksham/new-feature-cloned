@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search, X,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
 import { api } from "../lib/api";
+import AddSourceDialog from "./AddSourceDialog";
 
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
@@ -22,7 +23,7 @@ const NAV = [
 
 export default function ProjectSidebar({
   project, projects = [], onSwitchProject,
-  view, setView, counts = {}, connections = [], onAddSource,
+  view, setView, counts = {}, connections = [], onAddSource, onSourcesChanged,
   collapsed, onToggleCollapse,
 }) {
   const navigate = useNavigate();
@@ -32,24 +33,12 @@ export default function ProjectSidebar({
   const [quota, setQuota] = useState(null);
   const [projQuery, setProjQuery] = useState("");
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const [providers, setProviders] = useState([]);
   const switchRef = useRef(null);
   const userRef = useRef(null);
 
   useEffect(() => {
     api.get("/project-quota").then(({ data }) => setQuota(data)).catch(() => {});
   }, []);
-
-  const openSources = () => {
-    setSourcesOpen(true);
-    if (providers.length === 0) {
-      api.get("/connect/providers").then(({ data }) => setProviders(data.providers || [])).catch(() => {});
-    }
-  };
-  const addSource = (key) => {
-    setSourcesOpen(false);
-    navigate(`/app/connect?project=${project?.id || ""}&tool=${key}`);
-  };
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -150,6 +139,7 @@ export default function ProjectSidebar({
               type="button"
               className="psb-nav-item"
               data-active={active ? "true" : "false"}
+              data-tip={n.label}
               onClick={() => setView(n.key)}
               title={n.label}
               data-testid={`psb-nav-${n.key}`}
@@ -168,7 +158,7 @@ export default function ProjectSidebar({
       <div className="psb-sources">
         <div className="psb-section-head">
           <span className="psb-section-label psb-label">Sources</span>
-          <button type="button" className="psb-add" onClick={openSources} aria-label="Add a source" data-testid="psb-add-source">
+          <button type="button" className="psb-add" onClick={() => setSourcesOpen(true)} aria-label="Add a source" data-tip="Add a source" title="Add a source" data-testid="psb-add-source">
             <Plus size={16} />
           </button>
         </div>
@@ -194,10 +184,10 @@ export default function ProjectSidebar({
 
       {/* Settings / Help */}
       <div className="psb-foot-nav">
-        <button type="button" className="psb-nav-item" onClick={() => navigate("/settings")} title="Settings" data-testid="psb-nav-settings">
+        <button type="button" className="psb-nav-item" onClick={() => navigate("/settings")} title="Settings" data-tip="Settings" data-testid="psb-nav-settings">
           <Settings size={20} strokeWidth={1.9} /> <span className="psb-label">Settings</span>
         </button>
-        <button type="button" className="psb-nav-item" onClick={() => navigate("/pricing")} title="Help" data-testid="psb-nav-help">
+        <button type="button" className="psb-nav-item" onClick={() => navigate("/pricing")} title="Help" data-tip="Help" data-testid="psb-nav-help">
           <HelpCircle size={20} strokeWidth={1.9} /> <span className="psb-label">Help</span>
         </button>
       </div>
@@ -219,45 +209,12 @@ export default function ProjectSidebar({
           </div>
         )}
       </div>
-      {sourcesOpen && (
-        <div className="bkt-modal-overlay" onClick={() => setSourcesOpen(false)} data-testid="sources-dialog">
-          <div className="bkt-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="bkt-modal-head">
-              <span className="flex items-center gap-2">
-                <Plus size={16} style={{ color: "var(--text-2)" }} />
-                <span className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>Add a source</span>
-              </span>
-              <button type="button" className="bkt-modal-x" onClick={() => setSourcesOpen(false)} data-testid="sources-dialog-close"><X size={16} /></button>
-            </div>
-            <div className="bkt-modal-body" style={{ padding: "12px 14px 16px" }}>
-              <p className="text-[12.5px] mb-3" style={{ color: "var(--text-3)" }}>Connect another tool to this project — Bracket reads it and keeps your memory in sync.</p>
-              {(providers.length === 0 ? [] : providers).map((p) => {
-                const available = p.status === "available";
-                return (
-                  <button
-                    key={p.key}
-                    type="button"
-                    className="src-dialog-row"
-                    disabled={!available}
-                    onClick={() => available && addSource(p.key)}
-                    data-testid={`source-option-${p.key}`}
-                  >
-                    <ProviderIcon provider={p.key} size={16} />
-                    <span className="min-w-0">
-                      <span className="src-dialog-name">{p.label}</span>
-                      <span className="src-dialog-desc block truncate">{p.desc}</span>
-                    </span>
-                    <span className="src-dialog-badge">{available ? "Connect" : "Soon"}</span>
-                  </button>
-                );
-              })}
-              {providers.length === 0 && (
-                <p className="text-[12.5px] py-4 text-center" style={{ color: "var(--text-3)" }}>Loading sources…</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <AddSourceDialog
+        open={sourcesOpen}
+        onClose={() => setSourcesOpen(false)}
+        projectId={project?.id}
+        onChanged={onSourcesChanged}
+      />
     </aside>
   );
 }
