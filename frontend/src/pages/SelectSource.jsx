@@ -95,7 +95,7 @@ export default function SelectSource() {
       if (typeof ev.data !== "string" || !ev.data.startsWith(`bracket-oauth:${provider}:`)) return;
       const result = ev.data.split(":")[2];
       setReconnecting(false);
-      if (result === "success") {
+      if (result === "ok") {
         toast.success("Account switched.");
         setAcctModalOpen(false);
         refreshAccountLabel();

@@ -352,6 +352,7 @@ async def oauth_auth_url(provider: str, request: Request):
     ru = _redirect_uri(provider, request)
     await db.oauth_states.insert_one({"state": state, "user_id": user["user_id"], "provider": provider,
                                       "redirect_uri": ru, "created_at": _now_iso()})
+    logger.info("[connect] %s auth-url issued user_id=%s redirect_uri=%s", provider, user["user_id"], ru)
     return {"url": _auth_url_for(provider, state, ru)}
 
 
@@ -371,12 +372,18 @@ async def oauth_callback(provider: str, code: str = "", state: str = "", error: 
     if row:
         await db.oauth_states.delete_one({"state": state})
     if error or not code or not row:
+        logger.warning("[connect] %s callback rejected: error=%s has_code=%s state_found=%s", provider, error or "-", bool(code), bool(row))
         return HTMLResponse(_CALLBACK_HTML.format(msg="Authorization was cancelled. You can close this tab.", provider=provider, result="error"), status_code=400)
     try:
         result = await _exchange_code(provider, code, row.get("redirect_uri") or _redirect_uri(provider))
-    except HTTPException:
+    except HTTPException as e:
+        logger.warning("[connect] %s token exchange failed: %s", provider, getattr(e, "detail", str(e)))
+        return HTMLResponse(_CALLBACK_HTML.format(msg="Authorization failed. You can close this tab and try again.", provider=provider, result="error"), status_code=400)
+    except Exception:
+        logger.exception("[connect] %s callback crashed", provider)
         return HTMLResponse(_CALLBACK_HTML.format(msg="Authorization failed. You can close this tab and try again.", provider=provider, result="error"), status_code=400)
     await _store_blob(row["user_id"], provider, result["blob"], result["label"])
+    logger.info("[connect] %s connected → stored under user_id=%s label=%s", provider, row["user_id"], result.get("label"))
     return HTMLResponse(_CALLBACK_HTML.format(msg=f"{PROVIDERS[provider]['label']} connected — returning to Bracket…", provider=provider, result="ok"))
 
 
@@ -934,11 +941,13 @@ async def list_sources(provider: str, request: Request, q: str = "", url: str = 
     except HTTPException as e:
         # No real connected account (e.g. the demo account) → show sample sources.
         if e.status_code == 400:
+            logger.info("[connect] %s sources → DEMO fallback (no connected account) user_id=%s", provider, user["user_id"])
             rows = _demo_sources(provider)
             if q:
                 rows = [s for s in rows if q.lower() in (s["name"] + " " + (s["meta"].get("detail") or "")).lower()]
             return {"sources": rows, "demo": True}
         raise
+    logger.info("[connect] %s sources → LIVE fetch user_id=%s label=%s", provider, user["user_id"], account.get("label"))
     if provider == "figma":
         return {"sources": await figma_list_sources(account, q, url)}
     if provider == "github":
