@@ -6,6 +6,9 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 import os
+import httpx
+import secrets as _secrets
+from urllib.parse import urlencode as _urlencode
 import io
 import time
 import asyncio
@@ -13,7 +16,7 @@ import logging
 from typing import List, Literal, Dict, Any, Optional
 
 from fastapi import FastAPI, APIRouter, File, HTTPException, Query, Request, Response, UploadFile
-from fastapi.responses import PlainTextResponse, StreamingResponse, HTMLResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse, HTMLResponse, RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -244,6 +247,92 @@ async def auth_google_exchange(body: GoogleSessionIn, request: Request, response
     token = await create_session(db, user["user_id"])
     set_session_cookie(response, token)
     return {"user": public_user(user), "session_token": token, "is_new": not bool(user.get("name"))}
+
+
+def _request_base_url(request: Request) -> str:
+    """Prefer the requesting external host so OAuth login works on BOTH preview
+    and production; fall back to PUBLIC_BASE_URL. (Both callback URLs must be
+    registered in the Google OAuth client.)"""
+    base = (os.environ.get("PUBLIC_BASE_URL") or "").rstrip("/")
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or ""
+    if host and "cluster" not in host and "localhost" not in host:
+        proto = request.headers.get("x-forwarded-proto", "https")
+        base = f"{proto}://{host}"
+    return base
+
+
+@api.get("/auth/google/native/start")
+async def google_native_start(request: Request):
+    """Native Google OAuth (our OWN Google Cloud credentials) — replaces the
+    Emergent-managed consent screen so users see Google's standard screen on
+    Bracket's own domain. Server-side authorization-code redirect flow.
+    REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH"""
+    client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
+    if not client_id:
+        raise HTTPException(status_code=500, detail="Google login isn't configured.")
+    redirect_uri = f"{_request_base_url(request)}/api/auth/google/native/callback"
+    state = _secrets.token_urlsafe(24)
+    await db.oauth_states.insert_one({"state": state, "provider": "login_google",
+                                      "redirect_uri": redirect_uri, "created_at": auth_iso(auth_now())})
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "online",
+        "prompt": "select_account",
+        "include_granted_scopes": "true",
+    }
+    return RedirectResponse(f"https://accounts.google.com/o/oauth2/v2/auth?{_urlencode(params)}", status_code=302)
+
+
+@api.get("/auth/google/native/callback")
+async def google_native_callback(request: Request, code: str = "", state: str = "", error: str = ""):
+    base = _request_base_url(request)
+    if error or not code or not state:
+        return RedirectResponse(f"{base}/login?err=google", status_code=302)
+    row = await db.oauth_states.find_one({"state": state, "provider": "login_google"})
+    if row:
+        await db.oauth_states.delete_one({"state": state})
+    if not row:
+        return RedirectResponse(f"{base}/login?err=google_state", status_code=302)
+    redirect_uri = row.get("redirect_uri") or f"{base}/api/auth/google/native/callback"
+    client_id = os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "")
+    client_secret = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET", "")
+    try:
+        async with httpx.AsyncClient(timeout=20) as c:
+            tr = await c.post("https://oauth2.googleapis.com/token", data={
+                "code": code, "client_id": client_id, "client_secret": client_secret,
+                "redirect_uri": redirect_uri, "grant_type": "authorization_code"})
+            if tr.status_code != 200:
+                logger.warning("[auth] google native token exchange failed: %s %s", tr.status_code, tr.text[:300])
+                return RedirectResponse(f"{base}/login?err=google_token", status_code=302)
+            access_token = tr.json().get("access_token")
+            ui = await c.get("https://openidconnect.googleapis.com/v1/userinfo",
+                             headers={"Authorization": f"Bearer {access_token}"})
+            if ui.status_code != 200:
+                logger.warning("[auth] google native userinfo failed: %s %s", ui.status_code, ui.text[:300])
+                return RedirectResponse(f"{base}/login?err=google_userinfo", status_code=302)
+            info = ui.json()
+    except Exception:
+        logger.exception("[auth] google native callback crashed")
+        return RedirectResponse(f"{base}/login?err=google", status_code=302)
+    email = (info.get("email") or "").lower().strip()
+    if not email:
+        return RedirectResponse(f"{base}/login?err=google_email", status_code=302)
+    meta = _extract_client_meta(request)
+    user = await get_or_create_user_by_email(
+        db, email, name=info.get("name") or "", picture=info.get("picture") or "",
+        signup_ip=meta["signup_ip"], signup_user_agent=meta["signup_user_agent"],
+    )
+    await _heal_orphaned_identity(user["user_id"], email)
+    token = await create_session(db, user["user_id"])
+    dest = "/app" if user.get("plan") else "/plan"
+    resp = RedirectResponse(f"{base}{dest}", status_code=302)
+    set_session_cookie(resp, token)
+    logger.info("[auth] google native login ok email=%s user_id=%s → %s", email, user["user_id"], dest)
+    return resp
 
 
 @api.post("/auth/otp/request")

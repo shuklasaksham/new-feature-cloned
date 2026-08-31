@@ -40,8 +40,8 @@ export default function Login() {
 
   // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
   const googleSignIn = () => {
-    const redirectUrl = window.location.origin + "/auth/callback";
-    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+    // Native Google OAuth via our own credentials (server-side redirect flow).
+    window.location.href = `${process.env.REACT_APP_BACKEND_URL}/api/auth/google/native/start`;
   };
 
   const appleSignIn = () => {
