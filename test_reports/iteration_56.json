@@ -1,0 +1,25 @@
+{
+  "summary": "Verified fix for 'dummy sources' bug. Backend GET /api/connect/{provider}/sources now returns HTTP 400 'Connect your {Provider} account first.' when provider is not connected (no demo/sample fallback). POST /api/demo/seed is removed (404). UI: on a project dashboard the '+' Add-Source picker no longer renders hardcoded sample files (Acme Dashboard.fig, Mobile App Redesign, Brand Identity System, Landing Page v3, Design System — Core); clicking an unconnected provider (Gmail) triggers window.open() for OAuth, and the picker items list stays empty.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_sources_no_demo.py",
+    "/app/test_reports/pytest/sources_no_demo.xml"
+  ],
+  "action_items": [
+    "Update /app/memory/test_credentials.md — it says '/connect/{provider}/sources returns demo sources' which is now false (400). It also lists pro@ / solo@ / fresh@ with a shared password 'Bracket@2026', but the accounts have has_password=False (login endpoint replies 'No password set for this email. Sign in with OTP first.') — either seed the password on startup or update the doc to say password login is disabled for the demo accounts."
+  ],
+  "critical_code_review_comments": [
+    "backend/connectors.py:_get_account correctly raises 400 with 'Connect your <Label> account first.' for every provider; verified against figma/github/slack/gmail/notion.",
+    "frontend/src/components/AddSourceDialog.jsx pick() at line 61 correctly catches status===400 and calls startOAuth(key); no demo fallback path in the UI.",
+    "No occurrences of the sample file strings ('Acme Dashboard.fig','Mobile App Redesign','Brand Identity System','Landing Page v3','Design System — Core') remain in /app/backend; only in old test files under /app/backend/tests/ (test_iteration_39/40) which reference the now-removed /api/demo/seed endpoint — those older tests will now fail and should either be deleted or updated."
+  ],
+  "updated_files": ["/app/backend/tests/test_sources_no_demo.py"],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% (1/1 flow)"},
+  "test_credentials": "Used OTP flow (OTP_TEST_MODE=1) with pro@use-bracket.com and disposable e2e+*@example.com addresses; password login is not currently usable per test_credentials.md.",
+  "seed_data_creation": "Temporarily created project 3705611b-... under pro@use-bracket.com for the UI test and set plan='monthly' on the user; both cleaned up afterwards. Fresh e2e OTP users were also deleted.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Password login for the seeded demo accounts (fresh/solo/pro/use-bracket.com) is disabled (has_password=False) — use OTP with OTP_TEST_MODE=1. Routing uses /project/:id (NOT /p/:id). Users without a plan are redirected to /plan; either activate via POST /api/payments/test-activate (needs admin toggle or allowlist) or set plan directly in mongo (db.users.update {plan:'monthly'}).",
+  "rca of the issue": "Root cause was that GET /connect/{provider}/sources previously returned a 200 with _demo_sources() when the user had no linked account, so the frontend's 400-based OAuth trigger never fired and the picker instead showed hardcoded 'Acme Dashboard.fig' etc. Fix: _get_account now raises HTTPException(400) and the demo generator was removed. Verified via pytest + Playwright — network log shows 400 for /connect/gmail/sources, no sample names in DOM, and window.open called for OAuth."
+}

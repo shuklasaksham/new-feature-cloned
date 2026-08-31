@@ -759,88 +759,11 @@ async def gmail_fetch_client_digest(account: dict, thread_id: str, client_email:
         except Exception:
             continue
     return "\n\n=== NEWER CLIENT THREAD ===\n".join(parts)[:24000]
-def _demo_sources(provider: str) -> List[dict]:
-    """Realistic sample sources so the picker renders for the demo account.
-    Real connected accounts always hit the live provider adapters instead."""
-    now = datetime.now(timezone.utc)
-
-    def rfc(d):
-        return d.strftime("%a, %d %b %Y %H:%M:%S +0000")
-
-    def iso(d):
-        return d.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    if provider == "gmail":
-        rows = [
-            ("Website redesign — final scope", "Sarah Chen <chensarah34@gmail.com>", 14, 0),
-            ("Re: Mobile App Redesign", "Alex Morgan <morganalex10@gmail.com>", 27, 1),
-            ("Brand identity project", "Hiro Ishida <ishidaheroo@gmail.com>", 11, 3),
-            ("New landing page campaign", "James R <james.r@vertex.com>", 9, 4),
-            ("Scope clarification", "Sarah Chen <chensarah34@gmail.com>", 18, 5),
-            ("UI Feedback round 1", "Dana Lee <dana.lee@brightco.com>", 8, 6),
-            ("Q3 marketing site refresh", "Priya N <priya@northstar.io>", 22, 9),
-        ]
-        return [{"id": f"demo-gmail-{i+1}", "name": n, "url": "",
-                 "meta": {"updated": rfc(now - timedelta(days=d)), "detail": frm, "extra": f"{msgs} messages"}}
-                for i, (n, frm, msgs, d) in enumerate(rows)]
-    if provider == "slack":
-        rows = [
-            ("#project-acme", "Channel", 12, 0),
-            ("#design-reviews", "Channel", 8, 1),
-            ("#client-vertex", "Private channel", 5, 2),
-            ("DM — Sarah Chen", "Direct message", 2, 3),
-            ("#brand-identity", "Channel", 9, 5),
-            ("#launch-planning", "Channel", 14, 7),
-        ]
-        return [{"id": f"demo-slack-{i+1}", "name": n, "url": "",
-                 "meta": {"updated": iso(now - timedelta(days=d)), "detail": kind, "extra": f"{mem} members"}}
-                for i, (n, kind, mem, d) in enumerate(rows)]
-    if provider == "figma":
-        rows = [
-            ("Acme Dashboard.fig", "Acme Corp", 0),
-            ("Mobile App Redesign", "Product", 1),
-            ("Brand Identity System", "Brand", 4),
-            ("Landing Page v3", "Marketing", 6),
-            ("Design System — Core", "Foundations", 8),
-        ]
-        return [{"id": f"demo-figma-{i+1}", "name": n, "url": "",
-                 "meta": {"updated": iso(now - timedelta(days=d)), "detail": proj, "extra": ""}}
-                for i, (n, proj, d) in enumerate(rows)]
-    if provider == "github":
-        rows = [
-            ("nordwind/acme-dashboard", "Client dashboard redesign", 6, 0),
-            ("nordwind/mobile-app", "iOS + Android app", 12, 1),
-            ("nordwind/brand-site", "Marketing website", 3, 4),
-            ("nordwind/design-tokens", "Shared design tokens", 1, 7),
-            ("nordwind/api-gateway", "Backend services", 9, 10),
-        ]
-        return [{"id": f"demo-github-{i+1}", "name": n, "url": "",
-                 "meta": {"updated": iso(now - timedelta(days=d)), "detail": desc, "extra": f"{iss} open issues"}}
-                for i, (n, desc, iss, d) in enumerate(rows)]
-    return []
-
-
-def _demo_digest(source_id: str, provider: str) -> str:
-    """Canned but coherent content for a demo source so preview/establish can
-    build a real (AI-extracted) project without a live provider token."""
-    label = {"gmail": "email conversation", "slack": "channel", "figma": "file", "github": "repository"}.get(provider, "source")
-    return (
-        f"CLIENT {label.upper()} (demo sample):\n"
-        "Client: Sarah Chen (Acme Corp). Project: website + dashboard redesign.\n"
-        "- Client confirmed the scope covers the marketing site (hero + 4 sections) and the analytics dashboard.\n"
-        "- Decision: ship the mobile breakpoint in phase 2, not the initial launch.\n"
-        "- Deliverables: Figma file, a Loom walkthrough, and one revision round.\n"
-        "- Deadline: first review draft due in two weeks; final sign-off by month end.\n"
-        "- Open question: is the illustration pass in scope, or handled by the client's team?\n"
-        "- Client asked to 'just add one more page' — potential scope creep to flag.\n"
-        "- Requirement: brand system is locked; no new type or palette exploration.\n"
-    )
+# (Demo/sample source generators removed — Bracket only ever serves live provider data.)
 
 
 # ---- Dispatch --------------------------------------------------------------
 async def _fetch_digest(provider: str, account: dict, source_id: str) -> str:
-    if source_id.startswith("demo-"):
-        return _demo_digest(source_id, provider)
     if provider == "figma":
         return await figma_fetch_digest(account, source_id)
     if provider == "github":
@@ -936,17 +859,9 @@ async def delete_account(provider: str, request: Request):
 @router.get("/connect/{provider}/sources")
 async def list_sources(provider: str, request: Request, q: str = "", url: str = ""):
     user = await current_user(request, db)
-    try:
-        account = await _get_account(user["user_id"], provider)
-    except HTTPException as e:
-        # No real connected account (e.g. the demo account) → show sample sources.
-        if e.status_code == 400:
-            logger.info("[connect] %s sources → DEMO fallback (no connected account) user_id=%s", provider, user["user_id"])
-            rows = _demo_sources(provider)
-            if q:
-                rows = [s for s in rows if q.lower() in (s["name"] + " " + (s["meta"].get("detail") or "")).lower()]
-            return {"sources": rows, "demo": True}
-        raise
+    # Raises 400 when the provider isn't linked yet → the client catches the 400
+    # and starts OAuth. Bracket never serves placeholder/sample sources.
+    account = await _get_account(user["user_id"], provider)
     logger.info("[connect] %s sources → LIVE fetch user_id=%s label=%s", provider, user["user_id"], account.get("label"))
     if provider == "figma":
         return {"sources": await figma_list_sources(account, q, url)}
@@ -964,14 +879,7 @@ async def list_sources(provider: str, request: Request, q: str = "", url: str = 
 @router.post("/connect/preview")
 async def preview_sources(body: PreviewIn, request: Request):
     user = await current_user(request, db)
-    all_demo = all(s.id.startswith("demo-") for s in body.sources)
-    try:
-        account = await _get_account(user["user_id"], body.provider)
-    except HTTPException:
-        if all_demo:
-            account = {"provider": body.provider, "is_demo": True}
-        else:
-            raise
+    account = await _get_account(user["user_id"], body.provider)
     candidates = []
     async for p in db.projects.find({"owner_user_id": user["user_id"]}, {"_id": 0, "id": 1, "name": 1, "client_name": 1}).sort("updated_at", -1).limit(25):
         candidates.append({"id": p["id"], "name": p.get("name", ""), "client": p.get("client_name", "")})
@@ -2348,181 +2256,10 @@ async def ask_across_projects(body: AskIn, request: Request):
 
 
 # ---------------------------------------------------------------------------
-# Demo project seed — one coherent Acme Dashboard Redesign story so first-time
-# users see the product alive from second one. Idempotent per user.
+# Legacy demo cleanup — Bracket no longer seeds any demo/sample project. This
+# endpoint only purges any leftover legacy demo project from earlier versions.
 # ---------------------------------------------------------------------------
 _DEMO_TAG = "demo:acme_dashboard_redesign"
-
-
-def _demo_project_doc(user: dict) -> dict:
-    now = _now_iso()
-    return {
-        "id": _uuid(),
-        "owner_user_id": user["user_id"],
-        "creator_name": user.get("name", ""),
-        "creator_email": user.get("email", ""),
-        "name": "Acme Dashboard Redesign",
-        "client_name": "Acme Corp",
-        "project_type": "Dashboard Design",
-        "engine": "claude",
-        "status": "in_progress",
-        "step": 5,
-        "is_demo": True,
-        "demo_tag": _DEMO_TAG,
-        "created_at": now,
-        "updated_at": now,
-    }
-
-
-def _demo_memory(project_id: str) -> List[dict]:
-    """One coherent story: analytics moved from P1→P2, mobile dashboard added,
-    launch pushed to May 31. Every screen (Change → Action → Memory) can be
-    demoed from these items alone."""
-    now_ts = time.time()
-    def _at(mins_ago: int, iso: bool = True):
-        ts = now_ts - mins_ago * 60
-        return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat() if iso else ts
-    common = {"project_id": project_id, "connection_id": "demo", "history": []}
-    return [
-        # Scope items
-        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Project brief",
-         "category": "scope", "title": "Dashboard redesign — 6 core screens",
-         "detail": "Overview, Analytics, Users, Billing, Settings, Reports. Analytics in Phase 1.",
-         "status": "confirmed", "occurred_at": _at(60*24*10), "created_at": _at(60*24*10), "updated_at": _at(60*24*10),
-         "is_scope_change": False, "display_category": "scope"},
-        {**common, "id": _uuid(), "provider": "slack", "source_label": "#project-acme",
-         "category": "scope_change", "title": "Client asked to add a mobile dashboard",
-         "detail": "Sam: \"Let's add a mobile dashboard instead\" — not in original scope.",
-         "status": "detected", "occurred_at": _at(45), "created_at": _at(45), "updated_at": _at(45),
-         "is_scope_change": True, "display_category": "scope"},
-        # Deliverables
-        {**common, "id": _uuid(), "provider": "figma", "source_label": "Acme Dashboard.fig",
-         "category": "deliverable", "title": "6 Screens, Design System, Handoff",
-         "detail": "Overview + Analytics + Users + Billing + Settings + Reports, plus a shared design system and a Zeplin/Handoff pack.",
-         "status": "confirmed", "occurred_at": _at(60*24*7), "created_at": _at(60*24*7), "updated_at": _at(60*24*7),
-         "is_scope_change": False, "display_category": "deliverable"},
-        {**common, "id": _uuid(), "provider": "figma", "source_label": "Acme Mobile Dashboard.fig",
-         "category": "deliverable", "title": "Mobile dashboard added",
-         "detail": "New file created by client — 4 mobile screens sketched.",
-         "status": "detected", "occurred_at": _at(30), "created_at": _at(30), "updated_at": _at(30),
-         "is_scope_change": False, "display_category": "deliverable"},
-        # Decisions
-        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Kickoff notes",
-         "category": "decision", "title": "Web app first, mobile later",
-         "detail": "Confirmed on kickoff: ship web first, mobile in a follow-up phase.",
-         "status": "confirmed", "occurred_at": _at(60*24*9), "created_at": _at(60*24*9), "updated_at": _at(60*24*9),
-         "is_scope_change": False, "display_category": "decision"},
-        {**common, "id": _uuid(), "provider": "slack", "source_label": "#design-team",
-         "category": "decision", "title": "Dark mode approved for Web App",
-         "detail": "Approved by client. Charts using Recharts.",
-         "status": "confirmed", "occurred_at": _at(60*24*3), "created_at": _at(60*24*3), "updated_at": _at(60*24*3),
-         "is_scope_change": False, "display_category": "decision"},
-        # Requirements
-        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Requirements doc",
-         "category": "requirement", "title": "Guest login supported",
-         "detail": "Public share view of a single report — no signup required.",
-         "status": "confirmed", "occurred_at": _at(60*24*4), "created_at": _at(60*24*4), "updated_at": _at(60*24*4),
-         "is_scope_change": False, "display_category": "requirement"},
-        # Timeline
-        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · Kickoff",
-         "category": "timeline", "title": "Original launch — May 24",
-         "detail": "Design: 2 weeks · Handoff: 3 days · Launch: May 24.",
-         "status": "confirmed", "occurred_at": _at(60*24*10), "created_at": _at(60*24*10), "updated_at": _at(60*24*10),
-         "is_scope_change": False, "display_category": "timeline"},
-        {**common, "id": _uuid(), "provider": "slack", "source_label": "#project-acme",
-         "category": "deadline", "title": "Launch may push to May 31",
-         "detail": "With the added mobile dashboard, timeline needs +3-4 design days.",
-         "status": "detected", "occurred_at": _at(25), "created_at": _at(25), "updated_at": _at(25),
-         "is_scope_change": False, "display_category": "timeline"},
-        # Risks
-        {**common, "id": _uuid(), "provider": "figma", "source_label": "Acme Dashboard.fig · Comments",
-         "category": "risk", "title": "3 dependencies could delay launch",
-         "detail": "Waiting on brand refresh, copy for the new dashboard, and dark-mode chart palette.",
-         "status": "detected", "occurred_at": _at(60*2), "created_at": _at(60*2), "updated_at": _at(60*2),
-         "is_scope_change": False, "display_category": "risk"},
-        # Assumptions
-        {**common, "id": _uuid(), "provider": "manual", "source_label": "Kickoff assumption",
-         "category": "assumption", "title": "Content will be finalised before Phase 2 kick",
-         "detail": "Assumption: client provides copy for the new dashboard 1 week before Phase 2 begins.",
-         "status": "confirmed", "occurred_at": _at(60*24*8), "created_at": _at(60*24*8), "updated_at": _at(60*24*8),
-         "is_scope_change": False, "display_category": "assumption"},
-        # Commercials
-        {**common, "id": _uuid(), "provider": "gmail", "source_label": "Acme Corp · SOW",
-         "category": "commercial", "title": "SOW — fixed $24,000 for Phase 1",
-         "detail": "Milestones: 40% kickoff, 30% design review, 30% handoff.",
-         "status": "confirmed", "occurred_at": _at(60*24*10), "created_at": _at(60*24*10), "updated_at": _at(60*24*10),
-         "is_scope_change": False, "display_category": "commercial"},
-        # Open questions
-        {**common, "id": _uuid(), "provider": "slack", "source_label": "#project-acme",
-         "category": "question", "title": "Copy for the new mobile dashboard?",
-         "detail": "Client hasn't confirmed who writes the copy.",
-         "status": "detected", "occurred_at": _at(20), "created_at": _at(20), "updated_at": _at(20),
-         "is_scope_change": False, "display_category": "question"},
-    ]
-
-
-async def _seed_demo_for_user(user: dict) -> Optional[dict]:
-    """Idempotent — a user only ever gets one demo project. Returns the project
-    document on first seed, None if it already exists."""
-    existing = await db.projects.find_one(
-        {"owner_user_id": user["user_id"], "demo_tag": _DEMO_TAG},
-        {"_id": 0, "id": 1, "name": 1},
-    )
-    if existing:
-        return None
-    proj = _demo_project_doc(user)
-    await db.projects.insert_one(proj)
-    mem = _demo_memory(proj["id"])
-    # Sync connection stubs so Connected Sources panel is populated.
-    now = _now_iso()
-    conns = [
-        {"id": _uuid(), "project_id": proj["id"], "user_id": user["user_id"],
-         "provider": "gmail", "source_id": "demo-gmail", "source_name": "Acme Corp · Project thread",
-         "status": "connected", "last_synced_at": now, "last_activity_at": now,
-         "content_cache": "Demo thread — analytics moved to Phase 2, mobile dashboard added.",
-         "created_at": now, "updated_at": now, "is_demo": True},
-        {"id": _uuid(), "project_id": proj["id"], "user_id": user["user_id"],
-         "provider": "slack", "source_id": "demo-slack", "source_name": "#project-acme",
-         "status": "connected", "last_synced_at": now, "last_activity_at": now,
-         "content_cache": "Demo Slack channel — 2 changes today.",
-         "created_at": now, "updated_at": now, "is_demo": True},
-        {"id": _uuid(), "project_id": proj["id"], "user_id": user["user_id"],
-         "provider": "figma", "source_id": "demo-figma", "source_name": "Acme Dashboard.fig",
-         "status": "connected", "last_synced_at": now, "last_activity_at": now,
-         "content_cache": "Demo Figma file — 6 core screens + 4 new mobile screens.",
-         "created_at": now, "updated_at": now, "is_demo": True},
-    ]
-    await db.source_connections.insert_many(conns)
-    if mem:
-        await db.project_memory.insert_many(mem)
-    # One in-app scope-creep notification so the bell has something in it.
-    scope_creep = next((m for m in mem if m.get("is_scope_change")), None)
-    if scope_creep:
-        await db.notifications.insert_one({
-            "id": _uuid(), "user_id": user["user_id"], "project_id": proj["id"],
-            "project_name": proj["name"], "connection_id": "demo",
-            "provider": scope_creep["provider"], "source_label": scope_creep["source_label"],
-            "memory_id": scope_creep["id"], "type": "scope_creep",
-            "title": scope_creep["title"], "detail": scope_creep["detail"],
-            "read": False, "created_at": now,
-        })
-    return proj
-
-
-@router.post("/demo/seed")
-async def demo_seed(request: Request):
-    """Idempotent demo seed. Called by the dashboard on first mount so a brand
-    new user immediately sees Bracket alive with the Acme Dashboard story.
-    Returns {seeded: true, project_id} on first call and {seeded: false} after."""
-    user = await current_user(request, db)
-    proj = await _seed_demo_for_user(user)
-    if not proj:
-        existing = await db.projects.find_one(
-            {"owner_user_id": user["user_id"], "demo_tag": _DEMO_TAG},
-            {"_id": 0, "id": 1},
-        )
-        return {"seeded": False, "project_id": (existing or {}).get("id")}
-    return {"seeded": True, "project_id": proj["id"]}
 
 
 @router.delete("/demo/reset")
