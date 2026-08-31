@@ -711,7 +711,7 @@ function ConversationsStream({ projectId, project, connections, memory }) {
   const stream = useMemo(() => (
     dedupeByTitle([...all].sort((a, b) =>
       String(b.occurred_at || b.created_at || "").localeCompare(String(a.occurred_at || a.created_at || "")))
-    ).slice(0, 15)
+    ).slice(0, 10)
   ), [all]);
   const primary = connections[0];
 
@@ -732,7 +732,7 @@ function ConversationsStream({ projectId, project, connections, memory }) {
       </div>
 
       <div className="conv2-grid">
-        <div>
+        <div className="conv2-col conv2-col--stream">
           {connections.length === 0 ? (
             <div className="ov-card ov-card--quiet"><Mail size={16} style={{ color: "var(--text-3)" }} /><p className="ov-card-sub">No conversations connected yet. Use the “+” next to Sources to add one.</p></div>
           ) : stream.length === 0 ? (
@@ -762,7 +762,7 @@ function ConversationsStream({ projectId, project, connections, memory }) {
             </div>
           )}
         </div>
-        <div>
+        <div className="conv2-col conv2-col--ask">
           <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
         </div>
       </div>
@@ -840,6 +840,8 @@ function TimelineView({ projectId, project, memory }) {
 
   const iconFor = (kind) => CATEGORY_BY_KEY[kind]?.icon || History;
   const colorFor = (kind) => CATEGORY_BY_KEY[kind]?.color || "#8a8a8a";
+  const [fullOpen, setFullOpen] = useState(false);
+  const recent = past.slice(0, 6);
 
   return (
     <div className="tl-wrap" data-testid="project-timeline">
@@ -849,46 +851,95 @@ function TimelineView({ projectId, project, memory }) {
         <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Deadlines, decisions, scope changes and key events in one place.</p>
       </div>
 
-      {upcoming.length > 0 && (
-        <section className="tl-section" data-testid="timeline-upcoming">
-          <p className="ov-section-label">Upcoming</p>
-          {upcoming.map((m, i) => (
-            <div key={m.id} className="tl-row" data-testid={`timeline-up-${m.id}`}>
-              <div className="tl-rail">
-                <span className="tl-dot"><Calendar size={14} style={{ color: colorFor("deadline") }} /></span>
-                {i < upcoming.length - 1 && <span className="tl-line" />}
+      <div className="tl-body-region">
+        {upcoming.length > 0 && (
+          <section className="tl-section" data-testid="timeline-upcoming">
+            <p className="ov-section-label">Upcoming</p>
+            {upcoming.slice(0, 3).map((m, i, arr) => (
+              <div key={m.id} className="tl-row" data-testid={`timeline-up-${m.id}`}>
+                <div className="tl-rail">
+                  <span className="tl-dot"><Calendar size={14} style={{ color: colorFor("deadline") }} /></span>
+                  {i < arr.length - 1 && <span className="tl-line" />}
+                </div>
+                <div className="tl-body">
+                  <p className="tl-title">{m.title}</p>
+                  {m.detail && <p className="tl-detail">{m.detail}</p>}
+                  <div className="tl-meta"><Clock size={11} /> {daysLeftLabel(m._due)}</div>
+                </div>
               </div>
-              <div className="tl-body">
-                <p className="tl-title">{m.title}</p>
-                {m.detail && <p className="tl-detail">{m.detail}</p>}
-                <div className="tl-meta"><Clock size={11} /> {daysLeftLabel(m._due)}</div>
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
+            ))}
+          </section>
+        )}
 
-      <section className="tl-section" data-testid="timeline-history">
-        <p className="ov-section-label">History</p>
-        {past.length === 0 ? (
-          <p className="text-[13px]" style={{ color: "var(--text-3)" }}>No events yet.</p>
-        ) : past.map((e, i) => {
-          const Icon = iconFor(e.kind);
-          return (
-            <div key={e.id} className="tl-row" data-testid={`timeline-hist-${e.id}`}>
-              <div className="tl-rail">
-                <span className="tl-dot"><Icon size={14} style={{ color: colorFor(e.kind) }} /></span>
-                {i < past.length - 1 && <span className="tl-line" />}
+        <section className="tl-section" data-testid="timeline-history">
+          <div className="flex items-center justify-between">
+            <p className="ov-section-label" style={{ marginBottom: 0 }}>History</p>
+            {past.length > recent.length && (
+              <button type="button" className="tl-viewall" onClick={() => setFullOpen(true)} data-testid="timeline-view-all">
+                View full history ({past.length}) →
+              </button>
+            )}
+          </div>
+          <div className="mt-3">
+            {recent.length === 0 ? (
+              <p className="text-[13px]" style={{ color: "var(--text-3)" }}>No events yet.</p>
+            ) : recent.map((e, i) => {
+              const Icon = iconFor(e.kind);
+              return (
+                <div key={e.id} className="tl-row" data-testid={`timeline-hist-${e.id}`}>
+                  <div className="tl-rail">
+                    <span className="tl-dot"><Icon size={14} style={{ color: colorFor(e.kind) }} /></span>
+                    {i < recent.length - 1 && <span className="tl-line" />}
+                  </div>
+                  <div className="tl-body">
+                    <p className="tl-title">{e.title}</p>
+                    {e.detail && <p className="tl-detail">{e.detail}</p>}
+                    <div className="tl-meta">{e.at ? timeAgo(e.at) : ""}{e.provider ? ` · ${PROVIDER_META[e.provider]?.label || e.provider}` : ""}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+
+      <TimelineHistoryModal open={fullOpen} past={past} iconFor={iconFor} colorFor={colorFor} onClose={() => setFullOpen(false)} />
+    </div>
+  );
+}
+
+/* Full project history — opened deliberately; scrolls inside the modal only */
+function TimelineHistoryModal({ open, past, iconFor, colorFor, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="bkt-modal-overlay" onClick={onClose} data-testid="timeline-history-modal">
+      <div className="bkt-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="bkt-modal-head">
+          <span className="flex items-center gap-2">
+            <History size={16} style={{ color: "var(--text-2)" }} />
+            <span className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>Full history</span>
+            <span className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>· {past.length}</span>
+          </span>
+          <button type="button" className="bkt-modal-x" onClick={onClose} data-testid="timeline-history-close"><X size={16} /></button>
+        </div>
+        <div className="bkt-modal-body" style={{ padding: "10px 16px 14px" }}>
+          {past.map((e) => {
+            const Icon = iconFor(e.kind);
+            return (
+              <div key={e.id} className="drill-row" data-testid={`timeline-full-${e.id}`}>
+                <div className="flex items-start gap-3">
+                  <span className="stream-ico" style={{ width: 26, height: 26 }}><Icon size={13} style={{ color: colorFor(e.kind) }} /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="drill-title">{e.title}</p>
+                    {e.detail && <p className="drill-detail">{e.detail}</p>}
+                    <div className="drill-meta">{e.at ? timeAgo(e.at) : ""}{e.provider ? ` · ${PROVIDER_META[e.provider]?.label || e.provider}` : ""}</div>
+                  </div>
+                </div>
               </div>
-              <div className="tl-body">
-                <p className="tl-title">{e.title}</p>
-                {e.detail && <p className="tl-detail">{e.detail}</p>}
-                <div className="tl-meta">{e.at ? timeAgo(e.at) : ""}{e.provider ? ` · ${PROVIDER_META[e.provider]?.label || e.provider}` : ""}</div>
-              </div>
-            </div>
-          );
-        })}
-      </section>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1029,7 +1080,7 @@ function SuggestedReplyChat({ projectId, clientName, connections }) {
 
   return (
     <section
-      className="rounded-xl overflow-hidden flex flex-col"
+      className="rounded-xl overflow-hidden flex flex-col h-full"
       style={{ background: "var(--surface)", border: "1px solid var(--hairline)" }}
       data-testid="suggested-reply-chat"
     >
@@ -1052,7 +1103,7 @@ function SuggestedReplyChat({ projectId, clientName, connections }) {
       </div>
 
       {/* Thread body */}
-      <div className="px-4 py-4 flex flex-col gap-4 max-h-[440px] overflow-y-auto" data-testid="suggested-reply-thread">
+      <div className="px-4 py-4 flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto" data-testid="suggested-reply-thread">
         {thread.length === 0 && (
           <div data-testid="suggested-reply-empty">
             <p className="text-[12.5px] leading-relaxed" style={{ color: "var(--text-2)" }}>

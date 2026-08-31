@@ -1,5 +1,13 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (Fixed-viewport app shell — no page scroll)
+- Reworked the workspace into a fixed application surface. `.project-shell` = `height:100dvh; overflow:hidden`. `.project-main` = `height:calc(100dvh - 32px); overflow:hidden; display:flex; flex-direction:column` (never grows with content). `.project-main-inner` = flex column, `min-height:0; overflow:hidden`.
+- Verified via DOM measurement that Home/Conversations/Timeline all yield an IDENTICAL fixed workspace rect (top 16, left 288, width 1616, height 1048) and `pageScrollable:false` on every screen and with modals open — switching tabs never moves/resizes it.
+- Did NOT blanket `overflow-y:auto` the workspace. Instead reshaped density per screen: Home stays minimal; Conversations caps to 10 recent messages in a contained list column beside a full-height Ask Bracket panel (`.conv2-col`, `.stream { flex:1; min-height:0; overflow-y:auto }`, SuggestedReplyChat now `h-full` with thread `flex-1 min-h-0`); Timeline shows Upcoming + 6 recent history rows inside `.tl-body-region` (overflow hidden) plus a "View full history (N)" button → `TimelineHistoryModal` (scrolls inside the modal only).
+- Mobile (≤900px) restores normal document flow/scroll (shell/main height auto, overflow visible).
+- Visual language, sidebar, colors, typography, navigation and docked-tab styling unchanged.
+
+
 ## Changelog — 2026-06 (Simplicity-first IA redesign — Home / Conversations / Timeline)
 - **Sidebar nav reduced to 3**: Home (renamed from Overview), Conversations, Timeline. Scope/Deliverables/Requirements/Decisions/Deadlines/History are no longer separate pages. Sources/Settings/Help unchanged. (`ProjectSidebar.jsx` NAV array.)
 - **Home** (`OverviewView` in `ProjectMemory.jsx`): lightweight — "Needs your attention" (dynamic: detected/review/scope-change items, else calm "all caught up"), optional next-deadline "Upcoming" card, and a "Project details" chip row (Scope · Deliverables · Requirements · Decisions) where each chip opens a read-only drill-in modal (`CategoryModal`) listing that category's memory items. Nothing heavy shown by default.
