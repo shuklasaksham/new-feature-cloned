@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search, Unplug, RefreshCw, Loader2,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search, Unplug, RefreshCw, Loader2, Archive, ArchiveRestore,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
@@ -25,7 +25,7 @@ const NAV = [
 
 export default function ProjectSidebar({
   project, projects = [], onSwitchProject,
-  view, setView, counts = {}, connections = [], onAddSource, onSourcesChanged,
+  view, setView, counts = {}, connections = [], onAddSource, onSourcesChanged, onProjectsChanged,
   collapsed, onToggleCollapse,
 }) {
   const navigate = useNavigate();
@@ -64,6 +64,26 @@ export default function ProjectSidebar({
     setSourcesOpen(true);
   };
 
+  const archiveProject = async (e, p) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/projects/${p.id}/archive`);
+      toast.success(`${p.name} archived`);
+      onProjectsChanged?.();
+    } catch { toast.error("Couldn't archive that project."); }
+  };
+
+  const unarchiveProject = async (e, p) => {
+    e.stopPropagation();
+    try {
+      await api.post(`/projects/${p.id}/unarchive`);
+      toast.success(`${p.name} restored`);
+      onProjectsChanged?.();
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Couldn't restore that project.");
+    }
+  };
+
   useEffect(() => {
     api.get("/project-quota").then(({ data }) => setQuota(data)).catch(() => {});
   }, []);
@@ -100,7 +120,9 @@ export default function ProjectSidebar({
         </button>
         {switchOpen && (() => {
           const q = projQuery.trim().toLowerCase();
-          const filtered = q ? projects.filter((p) => (p.name || "").toLowerCase().includes(q)) : projects;
+          const match = (p) => !q || (p.name || "").toLowerCase().includes(q);
+          const active = projects.filter((p) => !p.archived && match(p));
+          const archived = projects.filter((p) => p.archived && match(p));
           return (
           <div className="psb-switch-menu" data-testid="psb-switcher-menu">
             {projects.length > 6 && (
@@ -116,21 +138,49 @@ export default function ProjectSidebar({
               </div>
             )}
             <div className="psb-switch-scroll">
-              {filtered.length === 0 ? (
-                <p className="psb-switch-empty">{projects.length === 0 ? "No other projects" : "No matches"}</p>
+              {active.length === 0 ? (
+                <p className="psb-switch-empty">{projects.length === 0 ? "No projects yet" : "No matches"}</p>
               ) : (
-                filtered.map((p) => (
-                  <button
+                active.map((p) => (
+                  <div
                     key={p.id}
-                    type="button"
-                    className={`psb-switch-item${p.id === project?.id ? " is-current" : ""}`}
+                    className={`psb-switch-item group${p.id === project?.id ? " is-current" : ""}`}
                     onClick={() => { setSwitchOpen(false); setProjQuery(""); if (p.id !== project?.id) onSwitchProject?.(p.id); }}
+                    role="button"
                     data-testid={`psb-switch-item-${p.id}`}
                   >
-                    <span className="truncate">{p.name}</span>
-                    {p.id === project?.id && <Check size={14} />}
-                  </button>
+                    <span className="truncate flex-1">{p.name}</span>
+                    {p.id === project?.id && <Check size={14} className="shrink-0" />}
+                    <button
+                      type="button"
+                      className="psb-switch-act"
+                      title="Archive project"
+                      onClick={(e) => archiveProject(e, p)}
+                      data-testid={`psb-archive-${p.id}`}
+                    >
+                      <Archive size={13} />
+                    </button>
+                  </div>
                 ))
+              )}
+              {archived.length > 0 && (
+                <>
+                  <p className="psb-switch-section" data-testid="psb-archived-heading">Archived · {archived.length}</p>
+                  {archived.map((p) => (
+                    <div key={p.id} className="psb-switch-item group is-archived" data-testid={`psb-archived-${p.id}`}>
+                      <span className="truncate flex-1">{p.name}</span>
+                      <button
+                        type="button"
+                        className="psb-switch-act"
+                        title="Restore project"
+                        onClick={(e) => unarchiveProject(e, p)}
+                        data-testid={`psb-unarchive-${p.id}`}
+                      >
+                        <ArchiveRestore size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
             <div className="psb-switch-div" />
@@ -141,7 +191,7 @@ export default function ProjectSidebar({
                   <Sparkles size={13} />
                 </button>
                 <p className="psb-switch-hint" data-testid="psb-quota-hint">
-                  {quota.used} of {quota.limit} project{quota.limit === 1 ? "" : "s"} on your plan
+                  {quota.used} of {quota.limit} active project{quota.limit === 1 ? "" : "s"} on your plan
                 </p>
               </>
             ) : (

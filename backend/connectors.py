@@ -985,12 +985,46 @@ def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str
 
 
 # ---- Plan-gated project quota --------------------------------------------
-# monthly subscription → unlimited; single-project ($9) → 1; no/unknown → 1.
-PLAN_PROJECT_LIMITS = {"monthly": None, "project": 1}
+# monthly subscription → up to 10 ACTIVE (non-archived) projects, unlimited
+# archived; single-project ($9) → 1 active project for 60 days; none → 1.
+PLAN_PROJECT_LIMITS = {"monthly": 10, "project": 1}
+PROJECT_PLAN_DAYS = 60
 
 
 def _plan_limit(plan):
     return PLAN_PROJECT_LIMITS.get(plan, 1)
+
+
+def _plan_expires_at(user):
+    """The $9 single-project plan grants access for 60 days from purchase.
+    Returns an aware datetime, or None when the plan never expires (monthly)."""
+    if user.get("plan") != "project":
+        return None
+    since = user.get("plan_since")
+    if not since:
+        return None
+    try:
+        start = datetime.fromisoformat(since)
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        return start + timedelta(days=PROJECT_PLAN_DAYS)
+    except Exception:
+        return None
+
+
+def _plan_expired(user):
+    exp = _plan_expires_at(user)
+    return bool(exp and datetime.now(timezone.utc) > exp)
+
+
+async def _active_project_count(uid):
+    return await db.projects.count_documents({"owner_user_id": uid, "archived": {"$ne": True}})
+
+
+def _assert_not_expired(user):
+    """Blocks writes on an expired $9 plan (project is read-only until renew/upgrade)."""
+    if _plan_expired(user):
+        raise HTTPException(402, "Your 60-day project access has ended. Renew or upgrade to keep working on this project.")
 
 
 @router.get("/project-quota")
@@ -998,8 +1032,18 @@ async def projects_quota(request: Request):
     user = await current_user(request, db)
     plan = user.get("plan")
     limit = _plan_limit(plan)
-    used = await db.projects.count_documents({"owner_user_id": user["user_id"]})
-    return {"plan": plan, "limit": limit, "used": used, "can_create": (limit is None or used < limit)}
+    used = await _active_project_count(user["user_id"])
+    archived = await db.projects.count_documents({"owner_user_id": user["user_id"], "archived": True})
+    exp = _plan_expires_at(user)
+    return {
+        "plan": plan,
+        "limit": limit,
+        "used": used,
+        "archived": archived,
+        "can_create": (limit is None or used < limit) and not _plan_expired(user),
+        "plan_expires_at": exp.isoformat() if exp else None,
+        "plan_expired": _plan_expired(user),
+    }
 
 
 @router.post("/connect/establish")
@@ -1008,6 +1052,7 @@ async def establish_connection(body: EstablishIn, request: Request):
     prev = await db.connect_previews.find_one({"id": body.preview_id, "user_id": user["user_id"]}, {"_id": 0})
     if not prev:
         raise HTTPException(404, "Preview expired — please re-select the source.")
+    _assert_not_expired(user)
     # Back-compat: previews stored before multi-select had flat fields.
     items = prev.get("items")
     if not items:
@@ -1028,11 +1073,12 @@ async def establish_connection(body: EstablishIn, request: Request):
         if proj_info.get("client") and not project.get("client_name"):
             await db.projects.update_one({"id": project_id}, {"$set": {"client_name": proj_info["client"], "updated_at": now}})
     else:
+        _assert_not_expired(user)
         limit = _plan_limit(user.get("plan"))
         if limit is not None:
-            used = await db.projects.count_documents({"owner_user_id": user["user_id"]})
+            used = await _active_project_count(user["user_id"])
             if used >= limit:
-                raise HTTPException(402, "You've reached your plan's project limit. Upgrade to add more projects.")
+                raise HTTPException(402, "You've reached your plan's active-project limit. Archive a project or upgrade to add more.")
         project_id = _uuid()
         combined_digest = "\n\n".join((it.get("digest") or "")[:4500] for it in items)[:9000]
         await db.projects.insert_one({
@@ -1100,13 +1146,15 @@ async def establish_connection(body: EstablishIn, request: Request):
 # ---------------------------------------------------------------------------
 # Project-scoped: connections / memory / activity / ask
 # ---------------------------------------------------------------------------
-async def _owned_project(project_id: str, request: Request) -> dict:
+async def _owned_project(project_id: str, request: Request, require_write: bool = False) -> dict:
     user = await current_user(request, db)
     project = await db.projects.find_one({"id": project_id}, {"_id": 0})
     if not project:
         raise HTTPException(404, "Project not found")
     if project.get("owner_user_id") and project["owner_user_id"] != user["user_id"]:
         raise HTTPException(403, "Not your project")
+    if require_write:
+        _assert_not_expired(user)
     return project
 
 
@@ -1188,7 +1236,7 @@ async def project_suggest_reply(project_id: str, request: Request):
     The Overview page keeps the thread client-side; every turn hits this
     endpoint so the reply always reflects the freshest memory.
     """
-    project = await _owned_project(project_id, request)
+    project = await _owned_project(project_id, request, require_write=True)
 
     try:
         body = await request.json()
@@ -1325,7 +1373,7 @@ async def _gmail_client_email(account: dict, thread_id: str) -> str:
 @router.post("/projects/{project_id}/send-slack")
 async def project_send_slack(project_id: str, request: Request):
     """Post the reply to the connected Slack channel directly — no redirect."""
-    await _owned_project(project_id, request)
+    await _owned_project(project_id, request, require_write=True)
     user = await current_user(request, db)
     try:
         body = await request.json()
@@ -1363,7 +1411,7 @@ async def project_send_email(project_id: str, request: Request):
     """Send replies to one or more client threads DIRECTLY via the connected
     Gmail — threaded into the original conversation. Accepts either a single
     {to, thread_id} or a list of {to, thread_id} under `targets`."""
-    await _owned_project(project_id, request)
+    await _owned_project(project_id, request, require_write=True)
     user = await current_user(request, db)
     try:
         body = await request.json()
@@ -1494,7 +1542,7 @@ async def _pending_memory(project_id: str) -> list:
 async def project_update_build(project_id: str, request: Request):
     """Build ONE consolidated snapshot of every pending change + its downstream
     impacts. Runs a single AI pass (on demand — never on polling)."""
-    project = await _owned_project(project_id, request)
+    project = await _owned_project(project_id, request, require_write=True)
     pending = await _pending_memory(project_id)
     if not pending:
         return {"pending": False}
@@ -1557,7 +1605,7 @@ async def project_update_build(project_id: str, request: Request):
 async def project_update_approve(project_id: str, update_id: str, request: Request):
     """Approve the whole snapshot: confirm every direct change and add all
     downstream items — atomically, no new approval chains."""
-    await _owned_project(project_id, request)
+    await _owned_project(project_id, request, require_write=True)
     user = await current_user(request, db)
     snap = await db.project_updates.find_one(
         {"id": update_id, "project_id": project_id}, {"_id": 0})
@@ -1654,7 +1702,7 @@ async def project_update_approve(project_id: str, update_id: str, request: Reque
 async def project_update_undo(project_id: str, update_id: str, request: Request):
     """Roll back a just-accepted change: revert confirmed items to pending,
     delete added items, drop the history event, reopen the snapshot."""
-    await _owned_project(project_id, request)
+    await _owned_project(project_id, request, require_write=True)
     snap = await db.project_updates.find_one(
         {"id": update_id, "project_id": project_id}, {"_id": 0})
     if not snap or snap.get("status") != "approved":
@@ -1854,7 +1902,7 @@ async def memory_edit(memory_id: str, body: MemoryEditIn, request: Request):
 async def memory_create(project_id: str, body: MemoryCreateIn, request: Request):
     """Manually add a memory item (e.g. from a phone call the client didn't
     write down). No source_id required — provider is 'manual'."""
-    await _owned_project(project_id, request)
+    await _owned_project(project_id, request, require_write=True)
     canon = _canonical_category(body.category)
     if canon not in MEMORY_CATEGORIES:
         raise HTTPException(400, f"Unknown category {body.category}")

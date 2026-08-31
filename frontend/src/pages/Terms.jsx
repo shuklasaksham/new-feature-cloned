@@ -24,19 +24,20 @@ export default function Terms() {
   return (
     <div data-testid="terms-page" className="page-enter landing-page-bg">
       <Seo
-        title="Terms of Service"
-        description="The terms that govern your use of Bracket, including connected work sources like Gmail, Figma, GitHub, Notion and Slack."
+        title="Terms of Use"
+        description="The terms that govern your use of Bracket, including connected work sources like Gmail."
         path="/terms"
       />
       <section className="relative overflow-x-clip isolate">
         <HeroParticles />
         <div className="relative z-10 max-w-[760px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-10">
           <span className="section-label"><span className="dot" />LEGAL</span>
-          <h1 className="t-display mt-6">Terms of <span className="landing-hero-gradient">Service</span></h1>
-          <p className="mt-4 text-[13px] text-[var(--text-3)] font-mono uppercase tracking-[0.08em]">Last updated: August 10, 2026</p>
+          <h1 className="t-display mt-6">Terms of <span className="landing-hero-gradient">Use</span></h1>
+          <p className="mt-4 text-[13px] text-[var(--text-3)] font-mono uppercase tracking-[0.08em]">Last updated: August 31, 2026</p>
           <p className="mt-5 text-[14.5px] leading-[1.7] text-[var(--text-2)]">
-            These terms govern your use of Bracket at use-bracket.com. By creating an account, using guest mode, or
-            connecting a work source, you agree to them.
+            These Terms of Use ("Terms") govern your access to and use of Bracket. Bracket is operated by Saksham
+            Shukla, an individual based in India ("Bracket," "we," "us," or "our"). By creating an account, purchasing a
+            plan, connecting a source, or otherwise using Bracket, you agree to these Terms.
           </p>
         </div>
       </section>
@@ -44,86 +45,230 @@ export default function Terms() {
       <section className="relative overflow-x-clip isolate">
         <div className="max-w-[760px] mx-auto px-5 sm:px-6 md:px-8 pb-24 md:pb-32">
 
-          <H2>1. The service</H2>
+          <H2>1. What Bracket provides</H2>
+          <P>Bracket is a software service designed to help users understand and manage client-project information. Bracket may allow you to:</P>
+          <UL items={[
+            "Connect selected project conversations or work sources",
+            "Maintain project memory",
+            "Track scope, deliverables, requirements and decisions",
+            "Identify deadlines and project changes",
+            "Maintain project history",
+            "Compress client communication into project-relevant information",
+            "Ask questions about project context and history",
+            "Generate suggested client responses",
+            "Send communications through supported integrations when explicitly initiated or approved by you",
+          ]} />
+          <P>Features may change as Bracket develops.</P>
+
+          <H2>2. Eligibility and accounts</H2>
+          <P>You must be legally capable of entering into these Terms to use Bracket. You are responsible for:</P>
+          <UL items={[
+            "Providing accurate account information",
+            "Maintaining the security of your account",
+            "Protecting your authentication credentials",
+            "Activities performed through your account",
+            "Promptly notifying us if you believe your account has been compromised",
+          ]} />
+          <P>You may not share access in a way that circumvents applicable plan limits or security controls.</P>
+
+          <H2>3. Connecting third-party services</H2>
           <P>
-            Bracket is an AI workspace for client projects. You connect the tools where client work happens (a specific
-            Gmail conversation, Slack channel, Figma file, GitHub repository or Notion page) and Bracket builds a live
-            "Project Memory" — an organised record of your deliverables, scope, timelines, requirements, decisions and
-            deadlines — and surfaces what needs your attention. Bracket can also draft and send client replies for you
-            (with your explicit approval), and includes an optional decision flow with client review and sign-off links.
+            Bracket may allow you to connect services such as Gmail and other supported work tools. By connecting a
+            service, you authorize Bracket to access and process information from that service to the extent necessary
+            to provide the functionality you request and subject to the permissions you grant. You are responsible for
+            ensuring that you have the right to connect and process the relevant information. You must not use Bracket to
+            access communications, accounts, files, or other information that you are not authorized to access.
+            Third-party services remain governed by their own terms and privacy policies.
           </P>
 
-          <H2>2. Your account</H2>
-          <UL items={[
-            "You must provide a valid email address and keep your account access secure.",
-            "Guest mode lets you try Bracket without an account; guest projects can be claimed by signing up.",
-            "You are responsible for activity under your account.",
-          ]} />
-
-          <H2>3. Connected work sources</H2>
-          <P>When you connect an external source, you agree that:</P>
-          <UL items={[
-            "You have the right to connect that source. You are responsible for ensuring that sharing its content with Bracket doesn't violate agreements you have with clients, employers or workspace owners.",
-            "Authorization happens through the provider's own sign-in (OAuth). You can revoke it anytime — from Bracket (disconnect) or from the provider's security settings.",
-            "Bracket only ingests the specific sources you select, as described in our Privacy Policy.",
-            "Bracket never edits or deletes anything in your connected sources. Gmail and Slack are read + send: Bracket sends a message only when you explicitly review and approve it, never on its own. Figma, GitHub and Notion are read-only.",
-            "Availability of an integration depends on the provider's API. If a provider changes or restricts its API, the related Bracket features may change or stop working.",
-          ]} />
-
-          <H2>4. AI outputs</H2>
-          <UL items={[
-            "Bracket uses AI to extract, summarize and suggest. AI can make mistakes — extracted requirements, decisions, deadlines and answers are assistance, not professional advice.",
-            "Bracket distinguishes confirmed information from detected suggestions, and you can review, confirm or dismiss any extracted item. You remain responsible for the decisions and documents you send to clients.",
-            "Your content is processed by AI providers for inference only and is never used to train models.",
-          ]} />
-
-          <H2>5. Your content & ownership</H2>
-          <UL items={[
-            "You own your project content, connected-source data and the documents Bracket produces for you.",
-            "You grant Bracket a limited license to store and process this content solely to operate the service.",
-            "We may use anonymized, aggregated usage statistics (never your content) to improve Bracket.",
-          ]} />
-
-          <H2>6. Acceptable use</H2>
-          <P>You agree not to:</P>
-          <UL items={[
-            "Connect sources you don't have the right to access, or use Bracket to obtain data about others without authorization.",
-            "Reverse-engineer, scrape, overload or disrupt the service.",
-            "Use Bracket for unlawful content or to infringe others' intellectual property or privacy.",
-            "Resell or white-label the service without written permission.",
-          ]} />
-
-          <H2>7. Pricing</H2>
+          <H2>4. Client and third-party information</H2>
           <P>
-            Bracket is currently free during early access. We will give at least 30 days' notice by email before any
-            pricing change takes effect. Future paid plans will be month-to-month unless you choose otherwise.
+            Bracket is designed for client work, which means information you process may concern other people or
+            organizations. You are responsible for determining whether you have appropriate authorization or another
+            lawful basis to process that information through Bracket. Bracket does not independently obtain consent from
+            your clients merely because you connect a conversation to the service.
           </P>
 
-          <H2>8. Client review links</H2>
-          <P>
-            Documents you share via a review link are accessible to anyone with that link. You control what you lock
-            and share; sharing is always your action, never automatic.
-          </P>
-
-          <H2>9. Termination</H2>
+          <H2>5. AI-generated information</H2>
+          <P>Bracket uses artificial intelligence to extract, summarize, organize, identify, and generate information. AI systems can make mistakes. Bracket may incorrectly interpret:</P>
           <UL items={[
-            "You can stop using Bracket and request full account deletion at any time (support@use-bracket.com).",
-            "We may suspend accounts that violate these terms or abuse the service, with notice where practical.",
-            "On termination, connected sources are disconnected and your data is deleted per our Privacy Policy.",
+            "Scope", "Requirements", "Deliverables", "Decisions", "Deadlines",
+            "Client intentions", "Historical information", "Suggested responses",
           ]} />
-
-          <H2>10. Disclaimers & liability</H2>
           <P>
-            Bracket is provided "as is". To the maximum extent permitted by law, we disclaim implied warranties and
-            are not liable for indirect or consequential damages, lost profits, or losses arising from decisions made
-            using AI outputs or from third-party provider outages. Our total liability is limited to the amounts you
-            paid us in the 12 months before the claim (or $50 if you paid nothing).
+            You are responsible for reviewing information where appropriate before relying on it for important business
+            decisions. Bracket is an assistance tool and does not replace your professional judgment.
           </P>
 
-          <H2>11. Changes & contact</H2>
+          <H2>6. Project changes</H2>
           <P>
-            We may update these terms; material changes will be announced by email or in-product notice at least 14
-            days in advance. Continued use after changes take effect constitutes acceptance. Contact:{" "}
+            Bracket may identify that a client communication affects multiple parts of a project. For example, a request
+            may affect scope, deliverables, requirements and deadlines simultaneously. Where Bracket presents a project
+            change for your review, your acceptance may cause Bracket to update multiple related parts of the project's
+            memory together. You remain responsible for deciding whether a proposed project change accurately reflects
+            your agreement with your client.
+          </P>
+
+          <H2>7. Client communications</H2>
+          <P>
+            Bracket may generate suggested emails or other communications based on project context. Generated
+            communications are suggestions. Where Bracket provides a sending feature, Bracket will not intentionally send
+            a client communication without an action initiated or approved by you. You are responsible for reviewing the
+            recipient, content, attachments if any, and other relevant information before sending. You remain
+            responsible for communications sent through your connected accounts.
+          </P>
+
+          <H2>8. Your content</H2>
+          <P>
+            You retain ownership of content you provide to Bracket and, as between you and Bracket, your project
+            information. You grant Bracket a limited right to host, process, reproduce, transmit and otherwise use your
+            content solely as reasonably necessary to:
+          </P>
+          <UL items={[
+            "Operate Bracket",
+            "Provide features you request",
+            "Maintain and secure the service",
+            "Comply with applicable law",
+          ]} />
+          <P>This permission ends when the relevant information is deleted, subject to reasonable technical, backup, security, and legal-retention requirements.</P>
+
+          <H2>9. Bracket's intellectual property</H2>
+          <P>
+            Bracket, including its software, interface, branding, designs, underlying technology, and other materials
+            provided by us, is owned by or licensed to the operator of Bracket and is protected by applicable
+            intellectual-property laws. These Terms do not transfer ownership of Bracket to you. You may not copy,
+            resell, redistribute, reverse engineer, or commercially exploit Bracket except where permitted by applicable
+            law or with our written permission.
+          </P>
+
+          <H2>10. Acceptable use</H2>
+          <P>You may not use Bracket to:</P>
+          <UL items={[
+            "Access information without authorization",
+            "Violate another person's privacy or intellectual-property rights",
+            "Send spam or unlawful communications",
+            "Distribute malware or harmful code",
+            "Attempt to bypass security controls",
+            "Interfere with or disrupt the service",
+            "Conduct unauthorized automated scraping",
+            "Impersonate another person",
+            "Use Bracket for unlawful activities",
+            "Attempt to obtain unauthorized access to another user's projects or account",
+          ]} />
+          <P>We may restrict or suspend access where reasonably necessary to protect Bracket, our users, or third parties.</P>
+
+          <H2>11. Plans and pricing</H2>
+          <P>Bracket may offer different purchasing options. Current advertised plans may include:</P>
+          <UL items={[
+            "Monthly plan — $29/month: provides access to the features and limits described on the pricing page for the applicable subscription period (up to 10 active projects, with unlimited archived projects).",
+            "Per-project plan — $9/project: provides access for one project for 60 days, subject to the features and limits described on the pricing page.",
+          ]} />
+          <P>
+            Current pricing and plan features are displayed on Bracket's Pricing page. Prices may change in the future.
+            Changes to recurring subscription prices will not apply retroactively to periods already paid for and, where
+            appropriate, we will provide notice before a changed recurring price takes effect.
+          </P>
+
+          <H2>12. Subscriptions</H2>
+          <P>
+            Monthly subscriptions renew automatically unless cancelled before the next billing date, if automatic
+            renewal is enabled for the plan. You may cancel a recurring subscription at any time. Unless otherwise stated
+            during purchase, cancellation stops future renewal and access continues until the end of the current paid
+            billing period. Cancellation does not automatically delete your account or project data.
+          </P>
+
+          <H2>13. Per-project purchases</H2>
+          <P>
+            A $9 project purchase provides access to the applicable project for the advertised 60-day active period. At
+            the end of that period, you may be offered the ability to extend the project, move to another plan, or
+            otherwise continue access according to the options available at that time. The exact expiry behavior is
+            displayed to you before purchase.
+          </P>
+
+          <H2>14. Refunds</H2>
+          <P>
+            Except where required by applicable law or expressly stated at the time of purchase, payments are generally
+            non-refundable once the applicable paid service has begun. If you believe you were charged incorrectly,
+            contact <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a>.
+          </P>
+
+          <H2>15. Third-party services</H2>
+          <P>
+            Bracket depends on third-party services, APIs and infrastructure. These may include email providers, AI
+            providers, hosting providers, payment processors, and connected work tools. Third-party providers may
+            modify, restrict, discontinue, or temporarily interrupt their services. As a result, particular Bracket
+            integrations or features may become unavailable or change. We do not control third-party services and are
+            not responsible for their independent acts or omissions.
+          </P>
+
+          <H2>16. Availability and changes</H2>
+          <P>We aim to keep Bracket available and reliable, but we do not guarantee uninterrupted or error-free operation. We may:</P>
+          <UL items={[
+            "Add or remove features",
+            "Modify functionality",
+            "Introduce usage limits",
+            "Change supported integrations",
+            "Perform maintenance",
+            "Suspend functionality for security or operational reasons",
+          ]} />
+          <P>Where reasonably practical, we will provide notice of material changes that significantly reduce a paid service.</P>
+
+          <H2>17. Termination</H2>
+          <P>
+            You may stop using Bracket at any time. You may request account deletion by contacting{" "}
+            <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a> or using an
+            account-deletion feature if available. We may suspend or terminate access if you materially violate these
+            Terms, misuse the service, fail to pay applicable charges, create security risks, or use Bracket unlawfully.
+            Where reasonable, we will provide notice and an opportunity to resolve the issue.
+          </P>
+
+          <H2>18. Disclaimer</H2>
+          <P>To the maximum extent permitted by applicable law, Bracket is provided on an "as is" and "as available" basis. We do not guarantee that:</P>
+          <UL items={[
+            "AI-generated information will always be accurate",
+            "Bracket will identify every project change",
+            "Every deadline, requirement, decision, or scope item will be detected",
+            "Suggested communications will be appropriate for every situation",
+            "The service will always be uninterrupted or error-free",
+            "Third-party integrations will always remain available",
+          ]} />
+          <P>You should use appropriate professional judgment when relying on Bracket. Nothing in these Terms excludes warranties or rights that cannot legally be excluded.</P>
+
+          <H2>19. Limitation of liability</H2>
+          <P>
+            To the maximum extent permitted by applicable law, Bracket and its operator will not be liable for indirect,
+            incidental, special, consequential, or punitive damages, or for loss of profits, revenue, business
+            opportunities, goodwill, or data arising from your use of the service. To the maximum extent permitted by
+            applicable law, our aggregate liability relating to Bracket will not exceed the greater of: (a) the amount
+            you paid to Bracket during the 12 months immediately preceding the event giving rise to the claim, or (b)
+            US$50. These limitations do not apply where liability cannot legally be limited or excluded.
+          </P>
+
+          <H2>20. Indemnification</H2>
+          <P>
+            To the extent permitted by applicable law, you agree to indemnify and hold the operator of Bracket harmless
+            from third-party claims arising from your unlawful use of Bracket, your violation of these Terms, or your
+            processing of information that you did not have authority to provide or connect. This provision does not
+            apply to the extent a claim results from Bracket's own unlawful conduct.
+          </P>
+
+          <H2>21. Governing law and disputes</H2>
+          <P>
+            These Terms are governed by the laws of India, without regard to conflict-of-law principles. Before
+            commencing formal proceedings, you and Bracket agree to make a reasonable attempt to resolve disputes
+            informally by contacting <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a>.
+          </P>
+
+          <H2>22. Changes to these Terms</H2>
+          <P>
+            We may update these Terms as Bracket develops. If a change materially affects existing paid users, we may
+            provide reasonable advance notice through email, Bracket, or another appropriate method. Continued use after
+            updated Terms become effective constitutes acceptance where permitted by applicable law.
+          </P>
+
+          <H2>23. Contact</H2>
+          <P>
+            Questions about these Terms can be sent to: Bracket, operated by Saksham Shukla, India —{" "}
             <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a>.
           </P>
 

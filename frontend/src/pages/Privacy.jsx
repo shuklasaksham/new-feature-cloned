@@ -28,7 +28,7 @@ export default function Privacy() {
     <div data-testid="privacy-page" className="page-enter landing-page-bg">
       <Seo
         title="Privacy Policy"
-        description="How Bracket collects, uses and protects your data — including data from connected sources like Gmail, Figma, GitHub, Notion and Slack."
+        description="How Bracket collects, uses and protects your data — including data from connected sources like Gmail."
         path="/privacy"
       />
       <section className="relative overflow-x-clip isolate">
@@ -36,12 +36,13 @@ export default function Privacy() {
         <div className="relative z-10 max-w-[760px] mx-auto px-5 sm:px-6 md:px-8 pt-24 md:pt-32 pb-10">
           <span className="section-label"><span className="dot" />LEGAL</span>
           <h1 className="t-display mt-6">Privacy <span className="landing-hero-gradient">Policy</span></h1>
-          <p className="mt-4 text-[13px] text-[var(--text-3)] font-mono uppercase tracking-[0.08em]">Last updated: August 10, 2026</p>
+          <p className="mt-4 text-[13px] text-[var(--text-3)] font-mono uppercase tracking-[0.08em]">Last updated: August 31, 2026</p>
           <p className="mt-5 text-[14.5px] leading-[1.7] text-[var(--text-2)]">
-            Bracket ("Bracket", "we", "us") is an AI decision workspace for client projects, operated at{" "}
-            <span className="text-[var(--text)]">use-bracket.com</span>. This policy explains what we collect, how we
-            use it, and the strict boundaries we apply to data from connected work sources such as Gmail, Figma,
-            GitHub, Notion and Slack.
+            Bracket ("Bracket," "we," "us," or "our") is operated by Saksham Shukla, an individual based in India.
+            Bracket helps freelancers, agencies, consultants, and other client-service professionals keep track of
+            client projects by connecting selected work conversations and sources, maintaining project memory,
+            identifying important changes, and helping users prepare and send client communications. This Privacy
+            Policy explains what information Bracket collects, how we use it, and the choices available to you.
           </p>
         </div>
       </section>
@@ -51,111 +52,224 @@ export default function Privacy() {
 
           <H2>1. Information we collect</H2>
           <H3>Account information</H3>
+          <P>When you create or use a Bracket account, we may collect information such as:</P>
           <UL items={[
-            "Email address and name (used for sign-in via email code and account communication).",
-            "Basic technical data: IP address, browser type, and usage analytics (pages viewed, features used) to improve the product.",
+            "Your name",
+            "Email address",
+            "Authentication information",
+            "Account and product preferences",
+            "Subscription and billing information",
           ]} />
-          <H3>Project content</H3>
-          <P>
-            The briefs, notes, decisions, documents and files you create inside Bracket. This content belongs to you.
-          </P>
-          <H3>Connected work sources (integrations)</H3>
-          <P>
-            When you connect an external source — a Gmail conversation, a Figma design file, a GitHub repository, a
-            Notion page, a Slack channel — Bracket receives data from that provider through their official API, only
-            after you explicitly authorize it via the provider's own sign-in (OAuth).
-          </P>
-
-          <H2>2. The source-level boundary — our core privacy promise</H2>
-          <P>
-            Bracket connects <span className="text-[var(--text)] font-medium">specific pieces of work, not your entire account</span>.
-            Even where a provider's authorization technically grants broader access, we enforce a strict boundary in our own systems:
-          </P>
+          <P>We do not store your payment-card details directly where payment is processed by a third-party payment provider.</P>
+          <H3>Project information</H3>
+          <P>When you use Bracket, we may process information associated with projects you create, including:</P>
           <UL items={[
-            "We only read, store and process the specific sources you explicitly select (e.g. one email conversation, one design file, one repository).",
-            "We never ingest, index or analyze unrelated data from your connected account.",
-            "Listing screens (e.g. your recent conversations or files shown while you choose a source) are fetched transiently for selection and are not stored.",
-            "Every extracted insight in Bracket retains a reference to the exact source it came from, and is only visible to you.",
-            "You can disconnect any source at any time. Disconnecting stops all synchronization immediately and deletes the cached source content.",
+            "Project names",
+            "Scope",
+            "Deliverables",
+            "Requirements",
+            "Decisions",
+            "Deadlines",
+            "Timeline and project history",
+            "Generated or edited client responses",
+            "Other project information you provide",
           ]} />
-
-          <H2>3. How we use connected-source data</H2>
-          <P>Data from sources you select is used exclusively to power your project's intelligence:</P>
-          <UL items={[
-            "Extracting requirements, decisions, deliverables, deadlines and open questions into your Project Memory.",
-            "Detecting meaningful changes (new client requests, deadline changes, potential scope creep) when the source updates.",
-            "Answering your questions about the project (\"Ask Bracket\"), always with citations to the underlying source.",
-            "Suggesting whether a newly connected source belongs to one of your existing projects.",
-          ]} />
+          <H3>Connected-source information</H3>
           <P>
-            We do <span className="text-[var(--text)] font-medium">not</span> use connected-source data for advertising,
-            we do not sell it, and we do not share it with third parties except the AI processing described below.
+            Bracket allows you to connect supported third-party services. For example, when you connect Gmail, Bracket
+            may access the conversations you select or authorize for use with a project. Bracket uses connected-source
+            information to provide the functionality you request, including understanding project conversations,
+            creating compressed project-relevant summaries, maintaining project memory, detecting meaningful changes,
+            answering questions about project history, and preparing communications. Bracket does not intentionally use
+            unrelated conversations or content to build your project memory.
           </P>
 
-          <H2>4. AI processing — no training on your data</H2>
-          <UL items={[
-            "Bracket sends relevant excerpts of your project content and selected sources to large-language-model providers (e.g. Anthropic Claude) strictly to generate the outputs you request.",
-            "Your content is used for inference only. It is never used to train Bracket's or any third party's AI models.",
-            "Humans do not read your connected-source data except with your explicit permission (e.g. a support request), or where required by law.",
-          ]} />
-
-          <H2>5. Google API Services — Limited Use disclosure</H2>
+          <H2>2. Gmail and Google user data</H2>
           <P>
-            Bracket's use of information received from Google APIs (including Gmail data — read to understand the threads you connect, and used to send a reply only when you explicitly approve it) adheres to the{" "}
-            <a className="link-accent" href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">
-              Google API Services User Data Policy
-            </a>, including the Limited Use requirements. Specifically:
+            When you connect Gmail, Bracket uses Google OAuth to request permissions required to provide Gmail-related
+            features. Depending on the features you use and permissions you grant, Bracket may access Gmail information
+            necessary to:
           </P>
           <UL items={[
-            "Gmail data is only used to provide the user-facing features described here: understanding the specific conversations you connect to a project.",
-            "We do not transfer Gmail data to third parties except as necessary to provide these features (AI inference), for security, or to comply with law.",
-            "We do not use Gmail data for advertising.",
-            "Humans do not read your Gmail data unless you give explicit permission, it is necessary for security, or required by law.",
+            "Let you identify and connect project conversations",
+            "Read connected project conversations",
+            "Understand and summarize project-relevant communication",
+            "Extract project information",
+            "Maintain project memory and history",
+            "Detect changes affecting scope, deliverables, requirements, decisions, or deadlines",
+            "Generate suggested replies",
+            "Send an email on your behalf when you explicitly choose to send it",
           ]} />
-
-          <H2>6. Provider-specific notes</H2>
-          <UL items={[
-            "Gmail: we read only the conversations you select. When you explicitly approve it, Bracket can also send a reply into that same thread on your behalf. Bracket never edits or deletes your email and never sends without your approval.",
-            "Figma: read-only file access; we read file structure (pages, frames, components), comments and version history of the files you select.",
-            "GitHub: we read repository metadata, README, issues and commit messages of the repositories you select.",
-            "Notion: we read only pages you grant access to during Notion's own authorization, and store only the pages you select.",
-            "Slack: we read only the channels/conversations you select, and — only when you explicitly approve it — post a reply as you, using permissions scoped to your own user account.",
-          ]} />
-
-          <H2>7. Security</H2>
-          <UL items={[
-            "Integration credentials (OAuth tokens) are encrypted at rest with dedicated keys, and never exposed to your browser or other users.",
-            "All data is transmitted over TLS (HTTPS).",
-            "Access to connected-source data is enforced per user and per project on our backend — no other Bracket user can see your sources or memory.",
-            "Client review links are unguessable tokens that expose only the final document you choose to share.",
-          ]} />
-
-          <H2>8. Retention & deletion</H2>
-          <UL items={[
-            "Project content and extracted memory are retained while your account is active.",
-            "Disconnecting a source immediately deletes its cached content and stops syncing; extracted memory remains on your project until you remove it.",
-            "Deleting a project deletes its content.",
-            "To delete your entire account and history, email support@use-bracket.com — we complete deletion within 48 hours.",
-            "You may also revoke Bracket's access at any time from the provider's own security settings (Google, Figma, GitHub, Notion, Slack); Bracket connections then stop working immediately.",
-          ]} />
-
-          <H2>9. Cookies & analytics</H2>
           <P>
-            We use a session cookie to keep you signed in, and first-party analytics (page views, clicks, session
-            duration) to understand product usage. We do not use third-party advertising trackers.
+            Bracket does not automatically send emails on your behalf. A communication is sent only after an action
+            initiated or approved by you. We request Google API permissions based on the functionality Bracket needs and
+            aim to use the minimum access reasonably necessary to provide those features. Google itself requires
+            applications to request the narrowest scopes necessary for their functionality.
+          </P>
+          <H3>Google API Services User Data Policy</H3>
+          <P>
+            Bracket's use and transfer to any other app of information received from Google APIs will adhere to the{" "}
+            <a className="link-accent" href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>, including the Limited Use requirements. Google requires applications
+            accessing Google user data to disclose how that information is accessed, used, stored, and shared.
+          </P>
+          <UL items={[
+            "We do not use Google user data for advertising.",
+            "We do not sell Google user data.",
+            "We do not use Google user data to create advertising profiles.",
+            "Access to Google user data by humans is limited to circumstances where it is necessary to provide or secure the service, comply with applicable law, address a user-requested support issue with appropriate permission, or where otherwise permitted under applicable Google policies.",
+          ]} />
+
+          <H2>3. How Bracket uses your information</H2>
+          <P>We use information processed through Bracket to:</P>
+          <UL items={[
+            "Provide and operate Bracket",
+            "Build and maintain project memory",
+            "Compress project conversations into relevant information",
+            "Identify scope, deliverables, requirements, decisions and deadlines",
+            "Detect meaningful project changes",
+            "Maintain project history",
+            "Answer questions about your project",
+            "Generate suggested client responses",
+            "Send communications you explicitly instruct Bracket to send",
+            "Authenticate users",
+            "Provide customer support",
+            "Process subscriptions and payments",
+            "Maintain security and prevent abuse",
+            "Diagnose and improve product performance",
+            "Comply with applicable legal obligations",
+          ]} />
+          <P>We do not sell your project content or connected-source content.</P>
+
+          <H2>4. AI processing</H2>
+          <P>
+            Bracket uses artificial-intelligence services to provide features such as extraction, summarization,
+            project-memory updates, change detection, question answering, and reply generation. Relevant portions of
+            project information may therefore be processed by AI service providers acting on our behalf. Bracket does
+            not intentionally send an entire connected account to an AI provider when only selected project information
+            is required.
           </P>
 
-          <H2>10. Children</H2>
-          <P>Bracket is not directed at children under 16 and we do not knowingly collect their data.</P>
-
-          <H2>11. Changes & contact</H2>
+          <H2>5. How we share information</H2>
+          <P>We may share information with service providers when reasonably necessary to operate Bracket, including providers of:</P>
+          <UL items={[
+            "Cloud hosting and infrastructure",
+            "Databases and storage",
+            "Authentication",
+            "AI processing",
+            "Payment processing",
+            "Email/integration infrastructure",
+            "Error monitoring and security",
+            "Product analytics",
+          ]} />
           <P>
-            We'll notify you of material changes to this policy by email or in-product notice. Questions or requests:{" "}
+            These providers may process information only as necessary to provide their services to Bracket, subject to
+            their applicable contractual and legal obligations. We may also disclose information when required by
+            applicable law, legal process, or to protect the security, rights, or integrity of Bracket, our users, or
+            others. We do not sell your personal data or project content.
+          </P>
+
+          <H2>6. Your client's information</H2>
+          <P>
+            Projects may contain information about your clients, coworkers, contractors, or other people. You are
+            responsible for ensuring that you have the necessary authority, permission, or other lawful basis to
+            connect, upload, or process information through Bracket. You should not connect conversations or other
+            sources that you are not authorized to use.
+          </P>
+
+          <H2>7. Data storage and security</H2>
+          <P>
+            We use reasonable technical and organizational measures designed to protect information processed by
+            Bracket. Depending on the implementation, these measures may include encryption in transit, access controls,
+            authentication protections, and restricted access to production systems. However, no internet service or
+            storage system can guarantee absolute security.
+          </P>
+
+          <H2>8. Connected accounts and disconnecting access</H2>
+          <P>
+            You may disconnect supported integrations from Bracket. You may also revoke Bracket's access through the
+            relevant third-party provider, such as your Google Account settings. Disconnecting an integration stops
+            future access through that authorization. Where Bracket has already derived project information from a
+            connected conversation—for example a recorded decision or deadline—disconnecting the source does not
+            necessarily remove that project-memory information unless you also delete the relevant project or request
+            deletion.
+          </P>
+
+          <H2>9. Data retention and deletion</H2>
+          <P>
+            We retain account and project information for as long as reasonably necessary to provide Bracket, maintain
+            the account, comply with legal obligations, resolve disputes, and protect the service. You may request
+            deletion of your Bracket account and associated personal data by contacting{" "}
+            <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a>. Where
+            applicable, deletion may be subject to limited retention required for security, fraud prevention, billing,
+            legal compliance, backups, or dispute resolution.
+          </P>
+
+          <H2>10. Payments</H2>
+          <P>
+            If you purchase a Bracket subscription or project plan, payment information may be processed by a
+            third-party payment provider. Bracket may receive transaction information such as payment status, plan,
+            transaction identifier, billing country, and amount, but does not need to store full payment-card
+            information itself when payments are handled by the provider.
+          </P>
+
+          <H2>11. Cookies and analytics</H2>
+          <P>Bracket may use cookies or similar technologies necessary for:</P>
+          <UL items={[
+            "Authentication",
+            "Maintaining sessions",
+            "Security",
+            "Remembering product preferences",
+            "Understanding product usage and performance",
+          ]} />
+          <P>If additional analytics or tracking technologies are introduced, this Policy may be updated accordingly.</P>
+
+          <H2>12. International processing</H2>
+          <P>
+            Some service providers used by Bracket may process information outside your country. Where required by
+            applicable law, we will take reasonable steps to ensure that such processing is handled with appropriate
+            protections.
+          </P>
+
+          <H2>13. Your rights and choices</H2>
+          <P>
+            Depending on applicable law, you may have rights concerning your personal data, including rights to request
+            access, correction, deletion, or information about its processing. You may also:
+          </P>
+          <UL items={[
+            "Disconnect connected services",
+            "Revoke third-party OAuth permissions",
+            "Delete projects where supported",
+            "Request account deletion",
+            "Contact us regarding privacy concerns",
+          ]} />
+          <P>
+            Requests can be sent to <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a>.
+            India's Digital Personal Data Protection Act provides a framework for notices, consent and individual
+            rights, with substantive provisions being commenced in stages.
+          </P>
+
+          <H2>14. Children</H2>
+          <P>
+            Bracket is intended for professional and business use and is not designed for children. If we learn that we
+            have collected personal data from a child in circumstances where applicable law requires parental consent or
+            prohibits such processing, we will take appropriate steps to delete or otherwise address that information.
+          </P>
+
+          <H2>15. Changes to this Policy</H2>
+          <P>
+            We may update this Privacy Policy as Bracket evolves. If we make material changes, we may provide notice
+            through Bracket, by email, or through another appropriate method. The "Last updated" date at the top
+            indicates when this Policy was most recently revised.
+          </P>
+
+          <H2>16. Contact</H2>
+          <P>
+            For privacy questions, requests, or complaints: Bracket, operated by Saksham Shukla, India —{" "}
             <a className="link-accent" href="mailto:support@use-bracket.com">support@use-bracket.com</a>.
           </P>
 
           <div className="mt-14 pt-8 border-t border-[var(--hairline)] flex flex-wrap gap-x-6 gap-y-2">
-            <Link to="/terms" className="link-accent text-[13px]" data-testid="privacy-to-terms">Terms of Service →</Link>
+            <Link to="/terms" className="link-accent text-[13px]" data-testid="privacy-to-terms">Terms of Use →</Link>
             <Link to="/pricing" className="link-accent text-[13px]">Pricing →</Link>
           </div>
         </div>

@@ -12,6 +12,7 @@ export default function Footer() {
           <img src={BRACKET_LOGO} alt="Bracket" width={24} height={24} style={{ display: "block" }} />
         </Link>
         <div className="flex items-center gap-6">
+          <Link to="/pricing" className="text-[13px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors" data-testid="footer-pricing-link">Pricing</Link>
           <Link to="/privacy" className="text-[13px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors" data-testid="footer-privacy-link">Privacy</Link>
           <Link to="/terms" className="text-[13px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors" data-testid="footer-terms-link">Terms</Link>
           <span className="text-[13px] text-[var(--text-3)]">© {new Date().getFullYear()} Bracket</span>

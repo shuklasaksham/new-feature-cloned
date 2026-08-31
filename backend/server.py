@@ -2859,6 +2859,7 @@ async def list_my_projects(request: Request):
             {
                 "_id": 0, "id": 1, "name": 1, "status": 1, "step": 1,
                 "locked_at": 1, "share_status": 1, "created_at": 1, "updated_at": 1,
+                "archived": 1, "archived_at": 1,
             },
         )
         .sort("updated_at", -1)
@@ -2915,6 +2916,39 @@ async def delete_project(project_id: str, request: Request):
     p = await _get_owned_project_or_404(project_id, request)
     await db.projects.delete_one({"id": p["id"]})
     return {"ok": True}
+
+
+@api.post("/projects/{project_id}/archive")
+async def archive_project(project_id: str, request: Request):
+    """Archive a project — it stops counting toward the plan's active limit
+    (Monthly: 10 active, unlimited archived). Content is retained."""
+    p = await _get_owned_project_or_404(project_id, request)
+    await db.projects.update_one(
+        {"id": p["id"]},
+        {"$set": {"archived": True, "archived_at": _now_iso(), "updated_at": _now_iso()}},
+    )
+    return {"ok": True, "archived": True}
+
+
+@api.post("/projects/{project_id}/unarchive")
+async def unarchive_project(project_id: str, request: Request):
+    """Restore an archived project to active. Blocked (402) if the user is
+    already at their plan's active-project limit."""
+    from connectors import _plan_limit, _active_project_count, _plan_expired
+    p = await _get_owned_project_or_404(project_id, request)
+    user = await current_user(request, db)
+    if _plan_expired(user):
+        raise HTTPException(status_code=402, detail="Your 60-day project access has ended. Renew or upgrade to restore this project.")
+    limit = _plan_limit(user.get("plan"))
+    if limit is not None:
+        active = await _active_project_count(user["user_id"])
+        if active >= limit:
+            raise HTTPException(status_code=402, detail="You're at your plan's active-project limit. Archive another project or upgrade first.")
+    await db.projects.update_one(
+        {"id": p["id"]},
+        {"$set": {"archived": False, "archived_at": None, "updated_at": _now_iso()}},
+    )
+    return {"ok": True, "archived": False}
 
 
 class BulkDeleteIn(BaseModel):

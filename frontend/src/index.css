@@ -4585,6 +4585,20 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .psb-switch-new { color: #fff !important; font-weight: 600; }
 .psb-switch-new:hover { background: #1f1f1f !important; }
 .psb-switch-hint { padding: 4px 12px 8px; font-size: 11px; color: #6b6b6b; font-family: var(--font-mono, ui-monospace, monospace); }
+.psb-switch-item { cursor: pointer; }
+.psb-switch-act { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: #7a7a7a; opacity: 0; transition: opacity .14s, background .14s, color .14s; flex-shrink: 0; }
+.psb-switch-item:hover .psb-switch-act { opacity: 1; }
+.psb-switch-act:hover { background: #2a2a2a; color: #fff; }
+.psb-switch-item.is-archived { color: #8a8a8a; }
+.psb-switch-item.is-archived .psb-switch-act { opacity: 1; }
+.psb-switch-section { padding: 10px 12px 4px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #6b6b6b; font-family: var(--font-mono, ui-monospace, monospace); }
+
+/* $9 plan 60-day expiry — read-only lock banner */
+.plan-lock-banner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 18px; padding: 14px 18px; border-radius: 14px; background: rgba(212,167,44,0.08); border: 1px solid rgba(212,167,44,0.28); }
+.plan-lock-title { display: block; font-size: 14px; font-weight: 600; color: #f0f0f0; letter-spacing: -0.01em; }
+.plan-lock-sub { display: block; margin-top: 2px; font-size: 12.5px; color: #a89a72; }
+.plan-lock-cta { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 18px; border-radius: 9999px; background: #fff; color: #000; font-size: 13px; font-weight: 600; font-family: var(--font-mono, ui-monospace, monospace); white-space: nowrap; transition: background .14s; }
+.plan-lock-cta:hover { background: #e8e8e8; }
 
 .psb-nav { display: flex; flex-direction: column; gap: 4px; }
 .psb-nav-item { display: flex; align-items: center; gap: 14px; height: 50px; padding: 0 16px; border-radius: 9999px; color: #8a8a8a; font-family: "Geist", sans-serif; font-size: 15.5px; font-weight: 500; transition: background .16s ease, color .16s ease; }

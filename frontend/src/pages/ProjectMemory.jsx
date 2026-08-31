@@ -7,7 +7,7 @@ import {
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown, Search,
   ArrowRight, Clock, CheckCircle2, CalendarClock,
-  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus, X, AlertCircle,
+  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus, X, AlertCircle, Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -54,10 +54,14 @@ export default function ProjectMemory() {
   const [projects, setProjects] = useState([]);
   const [collapsed, setCollapsed] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(null);
+  const [quota, setQuota] = useState(null);
 
-  useEffect(() => {
+  const refreshProjects = () => {
     api.get("/projects").then(({ data }) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
-  }, []);
+    api.get("/project-quota").then(({ data }) => setQuota(data)).catch(() => {});
+  };
+
+  useEffect(() => { refreshProjects(); }, []);
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -155,6 +159,7 @@ export default function ProjectMemory() {
         connections={connections || []}
         onAddSource={() => setView("conversations")}
         onSourcesChanged={() => load({ silent: true })}
+        onProjectsChanged={refreshProjects}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
       />
@@ -166,6 +171,20 @@ export default function ProjectMemory() {
           </div>
         ) : project ? (
           <div className="project-main-inner" data-testid="project-memory-page">
+            {quota?.plan_expired && (
+              <div className="plan-lock-banner" data-testid="plan-lock-banner">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Lock size={16} style={{ color: "var(--warning)" }} />
+                  <span className="min-w-0">
+                    <span className="plan-lock-title">Your 60-day project access has ended</span>
+                    <span className="plan-lock-sub">This project is read-only. Renew or upgrade to keep working on it.</span>
+                  </span>
+                </div>
+                <button type="button" className="plan-lock-cta" onClick={() => navigate("/plan")} data-testid="plan-lock-cta">
+                  Renew or upgrade <ArrowRight size={14} />
+                </button>
+              </div>
+            )}
             {false && (
             <section className="project-topbar" data-testid="project-memory-header">
               <div className="min-w-0">

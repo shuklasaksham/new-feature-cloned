@@ -29,7 +29,7 @@ const FAQS = [
   { q: "What exactly does Bracket do?", a: "Bracket connects to the tools where your project already lives — Gmail, Slack, Figma, GitHub — and keeps one always-current record of scope, decisions, deadlines and deliverables. It shows you the one thing that needs your attention and can draft client replies for you." },
   { q: "What's the difference between the two plans?", a: "Monthly ($29) is for people running client work continuously — up to 10 active projects at once. Per-project ($9) is a one-off: a single project that stays active for 60 days. You can switch or cancel anytime from Settings → Billing." },
   { q: "Can I cancel anytime?", a: "Yes. Cancel from Settings → Billing in one click. Your monthly plan simply won't renew; a per-project purchase stays active for its 60 days." },
-  { q: "Is my data private?", a: "Only you can see your projects, and your content is never used to train any AI model. The only exception is a client-review link you choose to share." },
+  { q: "Is my data private?", a: "Only you can see your projects. Bracket connects the specific sources you select — not your whole account — and uses AI providers only to generate the outputs you ask for. We don't sell your data or use it for advertising. See our Privacy Policy for how connected-source data (including Gmail) is handled." },
 ];
 
 function Faq({ q, a }) {
