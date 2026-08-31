@@ -1297,3 +1297,14 @@ Fixes from user's 5-item pre-payment list:
 - Wired into `_mark_paid` (server.py): sends ONLY on the atomic transition to paid (`res.modified_count == 1`) so racing webhook + status-poll never duplicate. Fire-and-forget via asyncio.create_task; recipient = user email; recurring flag from plan kind. Gated on RESEND_API_KEY.
 - Verified: send returns True for INR subscription + USD one-time; amounts format $29/₹2,499/$9/₹749; preview renders on-brand.
 - Deploy: dispatched to deployer (go-live). UPI activates on the live Indian Stripe account once claimed + enabled in Stripe Dashboard (currency INR path already built).
+
+## 2026-06 — Razorpay Standard Checkout (INR: UPI + cards + netbanking)
+- Added alongside Stripe: INR path uses Razorpay, USD path stays Stripe (via ChoosePlan currency toggle).
+- Backend (server.py): razorpay SDK 2.0.1. `POST /api/payments/razorpay/order` (auth; validates plan; amount=INR*100 paise, ≥100; creates Razorpay order; stores payment_transaction provider=razorpay; returns order_id/amount/currency/key_id/plan_label). `POST /api/payments/razorpay/verify` (auth; verifies signature via client.utility.verify_payment_signature; 400 on mismatch/missing — never marks paid; on success atomically marks txn paid, sets user plan + plan_currency=inr, sends receipt once via modified_count guard).
+- Frontend (ChoosePlan.jsx): loads checkout.js; when currency=INR shows "Pay with UPI / Card" → creates order → opens Razorpay modal → verifies → redirects /app. Handles modal dismiss + payment.failed. key_id comes from server (KEY_SECRET never reaches frontend).
+- Env: RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET in backend/.env (gitignored). Test keys rzp_test_TWNQZd7YbuYZPy.
+- Verified: real Razorpay test order created (₹749→74900, ₹2,499→249900 paise); bad/missing signature → 400; checkout modal opens with UPI/cards/netbanking.
+- NOTE: monthly is a one-time ₹2,499 Standard-Checkout charge (grants monthly plan). True auto-recurring needs the Razorpay Subscriptions API (not in this scope).
+
+## 2026-06 — UI elevate pass (additive CSS)
+- Appended monochrome elevate layer to index.css: global soft-light grain (body::after, z100, ~2.5%), elevated modal depth (inner sheen + hairline ring + deep cast), hover lift on ov-card/stream-row2/tl-h-row, staggered entrance (bkt-rise) on stat strip + lists, Ask Bracket focus-within glow + backdrop blur, crisper suggestion chips, prefers-reduced-motion guard. Verified via screenshots (Home/Conversations/dialog); grain doesn't block clicks or haze modals.

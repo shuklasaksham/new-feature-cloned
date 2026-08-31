@@ -5437,3 +5437,95 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .ob-skip:hover { color: #fff; }
 .ob-next { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 22px; border-radius: 9999px; background: #fff; color: #0a0a0a; font-weight: 600; font-size: 13.5px; font-family: "Geist Mono", ui-monospace, monospace; }
 .ob-next:hover { background: #ededed; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ELEVATE PASS — monochrome depth, material & motion (2026-06)
+   Additive polish layer. Strictly monochrome; no color, no gradients.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. Global grain — kills digital flatness on near-black. Sits above page
+   content (<z100) but below modals (z130), non-interactive, ~2.5%. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.025;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* 2. Elevated modal / popover depth — inner sheen + hairline ring + deep cast. */
+.bkt-modal {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 24px 80px -20px rgba(0, 0, 0, 0.9);
+}
+
+/* 3. Hover lift + hairline brighten on the core surfaces (matches ov-stat). */
+.ov-card,
+.stream-row2,
+.tl-h-row {
+  transition: border-color .18s var(--ease-out), background .18s var(--ease-out), transform .18s var(--ease-out);
+  will-change: transform;
+}
+.ov-card:hover { transform: translateY(-2px); }
+.stream-row2:hover,
+.tl-h-row:hover {
+  background: #101010;
+  border-radius: 12px;
+  transform: translateY(-1px);
+}
+
+/* 4. Ask Bracket — high-end terminal prompt. Focus glow + frosted lift. */
+.ask-bar-input {
+  transition: border-color .2s var(--ease-out), box-shadow .2s var(--ease-out), background .2s var(--ease-out);
+  backdrop-filter: blur(6px);
+}
+.ask-bar-input:focus-within {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: #101010;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.10), 0 6px 30px -8px rgba(255, 255, 255, 0.05);
+}
+
+/* 5. Staggered entrance — content rises in on view mount. Runs once. */
+@keyframes bkt-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ov-stats > *,
+.stream .stream-row2,
+.tl-hist .tl-h-row,
+.ov-panel--flush {
+  animation: bkt-rise .44s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.ov-stats > *:nth-child(1) { animation-delay: .02s; }
+.ov-stats > *:nth-child(2) { animation-delay: .07s; }
+.ov-stats > *:nth-child(3) { animation-delay: .12s; }
+.ov-stats > *:nth-child(4) { animation-delay: .17s; }
+.stream .stream-row2:nth-child(1),
+.tl-hist .tl-h-row:nth-child(1) { animation-delay: .04s; }
+.stream .stream-row2:nth-child(2),
+.tl-hist .tl-h-row:nth-child(2) { animation-delay: .09s; }
+.stream .stream-row2:nth-child(3),
+.tl-hist .tl-h-row:nth-child(3) { animation-delay: .14s; }
+.stream .stream-row2:nth-child(4),
+.tl-hist .tl-h-row:nth-child(4) { animation-delay: .19s; }
+
+/* 6. Suggestion chips — crisper monochrome hover. */
+.ask-chip {
+  transition: border-color .16s var(--ease-out), background .16s var(--ease-out), color .16s var(--ease-out);
+}
+.ask-chip:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: #171717;
+  color: #f4f4f5;
+}
+
+/* Respect reduced-motion. */
+@media (prefers-reduced-motion: reduce) {
+  .ov-stats > *, .stream .stream-row2, .tl-hist .tl-h-row, .ov-panel--flush { animation: none; }
+}

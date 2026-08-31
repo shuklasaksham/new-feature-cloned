@@ -44,6 +44,61 @@ export default function ChoosePlan() {
     }
   };
 
+  const loadRazorpay = () =>
+    new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.body.appendChild(s);
+    });
+
+  const payWithRazorpay = async () => {
+    setLoading(true);
+    try {
+      const ok = await loadRazorpay();
+      if (!ok) {
+        toast.error("Couldn't load Razorpay — check your connection and retry.");
+        setLoading(false);
+        return;
+      }
+      const { data } = await api.post("/payments/razorpay/order", { plan_id: selected });
+      const rzp = new window.Razorpay({
+        key: data.key_id,
+        amount: data.amount,
+        currency: data.currency,
+        name: "Bracket",
+        description: data.plan_label,
+        order_id: data.order_id,
+        theme: { color: "#0a0a0a" },
+        handler: async (resp) => {
+          try {
+            await api.post("/payments/razorpay/verify", {
+              razorpay_order_id: resp.razorpay_order_id,
+              razorpay_payment_id: resp.razorpay_payment_id,
+              razorpay_signature: resp.razorpay_signature,
+            });
+            toast.success("Payment confirmed — welcome to Bracket.");
+            window.location.href = "/app";
+          } catch (e) {
+            toast.error(formatApiError(e));
+            setLoading(false);
+          }
+        },
+        modal: { ondismiss: () => { setLoading(false); toast("Payment cancelled."); } },
+      });
+      rzp.on("payment.failed", (r) => {
+        toast.error(r?.error?.description || "Payment failed — please try again.");
+        setLoading(false);
+      });
+      rzp.open();
+    } catch (e) {
+      toast.error(formatApiError(e));
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen w-full flex" style={{ background: "#000" }} data-testid="choose-plan-page">
       <Seo title="Choose your plan" path="/plan" noindex />
@@ -114,11 +169,11 @@ export default function ChoosePlan() {
             })}
           </div>
 
-          <button type="button" onClick={goToCheckout} disabled={loading} className="login-submit mt-6" data-testid="plan-continue">
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <>Continue <ArrowRight size={15} /></>}
+          <button type="button" onClick={currency === "inr" ? payWithRazorpay : goToCheckout} disabled={loading} className="login-submit mt-6" data-testid="plan-continue">
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <>{currency === "inr" ? "Pay with UPI / Card" : "Continue"} <ArrowRight size={15} /></>}
           </button>
           <p className="text-center mt-4 text-[11px]" style={{ ...MONO, color: "#565656" }}>
-            {cur.methods} accepted · Test mode · card 4242 4242 4242 4242
+            {currency === "inr" ? "UPI, cards & netbanking · Razorpay · Test mode" : "Cards accepted · Test mode · card 4242 4242 4242 4242"}
           </p>
         </div>
       </div>

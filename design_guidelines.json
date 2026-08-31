@@ -1,96 +1,179 @@
 {
-  "theme": "dark",
-  "design_philosophy": "Minimal, premium, editorial. Generous negative space. No gradients, no colored UI accents. Pure monochrome (black, charcoal, white).",
+  "project_name": "Bracket Client OS",
+  "theme_strategy": "strictly_monochrome_flat_dark",
+  "constraints": {
+    "viewport": "100dvh fixed, NO page-level vertical scroll (lists scroll internally)",
+    "responsive": "Desktop-only, minimum support down to 1366x768",
+    "color": "Strictly monochrome (black, charcoal, white). NO color accents, NO gradients on dark.",
+    "aesthetic": "Production-ready, cinematic, professional, minimal Linear-grade."
+  },
   "colors": {
-    "background": "#0a0a0a",
-    "surface_1": "#111111",
-    "surface_2": "#181818",
-    "border": "rgba(255, 255, 255, 0.08)",
-    "text_primary": "#ffffff",
-    "text_secondary": "#a1a1aa",
-    "text_tertiary": "#71717a",
-    "cta_bg": "#ffffff",
-    "cta_fg": "#0a0a0a"
+    "background": "#080808",
+    "surface": {
+      "level_1": "#0e0e0e",
+      "level_2": "#171717",
+      "level_3": "#1f1f1f"
+    },
+    "hairlines": {
+      "faint": "rgba(255, 255, 255, 0.08)",
+      "base": "rgba(255, 255, 255, 0.12)",
+      "strong": "rgba(255, 255, 255, 0.22)"
+    },
+    "text": {
+      "primary": "#F4F4F5",
+      "secondary": "#A1A1AA",
+      "tertiary": "#71717A"
+    },
+    "cta": {
+      "bg": "#ffffff",
+      "fg": "#0a0a0a"
+    }
   },
   "typography": {
     "font_families": {
-      "display": "'Geist', sans-serif",
-      "body": "'Geist', sans-serif",
-      "mono": "'Geist Mono', monospace"
+      "sans": "Geist, sans-serif",
+      "mono": "Geist Mono, monospace"
     },
     "scale": {
-      "h1": "text-5xl md:text-6xl lg:text-7xl tracking-tighter font-medium leading-tight",
-      "h2": "text-3xl md:text-4xl lg:text-5xl tracking-tight font-medium",
-      "h3": "text-xl md:text-2xl font-medium",
-      "body": "text-base md:text-lg text-zinc-400",
-      "mono_label": "text-xs uppercase tracking-[0.15em] font-mono text-zinc-500"
+      "h1_hero": {
+        "size": "48px to 56px",
+        "tracking": "-0.03em",
+        "line_height": "1.1",
+        "weight": "500"
+      },
+      "h2_section": {
+        "size": "20px to 24px",
+        "tracking": "-0.01em",
+        "line_height": "1.2",
+        "weight": "400"
+      },
+      "h3_card": {
+        "size": "15px",
+        "tracking": "0",
+        "weight": "500"
+      },
+      "body": {
+        "size": "13px to 14px",
+        "tracking": "0",
+        "line_height": "1.6",
+        "weight": "400"
+      },
+      "micro_label": {
+        "font": "Geist Mono",
+        "size": "11px",
+        "tracking": "0.15em",
+        "transform": "uppercase",
+        "weight": "500",
+        "color": "#71717A"
+      }
     }
   },
   "visual_enhancers": {
-    "background_texture": "Subtle dotted/halftone background texture. Implement via CSS radial-gradient or SVG pattern with very low opacity (e.g., rgba(255,255,255,0.04)). Apply to body or hero wrapper.",
-    "geometry": "Sharp clean lines for layout. Monolithic blocks. The specific interlocking sidebar/workspace geometry uses concave fillets (rounded inverted corners) for the active tab.",
-    "hover_states": "Monochrome transitions. Dark grey to lighter grey. White buttons scale down slightly on click."
-  },
-  "logo_redesign": {
-    "concept": "Crisp monochrome. A heavy, geometric bracket/folder mark paired with the wordmark. SVG-able, highly visible at 28px height.",
-    "svg_code": "<svg width='28' height='28' viewBox='0 0 28 28' fill='none' xmlns='http://www.w3.org/2000/svg'><path fill-rule='evenodd' clip-rule='evenodd' d='M8 4H4V24H8V28H0V0H8V4ZM20 4H24V24H20V28H28V0H20V4Z' fill='white'/></svg>",
-    "implementation": "Place the SVG mark next to a 'Bracket' text span using font-display font-semibold text-lg."
-  },
-  "layouts": {
-    "navigation": "Flex space-between items-center. px-6 py-4. Minimalist. Left: Logo. Right: Pricing, Sign in (ghost), Get started (white pill).",
-    "hero": "Flex flex-col items-center text-center (or strongly structured left-aligned) with massive negative space (py-32). Small mono label at top, massive headline, constrained width supporting copy (max-w-2xl), white pill CTAs.",
-    "product_visual": "In-browser HTML/CSS recreation. max-w-5xl mx-auto flex container rounded-xl overflow-hidden border border-zinc-800. Sidebar (left, darker) and Main Workspace (right, lighter surface).",
-    "how_it_works": "py-24. Top minimal label. Grid cols-1 md:grid-cols-3 gap-8 mt-12. Each step is minimal: 01 mono numeral, thin top border (separator), text. No heavy cards.",
-    "final_cta": "py-32 flex flex-col items-center text-center. Minimal mono label, big heading, text, white pill CTA.",
-    "footer": "py-12 border-t border-zinc-900 flex justify-between items-center text-xs text-zinc-500 font-mono uppercase."
-  },
-  "sections_content": {
-    "navigation": {
-      "links": ["Pricing", "Sign in"],
-      "cta": "Get started →"
-    },
-    "hero": {
-      "label": "PROJECT MEMORY FOR CLIENT WORK",
-      "headline": "Your client changed something. Bracket already knows.",
-      "supporting_copy": "Connect the conversations where your project happens. Bracket keeps track of scope, deliverables, requirements, decisions and deadlines — and shows you when something changes.",
-      "ctas": ["Get started →", "See pricing"]
-    },
-    "product_visual": {
-      "instructions": "Build HTML/CSS component. Left sidebar (w-64 bg-[#0a0a0a]): 'Overview' tab is active and docks into main panel. Main panel (bg-[#111111]): Title 'SaaS Dashboard Redesign', 'Updated just now'. Card: 'Needs your attention' reading 'Mobile screens requested — Sarah asked to include mobile screens in this phase.' with 'Review →' action and '+2 more'. Stats Row: 'Scope 8', 'Deliverables 4', 'Requirements 7', 'Decisions 2'. Use real DOM elements, NOT an image."
-    },
-    "how_it_works": {
-      "label": "HOW IT WORKS",
-      "heading": "Connect once. Bracket keeps up.",
-      "steps": [
-        {"num": "01", "desc": "Connect the conversation"},
-        {"num": "02", "desc": "Bracket builds project memory"},
-        {"num": "03", "desc": "Review what changed"}
-      ]
-    },
-    "final_cta": {
-      "label": "YOUR PROJECT, REMEMBERED",
-      "heading": "Stop reconstructing your projects from messages.",
-      "text": "Connect your first client project and let Bracket keep the context.",
-      "cta": "Get started →"
-    },
-    "footer": {
-      "left": "Bracket logo",
-      "right": "Privacy   Terms   © 2026 Bracket"
+    "depth_material": {
+      "shadows_on_dark": "Use inner borders (inset 0 1px 0 rgba(255,255,255,0.05)) combined with dense outer glows (box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 40px rgba(0,0,0,0.8)) for popovers and modals.",
+      "focus_glow": "0 0 0 1px rgba(255,255,255,0.22), 0 4px 24px rgba(255,255,255,0.04)",
+      "noise": "Apply a 1.5% to 2% opacity white noise/grain texture overlay globally to kill digital flatness.",
+      "dotted_texture": "Subtle radial or linear dotted grid background on the landing page (color: rgba(255,255,255,0.05), size: 1px dots on 24px grid) masking to transparent at the edges."
     }
   },
+  "spacing_system": {
+    "scale": [4, 8, 12, 16, 24, 32, 48, 64],
+    "workspace_padding": "p-6 (24px)",
+    "sidebar_width": "260px"
+  },
+  "grids_layouts": {
+    "global_shell": "flex h-[100dvh] w-full overflow-hidden bg-[#080808] text-[#F4F4F5]",
+    "landing_pricing_page": "Since 100dvh is fixed, use a 2-column split (grid-cols-2). Left side: Sticky Hero, Value Prop, CTA. Right side: Interactive Bento Grid showing the product, internally scrolling if necessary, ending in the Pricing toggle.",
+    "workspace_layout": {
+      "sidebar": "w-[260px] h-full flex flex-col border-r border-[rgba(255,255,255,0.08)] bg-[#080808] shrink-0",
+      "main_content": "flex-1 h-full flex flex-col min-w-0 overflow-hidden relative",
+      "home_overview": "h-full flex flex-col p-6 gap-6. Top: Header. Middle: 4-stat strip. Bottom: flex-1 grid grid-cols-12 gap-6 min-h-0.",
+      "internal_scroll_containers": "Use overflow-y-auto, overscroll-contain, and custom invisible scrollbars. Apply to 'Recent Activity', 'Timeline', and 'Conversations' lists."
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "easings": {
+      "sleek": "[0.16, 1, 0.3, 1]",
+      "spring_bouncy": "type: 'spring', stiffness: 400, damping: 30",
+      "spring_smooth": "type: 'spring', stiffness: 300, damping: 35"
+    },
+    "durations": {
+      "entrance": 0.4,
+      "hover": 0.2
+    },
+    "interactions": {
+      "list_reveal": "initial={{ opacity: 0, y: 10 }}, animate={{ opacity: 1, y: 0 }}, transition={{ staggerChildren: 0.05, ease: [0.16, 1, 0.3, 1] }}",
+      "active_tab_dock": "layoutId='activeTab' with absolute positioning behind text, bg-[#1f1f1f], rounded-md, type='spring', stiffness=500, damping=35. Creates the 'concave-fillet' illusion.",
+      "hover_scale": "whileHover={{ scale: 0.98 }} for list items and source connectors.",
+      "skeleton_loading": "Base #171717 with an animated shimmering mask of rgba(255,255,255,0.05) sweeping left to right."
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#ffffff] text-[#0a0a0a] rounded-full px-4 py-2 text-[13px] font-medium hover:opacity-90 transition-opacity",
+      "secondary": "bg-transparent text-[#F4F4F5] border border-[rgba(255,255,255,0.12)] rounded-md px-4 py-2 text-[13px] hover:bg-[#171717]"
+    },
+    "ask_bracket_ai": {
+      "composer": "Anchored to the bottom of Conversations/Timeline. Pure minimalist terminal feel. border-t border-[rgba(255,255,255,0.08)], bg-[#080808]/80 backdrop-blur-md. Focus state triggers the focus_glow.",
+      "suggestion_chips": "rounded-full border border-[rgba(255,255,255,0.12)] text-[#A1A1AA] text-[11px] px-3 py-1.5 hover:bg-[#171717] hover:text-[#F4F4F5] transition-colors cursor-pointer"
+    },
+    "empty_states": {
+      "container": "flex flex-col items-center justify-center h-full text-center p-8 border border-dashed border-[rgba(255,255,255,0.08)] rounded-lg bg-[#0e0e0e]/50",
+      "text": "Geist Mono, text-[13px], text-[#71717A], opacity-70"
+    },
+    "sources_list": {
+      "item": "flex items-center gap-3 p-2 rounded-md hover:bg-[#171717] group cursor-pointer transition-colors",
+      "icon_wrapper": "w-6 h-6 rounded flex items-center justify-center bg-[#1f1f1f] border border-[rgba(255,255,255,0.08)] grayscale group-hover:grayscale-0 transition-all",
+      "actions": "opacity-0 group-hover:opacity-100 text-[11px] text-[#A1A1AA] hover:text-[#F4F4F5]"
+    },
+    "data_cards": {
+      "wrapper": "bg-[#0e0e0e] border border-[rgba(255,255,255,0.08)] rounded-lg p-4 flex flex-col gap-2 hover:bg-[#171717] transition-colors"
+    },
+    "pricing_toggle": {
+      "container": "inline-flex bg-[#0e0e0e] border border-[rgba(255,255,255,0.08)] rounded-full p-1",
+      "tab": "relative px-4 py-1.5 text-[13px] z-10 font-medium transition-colors cursor-pointer",
+      "active_bg": "absolute inset-0 bg-[#1f1f1f] rounded-full border border-[rgba(255,255,255,0.12)] z-0"
+    }
+  },
+  "image_urls": {
+    "background_textures": [
+      {
+        "url": "https://images.unsplash.com/photo-1678366633407-7f49da199a42?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwyfHxtb25vY2hyb21lJTIwYWJzdHJhY3QlMjBtaW5pbWFsJTIwZGFya3xlbnwwfHx8fDE3ODgxNzg2MzZ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Curved black ribbons with soft highlights",
+        "category": "marketing_hero_bg"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1526289034009-0240ddb68ce3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwzfHxtb25vY2hyb21lJTIwYWJzdHJhY3QlMjBtaW5pbWFsJTIwZGFya3xlbnwwfHx8fDE3ODgxNzg2MzZ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Black and white abstract architectural fins",
+        "category": "marketing_feature_accent"
+      }
+    ],
+    "trust_elements": [
+      {
+        "url": "https://images.unsplash.com/photo-1779700314631-1f18b467e0a7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzB8MHwxfHNlYXJjaHwzfHxibGFjayUyMGFuZCUyMHdoaXRlJTIwcHJvZmVzc2lvbmFsJTIwb2ZmaWNlJTIwbWluaW1hbHxlbnwwfHx8fDE3ODgxNzg2MzZ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Sleek minimalist corridor leading to modern office",
+        "category": "marketing_bento_image"
+      }
+    ]
+  },
+  "instructions_to_main_agent": {
+    "html_structure": "Do not use standard web layouts. Use an app-like shell. `<div class='flex h-screen w-full overflow-hidden bg-[#080808]'>` is your root.",
+    "scrolling": "NEVER apply overflow-y-auto to the body, main, or page container. ONLY apply overflow-y-auto to specific interior lists (e.g., Timeline feed, Recent Activity list).",
+    "color_enforcement": "Do not introduce any hex codes other than the ones in this document. Remove all Tailwind default blues, purples, or rings. Override focus rings to use `rgba(255,255,255,0.22)`.",
+    "typography": "Use Geist for general UI and Geist Mono for anything resembling a label, timestamp, data point, or empty state placeholder. Apply uppercase and 0.15em tracking explicitly to the mono labels.",
+    "modals_dialogs": "Ensure Add-source modal and onboarding tour exist in the DOM with Radix UI (shadcn) Dialog, but heavily restyled to remove default white backgrounds. Use surface_level_2 for modal bodies.",
+    "shadcn_customization": "Radically strip shadcn defaults. Remove border-radius on cards if they feel too bubbly (stick to rounded-md or rounded-lg). Remove all generic dropshadows. Use inner borders.",
+    "testing_attributes": "Add data-testid attributes to EVERY interactive element (sidebar tabs, source toggles, Ask Bracket send button, pricing toggle)."
+  },
   "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
-    "MUST strictly use ONLY Black / Charcoal / White. No blue, no purple, no gradients.",
-    "NO testimonials, NO logo walls, NO features grids. Strictly follow the 6 sections exactly as written.",
-    "The product visual must be built in HTML/Tailwind, NOT an image. Simulate the concave fillet by using before/after pseudo-elements on the active tab or clever border-radius.",
-    "Apply data-testid to all interactive elements.",
-    "Keep typography large and editorial. Avoid standard SaaS components like heavy drop-shadow cards.",
-    "Do NOT use 'Inter' font. Use 'Geist' or sans/mono.",
-    "Use generous spacing (py-24 to py-32 for sections).",
-    "Buttons should be white pill for primary, ghost/dark pill for secondary.",
-    "Never describe Bracket as an AI assistant, CRM, or PM tool. Use the exact copy verbatim.",
-    "Create the dot pattern background in CSS directly."
-  ],
-  "component_instructions": {
-    "concave_fillets": "To create the interlocking sidebar/workspace geometry: Active tab in sidebar should have bg-[#111111] (matching main workspace). Give it border-radius on the left. Use ::before and ::after elements absolute positioned at the top-right and bottom-right of the tab, with box-shadows that curve into the main workspace, creating a seamless 'docked' look."
-  }
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Do not center align the app container; text-align: left is standard for readability.",
+    "Do not apply `transition: all`. Target specific properties like `transition-colors`, `transition-opacity`, or use framer-motion.",
+    "Never use AI emoji characters.",
+    "Never use placeholder URLs (via.placeholder.com). ONLY use the image_urls provided.",
+    "Use sonner for toasts, rendered with an inverted dark theme matching the app.",
+    "Ensure the final UI feels like a high-end IDE or client OS, not a generic SaaS dashboard.",
+    "All interactive and key informational elements MUST include a `data-testid` attribute to facilitate robust automated testing."
+  ]
 }

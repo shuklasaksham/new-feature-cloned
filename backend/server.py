@@ -4392,6 +4392,124 @@ async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
             logger.warning(f"payment receipt scheduling failed for {session_id}: {e}")
 
 
+# ─── Razorpay (INR: UPI + cards + netbanking) ──────────────────────────────
+import razorpay as _razorpay
+
+
+def _razorpay_client():
+    kid = os.environ.get("RAZORPAY_KEY_ID")
+    ksec = os.environ.get("RAZORPAY_KEY_SECRET")
+    if not kid or not ksec:
+        raise HTTPException(status_code=500, detail="Razorpay is not configured.")
+    return _razorpay.Client(auth=(kid, ksec)), kid
+
+
+class RzpOrderIn(BaseModel):
+    plan_id: str
+
+
+@api.post("/payments/razorpay/order")
+async def razorpay_create_order(body: RzpOrderIn, request: Request):
+    plan = PLANS.get(body.plan_id)
+    if not plan:
+        raise HTTPException(status_code=400, detail="Unknown plan.")
+    user = await current_user(request, db)
+    client, key_id = _razorpay_client()
+    amount_inr = _plan_amount(plan, "inr")
+    amount_paise = int(round(amount_inr * 100))
+    if amount_paise < 100:
+        raise HTTPException(status_code=400, detail="Amount below minimum.")
+    receipt = f"bkt_{body.plan_id}_{user['user_id']}"[:40]
+    try:
+        order = client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": receipt,
+            "payment_capture": 1,
+            "notes": {"user_id": user["user_id"], "plan_id": body.plan_id},
+        })
+    except _razorpay.errors.BadRequestError as e:
+        logger.warning(f"razorpay order bad request: {e}")
+        raise HTTPException(status_code=400, detail="Could not create the order.")
+    except Exception as e:
+        logger.exception(f"razorpay order failed: {e}")
+        raise HTTPException(status_code=500, detail="Payment provider error.")
+    await db.payment_transactions.insert_one({
+        "session_id": order["id"],  # razorpay_order_id doubles as our session ref
+        "provider": "razorpay",
+        "user_id": user["user_id"],
+        "plan_id": body.plan_id,
+        "amount": amount_inr,
+        "currency": "inr",
+        "kind": plan["kind"],
+        "status": "initiated",
+        "payment_status": "pending",
+        "created_at": auth_iso(auth_now()),
+        "updated_at": auth_iso(auth_now()),
+    })
+    return {"order_id": order["id"], "amount": amount_paise, "currency": "INR",
+            "key_id": key_id, "plan_label": plan["label"]}
+
+
+class RzpVerifyIn(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+
+@api.post("/payments/razorpay/verify")
+async def razorpay_verify_payment(body: RzpVerifyIn, request: Request):
+    if not (body.razorpay_order_id and body.razorpay_payment_id and body.razorpay_signature):
+        raise HTTPException(status_code=400, detail="Missing payment fields.")
+    user = await current_user(request, db)
+    client, _ = _razorpay_client()
+    try:
+        client.utility.verify_payment_signature({
+            "razorpay_order_id": body.razorpay_order_id,
+            "razorpay_payment_id": body.razorpay_payment_id,
+            "razorpay_signature": body.razorpay_signature,
+        })
+    except _razorpay.errors.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Payment verification failed.")
+
+    rec = await db.payment_transactions.find_one({"session_id": body.razorpay_order_id}, {"_id": 0})
+    if not rec or rec.get("user_id") != user["user_id"]:
+        raise HTTPException(status_code=404, detail="Order not found.")
+    if rec.get("payment_status") == "paid":
+        return {"success": True}
+    res = await db.payment_transactions.update_one(
+        {"session_id": body.razorpay_order_id, "payment_status": {"$ne": "paid"}},
+        {"$set": {"status": "completed", "payment_status": "paid",
+                  "razorpay_payment_id": body.razorpay_payment_id,
+                  "updated_at": auth_iso(auth_now())}},
+    )
+    pid = rec.get("plan_id")
+    plan_meta = PLANS.get(pid) or {}
+    if pid:
+        await db.users.update_one(
+            {"user_id": user["user_id"]},
+            {"$set": {"plan": pid, "plan_kind": plan_meta.get("kind", "payment"),
+                      "plan_currency": "inr", "plan_since": auth_iso(auth_now()),
+                      "updated_at": auth_iso(auth_now())}},
+        )
+    if res.modified_count == 1:
+        try:
+            u = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "email": 1, "name": 1})
+            if u and u.get("email"):
+                asyncio.create_task(send_payment_receipt(
+                    to_email=u["email"], name=u.get("name", ""),
+                    plan_label=plan_meta.get("label", "Bracket"),
+                    amount=rec.get("amount"), currency="inr",
+                    recurring=(plan_meta.get("kind") == "subscription"),
+                    session_id=body.razorpay_payment_id,
+                    public_base_url=os.environ.get("PUBLIC_BASE_URL", ""),
+                ))
+        except Exception as e:
+            logger.warning(f"razorpay receipt scheduling failed: {e}")
+    return {"success": True}
+
+
+
 @api.get("/payments/status/{session_id}")
 async def payments_status(session_id: str):
     rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
