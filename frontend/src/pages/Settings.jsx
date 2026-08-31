@@ -14,7 +14,7 @@ const fmtDate = (iso) => {
   } catch { return "—"; }
 };
 
-export default function Settings() {
+export default function Settings({ embedded = false, onBack }) {
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
   const dialog = useDialog();
@@ -98,18 +98,19 @@ export default function Settings() {
   };
 
   return (
-    <div className="relative min-h-full overflow-clip" data-testid="settings-page">
-      {/* Cinematic dashboard backdrop — unified with /app. */}
+    <div className={embedded ? "settings-embed" : "relative min-h-full overflow-clip"} data-testid="settings-page">
+      {!embedded && <>
       <div aria-hidden="true" className="hero-ambient hero-ambient--dashboard" />
       <div
         aria-hidden="true"
         className="absolute inset-0 -z-10"
         style={{ background: "var(--bg)" }}
       />
-      <main className="relative max-w-[760px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14 page-enter">
+      </>}
+      <main className={embedded ? "settings-embed-main page-enter" : "relative max-w-[760px] mx-auto px-5 sm:px-6 md:px-10 py-10 md:py-14 page-enter"}>
         <button
           type="button"
-          onClick={() => navigate(-1)}
+          onClick={() => (embedded ? onBack?.() : navigate(-1))}
           className="text-[12px] text-[var(--text-3)] hover:text-[var(--text)] transition-colors inline-flex items-center gap-1.5"
         >
           <ArrowLeft size={12} /> Back

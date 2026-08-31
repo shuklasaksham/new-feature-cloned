@@ -18,6 +18,7 @@ import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
 import ProjectSidebar from "../components/ProjectSidebar";
+import Settings from "./Settings";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, PROVIDER_META, timeAgo } from "../lib/providersMeta";
 
@@ -229,6 +230,14 @@ export default function ProjectMemory() {
             ) : view === "timeline" ? (
               <motion.div key="timeline" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
                 <TimelineView projectId={id} project={project} memory={memory} headerActions={headerActions} />
+              </motion.div>
+            ) : view === "settings" ? (
+              <motion.div key="settings" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+                <Settings embedded onBack={() => setView("overview")} />
+              </motion.div>
+            ) : view === "help" ? (
+              <motion.div key="help" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+                <HelpPanel onBack={() => setView("overview")} />
               </motion.div>
             ) : (
               <motion.div key="overview" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
@@ -595,6 +604,45 @@ function HeaderActions({ providerLabel, detectedCount = 0, attentionTitle, onRev
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Help — in-layout quick help (no redirect) ───────────────────────── */
+function HelpPanel({ onBack }) {
+  const FAQ = [
+    { q: "How does Bracket build my project memory?", a: "Connect a source (Gmail, Slack, Figma, GitHub) and Bracket reads the conversations you choose, then extracts scope, deliverables, requirements, decisions and deadlines automatically." },
+    { q: "How do I add another source?", a: "Use the + next to “Sources” in the left rail. Pick a tool and select the conversations to bring in — Bracket keeps everything in sync." },
+    { q: "How do I disconnect or reconnect a source?", a: "Hover a source in the left rail and use the disconnect icon. To reconnect, hover and press reconnect, or add it again from the + menu — your extracted memory stays." },
+    { q: "What is a Project Change?", a: "When a client request affects the project, Bracket groups every downstream impact into one review so you approve it once and everything updates together." },
+    { q: "How do I respond to a client?", a: "Open Conversations and ask Bracket to draft a reply grounded in the project’s memory, then review and send." },
+  ];
+  return (
+    <div className="settings-embed" data-testid="help-panel">
+      <div className="settings-embed-main page-enter">
+        <button type="button" onClick={onBack} className="text-[12px] inline-flex items-center gap-1.5 transition-colors" style={{ color: "var(--text-3)" }} data-testid="help-back">
+          <ArrowLeft size={12} /> Back
+        </button>
+        <h1 className="mt-4 text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>Help</h1>
+        <p className="mt-2 text-[14px]" style={{ color: "var(--text-3)" }}>Quick answers about how Bracket works.</p>
+        <div className="ov-panel" style={{ marginTop: 28 }}>
+          <p className="ov-panel-label">FREQUENTLY ASKED</p>
+          <ul className="help-faq">
+            {FAQ.map((f, i) => (
+              <li key={i} className="help-faq-item">
+                <p className="help-q">{f.q}</p>
+                <p className="help-a">{f.a}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="ov-panel" style={{ marginTop: 16 }}>
+          <p className="ov-panel-label">STILL STUCK?</p>
+          <p className="text-[13.5px]" style={{ color: "var(--text-2)" }}>
+            Email us at <a href="mailto:support@use-bracket.com" className="help-link">support@use-bracket.com</a> and we’ll get back to you.
+          </p>
+        </div>
       </div>
     </div>
   );

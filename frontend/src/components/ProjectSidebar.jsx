@@ -2,11 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search, Unplug, RefreshCw, Loader2,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
 import { api } from "../lib/api";
+import { toast } from "sonner";
+import { useDialog } from "../components/Dialog";
 import AddSourceDialog from "./AddSourceDialog";
 
 const BRACKET_LOGO =
@@ -33,8 +35,34 @@ export default function ProjectSidebar({
   const [quota, setQuota] = useState(null);
   const [projQuery, setProjQuery] = useState("");
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [busyConn, setBusyConn] = useState(null);
+  const dialog = useDialog();
   const switchRef = useRef(null);
   const userRef = useRef(null);
+
+  const disconnectSource = async (conn) => {
+    const ok = await dialog.confirm({
+      title: `Disconnect ${conn.source_name || conn.provider}?`,
+      message: "Bracket will stop syncing this source. Memory already extracted stays. You can reconnect anytime.",
+      confirmLabel: "Disconnect",
+      tone: "danger",
+    });
+    if (!ok) return;
+    setBusyConn(conn.id);
+    try {
+      await api.delete(`/connect/connections/${conn.id}`);
+      toast.success(`${conn.source_name || conn.provider} disconnected`);
+      onSourcesChanged?.();
+    } catch {
+      toast.error("Couldn't disconnect that source.");
+    } finally {
+      setBusyConn(null);
+    }
+  };
+
+  const reconnectSource = () => {
+    setSourcesOpen(true);
+  };
 
   useEffect(() => {
     api.get("/project-quota").then(({ data }) => setQuota(data)).catch(() => {});
@@ -166,28 +194,41 @@ export default function ProjectSidebar({
           {(connections || []).length === 0 ? (
             <li className="psb-source-empty psb-label">No sources yet</li>
           ) : (
-            (connections || []).map((c) => (
-              <li key={c.id} className="psb-source-row" title={c.source_name} data-testid={`psb-source-${c.id}`}>
+            (connections || []).map((c) => {
+              const bad = c.health?.level === "red";
+              return (
+              <li key={c.id} className="psb-source-row group" title={c.source_name} data-testid={`psb-source-${c.id}`}>
                 <span className="psb-source-icon"><ProviderIcon provider={c.provider} size={18} bare /></span>
-                <span className="psb-label min-w-0">
+                <span className="psb-label min-w-0 flex-1">
                   <span className="psb-source-name">{c.source_name || c.provider}</span>
                   <span className="psb-source-status">
-                    <span className="psb-dot" style={{ background: c.health?.level === "red" ? "#D95757" : c.health?.level === "amber" ? "#D4A72C" : "#52A874" }} />
-                    {c.health?.level === "red" ? "Reconnect" : "Connected"}
+                    <span className="psb-dot" style={{ background: bad ? "#D95757" : c.health?.level === "amber" ? "#D4A72C" : "#52A874" }} />
+                    {bad ? "Reconnect" : "Connected"}
                   </span>
                 </span>
+                <span className="psb-source-actions psb-label">
+                  {bad && (
+                    <button type="button" className="psb-src-btn" title="Reconnect" onClick={() => reconnectSource(c)} data-testid={`psb-source-reconnect-${c.id}`}>
+                      <RefreshCw size={13} />
+                    </button>
+                  )}
+                  <button type="button" className="psb-src-btn psb-src-btn--danger" title="Disconnect" disabled={busyConn === c.id} onClick={() => disconnectSource(c)} data-testid={`psb-source-disconnect-${c.id}`}>
+                    {busyConn === c.id ? <Loader2 size={13} className="animate-spin" /> : <Unplug size={13} />}
+                  </button>
+                </span>
               </li>
-            ))
+              );
+            })
           )}
         </ul>
       </div>
 
       {/* Settings / Help */}
       <div className="psb-foot-nav">
-        <button type="button" className="psb-nav-item" onClick={() => navigate("/settings")} title="Settings" data-tip="Settings" data-testid="psb-nav-settings">
+        <button type="button" className="psb-nav-item" data-active={view === "settings" ? "true" : "false"} onClick={() => setView("settings")} title="Settings" data-tip="Settings" data-testid="psb-nav-settings">
           <Settings size={20} strokeWidth={1.9} /> <span className="psb-label">Settings</span>
         </button>
-        <button type="button" className="psb-nav-item" onClick={() => navigate("/pricing")} title="Help" data-tip="Help" data-testid="psb-nav-help">
+        <button type="button" className="psb-nav-item" data-active={view === "help" ? "true" : "false"} onClick={() => setView("help")} title="Help" data-tip="Help" data-testid="psb-nav-help">
           <HelpCircle size={20} strokeWidth={1.9} /> <span className="psb-label">Help</span>
         </button>
       </div>
@@ -204,7 +245,7 @@ export default function ProjectSidebar({
         </button>
         {userOpen && (
           <div className="psb-user-menu" data-testid="psb-user-menu">
-            <button type="button" className="psb-switch-item" onClick={() => navigate("/settings")}>Settings</button>
+            <button type="button" className="psb-switch-item" onClick={() => { setUserOpen(false); setView("settings"); }}>Settings</button>
             <button type="button" className="psb-switch-item" onClick={() => { setUserOpen(false); logout?.(); navigate("/"); }} data-testid="psb-logout">Log out</button>
           </div>
         )}

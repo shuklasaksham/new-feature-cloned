@@ -1,4 +1,12 @@
-## Changelog — 2026-06 (fix: broken collapsed sidebar dropdowns + demo source health)
+## Changelog — 2026-06 (Settings/Help in-layout + source disconnect/reconnect)
+- **Settings no longer dumps into the old dashboard shell**: `Settings.jsx` gained an `embedded`/`onBack` mode; the project sidebar's Settings button (and the user-menu Settings) now set an in-workspace `view === "settings"` instead of navigating to `/settings` (which was wrapped in the legacy `AppShell` with Dashboard/Activity/Connect Work). Renders inside `.project-view` with an internal scroll (`.settings-embed`/`.settings-embed-main`) so the fixed viewport rule holds.
+- **Help is in-layout too**: new `HelpPanel` (FAQ + support email) renders as `view === "help"` in the project workspace — no more redirect to `/pricing`/marketing.
+- **Disconnect / reconnect anytime**: each source row in `ProjectSidebar` now has hover actions — Disconnect (confirm dialog → `DELETE /connect/connections/{id}` → refresh) and, when a source is unhealthy (red), Reconnect (opens the inline Add-Source dialog). Reuses `useDialog`. New CSS `.psb-source-actions/.psb-src-btn`, `.help-faq/.help-q/.help-a`.
+- Verified via screenshots on the pro account: Settings + Help render inside the project shell (sidebar intact, footer tab active), billing shows the plan; disconnect button visible on source hover.
+- STILL PENDING (requested, not yet built): **Onboarding Tour** (guided first-run for fresh accounts) and **Global Memory Search** (one search box across decisions/requirements/scope/messages).
+
+
+
 - **Collapsed sidebar was broken** (user report): opening the project switcher (or user menu) while the rail was collapsed rendered the dropdown at `left:0/right:0` inside the 76px rail, so its text wrapped vertically into an unreadable column. Fixed by popping both menus OUT to the right at a proper width when collapsed: `.project-sidebar.is-collapsed .psb-switch-menu { left:calc(100%+10px); right:auto; width:264px; top:0 }` and `.psb-user-menu { …; width:200px; bottom:0 }`. Verified: switcher + user menu both pop out cleanly.
 - **Demo sources showed "Reconnect"** (misleading on seeded demo accounts with no real OAuth token → red health). Flagged the 5 seeded `source_connections` with `is_demo:true` so `/connections` returns green health → sidebar now shows "Connected". Verified.
 
