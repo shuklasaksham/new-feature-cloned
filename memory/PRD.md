@@ -1,3 +1,10 @@
+## Changelog — 2026-06 (add-source "connected" is now PROJECT-scoped)
+- **Bug the user hit in preview**: connected Gmail to a project, clicked '+' → Figma, and it opened the Figma picker instead of OAuth — because a Figma account TOKEN lingered on the account from a previous session, so account-level "connected" short-circuited OAuth.
+- **Fix**: `AddSourceDialog` now takes a `connectedProviders` prop = the set of providers with an active source in the CURRENT project (from the sidebar `connections`). `pick(key)` uses `inProject(key)`: NOT on this project → start OAuth (even if an account token exists); ON this project → open the inline source list. Badges reflect this: on-project → "Add", otherwise "Connect". `ProjectSidebar` passes `connectedProviders`.
+- Result: a leftover account token no longer makes a tool look connected on a fresh project — you re-OAuth (and pick the account) per project, and only add-more-without-OAuth when the tool is genuinely on that project.
+- Verified (self-test, Playwright w/ window.open patched, on project 222535e8 which has Gmail but not Figma): Figma → OAuth + no picker; Gmail → inline picker + no OAuth. (testing_agent iter60 returned a mismatched/stale report and was disregarded.)
+
+
 ## Changelog — 2026-06 (add-source rule refined to CONDITIONAL OAuth)
 - Reverted the previous "always OAuth on add" to the user's refined rule in `AddSourceDialog.pick()`:
   • Provider NOT linked → start OAuth (so a user logged in as email1 can connect email2's Gmail — the login account is never silently used).

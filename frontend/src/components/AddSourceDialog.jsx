@@ -10,7 +10,7 @@ import { ProviderIcon, PROVIDER_META } from "../lib/providersMeta";
  * page. Provider list → inline OAuth popup (popup-blocker safe) → source picker
  * → attach to THIS project via /connect/preview + /connect/establish.
  */
-export default function AddSourceDialog({ open, onClose, projectId, onChanged, reconnect }) {
+export default function AddSourceDialog({ open, onClose, projectId, onChanged, reconnect, connectedProviders = [] }) {
   const [providers, setProviders] = useState([]);
   const [connecting, setConnecting] = useState(null); // provider key while OAuth in flight
   const [picker, setPicker] = useState(null);          // { provider, sources }
@@ -63,20 +63,20 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
     } catch (err) { toast.error(formatApiError(err)); }
   };
 
-  // Click a provider:
-  //  • NOT linked yet  → start OAuth (so a user logged in as email1 can connect
-  //    email2's Gmail — we never silently use the login account).
-  //  • already linked  → open its source list directly so the user can add more
-  //    conversations/files from that connected account (no re-OAuth).
-  // (Disconnecting a source removes the account when it's the last one, so a
-  //  later reconnect correctly falls back to OAuth here.)
+  // A provider counts as "connected" only if it has an active source in THIS
+  // project (what the user sees in the sidebar) — NOT merely because a token
+  // exists somewhere on their account. This makes adding a tool that isn't on
+  // this project start a fresh OAuth (pick the account for this project),
+  // while a tool already on the project just opens its list to add more.
+  const inProject = (key) => connectedProviders.includes(key);
+
   const pick = async (key) => {
     if (connecting) return;
+    if (!inProject(key)) { startOAuth(key); return; }
     setConnecting(key);
     try {
       const { data } = await api.get(`/connect/${key}/sources`);
-      const sources = data?.sources || [];
-      setPicker({ provider: key, sources });
+      setPicker({ provider: key, sources: data?.sources || [] });
       setSelected([]); setStatus({}); setQuery("");
       setConnecting(null);
     } catch (e) {
@@ -215,15 +215,16 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
             {providers.length === 0 ? (
               <p className="text-[12.5px] py-6 text-center" style={{ color: "var(--text-3)" }}>Loading sources…</p>
             ) : providers.map((p) => {
-              // "connected" (account already linked via OAuth) is still usable —
-              // it lets the user add more sources or reconnect. Only true
-              // "coming_soon"/"setup_required" providers are non-actionable.
-              const usable = p.status === "available" || p.status === "connected";
+              // "connected" here means connected to THIS project (in the
+              // sidebar) — not just an account-level token. Providers not on
+              // this project show "Connect" and start OAuth on click.
+              const onProject = inProject(p.key);
+              const usable = onProject || p.status === "available" || p.status === "connected";
               const busy = connecting === p.key;
               const badge = busy
                 ? <Loader2 size={13} className="animate-spin" />
-                : p.status === "connected" ? "Add"
-                : p.status === "available" ? "Connect"
+                : onProject ? "Add"
+                : (p.status === "available" || p.status === "connected") ? "Connect"
                 : p.status === "setup_required" ? "Setup" : "Soon";
               return (
                 <button

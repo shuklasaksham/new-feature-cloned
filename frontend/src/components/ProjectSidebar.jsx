@@ -332,6 +332,7 @@ export default function ProjectSidebar({
         projectId={project?.id}
         onChanged={onSourcesChanged}
         reconnect={reconnectKey}
+        connectedProviders={[...new Set((connections || []).map((c) => c.provider))]}
       />
       <PlanModal
         open={planModalOpen}
