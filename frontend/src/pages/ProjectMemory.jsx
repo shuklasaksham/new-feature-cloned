@@ -246,6 +246,7 @@ export default function ProjectMemory() {
         open={updateOpen}
         onClose={() => setUpdateOpen(false)}
         onResolved={() => load({ silent: true })}
+        onViewConversation={() => { setUpdateOpen(false); setView("conversations"); }}
       />
       <HistoryDrawer
         projectId={id}
@@ -606,10 +607,10 @@ function OverviewView({ project, projectId, memory, connections, detectedCount, 
     <div className="ov-wrap">
       <Header />
 
-      {/* Needs attention */}
+      {/* Needs attention — one card per underlying client request (reviewed once) */}
       <section className="ov-section" data-testid="home-attention">
         <p className="mono-tag" style={{ color: "var(--text-3)", fontSize: "10.5px", letterSpacing: "0.14em" }}>NEEDS ATTENTION</p>
-        {attention.length === 0 ? (
+        {detectedCount === 0 ? (
           <div className="attn-feat" style={{ marginTop: 20 }} data-testid="home-caught-up">
             <span className="attn-ring"><CheckCircle2 size={22} style={{ color: "var(--success)" }} /></span>
             <div className="min-w-0">
@@ -618,15 +619,15 @@ function OverviewView({ project, projectId, memory, connections, detectedCount, 
             </div>
           </div>
         ) : (
-          <div className="attn-feat" style={{ marginTop: 20 }} data-testid={`home-attention-${attention[0].id}`}>
+          <div className="attn-feat" style={{ marginTop: 20 }} data-testid="home-attention-change">
             <span className="attn-ring"><AlertCircle size={22} /></span>
             <div className="min-w-0">
-              <p className="attn-feat-title">{attention[0].title}</p>
-              <p className="attn-feat-desc">{attention[0].detail || (attention[0].is_scope_change ? "Bracket detected a possible scope change in a client message." : "Bracket detected this — confirm or dismiss it.")}</p>
+              <p className="attn-feat-title">{attention[0]?.title || "Changes ready to review"}</p>
+              <p className="attn-feat-desc">{attention[0]?.detail || `A client request affects this project — review its full impact once and Bracket updates everything.`}</p>
               <div className="attn-actions">
                 <button type="button" className="attn-review" onClick={onReviewUpdate} data-testid="home-attention-review">Review <ArrowRight size={16} /></button>
-                {attention.length > 1 && (
-                  <button type="button" className="attn-more" onClick={onReviewUpdate} data-testid="home-attention-more">+{attention.length - 1} more <ChevronRight size={15} /></button>
+                {detectedCount > 1 && (
+                  <button type="button" className="attn-more" onClick={onReviewUpdate} data-testid="home-attention-more">+{detectedCount - 1} more <ChevronRight size={15} /></button>
                 )}
               </div>
             </div>

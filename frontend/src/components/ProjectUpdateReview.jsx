@@ -1,44 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  X, Loader2, Check, AlertTriangle, TrendingUp, ArrowRight, Sparkles, ThumbsDown, CheckCircle2, ChevronRight, ChevronDown,
-} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { X, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { CATEGORY_BY_KEY } from "../lib/memoryCategories";
 
 /**
- * ProjectUpdateReview — Bracket's consolidated "one change, one review, one
- * approval" surface. Instead of approving each detected item separately, we
- * bundle EVERY pending change plus its AI-computed downstream impacts into a
- * single snapshot. The user approves or rejects the whole thing at once.
+ * ProjectUpdateReview — one client request = one review.
+ * Bracket bundles everything a single request touches into ONE Project Change.
+ * The user sees the full impact, can keep or remove individual parts of the
+ * proposal, then accepts once — Bracket updates every kept part together.
  */
-const PRIORITY = {
-  high:   { label: "HIGH IMPACT",   color: "#DC2626", bg: "rgba(220,38,38,0.10)" },
-  medium: { label: "MEDIUM IMPACT", color: "#D97706", bg: "rgba(217,119,6,0.10)" },
-  low:    { label: "LOW IMPACT",    color: "#16A34A", bg: "rgba(22,163,74,0.10)" },
-};
+const CAT_ORDER = ["scope", "deliverable", "requirement", "decision", "deadline", "timeline"];
+const keyOfDown = (it) => `${it.category}|${it.title}`;
 
-export default function ProjectUpdateReview({ projectId, open, onClose, onResolved }) {
+export default function ProjectUpdateReview({ projectId, open, onClose, onResolved, onViewConversation }) {
   const [loading, setLoading] = useState(false);
   const [update, setUpdate] = useState(null);
-  const [nonePending, setNonePending] = useState(false);
-  const [acting, setActing] = useState(null); // 'approve' | 'reject'
-  const [showDetails, setShowDetails] = useState(false);
+  const [none, setNone] = useState(false);
+  const [acting, setActing] = useState(null);
+  const [removed, setRemoved] = useState({}); // item-key -> true (excluded)
 
   useEffect(() => {
     if (!open || !projectId) return;
-    setUpdate(null);
-    setNonePending(false);
-    setShowDetails(false);
-    setLoading(true);
+    setUpdate(null); setNone(false); setRemoved({}); setLoading(true);
     let cancelled = false;
     (async () => {
       try {
         const { data } = await api.post(`/projects/${projectId}/update/build`);
         if (cancelled) return;
-        if (!data.pending) setNonePending(true);
-        else setUpdate(data.update);
+        if (!data.pending) setNone(true); else setUpdate(data.update);
       } catch (e) {
         if (!cancelled) toast.error(formatApiError(e));
       } finally {
@@ -50,21 +40,41 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    const k = (e) => { if (e.key === "Escape") onClose?.(); };
+    document.addEventListener("keydown", k);
+    return () => document.removeEventListener("keydown", k);
   }, [open, onClose]);
+
+  // Build a flat, keyed list of every proposed part (direct + downstream).
+  const parts = useMemo(() => {
+    const out = [];
+    (update?.direct || []).forEach((d) => out.push({ key: `d:${d.id}`, id: d.id, kind: "direct", category: d.category || "requirement", title: d.title }));
+    (update?.downstream || []).forEach((d) => out.push({ key: `x:${keyOfDown(d)}`, kind: "down", category: d.category || "requirement", title: d.title, downKey: keyOfDown(d) }));
+    return out;
+  }, [update]);
+
+  const byCat = useMemo(() => {
+    const m = {};
+    parts.forEach((p) => { (m[p.category] = m[p.category] || []).push(p); });
+    return m;
+  }, [parts]);
+  const cats = CAT_ORDER.filter((k) => byCat[k]?.length);
+  const keptCount = parts.filter((p) => !removed[p.key]).length;
+  const subtitle = update?.direct?.[0]?.detail || "";
 
   const resolve = async (action) => {
     if (!update || acting) return;
     setActing(action);
     try {
-      const { data } = await api.post(`/projects/${projectId}/update/${update.id}/${action}`);
+      let payload;
       if (action === "approve") {
-        toast.success(`Update approved — ${data.confirmed} confirmed${data.added ? `, ${data.added} added` : ""}`);
-      } else {
-        toast.success(`Update rejected — ${data.discarded} change${data.discarded === 1 ? "" : "s"} discarded`);
+        payload = {
+          exclude_direct: parts.filter((p) => p.kind === "direct" && removed[p.key]).map((p) => p.id),
+          exclude_downstream: parts.filter((p) => p.kind === "down" && removed[p.key]).map((p) => p.downKey),
+        };
       }
+      await api.post(`/projects/${projectId}/update/${update.id}/${action}`, payload);
+      toast.success(action === "approve" ? "Changes applied across your project" : "Change dismissed — not part of the project");
       onResolved?.();
       onClose?.();
     } catch (e) {
@@ -74,210 +84,97 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
     }
   };
 
-  const prio = PRIORITY[update?.priority] || PRIORITY.medium;
-  const directByCat = groupByCat(update?.direct || []);
-  const downstreamByCat = groupByCat(update?.downstream || []);
-  const totalChanges = (update?.direct?.length || 0) + (update?.downstream?.length || 0);
-  const riskImpact = (update?.impacts || []).find((i) => i.kind === "risk") || (update?.impacts || [])[0];
+  if (!open) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <>
-          <motion.div
-            key="overlay"
-            className="fixed inset-0 z-[70]"
-            style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(4px)" }}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={onClose}
-            data-testid="project-update-overlay"
-          />
-          <motion.aside
-            key="drawer"
-            className="fixed right-0 top-0 bottom-0 w-full sm:w-[540px] lg:w-[620px] z-[71] overflow-y-auto"
-            style={{ background: "var(--surface)", borderLeft: "1px solid var(--hairline)" }}
-            initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            data-testid="project-update-drawer"
-          >
-            {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
-                 style={{ background: "var(--surface)", borderBottom: "1px solid var(--hairline)" }}>
-              <div className="flex items-center gap-2 min-w-0">
-                <Sparkles size={14} style={{ color: "var(--accent)" }} />
-                <span className="mono-tag text-[10px]" style={{ color: "var(--accent)" }}>PROJECT UPDATE</span>
-                {update && (
-                  <span className="mono-tag px-1.5 py-0.5 rounded text-[9px]"
-                        style={{ color: prio.color, background: prio.bg, border: `1px solid ${prio.color}33` }}>
-                    {prio.label}
-                  </span>
-                )}
+    <div className="bkt-modal-overlay" style={{ zIndex: 70 }} onClick={onClose} data-testid="project-update-overlay">
+      <div className="pu-modal" onClick={(e) => e.stopPropagation()} data-testid="project-update-drawer">
+        <div className="bkt-modal-head">
+          <span className="mono-tag text-[10px]" style={{ color: "var(--text-3)", letterSpacing: "0.14em" }}>PROJECT CHANGE</span>
+          <button type="button" className="bkt-modal-x" onClick={onClose} data-testid="project-update-close"><X size={16} /></button>
+        </div>
+
+        <div className="pu-body">
+          {loading && (
+            <div className="flex items-center gap-2 text-[13px] py-8" style={{ color: "var(--text-3)" }}>
+              <Loader2 size={14} className="animate-spin" /> Bracket is gathering the full impact…
+            </div>
+          )}
+
+          {!loading && none && (
+            <div className="text-center py-14" data-testid="project-update-empty">
+              <Check size={26} style={{ color: "var(--success)", margin: "0 auto" }} />
+              <p className="mt-3 text-[15px] font-medium" style={{ color: "var(--text)" }}>You're all caught up</p>
+              <p className="mt-1 text-[12.5px]" style={{ color: "var(--text-3)" }}>Nothing is waiting for your review right now.</p>
+            </div>
+          )}
+
+          {!loading && update && (
+            <>
+              <p className="text-[20px] font-semibold tracking-[-0.02em] leading-snug" style={{ color: "var(--text)" }} data-testid="project-update-summary">
+                {update.summary || "Project change"}
+              </p>
+              {subtitle && (
+                <p className="mt-2 text-[14px] leading-relaxed" style={{ color: "var(--text-3)", maxWidth: 620 }}>{subtitle}</p>
+              )}
+
+              <div className="pu-subhead">
+                <span className="mono-tag text-[9.5px]" style={{ color: "var(--text-3)", letterSpacing: "0.14em" }}>THIS WOULD CHANGE</span>
+                <span className="pu-hint">Uncheck anything that shouldn't be part of this project.</span>
               </div>
-              <button type="button" onClick={onClose}
-                      className="inline-flex items-center justify-center w-8 h-8 rounded-full"
-                      style={{ border: "1px solid var(--hairline)", color: "var(--text-3)" }}
-                      aria-label="Close" data-testid="project-update-close">
-                <X size={13} />
+
+              <div className="pu-cats" data-testid="project-update-impact">
+                {cats.map((k) => {
+                  const c = CATEGORY_BY_KEY[k];
+                  const isTime = k === "deadline" || k === "timeline";
+                  return (
+                    <div key={k} className="pu-cat">
+                      <div className="pu-cat-head">
+                        <c.icon size={13} style={{ color: "var(--text-2)" }} />
+                        <span>{c.label}</span>
+                      </div>
+                      <div className="pu-items">
+                        {byCat[k].map((p) => {
+                          const off = !!removed[p.key];
+                          return (
+                            <button key={p.key} type="button" className={`pu-item ${off ? "pu-item--off" : ""}`}
+                              onClick={() => setRemoved((r) => ({ ...r, [p.key]: !r[p.key] }))}
+                              data-testid={`pu-item-${p.key}`}>
+                              <span className={`pu-check ${off ? "pu-check--off" : ""}`}>{!off && <Check size={11} />}</span>
+                              <span className="pu-item-text">{isTime ? "" : "+ "}{p.title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+
+        {!loading && update && (
+          <div className="pu-foot">
+            <button type="button" onClick={() => onViewConversation?.()} className="cta-mono text-[12.5px]" style={{ color: "var(--text-2)" }} data-testid="project-update-view-convo">
+              View conversation
+            </button>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => resolve("reject")} disabled={acting !== null}
+                className="cta-mono px-4 py-2 rounded-full text-[12.5px] disabled:opacity-40"
+                style={{ border: "1px solid var(--hairline-strong)", color: "var(--text-2)" }} data-testid="project-update-reject">
+                {acting === "reject" ? <Loader2 size={12} className="animate-spin inline" /> : "Not part of project"}
+              </button>
+              <button type="button" onClick={() => resolve("approve")} disabled={acting !== null || keptCount === 0}
+                className="cta-mono inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-semibold disabled:opacity-40"
+                style={{ background: "var(--primary-bg)", color: "var(--primary-fg)" }} data-testid="project-update-approve">
+                {acting === "approve" ? <Loader2 size={12} className="animate-spin" /> : <Check size={13} />}
+                {keptCount === parts.length ? "Accept changes" : `Accept ${keptCount} change${keptCount === 1 ? "" : "s"}`}
               </button>
             </div>
-
-            <div className="p-5 space-y-6">
-              {loading && (
-                <div className="flex items-center gap-2 text-[13px] py-6" style={{ color: "var(--text-3)" }}>
-                  <Loader2 size={14} className="animate-spin" /> Bracket is consolidating your update…
-                </div>
-              )}
-
-              {!loading && nonePending && (
-                <div className="text-center py-10" data-testid="project-update-empty">
-                  <CheckCircle2 size={26} style={{ color: "var(--success)", margin: "0 auto" }} />
-                  <p className="mt-3 text-[15px] font-medium" style={{ color: "var(--text)" }}>You're all caught up</p>
-                  <p className="mt-1 text-[12.5px]" style={{ color: "var(--text-3)" }}>Nothing is waiting for your review right now.</p>
-                </div>
-              )}
-
-              {!loading && update && (
-                <>
-                  {/* Bottom line — the one thing to know */}
-                  <section>
-                    <p className="text-[16px] font-semibold leading-snug tracking-[-0.01em]"
-                       style={{ color: "var(--text)" }} data-testid="project-update-summary">
-                      {update.summary || "Bundles your pending changes into one update."}
-                    </p>
-                    <p className="mt-2 text-[12px]" style={{ color: "var(--text-3)" }} data-testid="project-update-meta">
-                      {totalChanges} change{totalChanges === 1 ? "" : "s"}
-                      {riskImpact
-                        ? <> · biggest risk: <span style={{ color: prio.color }}>{riskImpact.detail.length > 72 ? riskImpact.detail.slice(0, 72).trim() + "…" : riskImpact.detail}</span></>
-                        : <> · {prio.label.toLowerCase()}</>}
-                    </p>
-                  </section>
-
-                  {/* Decide now */}
-                  <section>
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => resolve("approve")} disabled={acting !== null}
-                              className="clay-signal px-4 py-2.5 text-[13px] inline-flex items-center gap-1.5"
-                              data-testid="project-update-approve">
-                        {acting === "approve" ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
-                        Approve update
-                      </button>
-                      <button type="button" onClick={() => resolve("reject")} disabled={acting !== null}
-                              className="clay-ghost px-3 py-2.5 text-[12.5px] inline-flex items-center gap-1.5"
-                              data-testid="project-update-reject">
-                        {acting === "reject" ? <Loader2 size={11} className="animate-spin" /> : <ThumbsDown size={11} />}
-                        Reject all
-                      </button>
-                    </div>
-                    <p className="mt-2 text-[10.5px]" style={{ color: "var(--text-3)" }}>
-                      Approving applies every change at once. Rejecting discards them all — no separate approvals.
-                    </p>
-                  </section>
-
-                  {/* Details, hidden by default */}
-                  <section>
-                    <button type="button" onClick={() => setShowDetails((v) => !v)}
-                            className="inline-flex items-center gap-1.5 text-[12px] font-medium"
-                            style={{ color: "var(--text-2)" }}
-                            data-testid="project-update-details-toggle">
-                      {showDetails ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-                      {showDetails ? "Hide details" : "See what's inside"}
-                    </button>
-
-                    {showDetails && (
-                      <div className="mt-4 space-y-6">
-                        {/* Impacts */}
-                        {update.impacts?.length > 0 && (
-                          <div>
-                            <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
-                              <TrendingUp size={10} /> IMPACT ACROSS THE PROJECT
-                            </p>
-                            <ul className="space-y-2" data-testid="project-update-impacts">
-                              {update.impacts.map((imp, i) => (
-                                <li key={i} className="flex items-start gap-2 text-[13px]" style={{ color: "var(--text-2)" }}>
-                                  <ArrowRight size={13} className="mt-0.5 shrink-0" style={{ color: "var(--accent)" }} />
-                                  <div>
-                                    <span className="mono-tag text-[9px] mr-1.5" style={{ color: "var(--text-3)" }}>{String(imp.kind).toUpperCase()}</span>
-                                    {imp.detail}
-                                  </div>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {/* Direct changes */}
-                        <div>
-                          <p className="mono-tag text-[9.5px] mb-2" style={{ color: "var(--text-3)" }}>
-                            CHANGES IN THIS UPDATE · {update.direct?.length || 0}
-                          </p>
-                          <div className="space-y-1.5" data-testid="project-update-direct">
-                            {directByCat.map(([catKey, list]) => (
-                              <CatGroup key={catKey} catKey={catKey} list={list} />
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Downstream */}
-                        {update.downstream?.length > 0 && (
-                          <div>
-                            <p className="mono-tag text-[9.5px] mb-2 inline-flex items-center gap-1.5" style={{ color: "var(--accent)" }}>
-                              <Sparkles size={10} /> BRACKET WILL ALSO ADD · {update.downstream.length}
-                            </p>
-                            <div className="space-y-1.5" data-testid="project-update-downstream">
-                              {downstreamByCat.map(([catKey, list]) => (
-                                <CatGroup key={catKey} catKey={catKey} list={list} showReason />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </section>
-                </>
-              )}
-            </div>
-          </motion.aside>
-        </>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function groupByCat(list) {
-  const map = {};
-  (list || []).forEach((it) => {
-    const k = it.category || "requirement";
-    (map[k] = map[k] || []).push(it);
-  });
-  return Object.entries(map);
-}
-
-function CatGroup({ catKey, list, showReason }) {
-  const c = CATEGORY_BY_KEY[catKey] || CATEGORY_BY_KEY.requirement;
-  return (
-    <>
-      {list.map((it, i) => (
-        <div key={i}
-             className="flex items-start gap-2.5 rounded-lg px-3 py-2.5"
-             style={{ background: "var(--surface-2)", border: "1px solid var(--hairline)" }}>
-          <c.icon size={13} className="mt-0.5 shrink-0" style={{ color: c.color }} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="mono-tag text-[9px]" style={{ color: c.color }}>{c.label.toUpperCase()}</span>
-              {it.is_scope_change && (
-                <span className="mono-tag text-[9px] inline-flex items-center gap-0.5" style={{ color: "var(--danger)" }}>
-                  <AlertTriangle size={8} /> SCOPE CREEP
-                </span>
-              )}
-            </div>
-            <p className="mt-0.5 text-[13px] font-medium leading-snug" style={{ color: "var(--text)" }}>{it.title}</p>
-            {it.detail && <p className="text-[11.5px] leading-snug mt-0.5" style={{ color: "var(--text-3)" }}>{it.detail}</p>}
-            {showReason && it.reason && (
-              <p className="text-[10.5px] italic mt-1" style={{ color: "var(--text-3)" }}>↳ {it.reason}</p>
-            )}
           </div>
-        </div>
-      ))}
-    </>
+        )}
+      </div>
+    </div>
   );
 }

@@ -1566,20 +1566,41 @@ async def project_update_approve(project_id: str, update_id: str, request: Reque
     if snap.get("status") != "pending":
         raise HTTPException(409, "This update was already resolved.")
     now = _now_iso()
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    excl_direct = set(body.get("exclude_direct") or [])
+    excl_down = set(body.get("exclude_downstream") or [])
 
     confirmed = 0
-    for mid in snap.get("direct_ids", []):
-        res = await db.project_memory.update_one(
-            {"id": mid, "status": {"$in": list(_PENDING_STATUSES)}},
-            {"$set": {"status": "confirmed", "updated_at": now},
-             "$push": {"history": {"to": "confirmed", "via": "project_update", "at": now}}},
-        )
-        confirmed += res.modified_count
+    dismissed = 0
+    kept_direct = []
+    for p in snap.get("direct", []):
+        mid = p["id"]
+        if mid in excl_direct:
+            res = await db.project_memory.update_one(
+                {"id": mid, "status": {"$in": list(_PENDING_STATUSES)}},
+                {"$set": {"status": "ignored", "updated_at": now},
+                 "$push": {"history": {"to": "ignored", "via": "project_update", "at": now}}},
+            )
+            dismissed += res.modified_count
+        else:
+            res = await db.project_memory.update_one(
+                {"id": mid, "status": {"$in": list(_PENDING_STATUSES)}},
+                {"$set": {"status": "confirmed", "updated_at": now},
+                 "$push": {"history": {"to": "confirmed", "via": "project_update", "at": now}}},
+            )
+            confirmed += res.modified_count
+            kept_direct.append(p)
 
     added = 0
+    kept_down = []
     for d in snap.get("downstream", []):
         canon = _canonical_category(d.get("category", ""))
         if canon not in _VISIBLE_CATS:
+            continue
+        if f"{canon}|{d.get('title','')}" in excl_down:
             continue
         doc = {
             "id": _uuid(), "project_id": project_id, "connection_id": "bracket",
@@ -1591,12 +1612,35 @@ async def project_update_approve(project_id: str, update_id: str, request: Reque
         }
         await db.project_memory.insert_one(doc)
         added += 1
+        kept_down.append({"category": canon, "title": d.get("title", "")})
 
     await db.project_updates.update_one(
         {"id": update_id}, {"$set": {"status": "approved", "resolved_at": now}})
     await db.projects.update_one(
         {"id": project_id}, {"$set": {"last_seen_at": now}})
-    return {"ok": True, "confirmed": confirmed, "added": added}
+
+    # Record ONE grouped history event so users can see why the project changed,
+    # without re-reviewing each field. Counts only the KEPT parts.
+    _CAT_LABEL = {"scope": "Scope", "deliverable": "Deliverables", "requirement": "Requirements",
+                  "decision": "Decisions", "deadline": "Deadline", "timeline": "Timeline"}
+    tally: Dict[str, int] = {}
+    for p in kept_direct:
+        tally[p.get("category", "")] = tally.get(p.get("category", ""), 0) + 1
+    for d in kept_down:
+        tally[d["category"]] = tally.get(d["category"], 0) + 1
+    impact = " · ".join(f"{_CAT_LABEL.get(k, k.title())} +{v}" for k, v in tally.items() if k)
+    first = (kept_direct or snap.get("direct") or [{}])[0]
+    if confirmed or added:
+        await db.source_events.insert_one({
+            "id": _uuid(), "project_id": project_id, "event_type": "CHANGE_ACCEPTED",
+            "summary": snap.get("summary") or "Project change accepted",
+            "detail": impact,
+            "provider": first.get("provider", "bracket"),
+            "source_label": first.get("source_label", "Project change"),
+            "by": user["user_id"],
+            "occurred_at": now, "created_at": now,
+        })
+    return {"ok": True, "confirmed": confirmed, "added": added, "dismissed": dismissed}
 
 
 @router.post("/projects/{project_id}/update/{update_id}/reject")
@@ -1662,7 +1706,7 @@ async def project_history(project_id: str, request: Request, limit: int = 60):
             "title": e.get("summary", ""),
             "provider": e.get("provider", ""), "source_label": e.get("source_label", ""),
             "at": e.get("occurred_at") or e.get("created_at"),
-            "memory_id": None, "category": None, "detail": "",
+            "memory_id": None, "category": None, "detail": e.get("detail", ""),
         })
 
     # 2) Memory item history entries.

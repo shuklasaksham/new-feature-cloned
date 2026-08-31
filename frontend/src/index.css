@@ -4764,6 +4764,26 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .src-dialog-badge { margin-left: auto; font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; font-family: var(--font-mono, ui-monospace, monospace); color: #6f6f6f; }
 
 /* CTA / control text uses the design-system mono face (matches auth CTAs) */
+.cta-mono { font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace); }
+
+/* Project Change review — large, roomy, non-cramped dialog */
+.pu-modal { width: min(94vw, 860px); max-height: 92vh; display: flex; flex-direction: column; background: #0c0c0c; border: 1px solid #242424; border-radius: 18px; overflow: hidden; box-shadow: 0 50px 140px -30px rgba(0,0,0,0.85); }
+.pu-body { padding: 24px 28px; overflow-y: auto; }
+.pu-subhead { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 26px 0 14px; }
+.pu-hint { font-size: 11.5px; color: #6f6f6f; }
+.pu-cats { column-count: 2; column-gap: 44px; }
+@media (max-width: 720px) { .pu-cats { column-count: 1; } .pu-modal { width: 94vw; } }
+.pu-cat { break-inside: avoid; margin-bottom: 20px; }
+.pu-cat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--text-2); }
+.pu-items { display: flex; flex-direction: column; gap: 4px; }
+.pu-item { display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 6px 8px; border-radius: 8px; transition: background .12s; }
+.pu-item:hover { background: #151515; }
+.pu-item-text { font-size: 13.5px; line-height: 1.45; color: var(--text); }
+.pu-item--off .pu-item-text { color: #5f5f5f; text-decoration: line-through; }
+.pu-check { flex-shrink: 0; margin-top: 1px; width: 17px; height: 17px; border-radius: 5px; display: grid; place-items: center; background: var(--accent); color: #000; }
+.pu-check--off { background: transparent; border: 1px solid #3a3a3a; }
+.pu-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-top: 1px solid var(--hairline); flex-shrink: 0; }
+
 .attn-review, .attn-more, .ask-chip, .conv-view-older, .tl-viewall,
 .stream-orig2, .stream-time, .home-cat, .home-cat-count, .mem-tab-count,
 .ask-bar-title, .src-dialog-badge, .tl-dl-due, .tl-h-eyebrow, .tl-h-who, .tl-h-time {

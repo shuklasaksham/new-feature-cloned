@@ -1,3 +1,10 @@
+## Changelog — 2026-06 (Project Change review: one request = one review, partial-accept)
+- Backend `/update/{id}/approve` now accepts optional body `{exclude_direct:[ids], exclude_downstream:["cat|title"]}` for PARTIAL acceptance — excluded direct items → ignored, excluded downstream → skipped. Writes ONE grouped `source_events` `CHANGE_ACCEPTED` (summary + impact `Scope +1 · Deliverables +2 …`) counting only KEPT parts; `/history` now surfaces `event.detail`.
+- `ProjectUpdateReview.jsx` rebuilt into a large, roomy centered dialog (`.pu-modal` min(94vw,860px), 92vh, 2-column `.pu-cats`) — monochrome, mono CTAs, with per-item keep/remove checkboxes (`.pu-item/.pu-check`). Accept button reads "Accept N changes" reflecting kept items. Footer: View conversation | Not part of project | Accept changes.
+- Overview NEEDS ATTENTION shows ONE consolidated Project Change card (driven by `detectedCount`) → opens the single review. Scope/Deliverables/Requirements/Decisions dialogs remain read-only current-state views (no re-approval). Accepting logs the grouped change to Timeline history.
+- Verified live: seeded pending items → build → 2-col toggle dialog rendered (Scope/Requirements/Decisions/Timeline) → unchecking one flipped the CTA to "Accept 11 changes".
+
+
 ## Changelog — 2026-06 (monochrome fix, full-width content, mono CTAs, Timeline redesign)
 - **Monochrome**: set all `MEMORY_CATEGORIES` colors + `STATUS_META` colors to greys (memoryCategories.js) so every category icon/status renders monochrome app-wide (removed violet/teal/green/etc.).
 - **Empty right space fixed**: `.project-main-inner` max-width → `none` (fills the workspace); stream/timeline rows now push meta to the far-right, Ask Bracket spans full width.
