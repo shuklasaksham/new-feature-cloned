@@ -717,3 +717,115 @@ async def send_nps_survey_email(
     except Exception as e:
         logger.exception(f"nps-survey email failed for {to_email}: {e}")
         return False
+
+
+
+# --- SCOPE-CREEP ALERT EMAIL ----------------------------------------------
+def _scope_alert_html(owner_name: str, project_name: str, client_name: str,
+                      items: list, project_url: str) -> str:
+    display_name = (owner_name or "").strip() or "there"
+    pname = (project_name or "your project").strip() or "your project"
+    who = (client_name or "The client").strip() or "The client"
+    accent = "#F59E0B"
+    rows = []
+    for it in items[:8]:
+        title = str(it.get("title") or "").replace("<", "&lt;").replace(">", "&gt;")
+        detail = str(it.get("detail") or "").replace("<", "&lt;").replace(">", "&gt;")
+        rows.append(
+            f"<tr><td style='padding:14px 16px;border:1px solid #26282D;border-radius:10px;"
+            f"background:#16181D;'>"
+            f"<p style='margin:0;font-size:14px;font-weight:600;color:#F4F5F7;'>{title}</p>"
+            + (f"<p style='margin:6px 0 0 0;font-size:13px;line-height:1.55;color:#B9BFC9;'>{detail}</p>" if detail else "")
+            + "</td></tr><tr><td style='height:10px;line-height:10px;'>&nbsp;</td></tr>"
+        )
+    n = len(items)
+    return f"""<!doctype html>
+<html><body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#08090A;padding:44px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
+<tr><td style="padding:32px 36px 0 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:{accent};">
+    &lt; bracket &middot; scope alert &gt;
+  </p>
+</td></tr>
+<tr><td style="padding:18px 36px 0 36px;">
+  <h1 style="margin:0;font-size:25px;line-height:1.22;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;">
+    Heads up &mdash;<br/><span style="color:{accent};">{who} asked for something new.</span>
+  </h1>
+</td></tr>
+<tr><td style="padding:16px 36px 0 36px;">
+  <p style="margin:0 0 18px 0;font-size:15px;line-height:1.65;color:#B9BFC9;">
+    Hi {display_name} &mdash; Bracket spotted <strong style="color:#F4F5F7;">{n}</strong> request{'s' if n != 1 else ''} on
+    <strong style="color:#F4F5F7;">{pname}</strong> that look{'s' if n == 1 else ''} like they expand the scope. Review before you commit:
+  </p>
+  <table width="100%" cellpadding="0" cellspacing="0">{''.join(rows)}</table>
+  <a href="{project_url}" style="display:inline-block;margin-top:6px;padding:13px 24px;background:#F4F5F7;color:#08090A;text-decoration:none;font-size:13.5px;font-weight:600;letter-spacing:0.01em;border-radius:10px;">
+    Review in Bracket &rarr;
+  </a>
+</td></tr>
+<tr><td style="padding:28px 36px 28px 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">
+    Bracket &middot; The AI decision workspace for client projects
+  </p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+
+def _scope_alert_text(owner_name: str, project_name: str, client_name: str,
+                      items: list, project_url: str) -> str:
+    display_name = (owner_name or "").strip() or "there"
+    pname = (project_name or "your project").strip() or "your project"
+    who = (client_name or "The client").strip() or "The client"
+    lines = [f"Hi {display_name},", "",
+             f"Bracket spotted {len(items)} request(s) on {pname} that look like they expand the scope "
+             f"({who}). Review before you commit:", ""]
+    for it in items[:8]:
+        t = str(it.get("title") or "").strip()
+        d = str(it.get("detail") or "").strip()
+        lines.append(f"  • {t}" + (f" — {d}" if d else ""))
+    lines += ["", f"Review in Bracket: {project_url}", "",
+              "— Bracket", "The AI decision workspace for client projects"]
+    return "\n".join(lines)
+
+
+async def send_scope_creep_alert(
+    owner_email: str,
+    owner_name: str,
+    project_name: str,
+    project_id: str,
+    client_name: str,
+    items: list,
+    public_base_url: str = "",
+) -> bool:
+    """Alert the project owner when Bracket detects client requests that expand
+    scope during a sync. Batched — one email per sync. Fire-and-forget."""
+    if not owner_email or not items:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning("RESEND_API_KEY not set; skipping scope-creep alert")
+        return False
+    resend.api_key = api_key
+    base = (public_base_url or os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com")).rstrip("/")
+    project_url = f"{base}/project/{project_id}"
+    n = len(items)
+    subject = f"Scope alert: {project_name} — {n} new request{'s' if n != 1 else ''}"
+    params = {
+        "from": _sender(),
+        "to": [owner_email],
+        "subject": subject,
+        "html": _scope_alert_html(owner_name, project_name, client_name, items, project_url),
+        "text": _scope_alert_text(owner_name, project_name, client_name, items, project_url),
+        "reply_to": os.environ.get("SENDER_EMAIL", ""),
+    }
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"scope-creep alert sent to {owner_email}: {result.get('id') if isinstance(result, dict) else result}")
+        return True
+    except Exception as e:
+        logger.exception(f"scope-creep alert failed for {owner_email}: {e}")
+        return False

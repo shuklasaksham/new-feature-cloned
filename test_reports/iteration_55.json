@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend regression tests for Bracket (login, portaled Add-Source dialog, provider badges, disconnect+re-add, USD/INR toggles on /pricing and /plan, and 1366x768 responsiveness). All 6 items PASS.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "AddSourceDialog.jsx line 149: .bkt-modal-head has transparent background (rgba(0,0,0,0)); it currently looks opaque only because the parent .bkt-modal is #0c0c0c. If the modal background is ever made translucent, the header would immediately bleed through again. Consider giving .bkt-modal-head its own explicit solid background as belt-and-suspenders.",
+    "Pricing.jsx and ChoosePlan.jsx duplicate the CURRENCIES + PLANS constants and identical toggle markup. Extract a shared <CurrencyToggle /> + a single PRICING_PLANS source of truth to avoid drift (e.g., if only one file is updated with a new plan or price, the other silently disagrees).",
+    "AddSourceDialog gmail 'Connect' click issues GET /connect/gmail/sources; on 400 it falls through to startOAuth which opens a popup. In headless test envs and for the pro demo account (no real OAuth token) this path is exercised — verified working — but partial failure on the auth-url call leaves the empty popup open until GC. Consider closing the popup on the 400->OAuth branch failure path too."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a", "frontend": "100%" },
+  "test_credentials": "pro@use-bracket.com / Bracket@2026 (main), fresh@use-bracket.com / Bracket@2026 (used for /plan since /plan redirects paid accounts).",
+  "seed_data_creation": "Disconnected the single connected Gmail source on pro account's project 95e25984-f109-4491-b9e5-cd6bd007b9a4 as part of the disconnect+re-add test. State left disconnected; re-attach was not performed to keep the test hermetic. Main agent may want to re-run seed if project was expected to keep its source.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified selectors: pricing-currency-toggle/pricing-currency-usd/pricing-currency-inr, currency-toggle/currency-usd/currency-inr, plan-monthly/plan-project/plan-continue, pricing-plan-monthly/pricing-plan-project, psb-add-source, add-source-dialog, add-source-option-<provider>, add-source-close, add-source-list, psb-source-disconnect-<id>, psb-nav-overview/conversations/timeline. Modal is createPortal'd to document.body (verified parent=BODY, z-index 130, overlay bg rgba(0,0,0,0.62)). /plan redirects paid accounts to their project; use fresh@use-bracket.com to reach it. Badges after wait: gmail/slack/figma/github=Connect (enabled), notion=Setup (disabled), whatsapp/teams/adobe/gdrive/dropbox=Soon (disabled). All three tabs at 1366x768 show docH == winH == 768 (no page scroll). Pricing USD -> $29/$9, INR -> ₹2,499/₹749; ChoosePlan same and method note switches Cards <-> UPI & cards. IMPORTANT: pro account's connected Gmail source was disconnected during this run — Home now shows 'Your project memory is waiting' empty state until re-connected.",
+  "rca of the issue": "N/A — all regression items pass. One initial false-positive: badge query returned 'missing' when run <200ms after opening the dialog because providers are fetched asynchronously via /connect/providers and the row list is empty until then. Fix in test: wait_for_selector on any add-source-option-<key> before evaluating."
+}

@@ -5050,7 +5050,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 /* ── Generic drill-in modal ── */
 .bkt-modal-overlay { position: fixed; inset: 0; z-index: 130; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,0.62); }
 .bkt-modal { width: 100%; max-width: 560px; max-height: 80vh; display: flex; flex-direction: column; background: #0c0c0c; border: 1px solid #242424; border-radius: 16px; overflow: hidden; box-shadow: 0 40px 120px -30px rgba(0,0,0,0.8); }
-.bkt-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #1c1c1c; }
+.bkt-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #1c1c1c; background: #0c0c0c; }
 .bkt-modal-body { padding: 8px 12px 14px; overflow-y: auto; }
 .bkt-modal-x { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; color: #8a8a8a; transition: background .14s, color .14s; }
 .bkt-modal-x:hover { background: #171717; color: #fff; }

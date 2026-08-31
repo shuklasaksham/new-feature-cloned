@@ -32,6 +32,7 @@ from pydantic import BaseModel, Field
 
 from auth import current_user
 from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, suggest_reply_for_change, suggest_project_reply, build_project_update
+from emailer import send_scope_creep_alert
 
 logger = logging.getLogger("bracket")
 ROOT_DIR = Path(__file__).parent
@@ -2112,6 +2113,23 @@ async def _sync_connection(conn: dict) -> dict:
             "read": False, "created_at": now,
         } for s in scope_items[:6]]
         await db.notifications.insert_many(notif_docs)
+        # Email nudge — one batched alert per sync so the owner never misses a
+        # client request that quietly expands scope. Fire-and-forget.
+        try:
+            owner = await db.users.find_one({"user_id": conn["user_id"]}, {"_id": 0, "email": 1, "name": 1})
+            proj_full = await db.projects.find_one({"id": conn["project_id"]}, {"_id": 0, "client_name": 1})
+            if owner and owner.get("email"):
+                asyncio.create_task(send_scope_creep_alert(
+                    owner_email=owner["email"],
+                    owner_name=owner.get("name", ""),
+                    project_name=project_name,
+                    project_id=conn["project_id"],
+                    client_name=(proj_full or {}).get("client_name", ""),
+                    items=[{"title": s["title"], "detail": s.get("detail", "")} for s in scope_items[:8]],
+                    public_base_url=PUBLIC_BASE,
+                ))
+        except Exception as e:
+            logger.warning("scope-creep alert scheduling failed for %s: %s", conn["id"], e)
     ev_docs = []
     for ev in events[:8]:
         if not isinstance(ev, dict) or not ev.get("summary"):
