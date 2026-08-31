@@ -1321,3 +1321,6 @@ Fixes from user's 5-item pre-payment list:
 - Frontend: PaymentSuccess.jsx simplified (removed the deleted /payments/confirm poll; now just refresh + redirect /app). ChoosePlan Razorpay handler redirects to /payment/success.
 - Verified: Stripe /payments/checkout → 404; razorpay order OK (₹749→74900, ₹2,499→249900); verify bad-sig → 400; webhook bad-sig → 400, valid-sig → 200 and fulfills plan idempotently (fresh acct got plan via webhook, then reset). Frontend compiles.
 - PROD TODO (user): redeploy to carry new .env; create Razorpay Dashboard webhook → https://use-bracket.com/api/webhook/razorpay, events order.paid + payment.captured, secret = RAZORPAY_WEBHOOK_SECRET value.
+
+## 2026-06 — Razorpay switched to LIVE keys
+- backend/.env RAZORPAY_KEY_ID/SECRET updated to live (rzp_live_TWNj3lffba3d0J). RAZORPAY_WEBHOOK_SECRET unchanged. Verified live order creation returns rzp_live key + order_id. Preview now transacts real money. Redeploy required to carry live keys to production; dashboard webhook must use the same RAZORPAY_WEBHOOK_SECRET.
