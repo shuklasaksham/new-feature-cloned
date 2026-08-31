@@ -1308,3 +1308,8 @@ Fixes from user's 5-item pre-payment list:
 
 ## 2026-06 — UI elevate pass (additive CSS)
 - Appended monochrome elevate layer to index.css: global soft-light grain (body::after, z100, ~2.5%), elevated modal depth (inner sheen + hairline ring + deep cast), hover lift on ov-card/stream-row2/tl-h-row, staggered entrance (bkt-rise) on stat strip + lists, Ask Bracket focus-within glow + backdrop blur, crisper suggestion chips, prefers-reduced-motion guard. Verified via screenshots (Home/Conversations/dialog); grain doesn't block clicks or haze modals.
+
+## 2026-06 — Razorpay ONLY (Stripe removed from UX)
+- User decision: keep Razorpay only. Removed currency toggle + USD/Stripe path from ChoosePlan.jsx and Pricing.jsx; both now INR-only (₹2,499 / ₹749), single "Pay with UPI / Card" (Razorpay). Terms.jsx prices updated to ₹. FAQ/SEO text updated.
+- Backend Stripe endpoints (/payments/checkout, /payments/status, webhook) left in place but now UNREFERENCED (dead code); Razorpay order/verify are the only payment paths used. Can be removed on request.
+- Verified via screenshots: /plan and /pricing show no toggle, INR only, Razorpay button.

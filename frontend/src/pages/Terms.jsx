@@ -160,8 +160,8 @@ export default function Terms() {
           <H2>11. Plans and pricing</H2>
           <P>Bracket may offer different purchasing options. Current advertised plans may include:</P>
           <UL items={[
-            "Monthly plan — $29/month: provides access to the features and limits described on the pricing page for the applicable subscription period (up to 10 active projects, with unlimited archived projects).",
-            "Per-project plan — $9/project: provides access for one project for 60 days, subject to the features and limits described on the pricing page.",
+            "Monthly plan — ₹2,499/month: provides access to the features and limits described on the pricing page for the applicable subscription period (up to 10 active projects, with unlimited archived projects).",
+            "Per-project plan — ₹749/project: provides access for one project for 60 days, subject to the features and limits described on the pricing page.",
           ]} />
           <P>
             Current pricing and plan features are displayed on Bracket's Pricing page. Prices may change in the future.
@@ -179,7 +179,7 @@ export default function Terms() {
 
           <H2>13. Per-project purchases</H2>
           <P>
-            A $9 project purchase provides access to the applicable project for the advertised 60-day active period. At
+            A ₹749 project purchase provides access to the applicable project for the advertised 60-day active period. At
             the end of that period, you may be offered the ability to extend the project, move to another plan, or
             otherwise continue access according to the options available at that time. The exact expiry behavior is
             displayed to you before purchase.

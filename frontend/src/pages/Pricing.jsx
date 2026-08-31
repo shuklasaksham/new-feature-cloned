@@ -6,15 +6,10 @@ import Seo from "../components/Seo";
 import HeroParticles from "../components/HeroParticles";
 import { useAuth } from "../lib/AuthContext";
 
-const CURRENCIES = {
-  usd: { code: "usd", symbol: "$", label: "USD" },
-  inr: { code: "inr", symbol: "₹", label: "INR" },
-};
-
 const PLANS = [
   {
     id: "monthly",
-    price: { usd: "29", inr: "2,499" },
+    price: "2,499",
     unit: "/month",
     tagline: "Best for ongoing client work",
     features: ["Up to 10 active projects", "Unlimited connected tools", "Live project memory & updates", "Draft & send client replies"],
@@ -22,7 +17,7 @@ const PLANS = [
   },
   {
     id: "project",
-    price: { usd: "9", inr: "749" },
+    price: "749",
     unit: "/project",
     tagline: "Best for occasional client work",
     features: ["One project, active for 60 days", "Unlimited connected tools", "Live project memory & updates", "Draft & send client replies"],
@@ -32,7 +27,7 @@ const PLANS = [
 
 const FAQS = [
   { q: "What exactly does Bracket do?", a: "Bracket connects to the tools where your project already lives — Gmail, Slack, Figma, GitHub — and keeps one always-current record of scope, decisions, deadlines and deliverables. It shows you the one thing that needs your attention and can draft client replies for you." },
-  { q: "What's the difference between the two plans?", a: "Monthly ($29) is for people running client work continuously — up to 10 active projects at once. Per-project ($9) is a one-off: a single project that stays active for 60 days. You can switch or cancel anytime from Settings → Billing." },
+  { q: "What's the difference between the two plans?", a: "Monthly (₹2,499) is for people running client work continuously — up to 10 active projects at once. Per-project (₹749) is a one-off: a single project that stays active for 60 days. You can switch or cancel anytime from Settings → Billing." },
   { q: "Can I cancel anytime?", a: "Yes. Cancel from Settings → Billing in one click. Your monthly plan simply won't renew; a per-project purchase stays active for its 60 days." },
   { q: "Is my data private?", a: "Only you can see your projects. Bracket connects the specific sources you select — not your whole account — and uses AI providers only to generate the outputs you ask for. We don't sell your data or use it for advertising. See our Privacy Policy for how connected-source data (including Gmail) is handled." },
 ];
@@ -59,12 +54,10 @@ function Faq({ q, a }) {
 export default function Pricing() {
   const { user } = useAuth();
   const startHref = user ? "/plan" : "/login";
-  const [currency, setCurrency] = useState("usd");
-  const cur = CURRENCIES[currency];
 
   return (
     <div data-testid="pricing-page" className="page-enter landing-page-bg">
-      <Seo title="Pricing" description="Simple pricing for Bracket — $29/month for ongoing client work, or $9 per project. Cancel anytime." path="/pricing" />
+      <Seo title="Pricing" description="Simple pricing for Bracket — ₹2,499/month for ongoing client work, or ₹749 per project. Cancel anytime." path="/pricing" />
 
       {/* HERO */}
       <section className="relative overflow-x-clip isolate">
@@ -75,24 +68,6 @@ export default function Pricing() {
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
             Pay monthly if client work is your day-to-day, or pay once for a single project. Cancel anytime.
           </p>
-          <div className="mt-7 inline-flex p-1 rounded-full" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)" }} data-testid="pricing-currency-toggle">
-            {Object.values(CURRENCIES).map((c) => {
-              const on = currency === c.code;
-              return (
-                <button
-                  key={c.code}
-                  type="button"
-                  onClick={() => setCurrency(c.code)}
-                  className="px-4 py-1.5 rounded-full text-[12px] font-mono transition-colors"
-                  style={{ background: on ? "#fff" : "transparent", color: on ? "#000" : "var(--text-3)" }}
-                  data-testid={`pricing-currency-${c.code}`}
-                  aria-pressed={on}
-                >
-                  {c.symbol} {c.label}
-                </button>
-              );
-            })}
-          </div>
         </div>
       </section>
 
@@ -110,7 +85,7 @@ export default function Pricing() {
                 <span className="mono-tag absolute top-5 right-5 px-2 py-0.5 rounded text-[9.5px]" style={{ background: "rgba(255,255,255,0.06)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.18)" }}>POPULAR</span>
               )}
               <p className="leading-none">
-                <span className="font-display font-semibold text-[38px] tracking-[-0.02em]">{cur.symbol}{p.price[currency]}</span>
+                <span className="font-display font-semibold text-[38px] tracking-[-0.02em]">₹{p.price}</span>
                 <span className="text-[15px] text-[var(--text-3)] font-mono">{p.unit}</span>
               </p>
               <p className="mt-2 text-[13px] text-[var(--text-2)]">{p.tagline}</p>
