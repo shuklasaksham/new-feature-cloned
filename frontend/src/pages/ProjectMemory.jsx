@@ -18,6 +18,7 @@ import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
 import ProjectSidebar from "../components/ProjectSidebar";
+import PlanModal from "../components/PlanModal";
 import Settings from "./Settings";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, PROVIDER_META, timeAgo } from "../lib/providersMeta";
@@ -56,6 +57,7 @@ export default function ProjectMemory() {
   const [updatedAt, setUpdatedAt] = useState(null);
   const [quota, setQuota] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
 
   const refreshProjects = () => {
     api.get("/projects").then(({ data }) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
@@ -194,7 +196,7 @@ export default function ProjectMemory() {
                     <span className="plan-lock-sub">This project is read-only. Renew or upgrade to keep working on it.</span>
                   </span>
                 </div>
-                <button type="button" className="plan-lock-cta" onClick={() => navigate("/plan")} data-testid="plan-lock-cta">
+                <button type="button" className="plan-lock-cta" onClick={() => setPlanModalOpen(true)} data-testid="plan-lock-cta">
                   Renew or upgrade <ArrowRight size={14} />
                 </button>
               </div>
@@ -317,6 +319,12 @@ export default function ProjectMemory() {
             if (found) { setDrawerItem(found); setHistoryOpen(false); return; }
           }
         }}
+      />
+      <PlanModal
+        open={planModalOpen}
+        onClose={() => setPlanModalOpen(false)}
+        defaultPlan="monthly"
+        title="Renew or upgrade"
       />
     </div>
   );

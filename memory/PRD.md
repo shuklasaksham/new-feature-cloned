@@ -1353,3 +1353,13 @@ Fixes from user's 5-item pre-payment list:
 - BUG: after login, closing + reopening prod site and navigating to /app or /project/:id let a no-plan user reach the workspace, bypassing payment. ProtectedRoute only checked auth, not plan; plan-gating existed ONLY at login-time redirects (Login.jsx, AuthCallback.jsx).
 - FIX: new components/RequirePlan.jsx — redirects logged-in users with no `user.plan` (and not is_admin) to /plan. App.js: added <Tool> wrapper (ProtectedRoute + RequirePlan) applied to all tool routes: /app, /app/new, /app/connect, /app/activity, /welcome*, /claim, /project/:id (+legacy/flow/document). /plan, /payment/*, /onboarding, /settings remain auth-only (no plan required) so users can pay / manage account.
 - Verified in preview: fresh@ (no plan) → /app redirects to /plan; pro@ (plan) → reaches /project/:id workspace. Admins exempt.
+
+## 2026-06 — In-app Plan modal (no more kick-out to /pricing) + USD via Razorpay
+- FEATURE: single-project (₹749) user at limit clicking "New project" (project switcher) now opens an in-app PlanModal instead of navigate("/pricing"). Modal shows BOTH plans (Monthly ₹2,499/$29, Single ₹749/$9) with an INR/USD currency toggle; pays via Razorpay; on success → /welcome (new-project connect flow). Same modal wired to the expired-plan "Renew or upgrade" banner in ProjectMemory.
+- FILES: new components/PlanModal.jsx; ProjectSidebar.jsx (state + at-limit button opens modal, removed /pricing redirect + unused Sparkles import); ProjectMemory.jsx (expired banner opens modal).
+- BACKEND: /payments/razorpay/order now accepts `currency` ("inr"|"usd"), uses PLANS amount_inr/amount, Razorpay order currency INR/USD; friendly error if USD not enabled. Verified: INR order (249900 INR) + USD order (900 USD) both created on live account; modal renders with both plans + working currency toggle (preview screenshot).
+- NOTE: did NOT complete a live payment (LIVE Razorpay keys).
+
+## 2026-06 — Integrations "dummy projects" (diagnosis)
+- NOT a regression: git log confirms Figma/Slack/GitHub OAuth code unchanged across recent commits. connectors.list_sources() returns _demo_sources(provider) with demo:true whenever no integration_account exists → real account sees sample/"dummy" sources because OAuth didn't complete.
+- Redirect URI derived per-host: https://use-bracket.com/api/connect/{provider}/callback (prod) — must be registered in each provider's OAuth app. Likely cause: prod missing FIGMA/SLACK/GITHUB client secrets (frozen prod secrets, like admin) and/or unregistered prod callback URLs. Dispatched deployer debug to confirm prod secret existence + OAuth callback errors.

@@ -4339,6 +4339,7 @@ def _razorpay_client():
 
 class RzpOrderIn(BaseModel):
     plan_id: str
+    currency: str = "inr"
 
 
 @api.post("/payments/razorpay/order")
@@ -4346,23 +4347,29 @@ async def razorpay_create_order(body: RzpOrderIn, request: Request):
     plan = PLANS.get(body.plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail="Unknown plan.")
+    currency = (body.currency or "inr").lower()
+    if currency not in ("inr", "usd"):
+        raise HTTPException(status_code=400, detail="Unsupported currency.")
     user = await current_user(request, db)
     client, key_id = _razorpay_client()
-    amount_inr = _plan_amount(plan, "inr")
-    amount_paise = int(round(amount_inr * 100))
-    if amount_paise < 100:
+    amount = _plan_amount(plan, currency)
+    amount_minor = int(round(amount * 100))
+    if amount_minor < 100:
         raise HTTPException(status_code=400, detail="Amount below minimum.")
     receipt = f"bkt_{body.plan_id}_{user['user_id']}"[:40]
     try:
         order = client.order.create({
-            "amount": amount_paise,
-            "currency": "INR",
+            "amount": amount_minor,
+            "currency": currency.upper(),
             "receipt": receipt,
             "payment_capture": 1,
             "notes": {"user_id": user["user_id"], "plan_id": body.plan_id},
         })
     except _razorpay.errors.BadRequestError as e:
-        logger.warning(f"razorpay order bad request: {e}")
+        logger.warning(f"razorpay order bad request ({currency}): {e}")
+        # USD requires Razorpay international payments to be enabled on the account.
+        if currency == "usd":
+            raise HTTPException(status_code=400, detail="USD payments aren't enabled on this account yet. Please pay in INR.")
         raise HTTPException(status_code=400, detail="Could not create the order.")
     except Exception as e:
         logger.exception(f"razorpay order failed: {e}")
@@ -4372,15 +4379,15 @@ async def razorpay_create_order(body: RzpOrderIn, request: Request):
         "provider": "razorpay",
         "user_id": user["user_id"],
         "plan_id": body.plan_id,
-        "amount": amount_inr,
-        "currency": "inr",
+        "amount": amount,
+        "currency": currency,
         "kind": plan["kind"],
         "status": "initiated",
         "payment_status": "pending",
         "created_at": auth_iso(auth_now()),
         "updated_at": auth_iso(auth_now()),
     })
-    return {"order_id": order["id"], "amount": amount_paise, "currency": "INR",
+    return {"order_id": order["id"], "amount": amount_minor, "currency": currency.upper(),
             "key_id": key_id, "plan_label": plan["label"]}
 
 

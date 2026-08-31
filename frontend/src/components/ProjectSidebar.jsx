@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Sparkles, Search, Unplug, RefreshCw, Loader2, Archive, ArchiveRestore,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Search, Unplug, RefreshCw, Loader2, Archive, ArchiveRestore,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
@@ -10,6 +10,7 @@ import { api } from "../lib/api";
 import { toast } from "sonner";
 import { useDialog } from "../components/Dialog";
 import AddSourceDialog from "./AddSourceDialog";
+import PlanModal from "./PlanModal";
 
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
@@ -36,6 +37,7 @@ export default function ProjectSidebar({
   const [projQuery, setProjQuery] = useState("");
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [busyConn, setBusyConn] = useState(null);
+  const [planModalOpen, setPlanModalOpen] = useState(false);
   const dialog = useDialog();
   const switchRef = useRef(null);
   const userRef = useRef(null);
@@ -186,9 +188,9 @@ export default function ProjectSidebar({
             <div className="psb-switch-div" />
             {quota && !quota.can_create ? (
               <>
-                <button type="button" className="psb-switch-item" onClick={() => { setSwitchOpen(false); navigate("/pricing"); }} data-testid="psb-upgrade">
-                  <span className="truncate">Upgrade to add projects</span>
-                  <Sparkles size={13} />
+                <button type="button" className="psb-switch-item psb-switch-new" onClick={() => { setSwitchOpen(false); setPlanModalOpen(true); }} data-testid="psb-new-project">
+                  <span>New project</span>
+                  <Plus size={14} />
                 </button>
                 <p className="psb-switch-hint" data-testid="psb-quota-hint">
                   {quota.used} of {quota.limit} active project{quota.limit === 1 ? "" : "s"} on your plan
@@ -317,6 +319,12 @@ export default function ProjectSidebar({
         onClose={() => setSourcesOpen(false)}
         projectId={project?.id}
         onChanged={onSourcesChanged}
+      />
+      <PlanModal
+        open={planModalOpen}
+        onClose={() => setPlanModalOpen(false)}
+        defaultPlan="monthly"
+        title="Add another project"
       />
     </aside>
   );
