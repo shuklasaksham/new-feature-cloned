@@ -14,8 +14,8 @@ const BRACKET_LOGO =
 const MONO = { fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" };
 
 const PLANS = [
-  { id: "monthly", price: "2,499", unit: "/month", features: "Upto 10 active projects • Unlimited team members", desc: "Best for ongoing client work" },
-  { id: "project", price: "749", unit: "/project", features: "1 project • Active for 60 days", desc: "Best for occasional client work" },
+  { id: "monthly", price: "999", unit: "/month", features: "Upto 10 active projects • Unlimited team members", desc: "Best for ongoing client work" },
+  { id: "project", price: "199", unit: "/project", features: "1 project • Active for 60 days", desc: "Best for occasional client work" },
 ];
 
 export default function ChoosePlan() {

@@ -4459,8 +4459,8 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
 # Fixed, server-side pricing. The client only sends a plan id; amounts are
 # never trusted from the frontend.
 PLANS = {
-    "monthly": {"amount": 29.0, "amount_inr": 2499.0, "label": "Bracket Monthly", "kind": "subscription", "interval": "month"},
-    "project": {"amount": 9.0, "amount_inr": 749.0, "label": "Bracket Single Project", "kind": "payment"},
+    "monthly": {"amount": 12.0, "amount_inr": 999.0, "label": "Bracket Monthly", "kind": "subscription", "interval": "month"},
+    "project": {"amount": 2.0, "amount_inr": 199.0, "label": "Bracket Single Project", "kind": "payment"},
     "test": {"amount": 0.0, "amount_inr": 0.0, "label": "Bracket Test (free)", "kind": "subscription", "interval": "month"},
 }
 

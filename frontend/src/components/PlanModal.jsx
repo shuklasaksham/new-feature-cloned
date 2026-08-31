@@ -14,14 +14,14 @@ const PLANS = [
     id: "monthly",
     label: "Monthly",
     unit: "/month",
-    price: { inr: "2,499", usd: "29" },
+    price: { inr: "999", usd: "12" },
     features: ["Up to 10 active projects", "Unlimited archived projects", "Best for ongoing client work"],
   },
   {
     id: "project",
     label: "Single project",
     unit: "/project",
-    price: { inr: "749", usd: "9" },
+    price: { inr: "199", usd: "2" },
     features: ["1 active project", "Active for 60 days", "Best for occasional client work"],
   },
 ];
