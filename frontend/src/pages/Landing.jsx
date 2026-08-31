@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 import { ArrowRight, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import Seo from "../components/Seo";
-import { BracketMark } from "../components/BracketLogo";
 import { useAuth } from "../lib/AuthContext";
+
+const BRACKET_LOGO =
+  "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
 
 const STEPS = [
   {
@@ -30,21 +32,25 @@ const MEMORY = [
 
 /* A faithful, static recreation of the new Bracket Overview screen — real DOM,
    the interlocking sidebar/workspace geometry, monochrome. Not an image. */
-function ProductVisual() {
+function ProductVisual({ href }) {
   const NAV = [
     { label: "Home", active: true },
     { label: "Conversations", active: false },
     { label: "Timeline", active: false },
   ];
   return (
-    <div className="lp-shot" data-testid="landing-product-visual">
+    <Link to={href} className="lp-shot" data-testid="landing-product-visual" aria-label="Open Bracket">
       <div className="lp-shot-bar">
         <span className="lp-dot" /><span className="lp-dot" /><span className="lp-dot" />
+        <span className="lp-shot-open">Open Bracket <ArrowRight size={12} /></span>
       </div>
       <div className="lp-app">
         {/* Sidebar */}
         <aside className="lp-side">
-          <div className="lp-brand"><BracketMark size={20} /><span>Bracket</span></div>
+          <div className="lp-brand">
+            <img src={BRACKET_LOGO} alt="" width={20} height={20} style={{ filter: "brightness(0) invert(1)" }} />
+            <span>Bracket</span>
+          </div>
           <div className="lp-switch">SaaS Dashboard Redesign</div>
           <nav className="lp-nav">
             {NAV.map((n) => (
@@ -83,7 +89,7 @@ function ProductVisual() {
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -142,7 +148,7 @@ export default function Landing() {
             initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           >
-            <ProductVisual />
+            <ProductVisual href={startHref} />
           </motion.div>
         </div>
       </section>
