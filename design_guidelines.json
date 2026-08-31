@@ -1,143 +1,96 @@
 {
-  "theme": "dark_only",
+  "theme": "dark",
+  "design_philosophy": "Minimal, premium, editorial. Generous negative space. No gradients, no colored UI accents. Pure monochrome (black, charcoal, white).",
   "colors": {
-    "background": {
-      "base": "#111111",
-      "surface_1": "#181818",
-      "surface_2": "#222222",
-      "surface_active": "#2C2C2C"
-    },
-    "accent": {
-      "primary": "#8184C4", 
-      "hover": "#989BE0",
-      "muted": "rgba(129, 132, 196, 0.15)",
-      "justification": "A muted violet (#8184C4) was chosen over cool gray to provide a distinctive, professional software feel that maps perfectly to the Linear aesthetic while remaining sufficiently subdued and avoiding forbidden hex codes."
-    },
-    "text": {
-      "primary": "#F4F4F5",
-      "secondary": "#A1A1AA",
-      "tertiary": "#71717A",
-      "mono": "#D4D4D8"
-    },
-    "borders": {
-      "hairline": "rgba(255, 255, 255, 0.08)",
-      "hairline_strong": "rgba(255, 255, 255, 0.15)",
-      "focus": "rgba(129, 132, 196, 0.5)"
-    },
-    "semantics": {
-      "success": "#52A874",
-      "success_bg": "rgba(82, 168, 116, 0.1)",
-      "warning": "#D4A72C",
-      "warning_bg": "rgba(212, 167, 44, 0.1)",
-      "danger": "#D95757",
-      "danger_bg": "rgba(217, 87, 87, 0.1)"
-    }
+    "background": "#0a0a0a",
+    "surface_1": "#111111",
+    "surface_2": "#181818",
+    "border": "rgba(255, 255, 255, 0.08)",
+    "text_primary": "#ffffff",
+    "text_secondary": "#a1a1aa",
+    "text_tertiary": "#71717a",
+    "cta_bg": "#ffffff",
+    "cta_fg": "#0a0a0a"
   },
   "typography": {
-    "font_family": "Geist Sans, sans-serif",
-    "font_family_mono": "Geist Mono, monospace",
+    "font_families": {
+      "display": "'Geist', sans-serif",
+      "body": "'Geist', sans-serif",
+      "mono": "'Geist Mono', monospace"
+    },
     "scale": {
-      "h1": "text-3xl (30px) tracking-tight font-medium",
-      "h2": "text-2xl (24px) tracking-tight font-medium",
-      "h3": "text-lg (18px) tracking-tight font-medium",
-      "body": "text-sm (14px) tracking-normal font-normal",
-      "mono": "text-[13px] tracking-tight",
-      "labels": "text-xs (12px) tracking-wide font-medium uppercase"
+      "h1": "text-5xl md:text-6xl lg:text-7xl tracking-tighter font-medium leading-tight",
+      "h2": "text-3xl md:text-4xl lg:text-5xl tracking-tight font-medium",
+      "h3": "text-xl md:text-2xl font-medium",
+      "body": "text-base md:text-lg text-zinc-400",
+      "mono_label": "text-xs uppercase tracking-[0.15em] font-mono text-zinc-500"
     }
   },
-  "radius": {
-    "policy": "Maximum 6px. ALL pills (rounded-full), rounded-lg, rounded-xl, etc., must be eliminated and replaced with 4px or 6px radii across the entire app.",
-    "mapping": {
-      "buttons": "4px (rounded-sm)",
-      "inputs": "4px (rounded-sm)",
-      "cards": "6px (rounded-md)",
-      "status_chips": "4px (rounded-sm)",
-      "modals": "6px (rounded-md)"
+  "visual_enhancers": {
+    "background_texture": "Subtle dotted/halftone background texture. Implement via CSS radial-gradient or SVG pattern with very low opacity (e.g., rgba(255,255,255,0.04)). Apply to body or hero wrapper.",
+    "geometry": "Sharp clean lines for layout. Monolithic blocks. The specific interlocking sidebar/workspace geometry uses concave fillets (rounded inverted corners) for the active tab.",
+    "hover_states": "Monochrome transitions. Dark grey to lighter grey. White buttons scale down slightly on click."
+  },
+  "logo_redesign": {
+    "concept": "Crisp monochrome. A heavy, geometric bracket/folder mark paired with the wordmark. SVG-able, highly visible at 28px height.",
+    "svg_code": "<svg width='28' height='28' viewBox='0 0 28 28' fill='none' xmlns='http://www.w3.org/2000/svg'><path fill-rule='evenodd' clip-rule='evenodd' d='M8 4H4V24H8V28H0V0H8V4ZM20 4H24V24H20V28H28V0H20V4Z' fill='white'/></svg>",
+    "implementation": "Place the SVG mark next to a 'Bracket' text span using font-display font-semibold text-lg."
+  },
+  "layouts": {
+    "navigation": "Flex space-between items-center. px-6 py-4. Minimalist. Left: Logo. Right: Pricing, Sign in (ghost), Get started (white pill).",
+    "hero": "Flex flex-col items-center text-center (or strongly structured left-aligned) with massive negative space (py-32). Small mono label at top, massive headline, constrained width supporting copy (max-w-2xl), white pill CTAs.",
+    "product_visual": "In-browser HTML/CSS recreation. max-w-5xl mx-auto flex container rounded-xl overflow-hidden border border-zinc-800. Sidebar (left, darker) and Main Workspace (right, lighter surface).",
+    "how_it_works": "py-24. Top minimal label. Grid cols-1 md:grid-cols-3 gap-8 mt-12. Each step is minimal: 01 mono numeral, thin top border (separator), text. No heavy cards.",
+    "final_cta": "py-32 flex flex-col items-center text-center. Minimal mono label, big heading, text, white pill CTA.",
+    "footer": "py-12 border-t border-zinc-900 flex justify-between items-center text-xs text-zinc-500 font-mono uppercase."
+  },
+  "sections_content": {
+    "navigation": {
+      "links": ["Pricing", "Sign in"],
+      "cta": "Get started →"
+    },
+    "hero": {
+      "label": "PROJECT MEMORY FOR CLIENT WORK",
+      "headline": "Your client changed something. Bracket already knows.",
+      "supporting_copy": "Connect the conversations where your project happens. Bracket keeps track of scope, deliverables, requirements, decisions and deadlines — and shows you when something changes.",
+      "ctas": ["Get started →", "See pricing"]
+    },
+    "product_visual": {
+      "instructions": "Build HTML/CSS component. Left sidebar (w-64 bg-[#0a0a0a]): 'Overview' tab is active and docks into main panel. Main panel (bg-[#111111]): Title 'SaaS Dashboard Redesign', 'Updated just now'. Card: 'Needs your attention' reading 'Mobile screens requested — Sarah asked to include mobile screens in this phase.' with 'Review →' action and '+2 more'. Stats Row: 'Scope 8', 'Deliverables 4', 'Requirements 7', 'Decisions 2'. Use real DOM elements, NOT an image."
+    },
+    "how_it_works": {
+      "label": "HOW IT WORKS",
+      "heading": "Connect once. Bracket keeps up.",
+      "steps": [
+        {"num": "01", "desc": "Connect the conversation"},
+        {"num": "02", "desc": "Bracket builds project memory"},
+        {"num": "03", "desc": "Review what changed"}
+      ]
+    },
+    "final_cta": {
+      "label": "YOUR PROJECT, REMEMBERED",
+      "heading": "Stop reconstructing your projects from messages.",
+      "text": "Connect your first client project and let Bracket keep the context.",
+      "cta": "Get started →"
+    },
+    "footer": {
+      "left": "Bracket logo",
+      "right": "Privacy   Terms   © 2026 Bracket"
     }
   },
-  "spacing_and_density": {
-    "sidebar": {
-      "width": "240px",
-      "item_height": "28px",
-      "padding": "px-3 py-1",
-      "icon_size": "14px"
-    },
-    "data_table": {
-      "row_height_compact": "32px",
-      "row_height_comfortable": "44px",
-      "padding_cell": "px-3 py-2",
-      "header_height": "36px"
-    },
-    "general": {
-      "page_padding": "p-8",
-      "section_gap": "gap-8",
-      "component_gap": "gap-4"
-    }
-  },
-  "shadows_and_gradients": {
-    "policy": "NO shadows, NO gradients, NO glows, NO film-grain on body. Remove all drop-shadow and box-shadow utilities. Depth is achieved ONLY via hairline borders and flat background colors.",
-    "elevation_replacement": "Instead of elevation tokens (--elev-*), use: border border-white/10 bg-[#181818]"
-  },
-  "components": {
-    "buttons": {
-      "primary": "bg-[#8184C4] text-black hover:bg-[#989BE0] rounded-sm px-3 py-1.5 text-sm font-medium transition-colors duration-100 ease-in border border-transparent",
-      "secondary": "bg-[#222222] text-[#F4F4F5] hover:bg-[#2C2C2C] rounded-sm px-3 py-1.5 text-sm font-medium border border-white/10 transition-colors duration-100 ease-in",
-      "ghost": "bg-transparent text-[#A1A1AA] hover:text-[#F4F4F5] hover:bg-white/5 rounded-sm px-3 py-1.5 text-sm font-medium transition-colors duration-100 ease-in",
-      "disconnect_cta": "bg-transparent text-[#D95757] hover:bg-[rgba(217,87,87,0.1)] rounded-sm px-3 py-1.5 text-sm font-medium border border-[rgba(217,87,87,0.3)] transition-colors duration-100 ease-in"
-    },
-    "provider_cards_fix": {
-      "issue": "Disconnect CTA overlapping the status chip.",
-      "solution": "Refactor the provider card into a strict Flex Column structure to ensure elements cannot overlap.",
-      "html_structure": "<div class=\"flex flex-col h-full gap-4 p-4 bg-[#181818] border border-white/10 rounded-md\"><div class=\"flex items-start justify-between gap-4\">[Icon/Title Container] [Status Chip]</div><div class=\"flex-1\">[Description]</div><div class=\"flex justify-end mt-auto pt-4 border-t border-white/5\">[Disconnect CTA]</div></div>"
-    },
-    "status_chips": {
-      "design": "Flat, 4px radius, dense, NO rounded-full.",
-      "connected": "bg-[rgba(82,168,116,0.1)] text-[#52A874] border border-[rgba(82,168,116,0.2)] rounded-sm px-2 py-0.5 text-xs font-medium uppercase tracking-wide",
-      "coming_soon": "bg-white/5 text-[#A1A1AA] border border-white/10 rounded-sm px-2 py-0.5 text-xs font-medium uppercase tracking-wide"
-    },
-    "memory_tabs": {
-      "design": "Boxed tabs. Dense, no floating underline indicators.",
-      "container": "flex space-x-1 p-1 bg-[#181818] border border-white/10 rounded-md w-fit",
-      "active_tab": "bg-[#2C2C2C] text-[#F4F4F5] rounded-sm px-3 py-1 text-sm font-medium shadow-none",
-      "inactive_tab": "text-[#A1A1AA] hover:text-[#F4F4F5] hover:bg-white/5 rounded-sm px-3 py-1 text-sm font-medium transition-colors duration-100"
-    },
-    "data_table": {
-      "container": "border border-white/10 rounded-md overflow-hidden bg-[#111111]",
-      "header": "bg-[#181818] border-b border-white/10 text-[#A1A1AA] text-xs font-medium uppercase tracking-wide",
-      "row": "border-b border-white/5 hover:bg-white/[0.02] transition-colors duration-100"
-    },
-    "modals_drawers": {
-      "container": "bg-[#181818] border border-white/10 rounded-md shadow-none",
-      "overlay": "bg-black/60 backdrop-blur-md"
-    }
-  },
-  "marketing_landing": {
-    "hero": "Solid #111111 background. NO gradient meshes or glows. Use a subtle hairline grid pattern (rgba(255,255,255,0.03)) for texture. Typography must be extremely sharp. Use muted violet (#8184C4) exclusively for primary CTAs and key highlights.",
-    "sections": "Flat surfaces separated by hairline borders. Feature cards should follow the exact same component styling as the app (flat, 6px radius, hairline borders).",
-    "motion": "Immediate and precise. Use framer-motion for slight fade-ups (y: 10, opacity: 0 -> 1) but keep durations very short (0.2s)."
-  },
-  "motion_policy": {
-    "speed": "Fast and precise.",
-    "durations": "Hover states: 100ms. Modals/Drawers: 200ms.",
-    "easings": "ease-out for entering, ease-in for exiting. Avoid bouncy spring physics."
-  },
-  "migration_plan": {
-    "step_1": "CSS Tokens (index.css): Update --bg (#111111), --surface (#181818), --surface-2 (#222222), --accent (#8184C4). Remove --elev-* tokens. Modify --hairline to rgba(255,255,255,0.08). Remove any gradient or noise/film-grain tokens applied to body.",
-    "step_2": "Global Radius & Shadows: Run a project-wide search-and-replace in .js files to change 'rounded-full', 'rounded-lg', 'rounded-xl', 'rounded-2xl' to 'rounded-md' (6px) or 'rounded-sm' (4px). Remove all 'shadow-sm', 'shadow-md', 'shadow-lg', 'shadow-xl', 'drop-shadow-*' classes.",
-    "step_3": "Typography & Spacing: Apply tight tracking to all H1/H2 headings. Update Data Table components to enforce the 32px/44px row heights. Refactor Boxed Tabs (.memory-tabs, .memory-tab).",
-    "step_4": "Component Fixes: Apply the exact flex-col structure fix to Connect Work Provider Cards to eliminate the Disconnect CTA overlap with the status chip.",
-    "step_5": "Marketing Alignment: Strip gradients, background glows, and large radii from the marketing/landing page. Ensure it matches the same strict dark flat system."
-  },
-  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
-    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
-    "No generic centered layouts. Use left-aligned, information-dense layouts.",
-    "DO NOT use gradients or shadows. Depth comes exclusively from hairline borders (1px solid rgba(255,255,255,0.08)) and flat surface color steps.",
-    "Maximum border-radius across the entire application is 6px (rounded-md). Replace all pills/rounded-full elements.",
-    "CRITICAL: DO NOT use complete transparent backgrounds in headers, overlays, or surfaces that have content under them. Ensure sufficient contrast with backdrop blurs and base opacity fills.",
-    "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing (e.g., data-testid='login-button', data-testid='provider-card-disconnect').",
-    "Never use generic AI emojis (🤖🧠💭💡🔮🎯) for icons. Use Phosphor or Lucide icons exclusively.",
-    "Keep spacing extremely tight and exact, matching the 'Linear' aesthetic. Data tables should feel highly technical and dense.",
-    "Always apply hover, active, and focus states explicitly. Do not rely on universal 'transition: all', use specific transition properties to avoid breaking transforms.",
-    "Applies exclusively to .js and .jsx files as requested by the user, not .tsx files."
-  ]
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "MUST strictly use ONLY Black / Charcoal / White. No blue, no purple, no gradients.",
+    "NO testimonials, NO logo walls, NO features grids. Strictly follow the 6 sections exactly as written.",
+    "The product visual must be built in HTML/Tailwind, NOT an image. Simulate the concave fillet by using before/after pseudo-elements on the active tab or clever border-radius.",
+    "Apply data-testid to all interactive elements.",
+    "Keep typography large and editorial. Avoid standard SaaS components like heavy drop-shadow cards.",
+    "Do NOT use 'Inter' font. Use 'Geist' or sans/mono.",
+    "Use generous spacing (py-24 to py-32 for sections).",
+    "Buttons should be white pill for primary, ghost/dark pill for secondary.",
+    "Never describe Bracket as an AI assistant, CRM, or PM tool. Use the exact copy verbatim.",
+    "Create the dot pattern background in CSS directly."
+  ],
+  "component_instructions": {
+    "concave_fillets": "To create the interlocking sidebar/workspace geometry: Active tab in sidebar should have bg-[#111111] (matching main workspace). Give it border-radius on the left. Use ::before and ::after elements absolute positioned at the top-right and bottom-right of the tab, with box-shadows that curve into the main workspace, creating a seamless 'docked' look."
+  }
 }

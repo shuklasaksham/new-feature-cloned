@@ -1,136 +1,169 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Link2, Radar, Bell } from "lucide-react";
+import { ArrowRight, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import Seo from "../components/Seo";
-import HeroParticles from "../components/HeroParticles";
+import { BracketMark } from "../components/BracketLogo";
 import { useAuth } from "../lib/AuthContext";
-
-const PRODUCT_VISUAL = "/product-visual.png";
 
 const STEPS = [
   {
-    icon: Link2,
-    title: "Connect your tools",
-    copy: "Link the Gmail thread, Slack channel, Figma file or GitHub repo where the project already lives.",
+    num: "01",
+    title: "Connect the conversation",
+    copy: "Connect the Gmail conversation or other supported source where the client project already lives.",
   },
   {
-    icon: Radar,
-    title: "Bracket keeps track",
-    copy: "It reads everything automatically and keeps one live record of scope, decisions, deadlines and deliverables.",
+    num: "02",
+    title: "Bracket builds project memory",
+    copy: "Scope, deliverables, requirements, decisions and deadlines stay organized as the conversation evolves.",
   },
   {
-    icon: Bell,
-    title: "You know what changed",
-    copy: "Open Bracket and see the one thing that needs you next — no scrolling back through weeks of messages.",
+    num: "03",
+    title: "Review what changed",
+    copy: "When something meaningful changes, Bracket shows you what happened and what it affects. You approve the change once.",
   },
 ];
+
+const MEMORY = [
+  ["Scope", 8], ["Deliverables", 4], ["Requirements", 7], ["Decisions", 2],
+];
+
+/* A faithful, static recreation of the new Bracket Overview screen — real DOM,
+   the interlocking sidebar/workspace geometry, monochrome. Not an image. */
+function ProductVisual() {
+  const NAV = [
+    { label: "Home", active: true },
+    { label: "Conversations", active: false },
+    { label: "Timeline", active: false },
+  ];
+  return (
+    <div className="lp-shot" data-testid="landing-product-visual">
+      <div className="lp-shot-bar">
+        <span className="lp-dot" /><span className="lp-dot" /><span className="lp-dot" />
+      </div>
+      <div className="lp-app">
+        {/* Sidebar */}
+        <aside className="lp-side">
+          <div className="lp-brand"><BracketMark size={20} /><span>Bracket</span></div>
+          <div className="lp-switch">SaaS Dashboard Redesign</div>
+          <nav className="lp-nav">
+            {NAV.map((n) => (
+              <span key={n.label} className="lp-nav-item" data-active={n.active ? "true" : "false"}>{n.label}</span>
+            ))}
+          </nav>
+          <p className="lp-side-label">SOURCES</p>
+          <div className="lp-src"><span className="lp-src-dot" /> Gmail — Acme thread</div>
+        </aside>
+
+        {/* Workspace */}
+        <div className="lp-main">
+          <p className="lp-eyebrow">SaaS Dashboard Redesign</p>
+          <div className="lp-synced"><span className="lp-live" /> Updated just now</div>
+
+          <p className="lp-attn-label">NEEDS YOUR ATTENTION</p>
+          <div className="lp-attn">
+            <span className="lp-attn-ring"><AlertCircle size={18} /></span>
+            <div className="lp-attn-body">
+              <p className="lp-attn-title">Mobile screens requested</p>
+              <p className="lp-attn-desc">Sarah asked to include mobile screens in this phase.</p>
+              <div className="lp-attn-row">
+                <span className="lp-review">Review <ArrowRight size={13} /></span>
+                <span className="lp-more">+2 more</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="lp-mem">
+            {MEMORY.map(([label, n]) => (
+              <div key={label} className="lp-mem-cell">
+                <span className="lp-mem-n">{n}</span>
+                <span className="lp-mem-l">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Landing() {
   const { user } = useAuth();
   const startHref = user ? "/app" : "/login";
 
   return (
-    <div data-testid="landing-page" className="landing-page-bg">
+    <div data-testid="landing-page" className="lp-page">
       <Seo
         title="Bracket — project memory for client work"
-        description="Bracket connects to the tools where your work already happens and keeps one always-current record of what was decided, what changed, and what needs you next."
+        description="Connect the conversations where your project happens. Bracket keeps track of scope, deliverables, requirements, decisions and deadlines — and shows you when something changes."
         path="/"
       />
 
       {/* 1 — HERO */}
-      <section className="relative overflow-x-clip isolate min-h-[86vh] flex items-center">
-        <HeroParticles />
-        <div className="relative z-10 w-full max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 pt-28 md:pt-36 pb-10 md:pb-14 text-center">
+      <section className="lp-section lp-hero">
+        <div className="lp-wrap lp-wrap--narrow">
           <motion.span
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="section-label mx-auto"
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            className="lp-label"
           >
-            <span className="dot" />Project memory for client work
+            Project memory for client work
           </motion.span>
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="t-display mt-7"
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05, ease: [0.16, 1, 0.3, 1] }}
+            className="lp-h1"
           >
-            Never lose track of a <span className="landing-hero-gradient">client project</span> again.
+            Your client changed something.<br />Bracket already knows.
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="mt-5 text-[15px] md:text-[16px] leading-[1.65] text-[var(--text-2)] max-w-[600px] mx-auto"
+            initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+            className="lp-lede"
           >
-            Bracket connects to the tools where your work already happens and keeps one
-            always-current record of what was decided, what changed, and what needs you next.
+            Connect the conversations where your project happens. Bracket keeps track of scope,
+            deliverables, requirements, decisions and deadlines — and shows you when something changes.
           </motion.p>
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.45 }}
-            className="mt-10 flex items-center justify-center gap-3"
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.32 }}
+            className="lp-cta-row"
           >
-            <Link to={startHref} className="landing-cta-primary" data-testid="landing-hero-cta">
-              <span>Get started</span> <ArrowRight size={14} />
+            <Link to={startHref} className="lp-btn-primary" data-testid="landing-hero-cta">
+              Get started <ArrowRight size={15} />
             </Link>
-            <Link to="/pricing" className="cinema-nav-link !px-1" data-testid="landing-hero-pricing">
-              <span>See pricing</span>
+            <Link to="/pricing" className="lp-btn-ghost" data-testid="landing-hero-pricing">
+              See pricing
             </Link>
           </motion.div>
         </div>
       </section>
 
       {/* 2 — PRODUCT VISUAL */}
-      <section className="relative overflow-x-clip isolate">
-        <div className="max-w-[1120px] mx-auto px-5 sm:px-6 md:px-8 pb-20 md:pb-28">
+      <section className="lp-section lp-visual-section">
+        <div className="lp-wrap">
           <motion.div
-            initial={{ opacity: 0, y: 28 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="landing-shot"
-            data-testid="landing-product-visual"
+            initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           >
-            <img
-              src={PRODUCT_VISUAL}
-              alt="The Bracket workspace — a live project memory of decisions, scope and deadlines"
-              className="block w-full h-auto"
-              loading="lazy"
-            />
+            <ProductVisual />
           </motion.div>
         </div>
       </section>
 
       {/* 3 — HOW IT WORKS */}
-      <section className="relative overflow-x-clip isolate">
-        <div className="relative z-10 max-w-[1080px] mx-auto px-5 sm:px-6 md:px-8 py-8 md:py-12">
-          <div className="text-center max-w-[560px] mx-auto">
-            <span className="section-label mx-auto"><span className="dot" />How it works</span>
-            <h2 className="t-hero mt-6">Three steps. Then it just runs.</h2>
-          </div>
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <section className="lp-section">
+        <div className="lp-wrap">
+          <span className="lp-label" data-testid="landing-how-label">How it works</span>
+          <h2 className="lp-h2 mt-6">Connect once.<br />Bracket keeps up.</h2>
+          <div className="lp-steps">
             {STEPS.map((s, i) => (
               <motion.div
-                key={s.title}
-                initial={{ opacity: 0, y: 22 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ duration: 0.7, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-                className="card-linear p-6"
+                key={s.num}
+                initial={{ opacity: 0, y: 18 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-60px" }} transition={{ duration: 0.6, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                className="lp-step"
                 data-testid={`landing-step-${i + 1}`}
               >
-                <span
-                  className="inline-flex items-center justify-center"
-                  style={{ width: 40, height: 40, borderRadius: 6, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.14)", color: "#e5e5e5" }}
-                >
-                  <s.icon size={18} strokeWidth={1.75} />
-                </span>
-                <p className="mono-tag text-[10px] text-[var(--text-3)] mt-5">{String(i + 1).padStart(2, "0")}</p>
-                <h3 className="font-display font-semibold text-[17px] tracking-[-0.01em] mt-1.5">{s.title}</h3>
-                <p className="mt-2 text-[13.5px] leading-[1.65] text-[var(--text-2)]">{s.copy}</p>
+                <span className="lp-step-num">{s.num}</span>
+                <h3 className="lp-step-title">{s.title}</h3>
+                <p className="lp-step-copy">{s.copy}</p>
               </motion.div>
             ))}
           </div>
@@ -138,21 +171,20 @@ export default function Landing() {
       </section>
 
       {/* 4 — FINAL CTA */}
-      <section className="relative overflow-x-clip isolate">
-        <HeroParticles />
-        <div className="relative z-10 max-w-[1000px] mx-auto px-5 sm:px-6 md:px-8 py-28 md:py-36 text-center">
+      <section className="lp-section lp-final">
+        <div className="lp-wrap lp-wrap--narrow">
+          <span className="lp-label">Your project, remembered</span>
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="t-display"
+            initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="lp-h2 mt-6"
           >
-            Bring your first project <br className="hidden sm:block" />into <span className="landing-hero-gradient">Bracket</span>.
+            Stop reconstructing<br />your projects from messages.
           </motion.h2>
-          <div className="mt-10">
-            <Link to={startHref} className="landing-cta-primary" data-testid="landing-final-cta">
-              <span>Get started</span> <ArrowRight size={14} />
+          <p className="lp-lede">Connect your first client project and let Bracket keep the context.</p>
+          <div className="lp-cta-row">
+            <Link to={startHref} className="lp-btn-primary" data-testid="landing-final-cta">
+              Get started <ArrowRight size={15} />
             </Link>
           </div>
         </div>

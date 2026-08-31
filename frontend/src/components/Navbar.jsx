@@ -4,6 +4,7 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { NAV_LINKS } from "../lib/constants";
 import { useAuth } from "../lib/AuthContext";
+import BracketLogo from "./BracketLogo";
 
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
@@ -29,7 +30,7 @@ export default function Navbar() {
   const navAccent = useTransform(
     scrollYProgress,
     [0, 0.45, 0.85, 1],
-    ["#8184C4", "#989BE0", "#FFB84C", "#FFB84C"]
+    ["#3a3a3a", "#5a5a5a", "#8a8a8a", "#8a8a8a"]
   );
   const accentOpacity = useTransform(scrollY, [0, 160], [0, 0.9]);
 
@@ -67,7 +68,7 @@ export default function Navbar() {
       <div className="cinema-nav-inner">
         {/* Brand */}
         <Link to={logoHref} className="cinema-nav-brand group" data-testid="nav-logo-link">
-          <img src={BRACKET_LOGO} alt="Bracket" width={30} height={30} style={{ display: "block" }} />
+          <BracketLogo size={24} />
         </Link>
 
         {/* Center nav */}
