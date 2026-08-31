@@ -50,6 +50,7 @@ from emailer import (
     send_owner_reply_email,
     send_document_updated_email,
     send_nps_survey_email,
+    send_payment_receipt,
 )
 from auth import (
     SESSION_COOKIE,
@@ -4358,7 +4359,7 @@ async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
     rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
     if not rec or rec.get("payment_status") == "paid":
         return
-    await db.payment_transactions.update_one(
+    res = await db.payment_transactions.update_one(
         {"session_id": session_id, "payment_status": {"$ne": "paid"}},
         {"$set": {"status": "completed", "payment_status": "paid", "updated_at": auth_iso(auth_now())}},
     )
@@ -4370,6 +4371,25 @@ async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
             {"user_id": uid},
             {"$set": {"plan": pid, "plan_kind": kind, "plan_currency": rec.get("currency", "usd"), "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
         )
+    # Branded receipt — only on the atomic transition to paid (modified_count==1)
+    # so racing webhook + status-poll never send two receipts. Fire-and-forget.
+    if res.modified_count == 1 and uid:
+        try:
+            u = await db.users.find_one({"user_id": uid}, {"_id": 0, "email": 1, "name": 1})
+            plan_meta = PLANS.get(pid) or {}
+            if u and u.get("email"):
+                asyncio.create_task(send_payment_receipt(
+                    to_email=u["email"],
+                    name=u.get("name", ""),
+                    plan_label=plan_meta.get("label", "Bracket"),
+                    amount=rec.get("amount"),
+                    currency=rec.get("currency", "usd"),
+                    recurring=(plan_meta.get("kind") == "subscription"),
+                    session_id=session_id,
+                    public_base_url=os.environ.get("PUBLIC_BASE_URL", ""),
+                ))
+        except Exception as e:
+            logger.warning(f"payment receipt scheduling failed for {session_id}: {e}")
 
 
 @api.get("/payments/status/{session_id}")

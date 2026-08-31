@@ -829,3 +829,141 @@ async def send_scope_creep_alert(
     except Exception as e:
         logger.exception(f"scope-creep alert failed for {owner_email}: {e}")
         return False
+
+
+# --- PAYMENT RECEIPT EMAIL -------------------------------------------------
+def _fmt_amount(amount, currency: str) -> str:
+    sym = "₹" if (currency or "").lower() == "inr" else "$"
+    try:
+        a = float(amount)
+    except (TypeError, ValueError):
+        return f"{sym}{amount}"
+    if (currency or "").lower() == "inr":
+        return f"{sym}{int(round(a)):,}"
+    return f"{sym}{a:.2f}".rstrip("0").rstrip(".")
+
+
+def _receipt_html(name: str, plan_label: str, amount_str: str, recurring: bool,
+                  date_str: str, ref: str, app_url: str) -> str:
+    display_name = (name or "").strip() or "there"
+    accent = "#22C55E"
+    billing = "Monthly subscription" if recurring else "One-time payment"
+    what = ("Up to 10 active projects, unlimited connected tools and live project memory."
+            if recurring else
+            "One project, active for 60 days, with unlimited connected tools and live project memory.")
+    return f"""<!doctype html>
+<html><body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#08090A;padding:44px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
+<tr><td style="padding:32px 36px 0 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:{accent};">
+    &lt; bracket &middot; payment confirmed &gt;
+  </p>
+</td></tr>
+<tr><td style="padding:18px 36px 0 36px;">
+  <h1 style="margin:0;font-size:26px;line-height:1.2;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;">
+    You're all set, {display_name}.
+  </h1>
+</td></tr>
+<tr><td style="padding:16px 36px 0 36px;">
+  <p style="margin:0 0 18px 0;font-size:15px;line-height:1.65;color:#B9BFC9;">
+    Thanks for your payment. Here's your receipt for <strong style="color:#F4F5F7;">{plan_label}</strong>.
+  </p>
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#16181D;border:1px solid #26282D;border-radius:12px;">
+    <tr><td style="padding:16px 18px;border-bottom:1px solid #22242A;">
+      <table width="100%"><tr>
+        <td style="font-size:13px;color:#8A93A0;">Plan</td>
+        <td align="right" style="font-size:13.5px;color:#F4F5F7;font-weight:600;">{plan_label}</td>
+      </tr></table></td></tr>
+    <tr><td style="padding:16px 18px;border-bottom:1px solid #22242A;">
+      <table width="100%"><tr>
+        <td style="font-size:13px;color:#8A93A0;">Billing</td>
+        <td align="right" style="font-size:13.5px;color:#F4F5F7;">{billing}</td>
+      </tr></table></td></tr>
+    <tr><td style="padding:16px 18px;border-bottom:1px solid #22242A;">
+      <table width="100%"><tr>
+        <td style="font-size:13px;color:#8A93A0;">Date</td>
+        <td align="right" style="font-size:13.5px;color:#F4F5F7;">{date_str}</td>
+      </tr></table></td></tr>
+    <tr><td style="padding:18px 18px;">
+      <table width="100%"><tr>
+        <td style="font-size:14px;color:#F4F5F7;font-weight:600;">Total paid</td>
+        <td align="right" style="font-size:20px;color:{accent};font-weight:700;letter-spacing:-0.01em;">{amount_str}</td>
+      </tr></table></td></tr>
+  </table>
+  <p style="margin:18px 0 18px 0;font-size:14px;line-height:1.6;color:#B9BFC9;">{what}</p>
+  <a href="{app_url}" style="display:inline-block;padding:13px 24px;background:#F4F5F7;color:#08090A;text-decoration:none;font-size:13.5px;font-weight:600;letter-spacing:0.01em;border-radius:10px;">
+    Open Bracket &rarr;
+  </a>
+</td></tr>
+<tr><td style="padding:28px 36px 28px 36px;">
+  <p style="margin:0 0 6px 0;font-size:12px;color:#6E7480;">Reference: {ref}</p>
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">
+    Bracket &middot; The AI decision workspace for client projects
+  </p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+
+def _receipt_text(name: str, plan_label: str, amount_str: str, recurring: bool,
+                  date_str: str, ref: str, app_url: str) -> str:
+    display_name = (name or "").strip() or "there"
+    billing = "Monthly subscription" if recurring else "One-time payment"
+    return (
+        f"Hi {display_name},\n\n"
+        f"Thanks for your payment. Here's your receipt:\n\n"
+        f"  Plan:    {plan_label}\n"
+        f"  Billing: {billing}\n"
+        f"  Date:    {date_str}\n"
+        f"  Total:   {amount_str}\n\n"
+        f"Open Bracket: {app_url}\n"
+        f"Reference: {ref}\n\n"
+        "— Bracket\nThe AI decision workspace for client projects"
+    )
+
+
+async def send_payment_receipt(
+    to_email: str,
+    name: str,
+    plan_label: str,
+    amount,
+    currency: str,
+    recurring: bool,
+    session_id: str = "",
+    public_base_url: str = "",
+) -> bool:
+    """Branded receipt after a successful payment. Fire-and-forget — never raises."""
+    if not to_email:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning("RESEND_API_KEY not set; skipping payment receipt")
+        return False
+    resend.api_key = api_key
+    import datetime as _dt
+    base = (public_base_url or os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com")).rstrip("/")
+    app_url = f"{base}/app"
+    amount_str = _fmt_amount(amount, currency)
+    date_str = _dt.datetime.now(_dt.timezone.utc).strftime("%d %b %Y")
+    ref = (session_id or "")[-16:] or "—"
+    plan_label = plan_label or "Bracket"
+    params = {
+        "from": _sender(),
+        "to": [to_email],
+        "subject": f"Receipt: {plan_label} — {amount_str}",
+        "html": _receipt_html(name, plan_label, amount_str, recurring, date_str, ref, app_url),
+        "text": _receipt_text(name, plan_label, amount_str, recurring, date_str, ref, app_url),
+        "reply_to": os.environ.get("SENDER_EMAIL", ""),
+    }
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"payment receipt sent to {to_email}: {result.get('id') if isinstance(result, dict) else result}")
+        return True
+    except Exception as e:
+        logger.exception(f"payment receipt failed for {to_email}: {e}")
+        return False
+
