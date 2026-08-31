@@ -1327,3 +1327,8 @@ Fixes from user's 5-item pre-payment list:
 
 ## 2026-06 — Unified CTA shape (pill everywhere)
 - .btn-ghost/.btn-secondary border-radius 6px → 9999px so secondary/Cancel buttons match the primary pill. Standardizes CTA shape across all modals/dialogs (admin delete/reset, disconnect confirm, useDialog). Verified via disconnect confirm dialog screenshot (Cancel + Disconnect both pills). Ships to prod on next redeploy.
+
+## 2026-06 — Admin analytics reframed to connect-tools philosophy
+- Backend /admin/pitch-metrics: added sources_connected, memory_items_extracted, projects_with_source, pct_projects_connected, avg_sources_per_project, avg_memory_per_project (counts all connections incl. demo for board consistency). _compute_product_signals: added pct_users_connected_source (activation), sources_connected, memory_items_extracted, avg_sources_per_project, avg_memory_per_project, pct_projects_connected.
+- Frontend AdminAnalytics.jsx: headline "Locked & shared docs" → "Work tools connected"; new connect-tools row (Memory captured / Projects connected % / Sources per project / Memory per project / Projects with a source); activation row relabeled "Signup → 1st project" + "Connected a source %". Publish-log helper copy reframed to source-connect + memory-capture rates.
+- Verified via /admin/pitch-metrics curl + admin board screenshot (all tiles render: 5 sources, 64 memory, 100% connected, 1.67 src/proj, 21.3 mem/proj, 40% connected-a-source). Preview only — ships on next redeploy.

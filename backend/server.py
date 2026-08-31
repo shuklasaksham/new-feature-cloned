@@ -1214,6 +1214,19 @@ async def admin_pitch_metrics(request: Request):
     organic_pct = round((organic_sessions / total_sessions) * 100, 1) if total_sessions else 0.0
     paid_pct    = round((paid_sessions / total_sessions) * 100, 1) if total_sessions else 0.0
 
+    # --- Connect-tools philosophy: work tools connected + memory captured -
+    # Bracket's core loop is connecting external work sources (Gmail, Slack,
+    # Figma, GitHub…) and auto-extracting project memory. These are the
+    # metrics that actually reflect the product delivering value.
+    _real_src = {}
+    sources_connected = await db.source_connections.count_documents(_real_src)
+    memory_items_extracted = await db.project_memory.count_documents({})
+    _connected_pids = await db.source_connections.distinct("project_id", _real_src)
+    projects_with_source = len(_connected_pids)
+    pct_projects_connected = round((projects_with_source / projects_created) * 100, 1) if projects_created else 0.0
+    avg_sources_per_project = round(sources_connected / projects_with_source, 2) if projects_with_source else 0.0
+    avg_memory_per_project = round(memory_items_extracted / projects_with_source, 1) if projects_with_source else 0.0
+
     # --- Admin-editable fields (notable users) ---------------------------
     cfg = await db.admin_config.find_one({"_id": "pitch_metrics"}) or {}
     manual_nps = cfg.get("nps")  # int/float or None
@@ -1249,6 +1262,12 @@ async def admin_pitch_metrics(request: Request):
         "registered_users":        registered_users,
         "projects_created":        projects_created,
         "documents_locked_shared": documents_locked_shared,
+        "sources_connected":       sources_connected,
+        "memory_items_extracted":  memory_items_extracted,
+        "projects_with_source":    projects_with_source,
+        "pct_projects_connected":  pct_projects_connected,
+        "avg_sources_per_project": avg_sources_per_project,
+        "avg_memory_per_project":  avg_memory_per_project,
         "client_accept_rate":      client_accept_rate,
         "weekly_active_users":     wau,
         "retention_4w":            retention_4w,
@@ -1345,6 +1364,21 @@ async def _compute_product_signals(db, d7, d28) -> Dict[str, Any]:
         session_duration_count += 1
     avg_session_duration_seconds = round(total_secs / session_duration_count, 1) if session_duration_count else 0.0
 
+    # --- Connect-tools activation: did users actually connect a work tool? -
+    _real_src = {}
+    sources_connected = await db.source_connections.count_documents(_real_src)
+    memory_items_extracted = await db.project_memory.count_documents({})
+    _connected_pids = await db.source_connections.distinct("project_id", _real_src)
+    projects_with_source = len(_connected_pids)
+    avg_sources_per_project = round(sources_connected / projects_with_source, 2) if projects_with_source else 0.0
+    avg_memory_per_project = round(memory_items_extracted / projects_with_source, 1) if projects_with_source else 0.0
+    pct_projects_connected = round(projects_with_source / total_projects * 100, 1) if total_projects else 0.0
+    _owners = set()
+    if _connected_pids:
+        async for p in db.projects.find({"id": {"$in": _connected_pids}}, {"_id": 0, "owner_user_id": 1}):
+            _owners.add(p.get("owner_user_id"))
+    pct_users_connected_source = round(len(_owners) / total_users_for_activation * 100, 1) if total_users_for_activation else 0.0
+
     return {
         "avg_signup_to_first_doc_minutes":  avg_signup_to_first_doc_minutes,
         "users_with_first_doc":             users_with_project,
@@ -1357,6 +1391,13 @@ async def _compute_product_signals(db, d7, d28) -> Dict[str, Any]:
         "returning_users_30d":              returning_30d,
         "avg_session_duration_seconds":     avg_session_duration_seconds,
         "session_duration_sample_size":     session_duration_count,
+        # Connect-tools philosophy
+        "sources_connected":                sources_connected,
+        "memory_items_extracted":           memory_items_extracted,
+        "avg_sources_per_project":          avg_sources_per_project,
+        "avg_memory_per_project":           avg_memory_per_project,
+        "pct_projects_connected":           pct_projects_connected,
+        "pct_users_connected_source":       pct_users_connected_source,
     }
 
 

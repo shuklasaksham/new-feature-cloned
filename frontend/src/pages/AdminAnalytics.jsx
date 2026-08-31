@@ -389,7 +389,7 @@ function PublishLogPanel() {
             Did this release make the product better?
           </h2>
           <p className="mt-2 text-[13px]" style={{ color: "var(--text-2)" }}>
-            Log each release. Compare visitor→signup, activation, and locked-doc rates
+            Log each release. Compare visitor→signup, source-connect, and memory-capture rates
             {" "}<b>{windowDays}</b> days before vs after.
             <span style={{ color: "var(--text-3)" }}> Recommended min 14d to smooth noise.</span>
           </p>
@@ -1209,17 +1209,18 @@ function ProductSignalsRow({ ps = {} }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" data-testid="pitch-product-signals-row">
       <PitchStat
-        label="Signup → 1st doc"
+        label="Signup → 1st project"
         value={ps.avg_signup_to_first_doc_minutes != null ? formatDuration(ps.avg_signup_to_first_doc_minutes * 60) : "—"}
         tone="sky"
         testid="ps-time-to-first-doc"
       />
       <PitchStat
-        label="Activated in 10 min"
-        value={ps.pct_activated_10min ?? 0}
+        label="Connected a source"
+        value={ps.pct_users_connected_source ?? 0}
         unit="%"
         tone="emerald"
-        testid="ps-activated-10min"
+        testid="ps-connected-source"
+        sub="of signups"
       />
       <PitchStat
         label="Projects / active user"
@@ -1743,10 +1744,19 @@ function PitchMetricsBoard() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" data-testid="pitch-primary-row">
         <PitchStat label="Registered users"         value={data.registered_users}          tone="lime"    testid="pitch-registered-users" />
         <PitchStat label="Projects created"         value={data.projects_created}          tone="violet"  testid="pitch-projects-created" />
-        <PitchStat label="Locked & shared docs"     value={data.documents_locked_shared}   tone="coral"   testid="pitch-locked-shared" />
+        <PitchStat label="Work tools connected"     value={data.sources_connected}         tone="coral"   testid="pitch-sources-connected" />
         <PitchStat label="Client accept rate"       value={data.client_accept_rate}  unit="%" tone="emerald" testid="pitch-accept-rate" />
         <PitchStat label="Weekly active users"      value={data.weekly_active_users}       tone="sky"     testid="pitch-wau" />
         <PitchStat label="4-week retention"         value={data.retention_4w}        unit="%" tone="pink"    testid="pitch-retention" />
+      </div>
+
+      {/* Row 1a — connect-tools: work sources + project memory (core loop) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-3" data-testid="pitch-connect-row">
+        <PitchStat label="Memory captured"          value={data.memory_items_extracted}    tone="violet"  testid="pitch-memory-items" sub="items extracted" />
+        <PitchStat label="Projects connected"       value={data.pct_projects_connected} unit="%" tone="emerald" testid="pitch-projects-connected-pct" sub="≥1 source" />
+        <PitchStat label="Sources / project"        value={data.avg_sources_per_project}   tone="sky"     testid="pitch-avg-sources" />
+        <PitchStat label="Memory / project"         value={data.avg_memory_per_project}    tone="coral"   testid="pitch-avg-memory" />
+        <PitchStat label="Projects with a source"   value={data.projects_with_source}      tone="lime"    testid="pitch-projects-with-source" />
       </div>
 
       {/* Row 1b — product signals (activation + engagement + returning) */}
