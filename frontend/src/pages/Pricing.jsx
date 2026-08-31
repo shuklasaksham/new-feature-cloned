@@ -9,7 +9,7 @@ import { useAuth } from "../lib/AuthContext";
 const PLANS = [
   {
     id: "monthly",
-    price: "999",
+    price: { inr: "999", usd: "12" },
     unit: "/month",
     tagline: "Best for ongoing client work",
     features: ["Up to 10 active projects", "Unlimited connected tools", "Live project memory & updates", "Draft & send client replies"],
@@ -17,13 +17,15 @@ const PLANS = [
   },
   {
     id: "project",
-    price: "199",
+    price: { inr: "199", usd: "2" },
     unit: "/project",
     tagline: "Best for occasional client work",
     features: ["One project, active for 60 days", "Unlimited connected tools", "Live project memory & updates", "Draft & send client replies"],
     highlight: false,
   },
 ];
+
+const SYMBOL = { inr: "₹", usd: "$" };
 
 const FAQS = [
   { q: "What exactly does Bracket do?", a: "Bracket connects to the tools where your project already lives — Gmail, Slack, Figma, GitHub — and keeps one always-current record of scope, decisions, deadlines and deliverables. It shows you the one thing that needs your attention and can draft client replies for you." },
@@ -53,6 +55,7 @@ function Faq({ q, a }) {
 
 export default function Pricing() {
   const { user } = useAuth();
+  const [currency, setCurrency] = useState("inr");
   const startHref = user ? "/plan" : "/login";
 
   return (
@@ -68,6 +71,24 @@ export default function Pricing() {
           <p className="mt-5 text-[15px] leading-[1.65] text-[var(--text-2)] max-w-[520px] mx-auto">
             Pay monthly if client work is your day-to-day, or pay once for a single project. Cancel anytime.
           </p>
+          <div className="mt-7 inline-flex p-0.5" style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9999 }} data-testid="pricing-currency-toggle">
+            {["inr", "usd"].map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCurrency(c)}
+                className="px-4 h-8 text-[12px] font-semibold font-mono transition-colors"
+                style={{
+                  borderRadius: 9999,
+                  background: currency === c ? "#fff" : "transparent",
+                  color: currency === c ? "#000" : "#9a9a9a",
+                }}
+                data-testid={`pricing-currency-${c}`}
+              >
+                {SYMBOL[c]} {c.toUpperCase()}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -85,7 +106,7 @@ export default function Pricing() {
                 <span className="mono-tag absolute top-5 right-5 px-2 py-0.5 rounded text-[9.5px]" style={{ background: "rgba(255,255,255,0.06)", color: "#e5e5e5", border: "1px solid rgba(255,255,255,0.18)" }}>POPULAR</span>
               )}
               <p className="leading-none">
-                <span className="font-display font-semibold text-[38px] tracking-[-0.02em]">₹{p.price}</span>
+                <span className="font-display font-semibold text-[38px] tracking-[-0.02em]">{SYMBOL[currency]}{p.price[currency]}</span>
                 <span className="text-[15px] text-[var(--text-3)] font-mono">{p.unit}</span>
               </p>
               <p className="mt-2 text-[13px] text-[var(--text-2)]">{p.tagline}</p>

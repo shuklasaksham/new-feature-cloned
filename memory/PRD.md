@@ -1,3 +1,9 @@
+## Changelog — 2026-06 (pricing update + INR/USD toggle on Pricing & Checkout)
+- **New pricing**: Monthly **₹999/$12** (was ₹2,499/$29), Per-project **₹199/$2** (was ₹749/$9). Limits/features unchanged (Monthly: up to 10 active projects; Per-project: 1 project, 60 days). Updated server-side `PLANS` in `server.py` (source of truth for LIVE Razorpay order amounts) + all user-facing copy: `Pricing.jsx`, `ChoosePlan.jsx`, `PlanModal.jsx`, `Terms.jsx`.
+- **INR/USD currency toggle** added to the public Pricing page (`/pricing`) and the checkout page (`/plan` → `ChoosePlan.jsx`), matching the existing `PlanModal` toggle. `ChoosePlan` now passes the selected `currency` to `POST /api/payments/razorpay/order` so USD actually charges. (USD requires Razorpay International Payments enabled — user confirmed enabled/in review.)
+- Verified: Pricing toggle switches ₹999/₹199 ↔ $12/$2 (asserted live); backend restarted clean. ChoosePlan uses identical verified pattern.
+
+
 ## Changelog — 2026-06 (favicon/OG, live showcase, onboarding tour, global search)
 - **Favicon + social image**: generated a monochrome app icon (dark tile + white hexagon mark) and an OG share image (mark + "Bracket" + tagline) from the real logo → `public/bracket-favicon.jpg` + `public/bracket-og.jpg`; wired into `index.html` (favicon/apple-touch + og/twitter image) and `Seo.jsx`. Served 200.
 - **Live homepage showcase**: new public `GET /api/public/showcase` (server.py) returns a REAL sample project's live snapshot — name, memory counts by category, newest item as the "needs attention" highlight, and a "+N more". `Landing.jsx` fetches it so the showcase is always current. **Made non-clickable** (reverted the Link/"Open Bracket" hover per user).

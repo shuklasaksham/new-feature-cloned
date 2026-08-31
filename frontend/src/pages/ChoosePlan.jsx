@@ -12,14 +12,16 @@ const HALFTONE_IMG =
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
 const MONO = { fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" };
+const SYMBOL = { inr: "₹", usd: "$" };
 
 const PLANS = [
-  { id: "monthly", price: "999", unit: "/month", features: "Upto 10 active projects • Unlimited team members", desc: "Best for ongoing client work" },
-  { id: "project", price: "199", unit: "/project", features: "1 project • Active for 60 days", desc: "Best for occasional client work" },
+  { id: "monthly", price: { inr: "999", usd: "12" }, unit: "/month", features: "Upto 10 active projects • Unlimited team members", desc: "Best for ongoing client work" },
+  { id: "project", price: { inr: "199", usd: "2" }, unit: "/project", features: "1 project • Active for 60 days", desc: "Best for occasional client work" },
 ];
 
 export default function ChoosePlan() {
   const [selected, setSelected] = useState("monthly");
+  const [currency, setCurrency] = useState("inr");
   const [loading, setLoading] = useState(false);
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
@@ -56,7 +58,7 @@ export default function ChoosePlan() {
         setLoading(false);
         return;
       }
-      const { data } = await api.post("/payments/razorpay/order", { plan_id: selected });
+      const { data } = await api.post("/payments/razorpay/order", { plan_id: selected, currency });
       const rzp = new window.Razorpay({
         key: data.key_id,
         amount: data.amount,
@@ -108,6 +110,21 @@ export default function ChoosePlan() {
             Choose monthly or pay for a single project
           </p>
 
+          <div className="mt-5 inline-flex p-0.5" style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9999 }} data-testid="choose-plan-currency-toggle">
+            {["inr", "usd"].map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCurrency(c)}
+                className="px-4 h-8 text-[12px] font-semibold transition-colors"
+                style={{ ...MONO, borderRadius: 9999, background: currency === c ? "#fff" : "transparent", color: currency === c ? "#000" : "#9a9a9a" }}
+                data-testid={`choose-plan-currency-${c}`}
+              >
+                {SYMBOL[c]} {c.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <div className="mt-8 flex flex-col gap-4">
             {PLANS.map((p) => {
               const active = selected === p.id;
@@ -130,7 +147,7 @@ export default function ChoosePlan() {
                     </span>
                     <div className="min-w-0">
                       <p className="leading-none">
-                        <span className="font-display font-semibold text-[26px]" style={{ color: "#fff" }}>₹{p.price}</span>
+                        <span className="font-display font-semibold text-[26px]" style={{ color: "#fff" }}>{SYMBOL[currency]}{p.price[currency]}</span>
                         <span className="text-[15px]" style={{ ...MONO, color: "#9a9a9a" }}>{p.unit}</span>
                       </p>
                       <p className="mt-3 text-[12.5px]" style={{ ...MONO, color: "#b8b8b8" }}>{p.features}</p>
