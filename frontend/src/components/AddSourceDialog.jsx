@@ -63,13 +63,26 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
     } catch (err) { toast.error(formatApiError(err)); }
   };
 
-  // Adding a source ALWAYS runs OAuth for that provider — even if it's already
-  // linked — so the user picks/confirms which account this source belongs to
-  // each time (no silent reuse of a previously-connected account). On success
-  // we list that account's sources for attaching.
-  const pick = (key) => {
+  // Click a provider:
+  //  • NOT linked yet  → start OAuth (so a user logged in as email1 can connect
+  //    email2's Gmail — we never silently use the login account).
+  //  • already linked  → open its source list directly so the user can add more
+  //    conversations/files from that connected account (no re-OAuth).
+  // (Disconnecting a source removes the account when it's the last one, so a
+  //  later reconnect correctly falls back to OAuth here.)
+  const pick = async (key) => {
     if (connecting) return;
-    startOAuth(key);
+    setConnecting(key);
+    try {
+      const { data } = await api.get(`/connect/${key}/sources`);
+      const sources = data?.sources || [];
+      setPicker({ provider: key, sources });
+      setSelected([]); setStatus({}); setQuery("");
+      setConnecting(null);
+    } catch (e) {
+      if (e?.response?.status === 400) startOAuth(key);
+      else { setConnecting(null); toast.error(formatApiError(e)); }
+    }
   };
 
   const startOAuth = async (key) => {

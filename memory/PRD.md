@@ -1,3 +1,12 @@
+## Changelog — 2026-06 (add-source rule refined to CONDITIONAL OAuth)
+- Reverted the previous "always OAuth on add" to the user's refined rule in `AddSourceDialog.pick()`:
+  • Provider NOT linked → start OAuth (so a user logged in as email1 can connect email2's Gmail — the login account is never silently used).
+  • Provider already linked → open its source list directly (add more conversations/files from that account, no re-OAuth).
+- Confirmed login is safe: native Google login requests only `openid email profile` (server.py `google_native_start`) — it never creates a Gmail data-source, so signing in with email1 does not auto-connect email1's Gmail.
+- Disconnect behavior unchanged (iter57): disconnecting a source removes the provider's stored OAuth account when it's the last active source → a later reconnect correctly hits 400 → OAuth.
+- Verified via backend branches: figma (connected)→HTTP 200 (list); gmail (not connected)→400 (OAuth). Frontend compiles clean; this restores the iter56-verified conditional path.
+
+
 ## Changelog — 2026-06 (always-OAuth on add + identity fragmentation cleanup)
 - **Root cause of "new source reuses the earlier account"**: `integration_accounts` are stored per `(user_id, provider)` and reused across all projects, so once a provider was linked it was reused silently with no re-auth. Compounded by identity fragmentation — the same person had accounts scattered across multiple legacy `user_id`s (from pre-email-keyed logins) that no `users` row points to.
 - **Fix 1 — Always OAuth on add**: `AddSourceDialog.pick()` now ALWAYS calls `startOAuth(provider)` (even when already connected), so the user picks/confirms the account for every added source. Gmail uses `prompt=consent select_account`. Verified iter59 (100%): clicking any usable provider fires window.open + GET `/connect/{p}/auth-url`; coming-soon tiles stay disabled; the picker only appears after a successful OAuth postMessage.
