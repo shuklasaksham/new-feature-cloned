@@ -4271,125 +4271,17 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
     return _public_view(project)
 
 
-# ─── Payments (Stripe Checkout — test flow) ──────────────────────────────
+# ─── Plans (server-side pricing; INR via Razorpay) ───────────────────────
 # Fixed, server-side pricing. The client only sends a plan id; amounts are
 # never trusted from the frontend.
-from emergentintegrations.payments.stripe.checkout import (  # noqa: E402
-    StripeCheckout, CheckoutSessionRequest,
-)
-import stripe as _stripe  # noqa: E402
-
-# amount = USD, amount_inr = INR. INR unlocks UPI at Stripe Checkout (India acct only).
 PLANS = {
     "monthly": {"amount": 29.0, "amount_inr": 2499.0, "label": "Bracket Monthly", "kind": "subscription", "interval": "month"},
     "project": {"amount": 9.0, "amount_inr": 749.0, "label": "Bracket Single Project", "kind": "payment"},
 }
-SUPPORTED_CURRENCIES = {"usd", "inr"}
 
 
 def _plan_amount(plan: dict, currency: str) -> float:
     return plan["amount_inr"] if currency == "inr" else plan["amount"]
-
-
-def _init_stripe():
-    """Point the raw Stripe SDK at the Emergent proxy when using the shared key."""
-    key = os.environ["STRIPE_API_KEY"]
-    _stripe.api_key = key
-    if "sk_test_emergent" in key:
-        _stripe.api_base = "https://integrations.emergentagent.com/stripe"
-    return _stripe
-
-
-class CheckoutIn(BaseModel):
-    plan_id: str
-    origin_url: str
-    currency: str = "usd"
-
-
-@api.post("/payments/checkout")
-async def payments_checkout(body: CheckoutIn, request: Request):
-    plan = PLANS.get(body.plan_id)
-    if not plan:
-        raise HTTPException(status_code=400, detail="Unknown plan.")
-    currency = (body.currency or "usd").lower()
-    if currency not in SUPPORTED_CURRENCIES:
-        raise HTTPException(status_code=400, detail="Unsupported currency.")
-    user = await current_user(request, db)
-    origin = body.origin_url.rstrip("/")
-    host_url = str(request.base_url)
-    webhook_url = f"{host_url}api/webhook/stripe"
-
-    amount = _plan_amount(plan, currency)
-    stripe = _init_stripe()
-    price_data = {
-        "currency": currency,
-        "product_data": {"name": plan["label"]},
-        "unit_amount": int(amount * 100),
-    }
-    is_sub = plan["kind"] == "subscription"
-    if is_sub:
-        price_data["recurring"] = {"interval": plan["interval"]}
-
-    # payment_method_types is intentionally omitted so Stripe Checkout renders
-    # every method enabled in the connected account's dashboard that supports the
-    # currency — e.g. UPI appears automatically for INR on an Indian account.
-    session = stripe.checkout.Session.create(
-        mode="subscription" if is_sub else "payment",
-        line_items=[{"price_data": price_data, "quantity": 1}],
-        success_url=f"{origin}/payment/success?session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{origin}/payment/cancel",
-        metadata={"user_id": user["user_id"], "plan_id": body.plan_id, "webhook_url": webhook_url},
-    )
-    await db.payment_transactions.insert_one({
-        "session_id": session.id,
-        "user_id": user["user_id"],
-        "plan_id": body.plan_id,
-        "amount": amount,
-        "currency": currency,
-        "kind": plan["kind"],
-        "status": "initiated",
-        "payment_status": "pending",
-        "created_at": auth_iso(auth_now()),
-        "updated_at": auth_iso(auth_now()),
-    })
-    return {"checkout_url": session.url, "session_id": session.id}
-
-
-async def _mark_paid(session_id: str, plan_id: str = None, user_id: str = None):
-    rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-    if not rec or rec.get("payment_status") == "paid":
-        return
-    res = await db.payment_transactions.update_one(
-        {"session_id": session_id, "payment_status": {"$ne": "paid"}},
-        {"$set": {"status": "completed", "payment_status": "paid", "updated_at": auth_iso(auth_now())}},
-    )
-    uid = user_id or rec.get("user_id")
-    pid = plan_id or rec.get("plan_id")
-    if uid and pid:
-        kind = (PLANS.get(pid) or {}).get("kind", "payment")
-        await db.users.update_one(
-            {"user_id": uid},
-            {"$set": {"plan": pid, "plan_kind": kind, "plan_currency": rec.get("currency", "usd"), "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
-        )
-    # Branded receipt — only on the atomic transition to paid (modified_count==1)
-    # so racing webhook + status-poll never send two receipts. Fire-and-forget.
-    if res.modified_count == 1 and uid:
-        try:
-            u = await db.users.find_one({"user_id": uid}, {"_id": 0, "email": 1, "name": 1})
-            plan_meta = PLANS.get(pid) or {}
-            if u and u.get("email"):
-                asyncio.create_task(send_payment_receipt(
-                    to_email=u["email"],
-                    name=u.get("name", ""),
-                    plan_label=plan_meta.get("label", "Bracket"),
-                    amount=rec.get("amount"),
-                    currency=rec.get("currency", "usd"),
-                    recurring=(plan_meta.get("kind") == "subscription"),
-                    session_id=session_id,
-                    public_base_url=os.environ.get("PUBLIC_BASE_URL", ""),
-                ))
-        except Exception as e:
-            logger.warning(f"payment receipt scheduling failed for {session_id}: {e}")
 
 
 # ─── Razorpay (INR: UPI + cards + netbanking) ──────────────────────────────
@@ -4457,6 +4349,48 @@ class RzpVerifyIn(BaseModel):
     razorpay_signature: str
 
 
+async def _fulfill_razorpay(order_id: str, payment_id: str, expected_user_id: str = None):
+    """Idempotently marks a Razorpay order paid, activates the plan, and emails
+    the receipt once. Shared by /verify (browser) and /webhook (safety net)."""
+    rec = await db.payment_transactions.find_one({"session_id": order_id}, {"_id": 0})
+    if not rec:
+        return False, 404
+    if expected_user_id and rec.get("user_id") != expected_user_id:
+        return False, 403
+    if rec.get("payment_status") == "paid":
+        return True, 200
+    res = await db.payment_transactions.update_one(
+        {"session_id": order_id, "payment_status": {"$ne": "paid"}},
+        {"$set": {"status": "completed", "payment_status": "paid",
+                  "razorpay_payment_id": payment_id, "updated_at": auth_iso(auth_now())}},
+    )
+    uid = rec.get("user_id")
+    pid = rec.get("plan_id")
+    plan_meta = PLANS.get(pid) or {}
+    if uid and pid:
+        await db.users.update_one(
+            {"user_id": uid},
+            {"$set": {"plan": pid, "plan_kind": plan_meta.get("kind", "payment"),
+                      "plan_currency": "inr", "plan_since": auth_iso(auth_now()),
+                      "updated_at": auth_iso(auth_now())}},
+        )
+    if res.modified_count == 1 and uid:
+        try:
+            u = await db.users.find_one({"user_id": uid}, {"_id": 0, "email": 1, "name": 1})
+            if u and u.get("email"):
+                asyncio.create_task(send_payment_receipt(
+                    to_email=u["email"], name=u.get("name", ""),
+                    plan_label=plan_meta.get("label", "Bracket"),
+                    amount=rec.get("amount"), currency="inr",
+                    recurring=(plan_meta.get("kind") == "subscription"),
+                    session_id=payment_id,
+                    public_base_url=os.environ.get("PUBLIC_BASE_URL", ""),
+                ))
+        except Exception as e:
+            logger.warning(f"razorpay receipt scheduling failed: {e}")
+    return True, 200
+
+
 @api.post("/payments/razorpay/verify")
 async def razorpay_verify_payment(body: RzpVerifyIn, request: Request):
     if not (body.razorpay_order_id and body.razorpay_payment_id and body.razorpay_signature):
@@ -4471,91 +4405,11 @@ async def razorpay_verify_payment(body: RzpVerifyIn, request: Request):
         })
     except _razorpay.errors.SignatureVerificationError:
         raise HTTPException(status_code=400, detail="Payment verification failed.")
-
-    rec = await db.payment_transactions.find_one({"session_id": body.razorpay_order_id}, {"_id": 0})
-    if not rec or rec.get("user_id") != user["user_id"]:
-        raise HTTPException(status_code=404, detail="Order not found.")
-    if rec.get("payment_status") == "paid":
-        return {"success": True}
-    res = await db.payment_transactions.update_one(
-        {"session_id": body.razorpay_order_id, "payment_status": {"$ne": "paid"}},
-        {"$set": {"status": "completed", "payment_status": "paid",
-                  "razorpay_payment_id": body.razorpay_payment_id,
-                  "updated_at": auth_iso(auth_now())}},
-    )
-    pid = rec.get("plan_id")
-    plan_meta = PLANS.get(pid) or {}
-    if pid:
-        await db.users.update_one(
-            {"user_id": user["user_id"]},
-            {"$set": {"plan": pid, "plan_kind": plan_meta.get("kind", "payment"),
-                      "plan_currency": "inr", "plan_since": auth_iso(auth_now()),
-                      "updated_at": auth_iso(auth_now())}},
-        )
-    if res.modified_count == 1:
-        try:
-            u = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "email": 1, "name": 1})
-            if u and u.get("email"):
-                asyncio.create_task(send_payment_receipt(
-                    to_email=u["email"], name=u.get("name", ""),
-                    plan_label=plan_meta.get("label", "Bracket"),
-                    amount=rec.get("amount"), currency="inr",
-                    recurring=(plan_meta.get("kind") == "subscription"),
-                    session_id=body.razorpay_payment_id,
-                    public_base_url=os.environ.get("PUBLIC_BASE_URL", ""),
-                ))
-        except Exception as e:
-            logger.warning(f"razorpay receipt scheduling failed: {e}")
+    ok, code = await _fulfill_razorpay(body.razorpay_order_id, body.razorpay_payment_id, expected_user_id=user["user_id"])
+    if not ok:
+        raise HTTPException(status_code=code, detail="Order not found." if code == 404 else "This checkout doesn't belong to you.")
     return {"success": True}
 
-
-
-@api.get("/payments/status/{session_id}")
-async def payments_status(session_id: str):
-    rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-    if not rec:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    if rec.get("payment_status") != "paid":
-        try:
-            sc = StripeCheckout(api_key=os.environ["STRIPE_API_KEY"], webhook_url="https://x/api/webhook/stripe")
-            st = await sc.get_checkout_status(session_id)
-            if st.payment_status == "paid" or st.status == "complete":
-                await _mark_paid(session_id)
-                rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-        except Exception:
-            pass
-    return {"session_id": rec["session_id"], "status": rec["status"], "payment_status": rec["payment_status"]}
-
-
-@api.post("/payments/confirm/{session_id}")
-async def payments_confirm(session_id: str, request: Request):
-    # Confirms a checkout on return from Stripe's success_url. Stripe only lands
-    # the buyer here after a completed payment (cancellations hit cancel_url).
-    # On the Emergent shared sandbox, session-status reads and webhook delivery
-    # are both unavailable, so the authenticated buyer's arrival at success_url —
-    # tied to a session that exists in our DB and belongs to them — is the
-    # completion signal. Idempotent and scoped to the session owner.
-    user = await current_user(request, db)
-    rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-    if not rec:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-    if rec.get("user_id") != user["user_id"]:
-        raise HTTPException(status_code=403, detail="This checkout doesn't belong to you.")
-    if rec.get("payment_status") != "paid":
-        # Best-effort verify with Stripe first; the shared sandbox raises here,
-        # in which case we fall through to trusting the authenticated redirect.
-        try:
-            sc = StripeCheckout(api_key=os.environ["STRIPE_API_KEY"], webhook_url="https://x/api/webhook/stripe")
-            st = await sc.get_checkout_status(session_id)
-            if not (st.payment_status == "paid" or st.status == "complete"):
-                raise HTTPException(status_code=402, detail="Payment not completed yet.")
-        except HTTPException:
-            raise
-        except Exception:
-            pass  # sandbox status API unavailable — trust the success redirect
-        await _mark_paid(session_id)
-        rec = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-    return {"session_id": rec["session_id"], "status": rec["status"], "payment_status": rec["payment_status"]}
 
 
 def _renewal_iso(plan_id: str, plan_since: str):
@@ -4605,17 +4459,38 @@ async def payments_cancel(request: Request):
     return {"ok": True}
 
 
-@api.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
-    body_bytes = await request.body()
-    sc = StripeCheckout(api_key=os.environ["STRIPE_API_KEY"], webhook_url="https://x/api/webhook/stripe")
+@api.post("/webhook/razorpay")
+async def razorpay_webhook(request: Request):
+    # Safety net: confirms a payment even if the browser closes before the
+    # /verify call runs. Razorpay signs the raw body with the webhook secret
+    # configured in the dashboard; we verify before trusting anything.
+    import json
+    body = await request.body()
+    sig = request.headers.get("X-Razorpay-Signature", "")
+    secret = os.environ.get("RAZORPAY_WEBHOOK_SECRET")
+    if not secret:
+        raise HTTPException(status_code=500, detail="Webhook not configured.")
+    client, _ = _razorpay_client()
     try:
-        wr = await sc.handle_webhook(body_bytes, request.headers.get("Stripe-Signature"))
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    if wr.payment_status == "paid" and wr.session_id:
-        md = wr.metadata or {}
-        await _mark_paid(wr.session_id, md.get("plan_id"), md.get("user_id"))
+        client.utility.verify_webhook_signature(body.decode("utf-8"), sig, secret)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid webhook signature.")
+    try:
+        payload = json.loads(body)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid payload.")
+    event = payload.get("event")
+    ent = payload.get("payload", {}) or {}
+    order_id = payment_id = None
+    if event == "order.paid":
+        order_id = (((ent.get("order") or {}).get("entity") or {}).get("id"))
+        payment_id = (((ent.get("payment") or {}).get("entity") or {}).get("id"))
+    elif event == "payment.captured":
+        pay = (ent.get("payment") or {}).get("entity") or {}
+        order_id = pay.get("order_id")
+        payment_id = pay.get("id")
+    if order_id:
+        await _fulfill_razorpay(order_id, payment_id)
     return {"status": "ok"}
 
 

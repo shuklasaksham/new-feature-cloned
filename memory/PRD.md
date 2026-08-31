@@ -1313,3 +1313,11 @@ Fixes from user's 5-item pre-payment list:
 - User decision: keep Razorpay only. Removed currency toggle + USD/Stripe path from ChoosePlan.jsx and Pricing.jsx; both now INR-only (₹2,499 / ₹749), single "Pay with UPI / Card" (Razorpay). Terms.jsx prices updated to ₹. FAQ/SEO text updated.
 - Backend Stripe endpoints (/payments/checkout, /payments/status, webhook) left in place but now UNREFERENCED (dead code); Razorpay order/verify are the only payment paths used. Can be removed on request.
 - Verified via screenshots: /plan and /pricing show no toggle, INR only, Razorpay button.
+
+## 2026-06 — Stripe removed + Razorpay webhook safety-net
+- Stripe backend fully removed from server.py: deleted _init_stripe, CheckoutIn, /payments/checkout, _mark_paid, /payments/status, /payments/confirm, /webhook/stripe, emergentintegrations.stripe + `import stripe` imports, SUPPORTED_CURRENCIES. Kept PLANS + _plan_amount + _renewal_iso + /payments/billing + /payments/cancel. STRIPE_API_KEY removed from .env. (Razorpay is the only payment path.)
+- Refactored Razorpay fulfillment into shared idempotent `_fulfill_razorpay(order_id, payment_id, expected_user_id=None)` (marks txn paid atomically, sets plan+plan_currency=inr, sends receipt once). Used by /payments/razorpay/verify (browser) AND new webhook.
+- NEW `POST /api/webhook/razorpay`: verifies X-Razorpay-Signature via client.utility.verify_webhook_signature against RAZORPAY_WEBHOOK_SECRET; handles order.paid + payment.captured → _fulfill_razorpay. Safety net if browser closes before /verify. RAZORPAY_WEBHOOK_SECRET added to .env (whsec_bkt_...). 
+- Frontend: PaymentSuccess.jsx simplified (removed the deleted /payments/confirm poll; now just refresh + redirect /app). ChoosePlan Razorpay handler redirects to /payment/success.
+- Verified: Stripe /payments/checkout → 404; razorpay order OK (₹749→74900, ₹2,499→249900); verify bad-sig → 400; webhook bad-sig → 400, valid-sig → 200 and fulfills plan idempotently (fresh acct got plan via webhook, then reset). Frontend compiles.
+- PROD TODO (user): redeploy to carry new .env; create Razorpay Dashboard webhook → https://use-bracket.com/api/webhook/razorpay, events order.paid + payment.captured, secret = RAZORPAY_WEBHOOK_SECRET value.

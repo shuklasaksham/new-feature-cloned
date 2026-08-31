@@ -57,7 +57,7 @@ export default function ChoosePlan() {
               razorpay_signature: resp.razorpay_signature,
             });
             toast.success("Payment confirmed — welcome to Bracket.");
-            window.location.href = "/app";
+            window.location.href = "/payment/success";
           } catch (e) {
             toast.error(formatApiError(e));
             setLoading(false);
