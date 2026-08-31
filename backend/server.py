@@ -2918,6 +2918,43 @@ async def delete_project(project_id: str, request: Request):
     return {"ok": True}
 
 
+@api.get("/public/showcase")
+async def public_showcase():
+    """Public, unauthenticated snapshot of a real sample project for the
+    homepage showcase — always reflects live data. Picks the richest project."""
+    CAT_LABEL = {"scope": "Scope", "deliverable": "Deliverables", "requirement": "Requirements", "decision": "Decisions"}
+    agg = await db.project_memory.aggregate([
+        {"$group": {"_id": "$project_id", "n": {"$sum": 1}}},
+        {"$sort": {"n": -1}},
+        {"$limit": 1},
+    ]).to_list(1)
+    if not agg:
+        return {"name": "SaaS Dashboard Redesign", "counts": {"scope": 0, "deliverable": 0, "requirement": 0, "decision": 0}, "highlight": None, "more": 0}
+    pid = agg[0]["_id"]
+    project = await db.projects.find_one({"id": pid}, {"_id": 0, "name": 1})
+    counts = {"scope": 0, "deliverable": 0, "requirement": 0, "decision": 0}
+    total = 0
+    async for x in db.project_memory.find({"project_id": pid}, {"_id": 0, "category": 1}):
+        total += 1
+        c = x.get("category")
+        if c in counts:
+            counts[c] += 1
+    newest = await db.project_memory.find(
+        {"project_id": pid, "category": {"$in": list(CAT_LABEL.keys())}},
+        {"_id": 0, "title": 1, "detail": 1, "category": 1},
+    ).sort("occurred_at", -1).limit(1).to_list(1)
+    highlight = None
+    if newest:
+        h = newest[0]
+        highlight = {"title": h.get("title", ""), "detail": h.get("detail", ""), "category": CAT_LABEL.get(h.get("category"), "")}
+    return {
+        "name": (project or {}).get("name", "Client project"),
+        "counts": counts,
+        "highlight": highlight,
+        "more": max(0, min(total - 1, 9)),
+    }
+
+
 @api.post("/projects/{project_id}/archive")
 async def archive_project(project_id: str, request: Request):
     """Archive a project — it stops counting toward the plan's active limit

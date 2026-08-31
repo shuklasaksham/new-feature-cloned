@@ -6,6 +6,7 @@ import { api, formatApiError } from "../lib/api";
 import { PROVIDER_META } from "../lib/providersMeta";
 import Seo from "../components/Seo";
 import ParticleField from "../components/ParticleField";
+import OnboardingTour from "../components/OnboardingTour";
 
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
@@ -81,6 +82,7 @@ export default function FirstProject() {
   return (
     <div className="min-h-screen w-full flex" style={{ background: "#000" }} data-testid="first-project-page">
       <Seo title="Bring your first project into Bracket" path="/welcome" noindex />
+      <OnboardingTour />
 
       {/* LEFT — content */}
       <div className="relative flex flex-col justify-center w-full lg:w-[54%] xl:w-[52%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">

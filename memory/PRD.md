@@ -1,4 +1,12 @@
-## Changelog — 2026-06 (revert logo change; enlarge+enhance original; clickable showcase)
+## Changelog — 2026-06 (favicon/OG, live showcase, onboarding tour, global search)
+- **Favicon + social image**: generated a monochrome app icon (dark tile + white hexagon mark) and an OG share image (mark + "Bracket" + tagline) from the real logo → `public/bracket-favicon.jpg` + `public/bracket-og.jpg`; wired into `index.html` (favicon/apple-touch + og/twitter image) and `Seo.jsx`. Served 200.
+- **Live homepage showcase**: new public `GET /api/public/showcase` (server.py) returns a REAL sample project's live snapshot — name, memory counts by category, newest item as the "needs attention" highlight, and a "+N more". `Landing.jsx` fetches it so the showcase is always current. **Made non-clickable** (reverted the Link/"Open Bracket" hover per user).
+- **Onboarding tour** (`components/OnboardingTour.jsx`): a 3-step guided first-run shown once (localStorage `bracket_tour_done_v1`) on the `/welcome` first-project page — Welcome → Connect → It keeps up, ending with a "Connect a source" CTA that dismisses to the connect cards. Skip/Next + step dots.
+- **Global memory search** (`GlobalSearch` in `ProjectMemory.jsx`): a ⌘K / Ctrl+K palette (also a "Search" item at the top of the sidebar nav) that searches every memory item (scope/deliverables/requirements/decisions/deadlines/questions) by title, detail, category and source — live results with category icon + tag. Esc/overlay closes.
+- Verified via screenshots: homepage showcase (real data, not clickable), search returning 10 results for "brand", onboarding stepping to "Connect a source"; favicon/OG/showcase endpoints all 200.
+
+
+
 - **Reverted the logo swap** (user did not want a new logo): removed `BracketLogo.jsx`; restored the original hexagon/cube PNG in the Navbar (42px), Footer (34px) and the homepage product-visual sidebar. **Enhanced** it with `filter: brightness(0) invert(1)` so the previously-faint light logo renders crisp pure-white on the dark UI, and enlarged it for visibility.
 - **Homepage product showcase is now clickable**: the Overview recreation is wrapped in a `<Link>` to the app (`/app` when signed in, else `/login`), with an "Open Bracket →" hover affordance + lift on the window bar. Still a faithful monochrome copy of the real tool (sidebar docked-tab geometry, Needs-attention card, memory counts).
 - Verified via screenshots (nav/footer logo visible; showcase hover + link).

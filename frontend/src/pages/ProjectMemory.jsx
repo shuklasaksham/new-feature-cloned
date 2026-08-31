@@ -55,6 +55,7 @@ export default function ProjectMemory() {
   const [collapsed, setCollapsed] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(null);
   const [quota, setQuota] = useState(null);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const refreshProjects = () => {
     api.get("/projects").then(({ data }) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
@@ -62,6 +63,17 @@ export default function ProjectMemory() {
   };
 
   useEffect(() => { refreshProjects(); }, []);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        setSearchOpen((s) => !s);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const load = async ({ silent = false } = {}) => {
     if (!silent) setLoading(true);
@@ -160,9 +172,11 @@ export default function ProjectMemory() {
         onAddSource={() => setView("conversations")}
         onSourcesChanged={() => load({ silent: true })}
         onProjectsChanged={refreshProjects}
+        onOpenSearch={() => setSearchOpen(true)}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
       />
+      <GlobalSearch open={searchOpen} onClose={() => setSearchOpen(false)} memory={memory} />
 
       <main className="project-main">
         {loading ? (
@@ -623,6 +637,68 @@ function HeaderActions({ providerLabel, detectedCount = 0, attentionTitle, onRev
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Global memory search — find any item across the project ─────────── */
+function GlobalSearch({ open, onClose, memory }) {
+  const [q, setQ] = useState("");
+  useEffect(() => { if (open) setQ(""); }, [open]);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape" && open) onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  const all = useMemo(() => flattenMemory(memory), [memory]);
+  const query = q.trim().toLowerCase();
+  const results = useMemo(() => {
+    if (!query) return [];
+    return all.filter((m) =>
+      (`${m.title || ""} ${m.detail || ""} ${CATEGORY_BY_KEY[m._catKey]?.label || ""} ${m.source_label || m.provider || ""}`)
+        .toLowerCase().includes(query)
+    ).slice(0, 40);
+  }, [all, query]);
+
+  if (!open) return null;
+  return (
+    <div className="gs-overlay" onClick={onClose} data-testid="global-search">
+      <div className="gs-box" onClick={(e) => e.stopPropagation()}>
+        <div className="gs-input-row">
+          <Search size={17} style={{ color: "var(--text-3)" }} />
+          <input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search decisions, requirements, scope, deadlines…"
+            data-testid="global-search-input"
+          />
+          <span className="gs-esc">ESC</span>
+        </div>
+        <div className="gs-results" data-testid="global-search-results">
+          {!query ? (
+            <p className="gs-hint">Search across everything Bracket remembers for this project.</p>
+          ) : results.length === 0 ? (
+            <p className="gs-hint">No matches for “{q}”.</p>
+          ) : (
+            results.map((m) => {
+              const c = CATEGORY_BY_KEY[m._catKey] || CATEGORY_BY_KEY.decision;
+              const Icon = c.icon;
+              return (
+                <div key={m.id} className="gs-row" data-testid={`global-search-row-${m.id}`}>
+                  <span className="gs-icon"><Icon size={15} /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="gs-title">{m.title}</span>
+                    {m.detail && <span className="gs-detail">{m.detail}</span>}
+                  </span>
+                  <span className="gs-cat">{c.label}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );

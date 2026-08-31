@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import Seo from "../components/Seo";
+import { api } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 
 const BRACKET_LOGO =
@@ -26,23 +27,33 @@ const STEPS = [
   },
 ];
 
-const MEMORY = [
-  ["Scope", 8], ["Deliverables", 4], ["Requirements", 7], ["Decisions", 2],
+const MEMORY_ORDER = [
+  ["scope", "Scope"], ["deliverable", "Deliverables"], ["requirement", "Requirements"], ["decision", "Decisions"],
 ];
 
 /* A faithful, static recreation of the new Bracket Overview screen — real DOM,
-   the interlocking sidebar/workspace geometry, monochrome. Not an image. */
-function ProductVisual({ href }) {
+   the interlocking sidebar/workspace geometry, monochrome. Mirrors a REAL
+   sample project so the numbers and change card are always current. */
+function ProductVisual() {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    api.get("/public/showcase").then(({ data }) => setData(data)).catch(() => {});
+  }, []);
+
   const NAV = [
     { label: "Home", active: true },
     { label: "Conversations", active: false },
     { label: "Timeline", active: false },
   ];
+  const name = data?.name || "SaaS Dashboard Redesign";
+  const counts = data?.counts || { scope: 0, deliverable: 0, requirement: 0, decision: 0 };
+  const hl = data?.highlight;
+  const more = data?.more || 0;
+
   return (
-    <Link to={href} className="lp-shot" data-testid="landing-product-visual" aria-label="Open Bracket">
+    <div className="lp-shot" data-testid="landing-product-visual">
       <div className="lp-shot-bar">
         <span className="lp-dot" /><span className="lp-dot" /><span className="lp-dot" />
-        <span className="lp-shot-open">Open Bracket <ArrowRight size={12} /></span>
       </div>
       <div className="lp-app">
         {/* Sidebar */}
@@ -51,45 +62,45 @@ function ProductVisual({ href }) {
             <img src={BRACKET_LOGO} alt="" width={20} height={20} style={{ filter: "brightness(0) invert(1)" }} />
             <span>Bracket</span>
           </div>
-          <div className="lp-switch">SaaS Dashboard Redesign</div>
+          <div className="lp-switch">{name}</div>
           <nav className="lp-nav">
             {NAV.map((n) => (
               <span key={n.label} className="lp-nav-item" data-active={n.active ? "true" : "false"}>{n.label}</span>
             ))}
           </nav>
           <p className="lp-side-label">SOURCES</p>
-          <div className="lp-src"><span className="lp-src-dot" /> Gmail — Acme thread</div>
+          <div className="lp-src"><span className="lp-src-dot" /> Gmail — client thread</div>
         </aside>
 
         {/* Workspace */}
         <div className="lp-main">
-          <p className="lp-eyebrow">SaaS Dashboard Redesign</p>
+          <p className="lp-eyebrow">{name}</p>
           <div className="lp-synced"><span className="lp-live" /> Updated just now</div>
 
           <p className="lp-attn-label">NEEDS YOUR ATTENTION</p>
           <div className="lp-attn">
             <span className="lp-attn-ring"><AlertCircle size={18} /></span>
             <div className="lp-attn-body">
-              <p className="lp-attn-title">Mobile screens requested</p>
-              <p className="lp-attn-desc">Sarah asked to include mobile screens in this phase.</p>
+              <p className="lp-attn-title">{hl?.title || "Mobile screens requested"}</p>
+              <p className="lp-attn-desc">{hl?.detail || "The client added a request that affects this phase."}</p>
               <div className="lp-attn-row">
-                <span className="lp-review">Review <ArrowRight size={13} /></span>
-                <span className="lp-more">+2 more</span>
+                {hl?.category && <span className="lp-tag">{hl.category}</span>}
+                {more > 0 && <span className="lp-more">+{more} more</span>}
               </div>
             </div>
           </div>
 
           <div className="lp-mem">
-            {MEMORY.map(([label, n]) => (
-              <div key={label} className="lp-mem-cell">
-                <span className="lp-mem-n">{n}</span>
+            {MEMORY_ORDER.map(([key, label]) => (
+              <div key={key} className="lp-mem-cell">
+                <span className="lp-mem-n">{counts[key] ?? 0}</span>
                 <span className="lp-mem-l">{label}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -148,7 +159,7 @@ export default function Landing() {
             initial={{ opacity: 0, y: 28 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }} transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           >
-            <ProductVisual href={startHref} />
+            <ProductVisual />
           </motion.div>
         </div>
       </section>

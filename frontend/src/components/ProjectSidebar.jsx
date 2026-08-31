@@ -25,7 +25,7 @@ const NAV = [
 
 export default function ProjectSidebar({
   project, projects = [], onSwitchProject,
-  view, setView, counts = {}, connections = [], onAddSource, onSourcesChanged, onProjectsChanged,
+  view, setView, counts = {}, connections = [], onAddSource, onSourcesChanged, onProjectsChanged, onOpenSearch,
   collapsed, onToggleCollapse,
 }) {
   const navigate = useNavigate();
@@ -207,6 +207,18 @@ export default function ProjectSidebar({
 
       {/* Nav */}
       <nav className="psb-nav" aria-label="Project sections">
+        <button
+          type="button"
+          className="psb-nav-item psb-nav-search"
+          data-tip="Search"
+          onClick={() => onOpenSearch?.()}
+          title="Search"
+          data-testid="psb-nav-search"
+        >
+          <Search size={20} strokeWidth={1.9} />
+          <span className="psb-label">Search</span>
+          <span className="psb-kbd">⌘K</span>
+        </button>
         {NAV.map((n) => {
           const Icon = n.icon;
           const active = view === n.key;

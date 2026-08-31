@@ -37,9 +37,10 @@ export default function Seo({
       <meta property="og:url" content={canonical} />
       <meta property="og:type" content="website" />
       <meta property="og:site_name" content="Bracket" />
-      <meta property="og:image" content="https://use-bracket.com/logo512.png" />
+      <meta property="og:image" content="https://use-bracket.com/bracket-og.jpg" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:image" content="https://use-bracket.com/bracket-og.jpg" />
       {description && <meta name="twitter:description" content={description} />}
     </Helmet>
   );
