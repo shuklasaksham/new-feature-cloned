@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { X, Loader2, ArrowRight, Check } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/AuthContext";
 
 const MONO = { fontFamily: "var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)" };
 
@@ -44,6 +45,7 @@ const loadRazorpay = () =>
  */
 export default function PlanModal({ open, onClose, defaultPlan = "monthly", title = "Add another project" }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selected, setSelected] = useState(defaultPlan);
   const [currency, setCurrency] = useState("inr");
   const [loading, setLoading] = useState(false);
@@ -54,7 +56,33 @@ export default function PlanModal({ open, onClose, defaultPlan = "monthly", titl
 
   if (!open) return null;
 
+  const options = [
+    ...PLANS,
+    ...(user?.can_test_plan
+      ? [{
+          id: "test",
+          label: "Test · free",
+          unit: "temporary",
+          price: { inr: "0", usd: "0" },
+          features: ["Instant access — no payment", "Up to 10 projects", "For testing only"],
+        }]
+      : []),
+  ];
+
+  const activateTest = async () => {
+    setLoading(true);
+    try {
+      await api.post("/payments/test-activate");
+      toast.success("Test plan activated — let's set up your project.");
+      navigate("/welcome", { replace: true });
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Couldn't activate the test plan.");
+      setLoading(false);
+    }
+  };
+
   const pay = async () => {
+    if (selected === "test") return activateTest();
     setLoading(true);
     try {
       const ok = await loadRazorpay();
@@ -152,7 +180,7 @@ export default function PlanModal({ open, onClose, defaultPlan = "monthly", titl
 
         {/* Plan cards */}
         <div className="mt-4 space-y-2.5">
-          {PLANS.map((p) => {
+          {options.map((p) => {
             const active = selected === p.id;
             return (
               <button
@@ -194,10 +222,10 @@ export default function PlanModal({ open, onClose, defaultPlan = "monthly", titl
           style={{ ...MONO, background: "#fff", color: "#000", borderRadius: 9999 }}
           data-testid="plan-modal-pay"
         >
-          {loading ? <Loader2 size={15} className="animate-spin" /> : <>Pay with UPI / Card <ArrowRight size={14} /></>}
+          {loading ? <Loader2 size={15} className="animate-spin" /> : selected === "test" ? <>Activate free test plan <ArrowRight size={14} /></> : <>Pay with UPI / Card <ArrowRight size={14} /></>}
         </button>
         <p className="mt-2.5 text-center text-[10.5px]" style={{ ...MONO, color: "#5a5a5a" }}>
-          UPI · cards · netbanking · Razorpay
+          {selected === "test" ? "Temporary test access · no payment" : "UPI · cards · netbanking · Razorpay"}
         </p>
       </div>
     </div>,

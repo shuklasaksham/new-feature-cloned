@@ -69,6 +69,7 @@ from auth import (
     hash_password,
     verify_password,
     public_user,
+    can_use_test_plan,
     iso as auth_iso,
     now_utc as auth_now,
 )
@@ -4370,6 +4371,7 @@ async def client_reject_confirm(token: str, body: RejectConfirmIn):
 PLANS = {
     "monthly": {"amount": 29.0, "amount_inr": 2499.0, "label": "Bracket Monthly", "kind": "subscription", "interval": "month"},
     "project": {"amount": 9.0, "amount_inr": 749.0, "label": "Bracket Single Project", "kind": "payment"},
+    "test": {"amount": 0.0, "amount_inr": 0.0, "label": "Bracket Test (free)", "kind": "subscription", "interval": "month"},
 }
 
 
@@ -4399,6 +4401,8 @@ async def razorpay_create_order(body: RzpOrderIn, request: Request):
     plan = PLANS.get(body.plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail="Unknown plan.")
+    if body.plan_id == "test":
+        raise HTTPException(status_code=400, detail="The test plan is activated directly, not via checkout.")
     currency = (body.currency or "inr").lower()
     if currency not in ("inr", "usd"):
         raise HTTPException(status_code=400, detail="Unsupported currency.")
@@ -4489,6 +4493,22 @@ async def _fulfill_razorpay(order_id: str, payment_id: str, expected_user_id: st
         except Exception as e:
             logger.warning(f"razorpay receipt scheduling failed: {e}")
     return True, 200
+
+
+@api.post("/payments/test-activate")
+async def test_activate_plan(request: Request):
+    """TEMPORARY: activate the free ₹0 test plan for allowlisted accounts, no
+    payment. Behaves like Monthly (10 projects) so the full flow can be tested."""
+    user = await current_user(request, db)
+    if not can_use_test_plan(user):
+        raise HTTPException(status_code=403, detail="The test plan isn't available for this account.")
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"plan": "test", "plan_kind": "subscription", "plan_currency": "inr",
+                  "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
+    )
+    logger.info(f"[test-plan] activated free test plan for {user.get('email')}")
+    return {"success": True}
 
 
 @api.post("/payments/razorpay/verify")

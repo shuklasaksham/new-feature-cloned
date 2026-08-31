@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, ArrowRight, ArrowLeft, Loader2, Check, Pencil, Lock } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Search, ArrowRight, ArrowLeft, Loader2, Check, Pencil, Lock, X, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
@@ -61,7 +62,52 @@ export default function SelectSource() {
   const [selected, setSelected] = useState(() => new Set());
   const [submitting, setSubmitting] = useState(false);
   const [accountLabel, setAccountLabel] = useState("");
+  const [acctModalOpen, setAcctModalOpen] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const debounceRef = useRef(null);
+
+  const refreshAccountLabel = () => {
+    api.get("/connect/providers").then(({ data }) => {
+      const p = (data.providers || []).find((x) => x.key === provider);
+      setAccountLabel(p?.account_label || user?.email || "");
+    }).catch(() => setAccountLabel(user?.email || ""));
+  };
+
+  // Switch/reconnect the account for THIS provider via the OAuth popup. The
+  // callback re-upserts the integration_account (keyed by user+provider), so a
+  // successful reconnect replaces the connected account.
+  const reconnectAccount = async () => {
+    const popup = window.open("about:blank", "bracket-oauth", "width=560,height=680");
+    setReconnecting(true);
+    try {
+      const { data } = await api.get(`/connect/${provider}/auth-url`);
+      if (popup) popup.location = data.url;
+      else window.open(data.url, "_blank");
+    } catch (e) {
+      if (popup) popup.close();
+      setReconnecting(false);
+      toast.error(formatApiError(e));
+    }
+  };
+
+  useEffect(() => {
+    const onMsg = (ev) => {
+      if (typeof ev.data !== "string" || !ev.data.startsWith(`bracket-oauth:${provider}:`)) return;
+      const result = ev.data.split(":")[2];
+      setReconnecting(false);
+      if (result === "success") {
+        toast.success("Account switched.");
+        setAcctModalOpen(false);
+        refreshAccountLabel();
+        fetchSources(query.trim());
+      } else {
+        toast.error("Couldn't switch account. Please try again.");
+      }
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider, query]);
 
   useEffect(() => {
     if (!CFG[provider]) { navigate("/welcome"); return; }
@@ -144,7 +190,7 @@ export default function SelectSource() {
               <span className="block font-display font-semibold text-[15px]" style={{ color: "#fff" }}>{cfg.connected}</span>
               <span className="block text-[12px] truncate" style={{ ...MONO, color: "#8a8a8a" }}>{accountLabel || "connected account"}</span>
             </span>
-            <button type="button" onClick={() => navigate("/welcome")} className="shrink-0 inline-flex items-center justify-center transition-colors" style={{ width: 34, height: 34, borderRadius: 8, color: "#8a8a8a" }} aria-label="Change account" data-testid="select-source-edit"
+            <button type="button" onClick={() => setAcctModalOpen(true)} className="shrink-0 inline-flex items-center justify-center transition-colors" style={{ width: 34, height: 34, borderRadius: 8, color: "#8a8a8a" }} aria-label="Change account" data-testid="select-source-edit"
               onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }} onMouseLeave={(e) => { e.currentTarget.style.color = "#8a8a8a"; }}>
               <Pencil size={16} />
             </button>
@@ -263,6 +309,55 @@ export default function SelectSource() {
           </div>
         </div>
       </div>
+
+      {acctModalOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)" }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget && !reconnecting) setAcctModalOpen(false); }}
+          data-testid="account-change-modal"
+        >
+          <div className="w-full max-w-[400px] page-enter" style={{ background: "#0d0d0d", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 14, padding: 24 }}>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="mono-tag text-[9.5px]" style={{ ...MONO, color: "#7a7a7a" }}>{cfg.connected.toUpperCase()}</p>
+                <h2 className="mt-1 font-display font-semibold text-[19px] tracking-[-0.01em]" style={{ color: "#fff" }} data-testid="account-change-title">
+                  Switch account
+                </h2>
+              </div>
+              <button type="button" onClick={() => !reconnecting && setAcctModalOpen(false)} className="shrink-0 grid place-items-center" style={{ width: 30, height: 30, borderRadius: 9999, border: "1px solid rgba(255,255,255,0.14)", color: "#9a9a9a" }} data-testid="account-change-close" aria-label="Close">
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="mt-4 flex items-center gap-3 px-4 py-3.5" style={{ background: "#0a0a0a", border: "1px solid #242424", borderRadius: 12 }}>
+              <span className="shrink-0 inline-flex items-center justify-center" style={{ width: 30, height: 30, borderRadius: "50%", background: "#1f9d55" }}>
+                <Check size={15} color="#fff" strokeWidth={3} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11px]" style={{ ...MONO, color: "#7a7a7a" }}>Currently connected</span>
+                <span className="block text-[13px] truncate" style={{ color: "#fff" }} data-testid="account-change-current">{accountLabel || "connected account"}</span>
+              </span>
+            </div>
+
+            <p className="mt-3 text-[12.5px] leading-[1.6]" style={{ ...MONO, color: "#8a8a8a" }}>
+              Connect a different {cfg.connected.replace(" connected", "")} account. You'll pick the sources from the newly connected account.
+            </p>
+
+            <button
+              type="button"
+              onClick={reconnectAccount}
+              disabled={reconnecting}
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 h-11 text-[13px] font-semibold transition-colors disabled:opacity-60"
+              style={{ ...MONO, background: "#fff", color: "#000", borderRadius: 9999 }}
+              data-testid="account-change-reconnect"
+            >
+              {reconnecting ? <><Loader2 size={15} className="animate-spin" /> Waiting for authorization…</> : <><RefreshCw size={14} /> Connect a different account</>}
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

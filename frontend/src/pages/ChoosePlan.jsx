@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, Loader2, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
+import { useAuth } from "../lib/AuthContext";
 import Seo from "../components/Seo";
 import ParticleField from "../components/ParticleField";
 
@@ -20,6 +21,21 @@ const PLANS = [
 export default function ChoosePlan() {
   const [selected, setSelected] = useState("monthly");
   const [loading, setLoading] = useState(false);
+  const { user, refresh } = useAuth();
+  const navigate = useNavigate();
+
+  const activateTestPlan = async () => {
+    setLoading(true);
+    try {
+      await api.post("/payments/test-activate");
+      await refresh();
+      toast.success("Test plan activated — welcome to Bracket.");
+      navigate("/welcome", { replace: true });
+    } catch (e) {
+      toast.error(formatApiError(e));
+      setLoading(false);
+    }
+  };
 
   const loadRazorpay = () =>
     new Promise((resolve) => {
@@ -129,6 +145,18 @@ export default function ChoosePlan() {
           <button type="button" onClick={payWithRazorpay} disabled={loading} className="login-submit mt-6" data-testid="plan-continue">
             {loading ? <Loader2 size={16} className="animate-spin" /> : <>Pay with UPI / Card <ArrowRight size={15} /></>}
           </button>
+          {user?.can_test_plan && (
+            <button
+              type="button"
+              onClick={activateTestPlan}
+              disabled={loading}
+              className="mt-3 w-full inline-flex items-center justify-center gap-2 h-11 text-[12.5px] font-semibold transition-colors disabled:opacity-60"
+              style={{ ...MONO, background: "transparent", color: "#c9c9c9", border: "1px dashed #3a3a3a", borderRadius: 9999 }}
+              data-testid="plan-test-activate"
+            >
+              <Zap size={14} /> Activate free test plan (₹0)
+            </button>
+          )}
           <p className="text-center mt-4 text-[11px]" style={{ ...MONO, color: "#565656" }}>
             UPI, cards & netbanking · Razorpay · Test mode
           </p>

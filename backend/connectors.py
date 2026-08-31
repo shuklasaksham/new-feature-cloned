@@ -168,6 +168,9 @@ async def _access_token(account: dict) -> str:
             if r.status_code == 200:
                 tok = r.json()
                 blob.update(access_token=tok["access_token"], expires_at=time.time() + int(tok.get("expires_in", 3600)))
+            else:
+                logger.warning("[connect] gmail token refresh failed: status=%s body=%s has_refresh_token=%s",
+                               r.status_code, (r.text or "")[:300], bool(blob.get("refresh_token")))
         elif provider == "figma":
             r = await c.post("https://api.figma.com/v1/oauth/refresh", data={"refresh_token": blob.get("refresh_token", "")},
                              auth=(conf["id"], conf["secret"]))
@@ -176,6 +179,9 @@ async def _access_token(account: dict) -> str:
                 blob.update(access_token=tok["access_token"], expires_at=time.time() + int(tok.get("expires_in", 7776000)))
                 if tok.get("refresh_token"):
                     blob["refresh_token"] = tok["refresh_token"]
+            else:
+                logger.warning("[connect] figma token refresh failed: status=%s body=%s has_refresh_token=%s",
+                               r.status_code, (r.text or "")[:300], bool(blob.get("refresh_token")))
         else:
             return blob["access_token"]
     if blob.get("expires_at", 0) <= time.time():
@@ -387,6 +393,27 @@ def _fig_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}", "X-Figma-Token": token}
 
 
+def _upstream_fail(provider: str, r, action: str):
+    """Log an upstream provider failure and raise a 4xx. We deliberately avoid 5xx
+    here: Cloudflare masks any 5xx from the origin with its own 'origin error' page,
+    which hides our real, actionable message from the user. A 4xx passes through so
+    the source picker can show a friendly 'reconnect / try again' state."""
+    body = ""
+    try:
+        body = (r.text or "")[:400]
+    except Exception:
+        pass
+    logger.warning("[connect] %s %s failed: status=%s body=%s", provider, action, getattr(r, "status_code", "?"), body)
+    label = PROVIDERS.get(provider, {}).get("label", provider)
+    sc = getattr(r, "status_code", 0)
+    if sc == 401:
+        raise HTTPException(401, f"{label} connection expired — please reconnect.")
+    if sc == 403 and "rate limit" in body.lower():
+        raise HTTPException(429, f"{label} rate limit reached — please try again shortly.")
+    raise HTTPException(424, f"Couldn't reach {label} right now — please try again.")
+
+
+
 async def figma_list_sources(account: dict, q: str, url: str) -> List[dict]:
     token = await _access_token(account)
     h = _fig_headers(token)
@@ -436,7 +463,7 @@ async def figma_fetch_digest(account: dict, key: str) -> str:
         cr = await c.get(f"https://api.figma.com/v1/files/{key}/comments", headers=h)
         vr = await c.get(f"https://api.figma.com/v1/files/{key}/versions", headers=h)
     if fr.status_code != 200:
-        raise HTTPException(502, "Couldn't read the Figma file right now.")
+        _upstream_fail("figma", fr, "read file")
     f = fr.json()
     lines = [f"FIGMA FILE: {f.get('name')}", f"Last modified: {f.get('lastModified')}"]
     for page in ((f.get("document") or {}).get("children") or [])[:20]:
@@ -470,7 +497,7 @@ async def github_list_sources(account: dict, q: str) -> List[dict]:
     async with await _http() as c:
         r = await c.get("https://api.github.com/user/repos?sort=pushed&per_page=50", headers=_gh_headers(token))
     if r.status_code != 200:
-        raise HTTPException(502, "Couldn't list your GitHub repositories.")
+        _upstream_fail("github", r, "list repos")
     out = []
     for repo in r.json():
         name = repo.get("full_name", "")
@@ -541,7 +568,7 @@ async def notion_list_sources(account: dict, q: str) -> List[dict]:
     async with await _http() as c:
         r = await c.post("https://api.notion.com/v1/search", headers=_notion_headers(token), json=body)
     if r.status_code != 200:
-        raise HTTPException(502, "Couldn't search your Notion pages.")
+        _upstream_fail("notion", r, "list pages")
     out = []
     for item in r.json().get("results", []):
         out.append({"id": item["id"], "name": _notion_title(item), "url": item.get("url", ""),
@@ -598,7 +625,13 @@ async def slack_list_sources(account: dict, q: str) -> List[dict]:
                         headers=h, params={"types": "public_channel,private_channel,mpim,im", "limit": 200, "exclude_archived": "true"})
     data = r.json() if r.status_code == 200 else {}
     if not data.get("ok"):
-        raise HTTPException(502, "Couldn't list your Slack conversations.")
+        err = data.get("error") or f"http_{r.status_code}"
+        logger.warning("[connect] slack list conversations failed: %s", err)
+        if err in ("invalid_auth", "token_revoked", "account_inactive", "not_authed"):
+            raise HTTPException(401, "Slack connection expired — please reconnect.")
+        if err == "ratelimited":
+            raise HTTPException(429, "Slack rate limit reached — please try again shortly.")
+        raise HTTPException(424, "Couldn't list your Slack conversations — please try again.")
     out = []
     for ch in data.get("channels", []):
         name = ("#" + ch["name"]) if ch.get("name") else ("DM — " + (ch.get("user") or "direct message"))
@@ -644,7 +677,7 @@ async def gmail_list_sources(account: dict, q: str) -> List[dict]:
             params["q"] = q
         r = await c.get("https://gmail.googleapis.com/gmail/v1/users/me/threads", headers=headers, params=params)
         if r.status_code != 200:
-            raise HTTPException(502, "Couldn't list Gmail conversations.")
+            _upstream_fail("gmail", r, "list threads")
         out = []
         for th in r.json().get("threads", [])[:12]:
             tr = await c.get(f"https://gmail.googleapis.com/gmail/v1/users/me/threads/{th['id']}",
@@ -1017,7 +1050,7 @@ def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str
 # ---- Plan-gated project quota --------------------------------------------
 # monthly subscription → up to 10 ACTIVE (non-archived) projects, unlimited
 # archived; single-project ($9) → 1 active project for 60 days; none → 1.
-PLAN_PROJECT_LIMITS = {"monthly": 10, "project": 1}
+PLAN_PROJECT_LIMITS = {"monthly": 10, "project": 1, "test": 10}
 PROJECT_PLAN_DAYS = 60
 
 

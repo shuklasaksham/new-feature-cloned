@@ -205,7 +205,20 @@ def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
     out["has_password"] = bool(user.get("password_hash"))
     out["is_admin"] = is_admin(user)
     out["is_guest"] = bool(user.get("is_guest"))
+    out["can_test_plan"] = can_use_test_plan(user)
     return out
+
+
+def _test_plan_emails() -> set:
+    raw = os.environ.get("TEST_PLAN_EMAILS", "")
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+
+
+def can_use_test_plan(user: Dict[str, Any]) -> bool:
+    """TEMPORARY: gate the free ₹0 test plan to admins + an explicit allowlist so
+    random production users can't grant themselves free access."""
+    email = (user.get("email") or "").lower().strip()
+    return is_admin(user) or (bool(email) and email in _test_plan_emails())
 
 
 async def get_or_create_user_by_email(
