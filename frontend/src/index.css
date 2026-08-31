@@ -4722,6 +4722,15 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 /* View swap wrapper — fills the fixed workspace so inner views keep their layout */
 .project-view { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 
+/* Collapsed dropdowns must POP OUT to the right — never wrap inside the 76px rail */
+.project-sidebar.is-collapsed .psb-switch-menu {
+  left: calc(100% + 10px); right: auto; width: 264px; top: 0;
+}
+.project-sidebar.is-collapsed .psb-user-menu {
+  left: calc(100% + 10px); right: auto; width: 200px; bottom: 0;
+}
+.project-sidebar.is-collapsed .psb-switch { position: relative; }
+
 /* ── Overview (Right now / Upcoming / Latest) ── */
 .ov-wrap { max-width: none; margin: 0; }
 .ov-head { position: relative; margin-bottom: 40px; padding-right: 0; }

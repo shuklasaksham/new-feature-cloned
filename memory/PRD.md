@@ -1,4 +1,9 @@
-## Changelog — 2026-06 (test/preview data reset + 3 seeded demo accounts)
+## Changelog — 2026-06 (fix: broken collapsed sidebar dropdowns + demo source health)
+- **Collapsed sidebar was broken** (user report): opening the project switcher (or user menu) while the rail was collapsed rendered the dropdown at `left:0/right:0` inside the 76px rail, so its text wrapped vertically into an unreadable column. Fixed by popping both menus OUT to the right at a proper width when collapsed: `.project-sidebar.is-collapsed .psb-switch-menu { left:calc(100%+10px); right:auto; width:264px; top:0 }` and `.psb-user-menu { …; width:200px; bottom:0 }`. Verified: switcher + user menu both pop out cleanly.
+- **Demo sources showed "Reconnect"** (misleading on seeded demo accounts with no real OAuth token → red health). Flagged the 5 seeded `source_connections` with `is_demo:true` so `/connections` returns green health → sidebar now shows "Connected". Verified.
+
+
+
 - **Full data wipe**: deleted ALL user-generated collections (users, sessions, projects, project_memory, source_connections, source_events, project_updates, integration_accounts, workspaces, notifications, payments, files, clients, playbooks, knowledge_items, j* collections, click_events, etc.). Preserved only global config: `admin_config`, `counters`, `geoip_cache`. Hidden admin (`support@use-bracket.com`) auto-re-seeds from env on backend restart.
 - **3 demo accounts** (password `Bracket@2026`, see `/app/memory/test_credentials.md`): `fresh@use-bracket.com` (no plan, 0 projects → lands on Choose-plan), `solo@use-bracket.com` ($9 `project` plan, 1 project, switcher shows "Upgrade to add projects · 1 of 1"), `pro@use-bracket.com` ($29 `monthly` plan, 2 projects, unlimited). Plans set directly (test env, no Stripe charge).
 - Projects built via the REAL connect+AI pipeline (built-in demo Gmail sources) so each has genuine extracted memory; AI-duplicate names renamed to distinct realistic ones ("Website Redesign — Final Scope", "Mobile App Redesign", "Brand Identity + Landing Page"). Seed script kept at `/app/scripts/seed_demo.py`.
