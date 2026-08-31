@@ -1381,3 +1381,9 @@ Fixes from user's 5-item pre-payment list:
 - FRONTEND (Login.jsx): googleSignIn now → ${REACT_APP_BACKEND_URL}/api/auth/google/native/start (was auth.emergentagent.com).
 - redirect_uri is host-aware: preview → https://design-decided.preview.emergentagent.com/api/auth/google/native/callback ; prod → https://use-bracket.com/api/auth/google/native/callback. BOTH must be added to the Google client's Authorized redirect URIs.
 - Verified in preview: button now goes to Google's own screen (no Emergent). redirect_uri_mismatch until URIs registered (expected). NOT yet deployed to prod (waiting on URI registration to avoid broken prod Google button; email OTP + password still work).
+
+## 2026-06 — ₹0 test plan: admin ON/OFF toggle (replaces email allowlist as primary control)
+- auth.py: TEST_PLAN_STATE={"enabled":False} module global; can_use_test_plan(user)=is_admin OR TEST_PLAN_STATE.enabled OR email in TEST_PLAN_EMAILS. Admins can always test.
+- server.py: GET/POST /api/admin/test-plan (admin-guarded via auth_current_admin) persists to app_settings{key:"test_plan",enabled} + updates in-memory state; startup loads it into TEST_PLAN_STATE.
+- Frontend AdminDashboard.jsx: pill toggle in header (data-testid admin-test-plan-toggle) with ON/OFF switch + toast. When ON, PlanModal + ChoosePlan show the free option for ALL signed-in users; when OFF, only admins.
+- Verified in preview: admin toggle ON→ non-admin fresh@ can_test_plan true + activate 200; OFF→ false + 403; non-admin cannot hit /admin/test-plan (404). Persisted + reloads on restart. Default OFF.

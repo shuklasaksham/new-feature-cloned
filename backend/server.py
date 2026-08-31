@@ -73,6 +73,7 @@ from auth import (
     verify_password,
     public_user,
     can_use_test_plan,
+    TEST_PLAN_STATE,
     iso as auth_iso,
     now_utc as auth_now,
 )
@@ -4584,6 +4585,30 @@ async def _fulfill_razorpay(order_id: str, payment_id: str, expected_user_id: st
     return True, 200
 
 
+class TestPlanToggleIn(BaseModel):
+    enabled: bool
+
+
+@api.get("/admin/test-plan")
+async def admin_get_test_plan(request: Request):
+    await auth_current_admin(request, db)
+    return {"enabled": bool(TEST_PLAN_STATE.get("enabled"))}
+
+
+@api.post("/admin/test-plan")
+async def admin_set_test_plan(body: TestPlanToggleIn, request: Request):
+    admin = await auth_current_admin(request, db)
+    await db.app_settings.update_one(
+        {"key": "test_plan"},
+        {"$set": {"key": "test_plan", "enabled": bool(body.enabled),
+                  "updated_at": auth_iso(auth_now()), "updated_by": admin.get("email")}},
+        upsert=True,
+    )
+    TEST_PLAN_STATE["enabled"] = bool(body.enabled)
+    logger.info("[test-plan] toggle set to %s by %s", body.enabled, admin.get("email"))
+    return {"enabled": bool(body.enabled)}
+
+
 @api.post("/payments/test-activate")
 async def test_activate_plan(request: Request):
     """TEMPORARY: activate the free ₹0 test plan for allowlisted accounts, no
@@ -4825,6 +4850,14 @@ async def on_startup():
         unique=True,
         partialFilterExpression={"email": {"$type": "string"}},
     )
+
+    # Load the temporary ₹0 test-plan toggle into memory (admin-controlled).
+    try:
+        _tp = await db.app_settings.find_one({"key": "test_plan"})
+        TEST_PLAN_STATE["enabled"] = bool(_tp and _tp.get("enabled"))
+        logger.info("[startup] test_plan toggle = %s", TEST_PLAN_STATE["enabled"])
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] test_plan toggle load skipped: {e}")
 
     # 4) Purge legacy/decommissioned accounts declared via PURGE_USER_EMAILS
     #    (comma-separated). Idempotent + cascades projects/sessions/OTPs. Guarded

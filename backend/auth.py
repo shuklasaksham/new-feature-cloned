@@ -214,11 +214,20 @@ def _test_plan_emails() -> set:
     return {e.strip().lower() for e in raw.split(",") if e.strip()}
 
 
+# Runtime toggle for the TEMPORARY ₹0 test plan, flipped from the admin panel.
+# Loaded from the app_settings collection at startup and mutated on toggle.
+TEST_PLAN_STATE = {"enabled": False}
+
+
 def can_use_test_plan(user: Dict[str, Any]) -> bool:
-    """TEMPORARY: gate the free ₹0 test plan to admins + an explicit allowlist so
-    random production users can't grant themselves free access."""
+    """TEMPORARY free ₹0 test plan gate. Admins can always test; when the global
+    admin toggle is ON, every signed-in user can. An env allowlist still works."""
+    if is_admin(user):
+        return True
+    if TEST_PLAN_STATE.get("enabled"):
+        return True
     email = (user.get("email") or "").lower().strip()
-    return is_admin(user) or (bool(email) and email in _test_plan_emails())
+    return bool(email) and email in _test_plan_emails()
 
 
 async def get_or_create_user_by_email(

@@ -45,6 +45,25 @@ export default function AdminDashboard() {
   const [confirmDelete, setConfirmDelete] = useState(null);   // { count, dry } | null
   const [deleting, setDeleting] = useState(false);
   const [purging, setPurging] = useState(false);
+  const [testPlanOn, setTestPlanOn] = useState(false);
+  const [togglingTp, setTogglingTp] = useState(false);
+
+  useEffect(() => {
+    api.get("/admin/test-plan").then(({ data }) => setTestPlanOn(!!data.enabled)).catch(() => {});
+  }, []);
+
+  const toggleTestPlan = async () => {
+    setTogglingTp(true);
+    try {
+      const { data } = await api.post("/admin/test-plan", { enabled: !testPlanOn });
+      setTestPlanOn(!!data.enabled);
+      toast.success(`Free ₹0 test plan ${data.enabled ? "enabled for all users" : "disabled"}.`);
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setTogglingTp(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -208,6 +227,21 @@ export default function AdminDashboard() {
               Everyone using Bracket · every project · every decision.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={toggleTestPlan}
+            disabled={togglingTp}
+            className="self-start sm:self-auto inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full border text-[12.5px] transition-colors disabled:opacity-60"
+            style={{ borderColor: "var(--hairline)", background: "rgba(255,255,255,0.03)" }}
+            data-testid="admin-test-plan-toggle"
+            title="When ON, every signed-in user sees a free ₹0 test plan on the plan screen. Temporary."
+          >
+            <span className="text-[var(--text-2)]">Free ₹0 test plan</span>
+            <span className="inline-flex items-center h-5 w-9 rounded-full transition-colors" style={{ background: testPlanOn ? "#22c55e" : "#3a3a3a" }}>
+              <span className="h-4 w-4 rounded-full bg-white transition-transform" style={{ transform: testPlanOn ? "translateX(18px)" : "translateX(2px)" }} />
+            </span>
+            <span className="mono-label text-[10px]" style={{ color: testPlanOn ? "#22c55e" : "var(--text-3)" }}>{testPlanOn ? "ON" : "OFF"}</span>
+          </button>
         </div>
 
         {/* Tabs */}
