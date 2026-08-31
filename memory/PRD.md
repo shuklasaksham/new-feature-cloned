@@ -2,7 +2,7 @@
 
 ## Changelog — 2026-06 (workspace panel rebuild — RESOLVED "entire plot" blocker)
 - Reworked the project workspace to match the reference mockup exactly. Shell bg now pure black `#0a0a0a`; sidebar bg `#0a0a0a` (border removed); `.project-main` is now a **floating rounded panel** — surface `#151515`, `margin:16px 16px 0 0` (black gutter top+right), `border-radius:20px 20px 0 0`, `min-height:calc(100vh - 16px)`. This fixes the flat/empty "entire plot" look the user rejected.
-- **Active-tab docking redone (replaced the rejected concave `::before/::after` curve hack)**: active nav item now shares the panel surface `#151515`, `border-radius:9999px 0 0 9999px`, `margin-right:-16px` so its flat right edge sits flush against the panel's left edge → seamless dock. Inactive hover bumped to `#171717` so it never reads as docked. Applied to ALL tabs (Overview, Conversations, Scope, etc.).
+- **Active-tab docking redone (replaced the rejected concave `::before/::after` curve hack)**: active nav item now shares the panel surface `#151515`, `border-radius:12px 0 0 12px`, `margin-right:-16px` so its flat right edge sits flush against the panel's left edge → seamless dock. Concave fillets re-added via `mask: radial-gradient(circle 14px …)` on `::before`(top)/`::after`(bottom) so the joint curves smoothly top+bottom (user feedback: "no curve in the joint / bad from bottom"). Inactive hover bumped to `#171717`. Applied to ALL tabs.
 - User choices for this change: NO grain texture (kept clean flat surface); apply to ALL tabs.
 - `.project-main-inner` → `max-width:1100px; padding:36px 52px 72px`. Sidebar width `288px`.
 - Verified live (demo account) on Overview + Scope tabs via screenshots — panel + docked tab render correctly, no layout breakage.

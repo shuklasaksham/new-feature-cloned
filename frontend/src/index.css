@@ -4631,13 +4631,34 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .project-sidebar .psb-nav-item[data-active="true"] {
   background: #151515 !important;   /* == workspace panel surface */
   color: #fff !important;
-  border-radius: 9999px 0 0 9999px !important;
-  margin-right: -16px;              /* cancels sidebar right padding */
+  border-radius: 12px 0 0 12px !important;
+  margin-right: -16px;              /* cancels sidebar right padding → flush with panel */
   padding-right: 26px;
   position: relative;
 }
 .project-sidebar .psb-nav-item[data-active="true"] .psb-count {
   background: #262626; color: #fff;
+}
+/* Concave fillets that curve the tab smoothly into the workspace panel */
+.project-sidebar .psb-nav-item[data-active="true"]::before,
+.project-sidebar .psb-nav-item[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  background: #151515;
+  pointer-events: none;
+}
+.project-sidebar .psb-nav-item[data-active="true"]::before {
+  top: -14px;
+  -webkit-mask: radial-gradient(circle 14px at top left, transparent 0 14px, #000 14px);
+  mask: radial-gradient(circle 14px at top left, transparent 0 14px, #000 14px);
+}
+.project-sidebar .psb-nav-item[data-active="true"]::after {
+  bottom: -14px;
+  -webkit-mask: radial-gradient(circle 14px at bottom left, transparent 0 14px, #000 14px);
+  mask: radial-gradient(circle 14px at bottom left, transparent 0 14px, #000 14px);
 }
 
 /* ── Overview (Right now / Upcoming / Latest) ── */
