@@ -11,17 +11,13 @@ import { api } from "../lib/api";
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
 
-// Nav order matches the design: Overview, Conversations, then the 6 memory
-// categories (Scope, Deliverables, Timeline, Requirements, Decisions, Deadlines).
+// Simplified IA: only Home, Conversations, and Timeline live in the main nav.
+// Scope / Deliverables / Requirements / Decisions are surfaced inside Home
+// (drill-in modals). Deadlines + History are folded into Timeline.
 const NAV = [
-  { key: "overview", label: "Overview", icon: Hexagon },
+  { key: "overview", label: "Home", icon: Hexagon },
   { key: "conversations", label: "Conversations", icon: MessagesSquare },
-  { key: "scope", label: "Scope", icon: Target, cat: true },
-  { key: "deliverable", label: "Deliverables", icon: Package, cat: true },
-  { key: "timeline", label: "Timeline", icon: Calendar, cat: true },
-  { key: "requirement", label: "Requirements", icon: ListChecks, cat: true },
-  { key: "decision", label: "Decisions", icon: Check, cat: true },
-  { key: "deadline", label: "Deadlines", icon: CalendarClock, cat: true },
+  { key: "timeline", label: "Timeline", icon: CalendarClock },
 ];
 
 export default function ProjectSidebar({

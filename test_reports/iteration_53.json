@@ -1,0 +1,20 @@
+{
+  "summary": "Frontend-only IA restructure testing for Bracket. Login → project workspace works. Sidebar shows exactly Home/Conversations/Timeline (no legacy items). Home renders 'Needs your attention' + Project details chip row; all 4 chips (scope/deliverable/requirement/decision) open category-modal with drill-<id> rows and close via category-modal-close. Conversations tab renders conversation-stream with 15 stream-row entries and 15 stream-orig buttons; View original opens view-original-modal and closes cleanly. Ask Bracket (suggested-reply-chat) accepted input and produced 1 assistant turn after Generate. Timeline tab renders project-timeline with 19 timeline-hist rows. Tab switching does not crash and each tab renders its header (HOME/CONVERSATIONS/TIMELINE).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "demo@use-bracket.com / BracketDemo@2026",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "IA redesign verified working end-to-end. Demo project id ee6e16e7-bd23-4914-8af1-50713f7b839d. All expected data-testids present: psb-nav-{overview,conversations,timeline}, home-details, home-cat-{scope,deliverable,requirement,decision}, category-modal(+close), drill-*, conversation-stream, stream-row-*, stream-orig-*, view-original-modal(+close), suggested-reply-chat(+input,+send), chat-turn-assistant-*, project-timeline, timeline-hist-*.",
+  "rca of the issue": "n/a - no issues found"
+}

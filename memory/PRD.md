@@ -1,5 +1,14 @@
 # Bracket — PRD
 
+## Changelog — 2026-06 (Simplicity-first IA redesign — Home / Conversations / Timeline)
+- **Sidebar nav reduced to 3**: Home (renamed from Overview), Conversations, Timeline. Scope/Deliverables/Requirements/Decisions/Deadlines/History are no longer separate pages. Sources/Settings/Help unchanged. (`ProjectSidebar.jsx` NAV array.)
+- **Home** (`OverviewView` in `ProjectMemory.jsx`): lightweight — "Needs your attention" (dynamic: detected/review/scope-change items, else calm "all caught up"), optional next-deadline "Upcoming" card, and a "Project details" chip row (Scope · Deliverables · Requirements · Decisions) where each chip opens a read-only drill-in modal (`CategoryModal`) listing that category's memory items. Nothing heavy shown by default.
+- **Conversations** (`ConversationsStream`): compressed chronological stream of project-relevant client messages built from deduped memory items (title — detail · timeAgo · provider · "View original ↗"). "View original" opens `ViewOriginalModal` which fetches the source conversation via `/connections/{conn_id}/content`. Retains the existing Ask Bracket panel (`SuggestedReplyChat`: Ask→Draft→Review→select recipients→Send). Removed the old 3-pane inbox layout.
+- **Timeline** (`TimelineView`): one chronological page combining upcoming deadlines (parsed) + a History feed (decisions, requirements, scope changes, deadlines + `/history` events), newest-first. Folds in old Deadlines + History.
+- Static `ScopeView.jsx` / `ConversationsView.jsx` no longer imported (dynamic replacements used). New CSS: `.home-cats/.home-cat`, `.conv2-grid/.stream-*`, `.bkt-modal*/.drill-*`, `.tl-*` in `index.css`. Design language + docked-tab styling unchanged.
+- Verified by testing agent (iteration_53): frontend 100%, no issues — nav, all 4 drill-in modals, 15-item stream + View original modal, Ask Bracket generate, 19-row Timeline history all working.
+
+
 ## Changelog — 2026-06 (workspace panel rebuild — RESOLVED "entire plot" blocker)
 - Reworked the project workspace to match the reference mockup exactly. Shell bg now pure black `#0a0a0a`; sidebar bg `#0a0a0a` (border removed); `.project-main` is now a **floating rounded panel** — surface `#151515`, `margin:16px 16px 0 0` (black gutter top+right), `border-radius:20px 20px 0 0`, `min-height:calc(100vh - 16px)`. This fixes the flat/empty "entire plot" look the user rejected.
 - **Active-tab docking redone (replaced the rejected concave `::before/::after` curve hack)**: active nav item now shares the panel surface `#151515`, `border-radius:12px 0 0 12px`, `margin-right:-16px` so its flat right edge sits flush against the panel's left edge → seamless dock. Concave fillets re-added via `mask: radial-gradient(circle 14px …)` on `::before`(top)/`::after`(bottom) so the joint curves smoothly top+bottom (user feedback: "no curve in the joint / bad from bottom"). Inactive hover bumped to `#171717`. Applied to ALL tabs.

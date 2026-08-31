@@ -7,7 +7,7 @@ import {
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown, Search,
   ArrowRight, Clock, CheckCircle2, CalendarClock,
-  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus,
+  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -18,8 +18,6 @@ import HistoryDrawer from "../components/HistoryDrawer";
 import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
 import ProjectSidebar from "../components/ProjectSidebar";
-import ScopeView from "../components/ScopeView";
-import ConversationsView from "../components/ConversationsView";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, PROVIDER_META, timeAgo } from "../lib/providersMeta";
 
@@ -155,7 +153,7 @@ export default function ProjectMemory() {
           </div>
         ) : project ? (
           <div className="project-main-inner" data-testid="project-memory-page">
-            {view !== "overview" && view !== "conversations" && view !== "scope" && (
+            {false && (
             <section className="project-topbar" data-testid="project-memory-header">
               <div className="min-w-0">
                 <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>
@@ -205,36 +203,26 @@ export default function ProjectMemory() {
             </section>
             )}
 
-            {view === "overview" ? (
+            {view === "conversations" ? (
+              <ConversationsStream
+                projectId={id}
+                project={project}
+                connections={connections || []}
+                memory={memory}
+                onChanged={() => load({ silent: true })}
+              />
+            ) : view === "timeline" ? (
+              <TimelineView projectId={id} project={project} memory={memory} />
+            ) : (
               <OverviewView
                 project={project}
                 projectId={id}
                 memory={memory}
-                lastSeen={lastSeen}
                 connections={connections || []}
                 detectedCount={detectedCount}
+                counts={visibleCounts.by}
                 onHistory={() => setHistoryOpen(true)}
-                onReview={openReview}
-                onConnectionsChanged={() => load({ silent: true })}
-                onJumpTo={(cat) => { setView(cat); setStatusFilter("all"); }}
                 onReviewUpdate={() => setUpdateOpen(true)}
-              />
-            ) : view === "conversations" ? (
-              <ConversationsView
-                projectId={id}
-                project={project}
-                connections={connections || []}
-                onChanged={() => load({ silent: true })}
-              />
-            ) : view === "scope" ? (
-              <ScopeView project={project} />
-            ) : (
-              <CategoryView
-                cat={activeCat}
-                items={items}
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                onOpen={(m) => setDrawerItem(m)}
               />
             )}
           </div>
@@ -532,60 +520,65 @@ function FocusRow({ item, onClick, right }) {
   );
 }
 
-/* ─── Overview — "Today's Focus": Needs Action · What Changed · Coming Up ── */
-function OverviewView({ project, projectId, memory, lastSeen, connections, detectedCount, onHistory, onReview, onConnectionsChanged, onJumpTo, onReviewUpdate }) {
+/* ─── Helpers ─────────────────────────────────────────────────────────── */
+function daysLeftLabel(d) {
+  const today = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  const n = Math.round((d - today) / 86400000);
+  return n <= 0 ? "Today" : n === 1 ? "1 day left" : `${n} days left`;
+}
+function dedupeByTitle(list) {
+  const seen = new Set();
+  return (list || []).filter((m) => (seen.has(m.title) ? false : seen.add(m.title)));
+}
+
+/* ─── Home — lightweight "where are we now" + drill-in details ─────────── */
+function OverviewView({ project, projectId, memory, connections, detectedCount, counts, onHistory, onReviewUpdate }) {
+  const [modalCat, setModalCat] = useState(null);
   const noSources = connections.length === 0;
   const all = useMemo(() => flattenMemory(memory), [memory]);
 
-  const pending = useMemo(
-    () => all.filter((m) => m.status === "detected" || m.status === "review" || m.is_scope_change).slice(0, 4),
+  const attention = useMemo(
+    () => dedupeByTitle(all.filter((m) => m.status === "detected" || m.status === "review" || m.is_scope_change)).slice(0, 3),
     [all],
   );
 
-  const comingUp = useMemo(() => {
+  const nextDeadline = useMemo(() => {
     const now = new Date();
-    return all
-      .filter((m) => m._catKey === "deadline" || m._catKey === "timeline")
+    return dedupeByTitle(all.filter((m) => m._catKey === "deadline" || m._catKey === "timeline"))
       .map((m) => ({ ...m, _due: parseDueDate(`${m.title} ${m.detail || ""}`, now) }))
       .filter((m) => m._due && m._due >= new Date(now.getFullYear(), now.getMonth(), now.getDate()))
-      .sort((a, b) => a._due - b._due)
-      .slice(0, 3);
+      .sort((a, b) => a._due - b._due)[0] || null;
   }, [all]);
 
-  const latest = useMemo(() => {
-    const seen = new Set();
-    return [...all]
-      .filter((m) => (seen.has(m.id) ? false : seen.add(m.id)))
-      .sort((a, b) => String(b.created_at || b.updated_at || "").localeCompare(String(a.created_at || a.updated_at || "")))
-      .slice(0, 6);
-  }, [all]);
+  const CHIPS = [
+    { key: "scope", label: "Scope" },
+    { key: "deliverable", label: "Deliverables" },
+    { key: "requirement", label: "Requirements" },
+    { key: "decision", label: "Decisions" },
+  ];
 
-  const primarySource = connections[0];
-  const daysLeft = (d) => {
-    const ms = d - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
-    const n = Math.round(ms / 86400000);
-    return n <= 0 ? "Today" : n === 1 ? "1 day left" : `${n} days left`;
-  };
-
+  const primary = connections[0];
   const Header = () => (
     <div className="ov-head">
       <div className="ov-head-actions">
-        <span className="ov-source-pill" data-testid="overview-source-pill">
-          <span className="ov-dot" style={{ background: "var(--success)" }} />
-          Gmail connected
-        </span>
+        {primary && (
+          <span className="ov-source-pill" data-testid="overview-source-pill">
+            <span className="ov-dot" style={{ background: "var(--success)" }} />
+            {(PROVIDER_META[primary.provider]?.label || primary.provider)} connected
+          </span>
+        )}
         <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="History" data-testid="overview-bell" style={{ position: "relative" }}>
-          <Bell size={16} /><span className="sc-bell-dot" />
+          <Bell size={16} />{detectedCount > 0 && <span className="sc-bell-dot" />}
         </button>
         <button type="button" className="ov-icon-btn" onClick={onHistory} aria-label="More" data-testid="overview-menu">
           <MoreHorizontal size={16} />
         </button>
       </div>
-      <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>PROJECT</p>
+      <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>HOME</p>
       <h1 className="mt-2 text-[28px] sm:text-[34px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="project-memory-title">
         {project.name}
       </h1>
-      <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Here's what's happening in your project.</p>
+      <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Where your project stands right now.</p>
     </div>
   );
 
@@ -596,7 +589,7 @@ function OverviewView({ project, projectId, memory, lastSeen, connections, detec
         <EmptyState
           icon={Plug}
           title="Your project memory is waiting"
-          description="Connect Gmail, Slack, Figma or GitHub and Bracket starts extracting deliverables, scope, timelines, requirements, decisions and deadlines from your client conversations."
+          description="Connect Gmail, Slack, Figma or GitHub and Bracket starts reading your client conversations — surfacing scope, decisions, requirements and deadlines automatically."
           cta="Connect your first tool"
           ctaTo={`/app/connect?project=${projectId}`}
           footnote="GMAIL · SLACK · FIGMA · GITHUB"
@@ -610,48 +603,291 @@ function OverviewView({ project, projectId, memory, lastSeen, connections, detec
     <div className="ov-wrap">
       <Header />
 
-      {/* Right now */}
-      <section className="ov-section" data-testid="overview-right-now">
-        <p className="ov-section-label">Right now</p>
-        <button type="button" className="ov-card ov-card--action" onClick={onReviewUpdate} data-testid="overview-rightnow-scope">
-          <span className="ov-flag"><Flag size={16} /></span>
-          <div className="min-w-0 flex-1">
-            <p className="ov-card-title">Scope may have changed</p>
-            <p className="ov-card-sub">Sarah asked for an additional mobile landing page that wasn't part of the agreed scope.</p>
+      {/* Needs your attention */}
+      <section className="ov-section" data-testid="home-attention">
+        <p className="ov-section-label">Needs your attention</p>
+        {attention.length === 0 ? (
+          <div className="ov-card ov-card--quiet" data-testid="home-caught-up">
+            <CheckCircle2 size={18} style={{ color: "var(--success)" }} />
+            <div className="min-w-0 flex-1">
+              <p className="ov-card-title">You're all caught up</p>
+              <p className="ov-card-sub">Nothing needs your review right now. Bracket will surface changes as new client messages arrive.</p>
+            </div>
           </div>
-          <span className="ov-review">Review <ArrowRight size={14} /></span>
-        </button>
+        ) : attention.map((m) => (
+          <button key={m.id} type="button" className="ov-card ov-card--action" onClick={onReviewUpdate} data-testid={`home-attention-${m.id}`}>
+            <span className="ov-flag"><Flag size={16} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="ov-card-title">{m.title}</p>
+              <p className="ov-card-sub">{m.detail || (m.is_scope_change ? "Possible scope change detected in a client message." : "Bracket detected this — confirm or dismiss it.")}</p>
+            </div>
+            <span className="ov-review">Review <ArrowRight size={14} /></span>
+          </button>
+        ))}
       </section>
 
       {/* Upcoming */}
-      <section className="ov-section" data-testid="overview-upcoming">
-        <p className="ov-section-label">Upcoming</p>
-        <button type="button" className="ov-card ov-card--action" onClick={() => onJumpTo("deadline")} data-testid="overview-upcoming-homepage">
-          <span className="ov-cal"><Calendar size={16} /></span>
-          <div className="min-w-0 flex-1">
-            <p className="ov-card-title">Homepage concepts due Sep 4</p>
-            <p className="ov-card-sub">3 days left</p>
-          </div>
-          <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
-        </button>
+      {nextDeadline && (
+        <section className="ov-section" data-testid="home-upcoming">
+          <p className="ov-section-label">Upcoming</p>
+          <button type="button" className="ov-card ov-card--action" onClick={() => setModalCat("deadline")} data-testid="home-next-deadline">
+            <span className="ov-cal"><Calendar size={16} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="ov-card-title">{nextDeadline.title}</p>
+              <p className="ov-card-sub">{daysLeftLabel(nextDeadline._due)}{nextDeadline.detail ? ` · ${nextDeadline.detail}` : ""}</p>
+            </div>
+            <ChevronRight size={18} style={{ color: "var(--text-3)" }} />
+          </button>
+        </section>
+      )}
+
+      {/* Project details — small controls that open a modal */}
+      <section className="ov-section" data-testid="home-details">
+        <p className="ov-section-label">Project details</p>
+        <div className="home-cats">
+          {CHIPS.map((ch) => {
+            const c = CATEGORY_BY_KEY[ch.key];
+            const n = counts?.[ch.key] || 0;
+            return (
+              <button key={ch.key} type="button" className="home-cat" onClick={() => setModalCat(ch.key)} data-testid={`home-cat-${ch.key}`}>
+                <c.icon size={15} style={{ color: c.color }} /> {ch.label}
+                {n > 0 && <span className="home-cat-count">{n}</span>}
+              </button>
+            );
+          })}
+        </div>
       </section>
 
-      {/* Latest */}
-      <section className="ov-section" data-testid="overview-latest">
-        <p className="ov-section-label">Latest</p>
-        <ul className="ov-latest">
-          {[
-            { t: "Additional landing page requested", a: "12m ago" },
-            { t: "Homepage deadline confirmed", a: "Yesterday" },
-            { t: "Option B selected for homepage", a: "Aug 28" },
-          ].map((m, i) => (
-            <li key={i} className="ov-latest-row" data-testid={`overview-latest-${i}`}>
-              <span className="ov-latest-dot" />
-              <span className="ov-latest-title">{m.t}</span>
-              <span className="ov-latest-time">{m.a}</span>
-            </li>
+      <CategoryModal catKey={modalCat} memory={memory} onClose={() => setModalCat(null)} />
+    </div>
+  );
+}
+
+/* ─── Category drill-in modal (Scope / Deliverables / Requirements / …) ── */
+function CategoryModal({ catKey, memory, onClose }) {
+  if (!catKey) return null;
+  const c = CATEGORY_BY_KEY[catKey];
+  const items = dedupeByTitle(memory.grouped?.[catKey] || []);
+  return (
+    <div className="bkt-modal-overlay" onClick={onClose} data-testid="category-modal">
+      <div className="bkt-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="bkt-modal-head">
+          <span className="flex items-center gap-2">
+            <c.icon size={16} style={{ color: c.color }} />
+            <span className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>{c.label}</span>
+            <span className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>· {items.length}</span>
+          </span>
+          <button type="button" className="bkt-modal-x" onClick={onClose} data-testid="category-modal-close"><X size={16} /></button>
+        </div>
+        <div className="bkt-modal-body">
+          {items.length === 0 ? (
+            <p className="px-2 py-8 text-[13px] text-center" style={{ color: "var(--text-3)" }}>
+              Nothing here yet. Bracket adds {c.label.toLowerCase()} automatically as it reads your conversations.
+            </p>
+          ) : items.map((m) => {
+            const st = STATUS_META[m.status] || STATUS_META.confirmed;
+            return (
+              <div key={m.id} className="drill-row" data-testid={`drill-${m.id}`}>
+                <p className="drill-title">{m.title}</p>
+                {m.detail && <p className="drill-detail">{m.detail}</p>}
+                <div className="drill-meta">
+                  <span style={{ color: st.color }}>{st.label}</span>
+                  {m.source_label && <span>· {m.source_label}</span>}
+                  {m.occurred_at && <span>· {timeAgo(m.occurred_at)}</span>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Conversations — compressed client stream + Ask Bracket ──────────── */
+function ConversationsStream({ projectId, project, connections, memory }) {
+  const [orig, setOrig] = useState(null);
+  const all = useMemo(() => flattenMemory(memory), [memory]);
+  const stream = useMemo(() => (
+    dedupeByTitle([...all].sort((a, b) =>
+      String(b.occurred_at || b.created_at || "").localeCompare(String(a.occurred_at || a.created_at || "")))
+    ).slice(0, 15)
+  ), [all]);
+  const primary = connections[0];
+
+  return (
+    <div className="ov-wrap" data-testid="project-conversations">
+      <div className="ov-head">
+        <div className="ov-head-actions">
+          {primary && (
+            <span className="ov-source-pill">
+              <span className="ov-dot" style={{ background: "var(--success)" }} />
+              {(PROVIDER_META[primary.provider]?.label || primary.provider)} connected
+            </span>
+          )}
+        </div>
+        <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>CONVERSATIONS</p>
+        <h1 className="mt-2 text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>What your client said</h1>
+        <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Only the messages that matter — and a reply Bracket drafts for you.</p>
+      </div>
+
+      <div className="conv2-grid">
+        <div>
+          {connections.length === 0 ? (
+            <div className="ov-card ov-card--quiet"><Mail size={16} style={{ color: "var(--text-3)" }} /><p className="ov-card-sub">No conversations connected yet. Use the “+” next to Sources to add one.</p></div>
+          ) : stream.length === 0 ? (
+            <div className="ov-card ov-card--quiet"><p className="ov-card-sub">Nothing important yet. Bracket will surface key client messages here as they arrive.</p></div>
+          ) : (
+            <div className="stream" data-testid="conversation-stream">
+              {stream.map((m) => {
+                const c = CATEGORY_BY_KEY[m._catKey] || CATEGORY_BY_KEY.decision;
+                return (
+                  <div key={m.id} className="stream-row" data-testid={`stream-row-${m.id}`}>
+                    <span className="stream-ico"><c.icon size={15} style={{ color: c.color }} /></span>
+                    <div className="stream-body">
+                      <p className="stream-title">{m.title}{m.detail ? ` — ${m.detail}` : ""}</p>
+                      <div className="stream-meta">
+                        <span>{m.occurred_at ? timeAgo(m.occurred_at) : ""}</span>
+                        <span>· {PROVIDER_META[m.provider]?.label || m.provider}</span>
+                        {m.connection_id && (
+                          <button type="button" className="stream-orig" onClick={() => setOrig(m.connection_id)} data-testid={`stream-orig-${m.id}`}>
+                            · View original <ExternalLink size={11} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div>
+          <SuggestedReplyChat projectId={projectId} clientName={project?.client_name} connections={connections} />
+        </div>
+      </div>
+
+      <ViewOriginalModal projectId={projectId} connId={orig} connections={connections} onClose={() => setOrig(null)} />
+    </div>
+  );
+}
+
+/* ─── View original source conversation (full context) ────────────────── */
+function ViewOriginalModal({ projectId, connId, connections, onClose }) {
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!connId) { setContent(null); return; }
+    setLoading(true);
+    api.get(`/projects/${projectId}/connections/${connId}/content`)
+      .then((r) => setContent(r.data)).catch(() => setContent({ content: "" }))
+      .finally(() => setLoading(false));
+  }, [connId, projectId]);
+  if (!connId) return null;
+  const conn = connections.find((c) => c.id === connId);
+  return (
+    <div className="bkt-modal-overlay" onClick={onClose} data-testid="view-original-modal">
+      <div className="bkt-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="bkt-modal-head">
+          <span className="flex items-center gap-2 min-w-0">
+            <ProviderIcon provider={conn?.provider || "gmail"} size={15} bare />
+            <span className="text-[15px] font-semibold truncate" style={{ color: "var(--text)" }}>{conn?.source_name || "Original conversation"}</span>
+          </span>
+          <button type="button" className="bkt-modal-x" onClick={onClose} data-testid="view-original-close"><X size={16} /></button>
+        </div>
+        <div className="bkt-modal-body" style={{ padding: "18px 20px" }}>
+          {loading ? (
+            <div className="flex items-center gap-2 text-[13px]" style={{ color: "var(--text-3)" }}><Loader2 size={14} className="animate-spin" /> Loading original…</div>
+          ) : content?.content ? (
+            <div style={{ whiteSpace: "pre-wrap", fontSize: "13.5px", lineHeight: 1.7, color: "var(--text-2, #c4c4c4)" }}>{content.content}</div>
+          ) : (
+            <p className="text-[13px]" style={{ color: "var(--text-3)" }}>No cached content available for this conversation.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Timeline — Deadlines + Decisions + Scope changes + History ──────── */
+function TimelineView({ projectId, project, memory }) {
+  const [history, setHistory] = useState([]);
+  useEffect(() => {
+    api.get(`/projects/${projectId}/history`).then((r) => setHistory(r.data?.entries || [])).catch(() => {});
+  }, [projectId]);
+
+  const all = useMemo(() => flattenMemory(memory), [memory]);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const upcoming = useMemo(() => (
+    dedupeByTitle(all.filter((m) => m._catKey === "deadline" || m._catKey === "timeline"))
+      .map((m) => ({ ...m, _due: parseDueDate(`${m.title} ${m.detail || ""}`, now) }))
+      .filter((m) => m._due && m._due >= today)
+      .sort((a, b) => a._due - b._due)
+  ), [all]); // eslint-disable-line
+
+  const past = useMemo(() => {
+    const evs = [];
+    dedupeByTitle(all).forEach((m) => {
+      evs.push({ id: m.id, kind: m._catKey, title: m.title, detail: m.detail, at: m.occurred_at || m.created_at, provider: m.provider });
+    });
+    (history || []).forEach((h) => {
+      evs.push({ id: `h-${h.id}`, kind: "event", title: h.title, detail: h.detail, at: h.at, provider: h.provider });
+    });
+    return evs.filter((e) => e.at).sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  }, [all, history]);
+
+  const iconFor = (kind) => CATEGORY_BY_KEY[kind]?.icon || History;
+  const colorFor = (kind) => CATEGORY_BY_KEY[kind]?.color || "#8a8a8a";
+
+  return (
+    <div className="tl-wrap" data-testid="project-timeline">
+      <div className="ov-head">
+        <p className="mono-tag text-[10px]" style={{ color: "var(--text-3)" }}>TIMELINE</p>
+        <h1 className="mt-2 text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>What happened &amp; what's coming</h1>
+        <p className="mt-1.5 text-[14px]" style={{ color: "var(--text-3)" }}>Deadlines, decisions, scope changes and key events in one place.</p>
+      </div>
+
+      {upcoming.length > 0 && (
+        <section className="tl-section" data-testid="timeline-upcoming">
+          <p className="ov-section-label">Upcoming</p>
+          {upcoming.map((m, i) => (
+            <div key={m.id} className="tl-row" data-testid={`timeline-up-${m.id}`}>
+              <div className="tl-rail">
+                <span className="tl-dot"><Calendar size={14} style={{ color: colorFor("deadline") }} /></span>
+                {i < upcoming.length - 1 && <span className="tl-line" />}
+              </div>
+              <div className="tl-body">
+                <p className="tl-title">{m.title}</p>
+                {m.detail && <p className="tl-detail">{m.detail}</p>}
+                <div className="tl-meta"><Clock size={11} /> {daysLeftLabel(m._due)}</div>
+              </div>
+            </div>
           ))}
-        </ul>
+        </section>
+      )}
+
+      <section className="tl-section" data-testid="timeline-history">
+        <p className="ov-section-label">History</p>
+        {past.length === 0 ? (
+          <p className="text-[13px]" style={{ color: "var(--text-3)" }}>No events yet.</p>
+        ) : past.map((e, i) => {
+          const Icon = iconFor(e.kind);
+          return (
+            <div key={e.id} className="tl-row" data-testid={`timeline-hist-${e.id}`}>
+              <div className="tl-rail">
+                <span className="tl-dot"><Icon size={14} style={{ color: colorFor(e.kind) }} /></span>
+                {i < past.length - 1 && <span className="tl-line" />}
+              </div>
+              <div className="tl-body">
+                <p className="tl-title">{e.title}</p>
+                {e.detail && <p className="tl-detail">{e.detail}</p>}
+                <div className="tl-meta">{e.at ? timeAgo(e.at) : ""}{e.provider ? ` · ${PROVIDER_META[e.provider]?.label || e.provider}` : ""}</div>
+              </div>
+            </div>
+          );
+        })}
       </section>
     </div>
   );
