@@ -4658,7 +4658,38 @@ async def on_startup():
         partialFilterExpression={"email": {"$type": "string"}},
     )
 
-    # 4) Seed admin user(s) declared via ADMIN_EMAILS env var. Idempotent —
+    # 4) Purge legacy/decommissioned accounts declared via PURGE_USER_EMAILS
+    #    (comma-separated). Idempotent + cascades projects/sessions/OTPs. Guarded
+    #    so it can NEVER delete a currently-active admin (ADMIN_EMAILS / bootstrap).
+    try:
+        protected = {
+            *(e.strip().lower() for e in (os.environ.get("ADMIN_EMAILS", "").split(",")) if e.strip()),
+            (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").strip().lower(),
+        }
+        purge_emails = [
+            e.strip().lower()
+            for e in (os.environ.get("PURGE_USER_EMAILS", "").split(","))
+            if e.strip() and e.strip().lower() not in protected
+        ]
+        if purge_emails:
+            victims = await db.users.find(
+                {"email": {"$in": purge_emails}}, {"_id": 0, "user_id": 1, "email": 1}
+            ).to_list(length=1000)
+            if victims:
+                vids = [v["user_id"] for v in victims]
+                vemails = [v["email"] for v in victims if v.get("email")]
+                await db.projects.delete_many(
+                    {"$or": [{"owner_user_id": {"$in": vids}}, {"creator_email": {"$in": vemails}}]}
+                )
+                await db.user_sessions.delete_many({"user_id": {"$in": vids}})
+                if vemails:
+                    await db.email_otps.delete_many({"email": {"$in": vemails}})
+                await db.users.delete_many({"user_id": {"$in": vids}})
+                logger.info(f"[startup] purged legacy accounts: {vemails}")
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] legacy account purge skipped: {e}")
+
+    # 5) Seed admin user(s) declared via ADMIN_EMAILS env var. Idempotent —
     #    if the user already exists their password is left alone; only the
     #    bootstrap admin (matching BOOTSTRAP_ADMIN_EMAIL with BOOTSTRAP_ADMIN_PASSWORD)
     #    is seeded with a default password the first time.
@@ -4666,13 +4697,13 @@ async def on_startup():
         bootstrap_email = (os.environ.get("BOOTSTRAP_ADMIN_EMAIL") or "").strip().lower()
         bootstrap_pw = os.environ.get("BOOTSTRAP_ADMIN_PASSWORD") or ""
         if bootstrap_email and bootstrap_pw:
-            existing = await db.users.find_one({"email": bootstrap_email}, {"_id": 0, "user_id": 1, "password_hash": 1})
+            existing = await db.users.find_one({"email": bootstrap_email}, {"_id": 0, "user_id": 1, "password_hash": 1, "name": 1})
             if not existing:
                 from auth import gen_user_id as _gen_uid
                 doc = {
                     "user_id": _gen_uid(),
                     "email": bootstrap_email,
-                    "name": "Saksham Shukla",
+                    "name": "Bracket Admin",
                     "designation": "Founder",
                     "avatar": "mono-1",
                     "picture": "",
@@ -4689,6 +4720,13 @@ async def on_startup():
                     {"$set": {"password_hash": hash_password(bootstrap_pw), "updated_at": auth_iso(auth_now())}},
                 )
                 logger.info(f"[startup] set initial password for bootstrap admin {bootstrap_email}")
+            if existing and (existing.get("name") or "").strip().lower() == "saksham shukla":
+                # Normalize legacy admin display-name off the personal identity.
+                await db.users.update_one(
+                    {"user_id": existing["user_id"]},
+                    {"$set": {"name": "Bracket Admin", "updated_at": auth_iso(auth_now())}},
+                )
+                logger.info(f"[startup] normalized bootstrap admin name for {bootstrap_email}")
     except Exception as e:  # noqa: BLE001
         logger.warning(f"[startup] bootstrap admin seed skipped: {e}")
 

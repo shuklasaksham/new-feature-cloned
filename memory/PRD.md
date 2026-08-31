@@ -1332,3 +1332,9 @@ Fixes from user's 5-item pre-payment list:
 - Backend /admin/pitch-metrics: added sources_connected, memory_items_extracted, projects_with_source, pct_projects_connected, avg_sources_per_project, avg_memory_per_project (counts all connections incl. demo for board consistency). _compute_product_signals: added pct_users_connected_source (activation), sources_connected, memory_items_extracted, avg_sources_per_project, avg_memory_per_project, pct_projects_connected.
 - Frontend AdminAnalytics.jsx: headline "Locked & shared docs" → "Work tools connected"; new connect-tools row (Memory captured / Projects connected % / Sources per project / Memory per project / Projects with a source); activation row relabeled "Signup → 1st project" + "Connected a source %". Publish-log helper copy reframed to source-connect + memory-capture rates.
 - Verified via /admin/pitch-metrics curl + admin board screenshot (all tiles render: 5 sources, 64 memory, 100% connected, 1.67 src/proj, 21.3 mem/proj, 40% connected-a-source). Preview only — ships on next redeploy.
+
+## 2026-06 — Admin identity cleanup (support@ only; purge saksham)
+- backend/.env: added PURGE_USER_EMAILS="saksham.shukla@use-bracket.com". ADMIN_EMAILS/BOOTSTRAP_ADMIN_EMAIL stay support@use-bracket.com (pw Bracket@123, unchanged).
+- server.py startup: (1) env-driven idempotent purge of PURGE_USER_EMAILS users + cascade projects/sessions/otps, guarded to never delete current admins; (2) bootstrap admin seed name changed "Saksham Shukla"→"Bracket Admin" + normalization of existing legacy admin name on startup.
+- Preview verified: seeded test saksham → purged on restart; support@ login works, is_admin=True, name now "Bracket Admin"; saksham absent from DB.
+- IMPORTANT: prod takes effect only after REDEPLOY (removes saksham.shukla@use-bracket.com admin access + account, renames admin). saksham currently has admin in prod via older deployed env.
