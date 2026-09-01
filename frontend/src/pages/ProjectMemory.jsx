@@ -58,6 +58,7 @@ export default function ProjectMemory() {
   const [quota, setQuota] = useState(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [dismissedChangeCount, setDismissedChangeCount] = useState(0);
 
   const refreshProjects = () => {
     api.get("/projects").then(({ data }) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
@@ -146,6 +147,23 @@ export default function ProjectMemory() {
     return n;
   }, [memory]);
 
+  // Newest pending change across all sources — powers the change banner copy.
+  const latestChange = useMemo(() => {
+    let best = null;
+    MEMORY_CATEGORIES.forEach((cat) => {
+      (memory.grouped?.[cat.key] || []).forEach((m) => {
+        if (m.status !== "detected" && m.status !== "review") return;
+        const t = String(m.occurred_at || m.created_at || "");
+        if (!best || t.localeCompare(best._t) > 0) best = { ...m, _t: t };
+      });
+    });
+    if (!best) return null;
+    const label = best.source_label || PROVIDER_META[best.provider]?.label || best.provider || "a source";
+    return { title: best.title, sourceLabel: label };
+  }, [memory]);
+
+  const showChangeBanner = detectedCount > 0 && detectedCount !== dismissedChangeCount;
+
   // Flattened, newest-first list across all categories — powers the Overview
   // "Today's Focus" sections (computed inside OverviewView from `memory`).
   const openReview = () => setUpdateOpen(true);
@@ -199,6 +217,42 @@ export default function ProjectMemory() {
                 <button type="button" className="plan-lock-cta" onClick={() => setPlanModalOpen(true)} data-testid="plan-lock-cta">
                   Renew or upgrade <ArrowRight size={14} />
                 </button>
+              </div>
+            )}
+            {showChangeBanner && (
+              <div className="change-banner" data-testid="change-notification-banner">
+                <div className="change-banner-left">
+                  <span className="change-banner-icon change-banner-pulse">
+                    <span className="relative inline-flex w-2 h-2">
+                      <span className="absolute inset-0 rounded-full opacity-70 animate-ping" style={{ background: "var(--warning)" }} />
+                      <span className="relative inline-block w-2 h-2 rounded-full" style={{ background: "var(--warning)" }} />
+                    </span>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="change-banner-title" data-testid="change-banner-title">
+                      Something changed{latestChange?.sourceLabel ? ` in ${latestChange.sourceLabel}` : ""}
+                    </span>
+                    <span className="change-banner-sub">
+                      {detectedCount === 1
+                        ? (latestChange?.title || "A new update affects this project.")
+                        : `${detectedCount} new updates affect this project.`}
+                    </span>
+                  </span>
+                </div>
+                <div className="change-banner-right">
+                  <button type="button" className="change-banner-cta" onClick={() => setUpdateOpen(true)} data-testid="change-banner-review">
+                    <Sparkles size={13} /> Review {detectedCount > 1 ? `${detectedCount} changes` : "change"}
+                  </button>
+                  <button
+                    type="button"
+                    className="change-banner-close"
+                    onClick={() => setDismissedChangeCount(detectedCount)}
+                    aria-label="Dismiss"
+                    data-testid="change-banner-dismiss"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
             )}
             {false && (

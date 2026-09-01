@@ -1835,7 +1835,7 @@ export default function AdminAnalytics() {
   }
   if (!data) return null;
 
-  const { kpis, new_users_daily, projects_daily, status_distribution, step_funnel, top_users, share_funnel, activity_heatmap, acquisition, activation, engagement, business } = data;
+  const { kpis, new_users_daily, projects_daily, status_distribution, step_funnel, top_users, share_funnel, activity_heatmap, acquisition, activation, engagement, business, ph_launch } = data;
 
   const gridProps = { strokeDasharray: "3 3", stroke: COLORS.grid, vertical: false };
   const axisProps = {
@@ -1896,6 +1896,24 @@ export default function AdminAnalytics() {
         <Kpi label="Accept rate"     value={kpis.share_accept_rate} unit="%" tone="sky" testid="kpi-accept-rate" />
         <Kpi label="Avg steps"       value={kpis.avg_steps}         unit="/5" tone="pink" testid="kpi-avg-steps" />
       </div>
+
+      {/* ============ PRODUCT HUNT LAUNCH OFFER ============ */}
+      <SectionHead
+        label="Launch offer"
+        title="Product Hunt — first project free"
+        subtitle={
+          ph_launch?.enabled
+            ? "The 14-day free trial is currently LIVE. Claims and paid conversions below update in real time."
+            : "The launch offer is currently OFF. These lifetime totals reflect everyone who ever claimed the trial."
+        }
+      />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3" data-testid="ph-launch-kpis">
+        <Kpi label="Trials claimed"  value={ph_launch?.claimed ?? 0}      tone="coral"   testid="kpi-ph-claimed" />
+        <Kpi label="On trial now"    value={ph_launch?.active ?? 0}       tone="violet"  testid="kpi-ph-active" />
+        <Kpi label="Converted to paid" value={ph_launch?.converted ?? 0}  tone="emerald" testid="kpi-ph-converted" />
+        <Kpi label="Conversion rate" value={ph_launch?.conversion_rate ?? 0} unit="%" tone="lime" testid="kpi-ph-conversion" />
+      </div>
+
 
       {/* Row 1: two line/area charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

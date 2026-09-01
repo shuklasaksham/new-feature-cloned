@@ -2653,6 +2653,24 @@ async def admin_analytics(request: Request):
         "repeat_creators": sum(1 for u in top_users if u["projects"] > 1),
     }
 
+    # ============================================================
+    # PRODUCT HUNT LAUNCH OFFER — trials claimed vs converted to paid.
+    # `ph_claimed` is set true forever when a user activates the free
+    # 14-day trial; conversion = they later bought a paid plan.
+    # ============================================================
+    _paid_plans = ["monthly", "project"]
+    ph_claimed = await db.users.count_documents({"ph_claimed": True})
+    ph_active = await db.users.count_documents({"plan": "ph_launch"})
+    ph_converted = await db.users.count_documents({"ph_claimed": True, "plan": {"$in": _paid_plans}})
+    ph_conversion_rate = round((ph_converted / ph_claimed) * 100, 1) if ph_claimed else 0.0
+    ph_launch = {
+        "enabled": bool(PH_LAUNCH_STATE.get("enabled")),
+        "claimed": ph_claimed,
+        "active": ph_active,
+        "converted": ph_converted,
+        "conversion_rate": ph_conversion_rate,
+    }
+
     return {
         "generated_at": auth_iso(now),
         "kpis": {
@@ -2663,6 +2681,7 @@ async def admin_analytics(request: Request):
             "share_accept_rate": share_accept_rate,
             "avg_steps": avg_steps_val,
         },
+        "ph_launch": ph_launch,
         "new_users_daily": new_users_daily,
         "projects_daily": projects_daily,
         "status_distribution": status_distribution,
@@ -4634,6 +4653,12 @@ class PhLaunchToggleIn(BaseModel):
 @api.get("/admin/ph-launch")
 async def admin_get_ph_launch(request: Request):
     await auth_current_admin(request, db)
+    return {"enabled": bool(PH_LAUNCH_STATE.get("enabled"))}
+
+
+@api.get("/public/ph-launch")
+async def public_get_ph_launch():
+    """Public (no auth) — lets the marketing homepage show/hide the launch ribbon."""
     return {"enabled": bool(PH_LAUNCH_STATE.get("enabled"))}
 
 

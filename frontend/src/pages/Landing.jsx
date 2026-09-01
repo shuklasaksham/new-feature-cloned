@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowRight, AlertCircle, X } from "lucide-react";
 import { motion } from "framer-motion";
 import Seo from "../components/Seo";
 import { api } from "../lib/api";
@@ -107,6 +107,19 @@ function ProductVisual() {
 export default function Landing() {
   const { user } = useAuth();
   const startHref = user ? "/app" : "/login";
+  const [phOn, setPhOn] = useState(false);
+  const [ribbonDismissed, setRibbonDismissed] = useState(() => {
+    try { return localStorage.getItem("bracket.ph_ribbon_dismissed") === "1"; } catch { return false; }
+  });
+
+  useEffect(() => {
+    api.get("/public/ph-launch").then(({ data }) => setPhOn(!!data.enabled)).catch(() => {});
+  }, []);
+
+  const dismissRibbon = () => {
+    setRibbonDismissed(true);
+    try { localStorage.setItem("bracket.ph_ribbon_dismissed", "1"); } catch { /* ignore */ }
+  };
 
   return (
     <div data-testid="landing-page" className="lp-page">
@@ -115,6 +128,27 @@ export default function Landing() {
         description="Connect the conversations where your project happens. Bracket keeps track of scope, deliverables, requirements, decisions and deadlines — and shows you when something changes."
         path="/"
       />
+
+      {phOn && !ribbonDismissed && (
+        <div className="ph-ribbon" data-testid="ph-launch-ribbon">
+          <Link to="/login" className="ph-ribbon-msg" data-testid="ph-launch-ribbon-cta">
+            <span className="ph-ribbon-badge">🚀 Product Hunt</span>
+            <span className="ph-ribbon-text">
+              Your first project is <strong>free for 14 days</strong> — no card required.
+            </span>
+            <span className="ph-ribbon-link">Claim it <ArrowRight size={13} /></span>
+          </Link>
+          <button
+            type="button"
+            className="ph-ribbon-close"
+            onClick={dismissRibbon}
+            aria-label="Dismiss"
+            data-testid="ph-launch-ribbon-close"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
       {/* 1 — HERO */}
       <section className="lp-section lp-hero">

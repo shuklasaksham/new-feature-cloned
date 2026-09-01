@@ -4600,6 +4600,30 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .plan-lock-cta { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 18px; border-radius: 9999px; background: #fff; color: #000; font-size: 13px; font-weight: 600; font-family: var(--font-mono, ui-monospace, monospace); white-space: nowrap; transition: background .14s; }
 .plan-lock-cta:hover { background: #e8e8e8; }
 
+/* ── Product Hunt launch ribbon (public homepage) ───────────────────── */
+.ph-ribbon { position: relative; z-index: 40; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 44px 10px 16px; background: linear-gradient(90deg, rgba(255,111,60,0.16), rgba(255,111,60,0.08)); border-bottom: 1px solid rgba(255,111,60,0.32); }
+.ph-ribbon-msg { display: inline-flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; text-decoration: none; }
+.ph-ribbon-badge { display: inline-flex; align-items: center; font-family: var(--font-mono, ui-monospace, monospace); font-size: 11px; letter-spacing: 0.02em; color: #ff8a5c; font-weight: 600; white-space: nowrap; }
+.ph-ribbon-text { font-size: 13px; color: #f0f0f0; }
+.ph-ribbon-text strong { color: #fff; font-weight: 600; }
+.ph-ribbon-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: #ff8a5c; white-space: nowrap; transition: color .14s; }
+.ph-ribbon-msg:hover .ph-ribbon-link { color: #ffab88; }
+.ph-ribbon-close { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 9999px; color: #b98a72; transition: background .14s, color .14s; }
+.ph-ribbon-close:hover { background: rgba(255,111,60,0.14); color: #ff8a5c; }
+
+/* ── Change notification banner (project workspace) ─────────────────── */
+.change-banner { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 0 0 18px; padding: 13px 18px; border-radius: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); }
+.change-banner-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.change-banner-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9999px; background: rgba(255,255,255,0.08); color: var(--text); flex-shrink: 0; }
+.change-banner-pulse { position: relative; display: inline-flex; }
+.change-banner-title { display: block; font-size: 13.5px; font-weight: 600; color: #f2f2f2; letter-spacing: -0.01em; }
+.change-banner-sub { display: block; margin-top: 1px; font-size: 12px; color: var(--text-3); }
+.change-banner-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.change-banner-cta { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 16px; border-radius: 9999px; background: #fff; color: #000; font-size: 12.5px; font-weight: 600; font-family: var(--font-mono, ui-monospace, monospace); white-space: nowrap; transition: background .14s; }
+.change-banner-cta:hover { background: #e8e8e8; }
+.change-banner-close { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9999px; color: var(--text-3); transition: background .14s, color .14s; }
+.change-banner-close:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+
 .psb-nav { display: flex; flex-direction: column; gap: 4px; }
 .psb-nav-item { display: flex; align-items: center; gap: 14px; height: 50px; padding: 0 16px; border-radius: 9999px; color: #8a8a8a; font-family: "Geist", sans-serif; font-size: 15.5px; font-weight: 500; transition: background .16s ease, color .16s ease; }
 .psb-nav-item:hover { background: #171717; color: #d8d8d8; }
