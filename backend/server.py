@@ -4843,6 +4843,7 @@ app.include_router(_connectors.router)
 @app.on_event("startup")
 async def _start_connector_poller():
     asyncio.create_task(_connectors.poller_loop())
+    asyncio.create_task(_connectors.scope_digest_loop())
 
 _cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
 # Scoped fallback regex — only Bracket's own domains (prod, emergent host, preview,

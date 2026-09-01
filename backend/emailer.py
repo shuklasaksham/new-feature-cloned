@@ -967,3 +967,103 @@ async def send_payment_receipt(
         logger.exception(f"payment receipt failed for {to_email}: {e}")
         return False
 
+
+
+# --- DAILY SCOPE-ALERT DIGEST ---------------------------------------------
+def _scope_digest_html(owner_name: str, groups: list, base: str) -> str:
+    display_name = (owner_name or "").strip() or "there"
+    accent = "#F59E0B"
+    total = sum(len(g.get("items") or []) for g in groups)
+    blocks = []
+    for g in groups:
+        items = g.get("items") or []
+        if not items:
+            continue
+        purl = f"{base}/project/{g.get('project_id')}"
+        rows = "".join(
+            f"<tr><td style='padding:10px 14px;border-bottom:1px solid #22242A;'>"
+            f"<span style='font-size:13.5px;color:#F4F5F7;font-weight:600;'>{(it.get('title') or '')[:160]}</span>"
+            + (f"<br/><span style='font-size:12.5px;color:#9AA1AC;line-height:1.5;'>{(it.get('detail') or '')[:220]}</span>" if it.get('detail') else "")
+            + "</td></tr>"
+            for it in items[:12]
+        )
+        blocks.append(
+            f"<p style='margin:22px 0 8px 0;font-size:13px;color:#8A93A0;'>"
+            f"<strong style='color:#F4F5F7;'>{(g.get('project_name') or 'your project')}</strong> &middot; {len(items)} new</p>"
+            f"<table width='100%' cellpadding='0' cellspacing='0' style='background:#16181D;border:1px solid #26282D;border-radius:12px;'>{rows}</table>"
+            f"<a href='{purl}' style='display:inline-block;margin-top:10px;font-size:12.5px;color:{accent};text-decoration:none;'>Review in Bracket &rarr;</a>"
+        )
+    return f"""<!doctype html>
+<html><body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#08090A;padding:44px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;background:#0F1114;border:1px solid #26282D;border-radius:16px;">
+<tr><td style="padding:32px 36px 0 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:{accent};">
+    &lt; bracket &middot; daily scope digest &gt;
+  </p>
+</td></tr>
+<tr><td style="padding:18px 36px 0 36px;">
+  <h1 style="margin:0;font-size:26px;line-height:1.2;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;">
+    Hi {display_name} &mdash;<br/><span style="color:{accent};">{total} new client request{'s' if total != 1 else ''} to review</span>
+  </h1>
+</td></tr>
+<tr><td style="padding:8px 36px 0 36px;">
+  <p style="margin:0 0 4px 0;font-size:14px;line-height:1.6;color:#B9BFC9;">Here's everything new across your projects since your last digest.</p>
+  {''.join(blocks)}
+</td></tr>
+<tr><td style="padding:30px 36px 28px 36px;">
+  <p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:20px;">
+    Bracket &middot; project memory for client work
+  </p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+
+def _scope_digest_text(owner_name: str, groups: list, base: str) -> str:
+    display_name = (owner_name or "").strip() or "there"
+    lines = [f"Hi {display_name},", "", "New client requests to review since your last digest:", ""]
+    for g in groups:
+        items = g.get("items") or []
+        if not items:
+            continue
+        lines.append(f"{g.get('project_name') or 'your project'} ({len(items)} new):")
+        for it in items[:12]:
+            d = f" — {it.get('detail')}" if it.get("detail") else ""
+            lines.append(f"  - {it.get('title', '')}{d}")
+        lines.append(f"  Review: {base}/project/{g.get('project_id')}")
+        lines.append("")
+    lines.append("— Bracket")
+    return "\n".join(lines)
+
+
+async def send_scope_digest(owner_email: str, owner_name: str, groups: list, public_base_url: str = "") -> bool:
+    """One batched daily digest of new scope asks across an owner's projects."""
+    groups = [g for g in (groups or []) if (g.get("items"))]
+    if not owner_email or not groups:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning("RESEND_API_KEY not set; skipping scope digest")
+        return False
+    resend.api_key = api_key
+    base = (public_base_url or os.environ.get("PUBLIC_BASE_URL", "https://use-bracket.com")).rstrip("/")
+    total = sum(len(g.get("items") or []) for g in groups)
+    params = {
+        "from": _sender(),
+        "to": [owner_email],
+        "subject": f"Scope digest: {total} new client request{'s' if total != 1 else ''}",
+        "html": _scope_digest_html(owner_name, groups, base),
+        "text": _scope_digest_text(owner_name, groups, base),
+        "reply_to": os.environ.get("SENDER_EMAIL", ""),
+    }
+    try:
+        result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"scope digest sent to {owner_email}: {result.get('id') if isinstance(result, dict) else result}")
+        return True
+    except Exception as e:
+        logger.exception(f"scope digest failed for {owner_email}: {e}")
+        return False

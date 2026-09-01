@@ -32,7 +32,7 @@ from pydantic import BaseModel, Field
 
 from auth import current_user
 from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, extract_from_notes, suggest_reply_for_change, suggest_project_reply, build_project_update
-from emailer import send_scope_creep_alert
+from emailer import send_scope_digest
 
 logger = logging.getLogger("bracket")
 ROOT_DIR = Path(__file__).parent
@@ -1387,6 +1387,29 @@ async def _gmail_client_email(account: dict, thread_id: str) -> str:
     return ""
 
 
+async def _confirm_replied_items(project_id: str, source_ids: list) -> int:
+    """Reply = Confirm — when the owner replies to a client on a thread/channel,
+    the pending (detected/review) items that came from THAT source are marked
+    confirmed, since the owner has now acted on them. Scoped to the source
+    replied to, so unrelated pending asks are left alone."""
+    source_ids = [s for s in source_ids if s]
+    if not source_ids:
+        return 0
+    conns = await db.source_connections.find(
+        {"project_id": project_id, "source_id": {"$in": source_ids}}, {"_id": 0, "id": 1}
+    ).to_list(length=50)
+    conn_ids = [c["id"] for c in conns]
+    if not conn_ids:
+        return 0
+    now = _now_iso()
+    res = await db.project_memory.update_many(
+        {"project_id": project_id, "connection_id": {"$in": conn_ids}, "status": {"$in": ["detected", "review"]}},
+        {"$set": {"status": "confirmed", "updated_at": now},
+         "$push": {"history": {"at": now, "action": "confirmed", "note": "Confirmed by your reply"}}},
+    )
+    return res.modified_count
+
+
 @router.post("/projects/{project_id}/send-slack")
 async def project_send_slack(project_id: str, request: Request):
     """Post the reply to the connected Slack channel directly — no redirect."""
@@ -1420,7 +1443,12 @@ async def project_send_slack(project_id: str, request: Request):
             raise HTTPException(400, "Bracket isn't a member of that Slack channel — add it, then try again.")
         logger.warning("slack send failed %s: %s", r.status_code, data)
         raise HTTPException(502, f"Slack wouldn't post the message ({err or r.status_code}).")
-    return {"sent": True}
+    try:
+        confirmed = await _confirm_replied_items(project_id, [channel])
+    except Exception as e:
+        logger.warning("reply-confirm (slack) failed: %s", e)
+        confirmed = 0
+    return {"sent": True, "confirmed": confirmed}
 
 
 @router.post("/projects/{project_id}/send-email")
@@ -1508,7 +1536,14 @@ async def project_send_email(project_id: str, request: Request):
 
     if not sent:
         raise HTTPException(502, "Gmail wouldn't send the message right now.")
-    return {"sent": True, "to": sent, "failed": failed}
+    # Reply = Confirm: acting on the thread confirms its pending asks.
+    try:
+        replied = [t["thread_id"] for t in clean if t["to"] in sent and t.get("thread_id")]
+        confirmed = await _confirm_replied_items(project_id, replied)
+    except Exception as e:
+        logger.warning("reply-confirm (email) failed: %s", e)
+        confirmed = 0
+    return {"sent": True, "to": sent, "failed": failed, "confirmed": confirmed}
 
 
 @router.get("/projects/{project_id}/memory")
@@ -2160,8 +2195,10 @@ async def _sync_connection(conn: dict) -> dict:
     if mem_docs:
         await db.project_memory.insert_many(mem_docs)
 
-    # Notifications + scope-creep email — deduped by fingerprint so the SAME
-    # detected change can never generate a second "Scope Alert".
+    # Notifications — deduped by fingerprint so the SAME detected change can
+    # never surface (or later email) twice. The email itself is NOT sent here:
+    # fresh scope asks are queued as `digested:false` notifications and a daily
+    # digest job batches them into one email per owner (send_scope_digest).
     alerted = set(conn.get("alerted_fingerprints") or [])
     scope_items = [d for d in mem_docs if d["category"] == "scope_change"]
     fresh_scope = [s for s in scope_items if _hash(s["title"].strip().lower())[:16] not in alerted]
@@ -2173,23 +2210,8 @@ async def _sync_connection(conn: dict) -> dict:
             "provider": conn["provider"], "source_label": conn["source_name"],
             "memory_id": s["id"], "type": "scope_creep",
             "title": s["title"], "detail": s.get("detail", ""),
-            "read": False, "created_at": now,
+            "read": False, "digested": False, "created_at": now,
         } for s in fresh_scope[:6]])
-        try:
-            owner = await db.users.find_one({"user_id": conn["user_id"]}, {"_id": 0, "email": 1, "name": 1})
-            proj_full = await db.projects.find_one({"id": conn["project_id"]}, {"_id": 0, "client_name": 1})
-            if owner and owner.get("email"):
-                asyncio.create_task(send_scope_creep_alert(
-                    owner_email=owner["email"],
-                    owner_name=owner.get("name", ""),
-                    project_name=project_name,
-                    project_id=conn["project_id"],
-                    client_name=(proj_full or {}).get("client_name", ""),
-                    items=[{"title": s["title"], "detail": s.get("detail", "")} for s in fresh_scope[:8]],
-                    public_base_url=PUBLIC_BASE,
-                ))
-        except Exception as e:
-            logger.warning("scope-creep alert scheduling failed for %s: %s", conn["id"], e)
         alerted |= {_hash(s["title"].strip().lower())[:16] for s in fresh_scope}
 
     ev_docs = []
@@ -2563,3 +2585,59 @@ async def poller_loop():
             return
         except Exception as e:
             logger.warning("connector poller iteration failed: %s", e)
+
+
+async def scope_digest_loop():
+    """Once per 24h per owner: batch all new (un-digested) scope asks into a
+    SINGLE digest email, instead of one email per sync. In-app notifications are
+    still created instantly by the sync; this only governs the email cadence."""
+    while True:
+        try:
+            await asyncio.sleep(1800)  # re-check every 30 min
+            now_dt = datetime.now(timezone.utc)
+            user_ids = await db.notifications.distinct("user_id", {"type": "scope_creep", "digested": False})
+            for uid in user_ids:
+                user = await db.users.find_one(
+                    {"user_id": uid}, {"_id": 0, "email": 1, "name": 1, "last_scope_digest_at": 1}
+                )
+                if not user or not user.get("email"):
+                    continue
+                last = user.get("last_scope_digest_at")
+                if last:
+                    try:
+                        if (now_dt - datetime.fromisoformat(last.replace("Z", "+00:00"))).total_seconds() < 86400:
+                            continue
+                    except Exception:
+                        pass
+                pending = await db.notifications.find(
+                    {"user_id": uid, "type": "scope_creep", "digested": False}, {"_id": 0}
+                ).sort("created_at", 1).to_list(length=200)
+                if not pending:
+                    continue
+                groups = {}
+                for n in pending:
+                    g = groups.setdefault(n.get("project_id"), {
+                        "project_name": n.get("project_name") or "your project",
+                        "project_id": n.get("project_id"), "items": [],
+                    })
+                    g["items"].append({"title": n.get("title", ""), "detail": n.get("detail", "")})
+                ok = False
+                try:
+                    ok = await send_scope_digest(
+                        owner_email=user["email"], owner_name=user.get("name", ""),
+                        groups=list(groups.values()), public_base_url=PUBLIC_BASE,
+                    )
+                except Exception as e:
+                    logger.warning("scope digest send failed for %s: %s", uid, e)
+                # Always advance the 24h clock; only clear the queue once sent, so
+                # a delivery failure simply rolls into tomorrow's digest.
+                await db.users.update_one({"user_id": uid}, {"$set": {"last_scope_digest_at": _now_iso()}})
+                if ok:
+                    await db.notifications.update_many(
+                        {"user_id": uid, "type": "scope_creep", "digested": False},
+                        {"$set": {"digested": True}},
+                    )
+        except asyncio.CancelledError:
+            return
+        except Exception as e:
+            logger.warning("scope digest loop iteration failed: %s", e)
