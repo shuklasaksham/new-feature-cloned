@@ -897,7 +897,9 @@ async def preview_sources(body: PreviewIn, request: Request):
         digest = await _fetch_digest(body.provider, account, src.id)
         if not digest or len(digest) < 40:
             raise HTTPException(422, f"Not enough content in {src.name or src.id}.")
-        analysis = await analyze_connected_source(body.provider, src.name or src.id, digest, candidates)
+        own_email = account.get("label") or user.get("email", "")
+        analysis = await analyze_connected_source(body.provider, src.name or src.id, digest, candidates,
+                                                  own_email=own_email, own_name=user.get("name", ""))
         return {"source": src.model_dump(), "digest": digest[:20000], "analysis": analysis}
 
     results = await asyncio.gather(*(_one(s) for s in body.sources), return_exceptions=True)

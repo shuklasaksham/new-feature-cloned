@@ -1,4 +1,11 @@
-## Changelog — 2026-06 (fix: live changes were auto-confirmed → no notification)
+## Changelog — 2026-06 ("confirmed" now means the OWNER acted — not the client asserted)
+- **Semantic fix (option a)**: `confirmed` must reflect that the project owner acted (agreed / decided / sent), never just that the client stated something firmly. Previously the initial import trusted the AI's "explicit agreement" read, so a client demand ("deadline is now Sep 15", "add an About page") was stamped `confirmed` even though the owner never replied or reviewed it.
+- **`analyze_connected_source`** (connect_ai.py) now takes `own_email`/`own_name` (the connected identity) and classifies: `confirmed` ONLY for items the OWNER stated/agreed/sent; anything the CLIENT requested that the owner hasn't explicitly agreed to → `detected` (pending review); unclear attribution → `detected`. `preview_sources` passes `own_email = account.label or user.email` + `own_name`.
+- Combined with the prior sync fix (all live changes forced `detected`), unreplied/unreviewed client asks now ALWAYS surface as pending → bell + Needs-attention + change banner.
+- Verified with a live AI call on a synthetic thread (client demands + owner agrees to one item): owner-agreed homepage → `confirmed`; client-requested About page & Sep 15 deadline → `detected`. Correct. NOTE: takes effect on newly imported/synced content after deploy.
+
+
+
 - **Bug**: A client change synced from a source (deadline moved, scope added, decision made) landed straight into project memory with NO notification — no bell, no "Needs attention", no change banner ("You're all caught up" despite counts rising).
 - **Root cause**: `_sync_connection` (connectors.py ~2054) trusted the AI's `status` for each new item, and `detect_source_updates` marks explicit/unambiguous changes as `"confirmed"`. Confirmed items skip the pending-review flow entirely (`detectedCount` counts only `detected`/`review`), so no notification ever fired for clear changes.
 - **Fix**: on an ONGOING sync, every detected item is now forced to `status="detected"` (pending review) regardless of the AI's guess — so every client change surfaces for review (bell + Needs-attention + change banner). The AI's confirmed/detected guess is still honored only for the INITIAL baseline extraction at project creation.

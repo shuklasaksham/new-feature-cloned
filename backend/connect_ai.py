@@ -10,19 +10,28 @@ logger = logging.getLogger("bracket")
 _MAX_CONTENT = 12000
 
 
-async def analyze_connected_source(provider: str, source_name: str, content: str, candidates: list) -> dict:
+async def analyze_connected_source(provider: str, source_name: str, content: str, candidates: list,
+                                   own_email: str = "", own_name: str = "") -> dict:
     """First-pass understanding of a freshly selected source. Returns project
     suggestion, extracted items (each confirmed|detected), and a possible
     match against the user's existing projects."""
     cand_lines = "\n".join(
         f'- id: {c["id"]} | name: {c["name"]} | client: {c.get("client") or "unknown"}' for c in candidates[:25]
     ) or "- (none)"
+    you = (f"{own_name} <{own_email}>" if own_name else own_email) or "the connected account"
     prompt = f"""You are Bracket, an intelligence layer that turns scattered client work into structured projects.
 Analyze this {provider} source titled "{source_name}" and extract project intelligence.
 
+WHO IS "YOU": messages/comments sent BY {you} are the project OWNER (the person using Bracket).
+Everyone else in the content is the CLIENT / other party.
+
 CRITICAL RULES:
 - NEVER invent decisions, requirements, deadlines, approvals or scope. Only extract what the content supports.
-- Classify each item's status: "confirmed" ONLY when explicitly agreed/approved/stated as final; otherwise "detected".
+- STATUS is about whether the OWNER has ACTED on it — NOT about how firmly the client stated it:
+  • "confirmed" ONLY when the OWNER ({you}) stated it, agreed to it, decided it, or sent it themselves.
+  • Anything the CLIENT requested / proposed / asked for that the OWNER has NOT explicitly agreed to or replied to in this content is "detected" (it still needs the owner's review).
+  • A client stating something firmly (e.g. "the deadline is now Sep 15", "add an About page") is still "detected" until the owner agrees — a client demand is not the owner's agreement.
+  • If you cannot clearly tell who said it or whether the owner agreed, default to "detected".
 - Casual mentions ("maybe we could add dark mode") are "detected", never "confirmed".
 - If the content is thin, return fewer items. Empty arrays are fine.
 - Extract ONLY what actually matters to running the project. Skip greetings, small talk, pleasantries and generic chatter.
