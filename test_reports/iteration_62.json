@@ -1,0 +1,22 @@
+{
+  "summary": "Verified the ProjectUpdateReview stale-compose regression fix. Full flow tested on /project/222535e8-18f0-403d-b62f-d0048acbbc72 as support@use-bracket.com: banner Review opens project-update-drawer (PROJECT CHANGE), Accept transitions to update-compose, Skip closes, and re-triggering the modal no longer shows the stale 'Send your client an update' compose screen — it correctly shows the caught-up empty state (all pending items were consumed in the single Accept, which is an accepted pass per the review request).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fix at ProjectUpdateReview.jsx L57 is correct: setCompose(null); setDraft('') added to the open-effect. Both close paths (update-compose-skip and update-compose-close) call the same onClose, so the same effect covers both. No further changes needed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "100%"},
+  "test_credentials": "support@use-bracket.com / Bracket@123 (admin) — used successfully",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "ProjectUpdateReview stale-compose bug is FIXED and verified. On project 222535e8-18f0-403d-b62f-d0048acbbc72 the banner (data-testid=change-banner-review) bundles all 14 pending changes into ONE update; a single Accept consumes all of them, so the banner disappears afterwards and reopening the modal via the header bell (data-testid=header-bell) yields the calm 'You're all caught up' state (project-update-empty) rather than the stale update-compose. The X-close path could not be exercised on this project because there were no more pending changes after the first Accept, but it is guaranteed by the same open-effect reset (setCompose(null); setDraft('')) since update-compose-close and update-compose-skip both invoke the same onClose handler.",
+  "rca of the issue": "Root cause was in ProjectUpdateReview.jsx open-effect (L55-71): it reset update/none/removed but not compose/draft. So if the user Accepted (which sets compose), then closed via Skip or X, the local compose state persisted. Next time open flipped from false→true, the render short-circuit at L138 (`if (compose) return composeModal`) fired before the build POST completed, showing the stale compose screen. Fix adds setCompose(null); setDraft('') to the reset line, ensuring reopen always starts from a fresh review/loading/empty state."
+}

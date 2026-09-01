@@ -54,7 +54,7 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
 
   useEffect(() => {
     if (!open || !projectId) return;
-    setUpdate(null); setNone(false); setRemoved({}); setLoading(true);
+    setUpdate(null); setNone(false); setRemoved({}); setCompose(null); setDraft(""); setLoading(true);
     let cancelled = false;
     (async () => {
       try {
