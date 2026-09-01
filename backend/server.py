@@ -587,10 +587,12 @@ class SuggestIn(_BM):
 
 
 @api.post("/suggest")
-async def ai_suggest(body: SuggestIn):
+async def ai_suggest(body: SuggestIn, request: Request):
     """Returns 0-4 short autofill suggestions for a form field. Safe to call
     on every keystroke (frontend debounces 600ms); errors return empty list,
-    not 500, so a hiccup never blocks the user's typing."""
+    not 500, so a hiccup never blocks the user's typing. Requires a logged-in
+    user so anonymous callers can't burn LLM budget."""
+    await current_user(request, db)
     suggestions = await run_field_suggestions(
         body.step, body.field, body.partial, body.context
     )
@@ -3407,8 +3409,8 @@ async def _get_project_or_404(project_id: str) -> dict:
 
 
 @api.get("/projects/{project_id}", response_model=ProjectOut)
-async def get_project(project_id: str):
-    return await _get_project_or_404(project_id)
+async def get_project(project_id: str, request: Request):
+    return await _get_owned_project_or_404(project_id, request)
 
 
 async def _safe_generate_title(raw_paste: str) -> str:
@@ -3423,8 +3425,8 @@ async def _safe_generate_title(raw_paste: str) -> str:
 
 # --- STEP 1: SITUATION FRAMING ---
 @api.post("/projects/{project_id}/situation", response_model=ProjectOut)
-async def step_situation(project_id: str, body: SituationIn):
-    project = await _get_project_or_404(project_id)
+async def step_situation(project_id: str, body: SituationIn, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     engine = project.get("engine", "claude")
     payload = body.model_dump()
     # Paste-anything path: fold extraction into the main framing call
@@ -3564,8 +3566,8 @@ async def step_situation(project_id: str, body: SituationIn):
 
 # --- STEP 2: CONTEXT COMPRESSION ---
 @api.post("/projects/{project_id}/context", response_model=ProjectOut)
-async def step_context(project_id: str, body: ContextIn):
-    project = await _get_project_or_404(project_id)
+async def step_context(project_id: str, body: ContextIn, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     if not project.get("framing"):
         raise HTTPException(status_code=400, detail="Complete Situation Framing first.")
     payload = body.model_dump()
@@ -3599,8 +3601,8 @@ async def step_context(project_id: str, body: ContextIn):
 
 # --- STEP 3: DECISION ENGINE ---
 @api.post("/projects/{project_id}/decision", response_model=ProjectOut)
-async def step_decision(project_id: str, body: DecisionIn):
-    project = await _get_project_or_404(project_id)
+async def step_decision(project_id: str, body: DecisionIn, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     if not project.get("context"):
         raise HTTPException(status_code=400, detail="Complete Context Compression first.")
     payload = body.model_dump()
@@ -3636,8 +3638,8 @@ async def step_decision(project_id: str, body: DecisionIn):
 
 # --- STEP 4: ARTIFACTS ---
 @api.post("/projects/{project_id}/artifacts", response_model=ProjectOut)
-async def step_artifacts(project_id: str):
-    project = await _get_project_or_404(project_id)
+async def step_artifacts(project_id: str, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     if not project.get("decision"):
         raise HTTPException(status_code=400, detail="Complete Decision step first.")
     try:
@@ -3788,8 +3790,8 @@ async def apply_review_changes(project_id: str, request: Request):
 
 
 @api.post("/projects/{project_id}/lock", response_model=ProjectOut)
-async def step_lock(project_id: str):
-    project = await _get_project_or_404(project_id)
+async def step_lock(project_id: str, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     if not project.get("artifacts"):
         raise HTTPException(status_code=400, detail="Generate artifacts first.")
     update = {"status": "locked", "locked_at": _now_iso(), "updated_at": _now_iso()}
@@ -3902,8 +3904,8 @@ def _markdown_for(project: dict) -> str:
 
 
 @api.get("/projects/{project_id}/export.md", response_class=PlainTextResponse)
-async def export_markdown(project_id: str):
-    project = await _get_project_or_404(project_id)
+async def export_markdown(project_id: str, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     return PlainTextResponse(_markdown_for(project), media_type="text/markdown; charset=utf-8")
 
 
@@ -4274,8 +4276,8 @@ def _pdf_for(project: dict) -> bytes:
 
 
 @api.get("/projects/{project_id}/export.pdf")
-async def export_pdf(project_id: str):
-    project = await _get_project_or_404(project_id)
+async def export_pdf(project_id: str, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     safe = "".join(c if c.isalnum() else "-" for c in (project.get("name") or "bracket")).strip("-").lower() or "bracket"
     pdf_bytes = _pdf_for(project)
     headers = {"Content-Disposition": f'attachment; filename="{safe}.pdf"'}
@@ -4289,8 +4291,8 @@ class FeedbackIn(BaseModel):
 
 
 @api.post("/projects/{project_id}/feedback", response_model=ProjectOut)
-async def submit_feedback(project_id: str, body: FeedbackIn):
-    project = await _get_project_or_404(project_id)
+async def submit_feedback(project_id: str, body: FeedbackIn, request: Request):
+    project = await _get_owned_project_or_404(project_id, request)
     if project.get("status") != "locked":
         raise HTTPException(status_code=400, detail="Feedback is collected after lock-in.")
     feedback = {
@@ -4324,9 +4326,9 @@ def _public_view(project: dict) -> dict:
 
 
 @api.post("/projects/{project_id}/share", response_model=ProjectOut)
-async def create_share_link(project_id: str):
+async def create_share_link(project_id: str, request: Request):
     """Mint (or return existing) public share token for this project."""
-    project = await _get_project_or_404(project_id)
+    project = await _get_owned_project_or_404(project_id, request)
     if not project.get("artifacts"):
         raise HTTPException(status_code=400, detail="Generate artifacts first.")
     token = project.get("share_token") or _mk_token()

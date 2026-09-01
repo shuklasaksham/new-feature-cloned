@@ -185,7 +185,7 @@ export default function ProjectFlow() {
 
   const downloadPdf = async () => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${project.id}/export.pdf`);
+      const res = await fetch(`${API_BASE}/projects/${project.id}/export.pdf`, { credentials: "include" });
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
