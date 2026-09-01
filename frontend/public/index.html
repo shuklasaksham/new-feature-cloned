@@ -33,6 +33,7 @@
         <meta name="keywords" content="bracket, bracket app, use bracket, AI decision workspace, client OS, decision OS, decision engine, AI operating system, client operating system, client projects, project scoping AI, AI for client work" />
         <meta name="author" content="Bracket" />
         <link rel="canonical" href="https://use-bracket.com/" />
+        <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt" />
         <meta property="og:title" content="Bracket — The AI Decision Workspace for Client Projects" />
         <meta property="og:description" content="Paste a messy client brief — get scope, decisions, risks, timelines and client-ready documents in under a minute." />
         <meta property="og:url" content="https://use-bracket.com/" />
@@ -53,25 +54,84 @@
               "name": "Bracket",
               "url": "https://use-bracket.com/",
               "logo": "https://use-bracket.com/bracket-og.jpg",
-              "description": "Bracket is the AI decision workspace for client projects."
+              "description": "Bracket is project memory for client work — it connects the tools where a project already lives (Gmail, Slack, Figma, GitHub) and keeps one always-current record of scope, decisions, deadlines and deliverables."
             },
             {
               "@type": "WebSite",
               "@id": "https://use-bracket.com/#website",
               "url": "https://use-bracket.com/",
               "name": "Bracket",
-              "alternateName": ["Bracket App", "Bracket AI", "Bracket Decision OS"],
+              "alternateName": ["Bracket App", "Bracket AI", "Bracket Client OS", "Bracket Project Memory"],
               "publisher": { "@id": "https://use-bracket.com/#organization" }
             },
             {
               "@type": "SoftwareApplication",
+              "@id": "https://use-bracket.com/#software",
               "name": "Bracket",
               "applicationCategory": "BusinessApplication",
+              "applicationSubCategory": "Project Management",
               "operatingSystem": "Web",
               "url": "https://use-bracket.com/",
-              "description": "The AI decision workspace and decision OS for client projects. Turn messy client conversations into scoped, decisioned, client-ready projects in under a minute.",
-              "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Free during early access" },
+              "description": "Bracket is project memory for client work. Connect Gmail, Slack, Figma and GitHub and Bracket keeps one always-current record of a project's scope, requirements, decisions, deliverables and deadlines. It surfaces the one change that needs your attention, lets you review updates before they enter the record, ingests meeting notes and transcripts, and drafts client replies you can send from Gmail or Slack.",
+              "featureList": [
+                "Connect Gmail, Slack, Figma and GitHub via OAuth with automatic sync",
+                "AI-extracted project memory: scope, requirements, decisions, deliverables, deadlines",
+                "Change notifications with a review step before anything enters the record",
+                "Author attribution — see who requested each change",
+                "Meeting notes and transcript ingestion (paste or upload .txt/.md/.docx/.pdf)",
+                "AI-drafted client replies you can send from Gmail or Slack",
+                "Client-ready shareable project documents"
+              ],
+              "offers": {
+                "@type": "AggregateOffer",
+                "priceCurrency": "INR",
+                "lowPrice": "199",
+                "highPrice": "999",
+                "offerCount": "2",
+                "offers": [
+                  {
+                    "@type": "Offer",
+                    "name": "Monthly",
+                    "price": "999",
+                    "priceCurrency": "INR",
+                    "description": "For ongoing client work — up to 10 active projects, unlimited connected tools, live project memory and updates. Also available at $12/month."
+                  },
+                  {
+                    "@type": "Offer",
+                    "name": "Per project",
+                    "price": "199",
+                    "priceCurrency": "INR",
+                    "description": "A one-off single project that stays active for 60 days, with unlimited connected tools and live project memory. Also available at $2."
+                  }
+                ]
+              },
               "publisher": { "@id": "https://use-bracket.com/#organization" }
+            },
+            {
+              "@type": "FAQPage",
+              "@id": "https://use-bracket.com/#faq",
+              "mainEntity": [
+                {
+                  "@type": "Question",
+                  "name": "What exactly does Bracket do?",
+                  "acceptedAnswer": { "@type": "Answer", "text": "Bracket connects to the tools where your project already lives — Gmail, Slack, Figma, GitHub — and keeps one always-current record of scope, decisions, deadlines and deliverables. It shows you the one thing that needs your attention and can draft client replies for you." }
+                },
+                {
+                  "@type": "Question",
+                  "name": "How much does Bracket cost?",
+                  "acceptedAnswer": { "@type": "Answer", "text": "Two plans: Monthly at ₹999 (about $12) for ongoing client work with up to 10 active projects, or Per-project at ₹199 (about $2) for a single project that stays active for 60 days. Cancel anytime from Settings → Billing." }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Can I cancel anytime?",
+                  "acceptedAnswer": { "@type": "Answer", "text": "Yes. Cancel from Settings → Billing in one click. Your monthly plan simply won't renew; a per-project purchase stays active for its 60 days." }
+                },
+                {
+                  "@type": "Question",
+                  "name": "Is my data private?",
+                  "acceptedAnswer": { "@type": "Answer", "text": "Only you can see your projects. Bracket connects the specific sources you select — not your whole account — and uses AI providers only to generate the outputs you ask for. We don't sell your data or use it for advertising." }
+                }
+              ]
             }
           ]
         }
