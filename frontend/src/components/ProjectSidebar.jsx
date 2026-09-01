@@ -312,7 +312,12 @@ export default function ProjectSidebar({
       {/* User card */}
       <div className="psb-user-wrap" ref={userRef}>
         <button type="button" className="psb-user" onClick={() => setUserOpen((o) => !o)} data-testid="psb-user">
-          <span className="psb-avatar">{user?.picture || user?.avatar ? <img src={user.picture || user.avatar} alt="" /> : initial}</span>
+          <span className="psb-avatar">
+            {initial}
+            {user?.picture && /^https?:\/\//.test(user.picture) ? (
+              <img src={user.picture} alt="" referrerPolicy="no-referrer" onError={(e) => e.currentTarget.remove()} />
+            ) : null}
+          </span>
           <span className="psb-label min-w-0 flex-1 text-left">
             <span className="psb-user-name">{user?.name || "Account"}</span>
             <span className="psb-user-email">{user?.email}</span>

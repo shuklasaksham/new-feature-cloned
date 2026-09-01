@@ -56,7 +56,12 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
     try {
       const { data } = await api.get(`/connect/${key}/sources`);
       const sources = data?.sources || [];
-      if (!sources.length) { toast.info("Connected, but no sources found to attach."); onChanged?.(); onClose?.(); return; }
+      // Figma has no "list all my files" API — after connecting, open the picker
+      // so the user can paste a file/team link (paste-and-go) instead of
+      // dead-ending with a "no sources" toast.
+      if (!sources.length && key !== "figma") {
+        toast.info("Connected, but no sources found to attach."); onChanged?.(); onClose?.(); return;
+      }
       setPicker({ provider: key, sources });
       setSelected(sources.length === 1 ? [sources[0].id] : []);
       setStatus({}); setQuery("");

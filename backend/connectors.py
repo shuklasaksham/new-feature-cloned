@@ -2011,18 +2011,11 @@ async def _sync_connection(conn: dict) -> dict:
         await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": "needs_attention", "updated_at": now}})
         return {"changed": False, "status": "needs_attention"}
     try:
-        if conn["provider"] == "gmail" and not str(conn.get("source_id", "")).startswith("demo-"):
-            ce = conn.get("client_email") or ""
-            if not ce:
-                try:
-                    ce = await _gmail_client_email(account, conn["source_id"])
-                except Exception:
-                    ce = ""
-                if ce:
-                    await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"client_email": ce}})
-            digest = await gmail_fetch_client_digest(account, conn["source_id"], ce)
-        else:
-            digest = await _fetch_digest(conn["provider"], account, conn["source_id"])
+        # Scope every source to its OWN thread/conversation only. We deliberately
+        # do NOT pull in a Gmail client's other recent threads anymore — that
+        # caused unrelated projects to bleed into a project's memory. Each source
+        # stays tied to exactly the conversation the user attached.
+        digest = await _fetch_digest(conn["provider"], account, conn["source_id"])
     except HTTPException as e:
         status = "expired" if e.status_code == 401 else "error"
         await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": status, "updated_at": now}})
