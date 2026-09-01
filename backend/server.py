@@ -1153,6 +1153,58 @@ async def admin_purge_users(body: PurgeUsersIn, request: Request):
     return result
 
 
+# All collections that hold user-generated data, keyed either by project_id
+# (children of a project) or by user_id (account-scoped). Used to COMPLETELY
+# erase a user + everything they created — no orphaned rows left behind.
+_CASCADE_BY_PROJECT = [
+    "project_memory", "source_connections", "source_events", "project_updates",
+    "notifications", "files", "knowledge_items", "click_events",
+]
+_CASCADE_BY_USER = [
+    "user_sessions", "integration_accounts", "oauth_states", "push_subscriptions",
+    "payments", "workspaces", "clients", "playbooks", "notifications",
+]
+
+
+async def _cascade_delete_users(victim_ids: List[str], victim_emails: List[str]) -> Dict[str, int]:
+    """Fully erase the given users and ALL their data across every collection.
+    Deletes children (by project_id and by user_id) before parents."""
+    counts: Dict[str, int] = {}
+    if not victim_ids:
+        return {"users": 0, "projects": 0}
+
+    proj_docs = await db.projects.find(
+        {"$or": [{"owner_user_id": {"$in": victim_ids}}, {"creator_email": {"$in": victim_emails}}]},
+        {"_id": 0, "id": 1},
+    ).to_list(length=100000)
+    project_ids = [p["id"] for p in proj_docs if p.get("id")]
+
+    if project_ids:
+        for coll in _CASCADE_BY_PROJECT:
+            r = await db[coll].delete_many({"project_id": {"$in": project_ids}})
+            counts[coll] = counts.get(coll, 0) + r.deleted_count
+    for coll in _CASCADE_BY_USER:
+        r = await db[coll].delete_many({"user_id": {"$in": victim_ids}})
+        counts[coll] = counts.get(coll, 0) + r.deleted_count
+    if victim_emails:
+        r = await db.email_otps.delete_many({"email": {"$in": victim_emails}})
+        counts["email_otps"] = r.deleted_count
+    # Detach victim ids from shared session-tracking docs (don't delete shared rows).
+    await db.sessions.update_many(
+        {"user_ids": {"$in": victim_ids}}, {"$pull": {"user_ids": {"$in": victim_ids}}},
+    )
+    proj_del = await db.projects.delete_many(
+        {"$or": [{"owner_user_id": {"$in": victim_ids}}, {"creator_email": {"$in": victim_emails}}]}
+    )
+    users_del = await db.users.delete_many({"user_id": {"$in": victim_ids}})
+    counts["projects"] = proj_del.deleted_count
+    counts["users"] = users_del.deleted_count
+    counts.setdefault("user_sessions", 0)
+    counts.setdefault("email_otps", 0)
+    return counts
+
+
+
 class DeleteUsersIn(_BM):
     user_ids: List[str] = _Fd(default_factory=list)
     confirm: bool = _Fd(default=False)
@@ -1187,29 +1239,24 @@ async def admin_delete_users(body: DeleteUsersIn, request: Request):
             "cascade": {"projects": pc, "user_sessions": sc, "email_otps": oc},
         }
 
-    # Cascade delete
-    proj_del = await db.projects.delete_many(
-        {"$or": [{"owner_user_id": {"$in": victim_ids}}, {"creator_email": {"$in": victim_emails}}]}
-    )
-    sess_del = await db.user_sessions.delete_many({"user_id": {"$in": victim_ids}})
-    otp_del_count = 0
-    if victim_emails:
-        otp_del = await db.email_otps.delete_many({"email": {"$in": victim_emails}})
-        otp_del_count = otp_del.deleted_count
-    users_del = await db.users.delete_many({"user_id": {"$in": victim_ids}})
+    # Cascade delete — completely erase users + ALL their data.
+    counts = await _cascade_delete_users(victim_ids, victim_emails)
     logger.info(
-        "[admin/users/delete] admin=%s deleted users=%s projects=%s sessions=%s otps=%s",
-        admin["email"], users_del.deleted_count, proj_del.deleted_count, sess_del.deleted_count, otp_del_count,
+        "[admin/users/delete] admin=%s ERASED users=%s projects=%s memory=%s connections=%s notifications=%s sessions=%s",
+        admin["email"], counts.get("users", 0), counts.get("projects", 0),
+        counts.get("project_memory", 0), counts.get("source_connections", 0),
+        counts.get("notifications", 0), counts.get("user_sessions", 0),
     )
     return {
         "dry_run": False,
         "matched_users": len(victim_ids),
         "deleted": {
-            "users": users_del.deleted_count,
-            "projects": proj_del.deleted_count,
-            "user_sessions": sess_del.deleted_count,
-            "email_otps": otp_del_count,
+            "users": counts.get("users", 0),
+            "projects": counts.get("projects", 0),
+            "user_sessions": counts.get("user_sessions", 0),
+            "email_otps": counts.get("email_otps", 0),
         },
+        "erased": counts,
     }
 
 
@@ -1226,26 +1273,20 @@ async def admin_purge_guests(request: Request):
     emails = [g["email"] for g in guests if g.get("email")]
     if not ids:
         return {"deleted": {"users": 0, "projects": 0, "user_sessions": 0, "email_otps": 0}}
-    proj_del = await db.projects.delete_many(
-        {"$or": [{"owner_user_id": {"$in": ids}}, {"creator_email": {"$in": emails}}]}
-    )
-    sess_del = await db.user_sessions.delete_many({"user_id": {"$in": ids}})
-    otp_count = 0
-    if emails:
-        otp_del = await db.email_otps.delete_many({"email": {"$in": emails}})
-        otp_count = otp_del.deleted_count
-    users_del = await db.users.delete_many(filt)
+    counts = await _cascade_delete_users(ids, emails)
     logger.info(
-        "[admin/purge-guests] admin=%s deleted users=%s projects=%s sessions=%s otps=%s",
-        admin["email"], users_del.deleted_count, proj_del.deleted_count, sess_del.deleted_count, otp_count,
+        "[admin/purge-guests] admin=%s ERASED users=%s projects=%s memory=%s connections=%s",
+        admin["email"], counts.get("users", 0), counts.get("projects", 0),
+        counts.get("project_memory", 0), counts.get("source_connections", 0),
     )
     return {
         "deleted": {
-            "users": users_del.deleted_count,
-            "projects": proj_del.deleted_count,
-            "user_sessions": sess_del.deleted_count,
-            "email_otps": otp_count,
+            "users": counts.get("users", 0),
+            "projects": counts.get("projects", 0),
+            "user_sessions": counts.get("user_sessions", 0),
+            "email_otps": counts.get("email_otps", 0),
         },
+        "erased": counts,
     }
 
 
