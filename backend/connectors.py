@@ -2051,7 +2051,12 @@ async def _sync_connection(conn: dict) -> dict:
             "provider": conn["provider"], "source_label": conn["source_name"],
             "category": item.get("category") if item.get("category") in cat_ok else "event",
             "title": str(item["title"])[:200], "detail": str(item.get("detail", ""))[:500],
-            "status": item.get("status") if item.get("status") in ("confirmed", "detected") else "detected",
+            # A change detected on an ONGOING sync must always be surfaced for
+            # review — never auto-confirmed — so the user gets a notification /
+            # change banner for every client update (even explicit ones). The
+            # AI's own confirmed/detected guess is only trusted for the INITIAL
+            # baseline extraction at project creation, not for live changes.
+            "status": "detected",
             "occurred_at": now, "created_at": now, "updated_at": now, "history": [],
         })
     if mem_docs:

@@ -1,4 +1,11 @@
-## Changelog — 2026-06 (fix: review modal re-opened on stale "send update" step)
+## Changelog — 2026-06 (fix: live changes were auto-confirmed → no notification)
+- **Bug**: A client change synced from a source (deadline moved, scope added, decision made) landed straight into project memory with NO notification — no bell, no "Needs attention", no change banner ("You're all caught up" despite counts rising).
+- **Root cause**: `_sync_connection` (connectors.py ~2054) trusted the AI's `status` for each new item, and `detect_source_updates` marks explicit/unambiguous changes as `"confirmed"`. Confirmed items skip the pending-review flow entirely (`detectedCount` counts only `detected`/`review`), so no notification ever fired for clear changes.
+- **Fix**: on an ONGOING sync, every detected item is now forced to `status="detected"` (pending review) regardless of the AI's guess — so every client change surfaces for review (bell + Needs-attention + change banner). The AI's confirmed/detected guess is still honored only for the INITIAL baseline extraction at project creation.
+- Verified via a monkeypatched `_sync_connection` run: AI-returned `confirmed` items were all inserted as `detected` (3/3). NOTE: already-applied (confirmed) items on existing projects won't retroactively notify; the fix applies to changes synced after deploy.
+
+
+
 - **Bug**: After reviewing + accepting changes, the Project Update modal transitions to a "Send your client an update" compose step. If the user closed/skipped it and later clicked Review again (new source connected or a conversation updated), the modal wrongly re-opened on that stale compose screen instead of the new-changes review.
 - **Root cause**: `ProjectUpdateReview.jsx` stays mounted (returns null when `!open`); the open-effect reset `update/none/removed/loading` but never cleared `compose`/`draft`, and the render short-circuits to the compose modal whenever `compose` is truthy.
 - **Fix**: the open-effect now also `setCompose(null); setDraft("")` so every reopen rebuilds a fresh update (`/update/build`) → shows the new review, or the calm "all caught up" empty state. Verified testing_agent iter62 = 100%.
