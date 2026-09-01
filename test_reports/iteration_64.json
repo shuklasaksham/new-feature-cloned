@@ -1,0 +1,38 @@
+{
+  "summary": "Full pre-launch end-to-end regression against public preview URL. All 11 requested areas pass: landing + PH ribbon persistence, public pages (/pricing USD/INR, /use-cases, /terms), auth (invalid pw error, valid login redirect), project workspace nav (all 4 tabs + settings + help, no outer scroll), sidebar collapse + single styled tooltip (no native title), Meeting Notes composer + ingest + view modal, change-notification banner + Review drawer with 'Requested by' attributions, Conversations + Timeline render clean, Add Source dialog with 11 provider tiles + close/back, Admin dashboard with 4 PH KPIs (kpi-ph-claimed/active/converted/conversion) + 30 total KPI tiles + Test plan/PH Launch toggles clickable, User management delete/purge confirmation guards present (two-step: 'Purge all guest users?' modal + 'Delete N user?' modal — both have Cancel), and logout works (admin -> /admin/login). Backend /api/admin/analytics returns ph_launch block. Only pre-existing dev-only console noise (hydration warning on <option><span> from visual-editor injection).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Pre-existing dev-only hydration warning: <span> child of <option> in AdminAnalytics.jsx (visual-editor wrapper injection). Harmless in prod build but noisy in dev — consider guarding the visual-editor injection for <option> children."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (health + analytics + login endpoints spot-checked)", "frontend": "100%"},
+  "test_credentials": "support@use-bracket.com / Bracket@123 (admin) — /login password flow; redirects to /project/222535e8-...",
+  "seed_data_creation": "Created 1 additional Meeting Note titled 'TEST Regression Note' on project 222535e8-18f0-403d-b62f-d0048acbbc72 via the notes composer UI (ingest pipeline). Note count went 3 -> 4. No user/project deletions performed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Verified provider testids on Add Source are add-source-option-<provider> (NOT add-source-provider-*). Providers rendered: gmail, slack, whatsapp, teams, figma, adobe, gdrive, notion, dropbox, github, linear. Admin Users delete is a two-checkbox flow: (1) 'Purge all guests' button always visible -> confirmation modal 'Purge all guest users? ... This cannot be undone.'; (2) select checkbox on a user row -> 'Delete selected' becomes enabled -> 'DELETE USERS / Delete N user? · N projects will be removed · N sessions revoked · This cannot be undone.' Both modals have Cancel + destructive button — do NOT confirm on real users. Admin logout icon is button:has(svg.lucide-log-out) at bottom-left. Backend seed is idempotent; support admin login works. PH launch admin toggle is ON; ribbon shows on landing until localStorage 'bracket.ph_ribbon_dismissed' is set.",
+  "verification_evidence": {
+    "ph_ribbon": "renders, CTA href=/login, close hides + localStorage=1 + persists after reload",
+    "public_pages": {"/pricing": "200 (USD+INR toggle indicators)", "/use-cases": "200", "/terms": "200"},
+    "invalid_login_error": "Wrong email or password.",
+    "valid_login_redirect": "/project/222535e8-18f0-403d-b62f-d0048acbbc72",
+    "workspace_nav": "psb-nav-overview/conversations/notes/timeline/settings/help all clickable; outer document does NOT scroll on any tab (fixed viewport holds)",
+    "collapsed_tooltips": "title=null on all psb-nav-* buttons (no native duplicate); data-tip preserves styled tooltip",
+    "notes_ingest": "notes count 3 -> 4 after composer submit; notes-view-modal opens + notes-view-close closes",
+    "change_banner": "change-notification-banner present; change-banner-review opens project-update-drawer; 4 pu-item-by-* items with 'Requested by Maria' attribution; project-update-close closes cleanly (no stale compose)",
+    "add_source_dialog": "11 providers with add-source-option-{gmail,slack,whatsapp,teams,figma,adobe,gdrive,notion,dropbox,github,linear}; close works",
+    "admin_kpis": "kpi-ph-claimed=1, kpi-ph-active=1, kpi-ph-converted=0, kpi-ph-conversion=0%; 30 kpi-* tiles total; admin-test-plan-toggle + admin-ph-launch-toggle render",
+    "admin_delete_guards": {"purge_all_guests": "confirmation modal 'Purge all guest users? ... This cannot be undone.' with Cancel", "delete_selected": "confirmation modal 'DELETE USERS / Delete 1 user? ... projects removed / sessions revoked / cannot be undone' with Cancel + Delete forever"},
+    "logout": "admin logout icon (lucide-log-out) redirects to /admin/login",
+    "console_errors": "1 pre-existing dev-only hydration warning (<span> in <option>) — from AdminAnalytics.jsx via visual-editor wrapper. No new errors.",
+    "net_4xx_5xx": "Only the expected 401 from invalid password test"
+  },
+  "rca of the issue": "N/A — no bugs found. Regression is clean for the pre-launch review."
+}
