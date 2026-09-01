@@ -68,6 +68,23 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
     } catch (err) { toast.error(formatApiError(err)); }
   };
 
+  // Fallback for when the OAuth popup's cross-origin postMessage never reaches
+  // us (app loaded on www/host origin, popup+callback on the apex origin, so
+  // window.opener is severed). On popup close we VERIFY the connection by
+  // hitting /sources: if the account got linked we proceed exactly like the
+  // postMessage path; if not (user cancelled) we stay silent.
+  const finalizeOnClose = async (key) => {
+    try {
+      const { data } = await api.get(`/connect/${key}/sources`);
+      const sources = data?.sources || [];
+      if (!sources.length && key !== "figma") { onChanged?.(); onClose?.(); return; }
+      setPicker({ provider: key, sources });
+      setSelected(sources.length === 1 ? [sources[0].id] : []);
+      setStatus({}); setQuery("");
+    } catch { /* not connected → user cancelled; no error toast */ }
+    finally { setConnecting(null); }
+  };
+
   // A provider counts as "connected" only if it has an active source in THIS
   // project (what the user sees in the sidebar) — NOT merely because a token
   // exists somewhere on their account. This makes adding a tool that isn't on
@@ -107,7 +124,9 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
         clearInterval(watch);
         if (pendingRef.current === key) {
           pendingRef.current = null;
-          setConnecting(null);
+          // postMessage may have been lost (cross-origin opener) — verify by
+          // checking whether the account actually got connected.
+          finalizeOnClose(key);
         }
       }
     }, 600);

@@ -24,6 +24,7 @@ export default function FirstProject() {
   const [statuses, setStatuses] = useState({}); // key -> status
   const [busy, setBusy] = useState(null);
   const pendingOAuth = useRef(null);
+  const popupRef = useRef(null);
 
   const loadProviders = async () => {
     try {
@@ -66,13 +67,30 @@ export default function FirstProject() {
     }
     // One-click OAuth: open popup synchronously (popup-blocker safe), then aim it.
     const popup = window.open("about:blank", "bracket-oauth", "width=560,height=680");
+    popupRef.current = popup;
+    pendingOAuth.current = card.key;
     setBusy(card.key);
+    // Fallback: on live the app + popup can be on different origins, so the
+    // callback's postMessage may never reach us. Watch for the popup closing
+    // and VERIFY the connection directly — then proceed like the success path.
+    const watch = setInterval(() => {
+      if (!popupRef.current || popupRef.current.closed) {
+        clearInterval(watch);
+        if (pendingOAuth.current === card.key) {
+          pendingOAuth.current = null;
+          api.get(`/connect/${card.key}/sources`)
+            .then(() => { setBusy(null); navigate(`/welcome/select?tool=${card.key}`); })
+            .catch(() => { setBusy(null); });
+        }
+      }
+    }, 600);
     try {
       const { data } = await api.get(`/connect/${card.key}/auth-url`);
       if (popup) popup.location = data.url;
       else window.open(data.url, "_blank");
-      pendingOAuth.current = card.key;
     } catch (e) {
+      clearInterval(watch);
+      pendingOAuth.current = null;
       if (popup) popup.close();
       setBusy(null);
       toast.error(formatApiError(e));

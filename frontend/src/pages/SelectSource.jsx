@@ -79,11 +79,23 @@ export default function SelectSource() {
   const reconnectAccount = async () => {
     const popup = window.open("about:blank", "bracket-oauth", "width=560,height=680");
     setReconnecting(true);
+    // Cross-origin fallback (live): if the callback postMessage doesn't reach us,
+    // refresh sources/account when the popup closes.
+    const watch = setInterval(() => {
+      if (!popup || popup.closed) {
+        clearInterval(watch);
+        setReconnecting(false);
+        setAcctModalOpen(false);
+        refreshAccountLabel();
+        fetchSources(query.trim());
+      }
+    }, 600);
     try {
       const { data } = await api.get(`/connect/${provider}/auth-url`);
       if (popup) popup.location = data.url;
       else window.open(data.url, "_blank");
     } catch (e) {
+      clearInterval(watch);
       if (popup) popup.close();
       setReconnecting(false);
       toast.error(formatApiError(e));

@@ -2679,10 +2679,32 @@ function ConnectedSourcesCompact({ projectId, connections, onChanged }) {
     popupRef.current = popup;
     setConnecting(providerKey);
     pendingRef.current = providerKey;
+    // Cross-origin fallback: on live the callback's postMessage may not reach us
+    // (app + popup on different origins), so verify on popup close.
+    const watch = setInterval(() => {
+      if (!popupRef.current || popupRef.current.closed) {
+        clearInterval(watch);
+        if (pendingRef.current === providerKey) {
+          pendingRef.current = null;
+          api.get(`/connect/${providerKey}/sources`)
+            .then(({ data }) => {
+              const sources = data?.sources || data || [];
+              if (Array.isArray(sources) && sources.length) {
+                setPicker({ provider: providerKey, sources });
+                setSelected(sources.length === 1 ? [sources[0].id] : []);
+                setSourceStatus({});
+              } else { onChanged?.(); }
+            })
+            .catch(() => { /* not connected → cancelled */ })
+            .finally(() => setConnecting(null));
+        }
+      }
+    }, 600);
     try {
       const { data } = await api.get(`/connect/${providerKey}/auth-url`);
       if (popup) popup.location = data.url; else window.open(data.url, "_blank");
     } catch (e) {
+      clearInterval(watch);
       try { popup?.close?.(); } catch { /* ignore */ }
       setConnecting(null);
       pendingRef.current = null;
