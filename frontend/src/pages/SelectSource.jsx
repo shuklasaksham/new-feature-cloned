@@ -65,6 +65,7 @@ export default function SelectSource() {
   const [acctModalOpen, setAcctModalOpen] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const debounceRef = useRef(null);
+  const oauthSettledRef = useRef(false);
 
   const refreshAccountLabel = () => {
     api.get("/connect/providers").then(({ data }) => {
@@ -78,16 +79,20 @@ export default function SelectSource() {
   // successful reconnect replaces the connected account.
   const reconnectAccount = async () => {
     const popup = window.open("about:blank", "bracket-oauth", "width=560,height=680");
+    oauthSettledRef.current = false;
     setReconnecting(true);
     // Cross-origin fallback (live): if the callback postMessage doesn't reach us,
-    // refresh sources/account when the popup closes.
+    // refresh sources/account when the popup closes. Guarded so it fires once.
     const watch = setInterval(() => {
       if (!popup || popup.closed) {
         clearInterval(watch);
-        setReconnecting(false);
-        setAcctModalOpen(false);
-        refreshAccountLabel();
-        fetchSources(query.trim());
+        if (!oauthSettledRef.current) {
+          oauthSettledRef.current = true;
+          setReconnecting(false);
+          setAcctModalOpen(false);
+          refreshAccountLabel();
+          fetchSources(query.trim());
+        }
       }
     }, 600);
     try {
@@ -96,6 +101,7 @@ export default function SelectSource() {
       else window.open(data.url, "_blank");
     } catch (e) {
       clearInterval(watch);
+      oauthSettledRef.current = true;
       if (popup) popup.close();
       setReconnecting(false);
       toast.error(formatApiError(e));
@@ -106,6 +112,8 @@ export default function SelectSource() {
     const onMsg = (ev) => {
       if (typeof ev.data !== "string" || !ev.data.startsWith(`bracket-oauth:${provider}:`)) return;
       const result = ev.data.split(":")[2];
+      if (oauthSettledRef.current) return;
+      oauthSettledRef.current = true;
       setReconnecting(false);
       if (result === "ok") {
         toast.success("Account switched.");

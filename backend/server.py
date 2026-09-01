@@ -1162,7 +1162,7 @@ _CASCADE_BY_PROJECT = [
 ]
 _CASCADE_BY_USER = [
     "user_sessions", "integration_accounts", "oauth_states", "push_subscriptions",
-    "payments", "workspaces", "clients", "playbooks", "notifications",
+    "payment_transactions", "connect_previews", "nps_responses", "notifications",
 ]
 
 
@@ -4851,10 +4851,17 @@ async def _start_connector_poller():
     asyncio.create_task(_connectors.poller_loop())
 
 _cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
+# Scoped fallback regex — only Bracket's own domains (prod, emergent host, preview,
+# local dev). NEVER reflect arbitrary origins with credentials (that lets any site
+# read a signed-in user's data). Set CORS_ORIGINS explicitly in production.
+_DEFAULT_CORS_REGEX = (
+    r"^https?://(localhost(:\d+)?|127\.0\.0\.1(:\d+)?|"
+    r"([a-z0-9-]+\.)*(use-bracket\.com|emergent\.host|emergentagent\.com))$"
+)
 if _cors_env in ("", "*"):
     app.add_middleware(
         CORSMiddleware,
-        allow_origin_regex=".*",
+        allow_origin_regex=_DEFAULT_CORS_REGEX,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

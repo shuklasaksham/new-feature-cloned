@@ -2152,6 +2152,7 @@ async def sync_now(connection_id: str, request: Request):
 
 
 _NOTES_MAX = 60000
+_NOTES_UPLOAD_MAX_BYTES = 8 * 1024 * 1024  # 8 MB cap before reading into memory
 
 
 def _parse_uploaded_notes(filename: str, raw: bytes) -> str:
@@ -2193,6 +2194,8 @@ async def ingest_notes(
     notes = (text or "").strip()
     if file is not None:
         raw = await file.read()
+        if len(raw) > _NOTES_UPLOAD_MAX_BYTES:
+            raise HTTPException(413, "That file is too large. Please keep meeting notes under 8 MB.")
         if raw:
             parsed = _parse_uploaded_notes(file.filename or "", raw).strip()
             notes = (notes + "\n\n" + parsed).strip() if notes else parsed
@@ -2465,7 +2468,7 @@ async def poller_loop():
             await asyncio.sleep(POLL_INTERVAL_S)
             cutoff = datetime.now(timezone.utc).timestamp() - POLL_INTERVAL_S
             count = 0
-            async for conn in db.source_connections.find({"status": "connected"}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
+            async for conn in db.source_connections.find({"status": "connected", "provider": {"$ne": "meeting"}}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
                 try:
                     last = datetime.fromisoformat(conn.get("last_synced_at", "").replace("Z", "+00:00")).timestamp()
                 except Exception:
