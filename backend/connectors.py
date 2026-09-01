@@ -25,13 +25,13 @@ from typing import Any, Dict, List, Optional
 import httpx
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, File, Form, UploadFile
 from fastapi.responses import HTMLResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field
 
 from auth import current_user
-from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, suggest_reply_for_change, suggest_project_reply, build_project_update
+from connect_ai import analyze_connected_source, answer_project_question, detect_source_updates, extract_from_notes, suggest_reply_for_change, suggest_project_reply, build_project_update
 from emailer import send_scope_creep_alert
 
 logger = logging.getLogger("bracket")
@@ -970,7 +970,8 @@ def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str
                 "id": _uuid(), "project_id": project_id, "connection_id": conn_id,
                 "provider": provider, "source_label": source_label, "category": cat,
                 "title": str(item.get("title", ""))[:200], "detail": str(item.get("detail", ""))[:500],
-                "status": status, "occurred_at": now, "created_at": now, "updated_at": now, "history": [],
+                "status": status, "requested_by": str(item.get("requested_by", ""))[:120],
+                "occurred_at": now, "created_at": now, "updated_at": now, "history": [],
             })
     return docs
 
@@ -1157,15 +1158,36 @@ async def _owned_project(project_id: str, request: Request, require_write: bool 
 async def project_connections(project_id: str, request: Request):
     await _owned_project(project_id, request)
     conns = []
-    async for c in db.source_connections.find({"project_id": project_id, "status": {"$ne": "disconnected"}}, {"_id": 0, "content_cache": 0}):
+    async for c in db.source_connections.find({"project_id": project_id, "provider": {"$ne": "meeting"}, "status": {"$ne": "disconnected"}}, {"_id": 0, "content_cache": 0}):
         if c.get("is_demo"):
             c["health"] = {"level": "green", "state": "ok", "expires_at": None,
                            "days_left": None, "message": "Demo source"}
+        elif c.get("provider") == "meeting":
+            c["health"] = {"level": "green", "state": "ok", "expires_at": None,
+                           "days_left": None, "message": "Meeting notes"}
         else:
             account = await db.integration_accounts.find_one({"user_id": c["user_id"], "provider": c["provider"]}, {"_id": 0})
             c["health"] = _connection_health(account)
         conns.append(c)
     return {"connections": conns}
+
+
+@router.get("/projects/{project_id}/notes")
+async def project_notes(project_id: str, request: Request):
+    """List meeting notes / transcripts attached to this project (its own tab —
+    separate from live-synced Sources)."""
+    await _owned_project(project_id, request)
+    notes = []
+    async for c in db.source_connections.find(
+        {"project_id": project_id, "provider": "meeting", "status": {"$ne": "disconnected"}},
+        {"_id": 0, "content_cache": 0},
+    ).sort("created_at", -1):
+        items = await db.project_memory.count_documents({"connection_id": c["id"], "status": {"$ne": "ignored"}})
+        notes.append({
+            "id": c["id"], "title": c.get("source_name", ""),
+            "created_at": c.get("created_at", ""), "items": items,
+        })
+    return {"notes": notes}
 
 
 @router.get("/projects/{project_id}/connections/{conn_id}/content")
@@ -1561,6 +1583,7 @@ async def project_update_build(project_id: str, request: Request):
         "detail": p.get("detail", ""),
         "provider": p.get("provider", "manual"),
         "source_label": p.get("source_label", ""),
+        "requested_by": p.get("requested_by", ""),
         "is_scope_change": p.get("is_scope_change", False),
     } for p in pending]
 
@@ -2059,6 +2082,7 @@ async def _sync_connection(conn: dict) -> dict:
             # AI's own confirmed/detected guess is only trusted for the INITIAL
             # baseline extraction at project creation, not for live changes.
             "status": "detected",
+            "requested_by": str(item.get("requested_by", ""))[:120],
             "occurred_at": now, "created_at": now, "updated_at": now, "history": [],
         })
     if mem_docs:
@@ -2125,6 +2149,128 @@ async def sync_now(connection_id: str, request: Request):
     if not conn:
         raise HTTPException(404, "Connection not found")
     return await _sync_connection(conn)
+
+
+_NOTES_MAX = 60000
+
+
+def _parse_uploaded_notes(filename: str, raw: bytes) -> str:
+    """Best-effort plain-text extraction from an uploaded notes file
+    (.txt/.md/.docx/.pdf). Never persists the file — text only."""
+    name = (filename or "").lower()
+    try:
+        if name.endswith(".docx"):
+            import io
+            import docx  # python-docx
+            d = docx.Document(io.BytesIO(raw))
+            return "\n".join(p.text for p in d.paragraphs)
+        if name.endswith(".pdf"):
+            import io
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(raw))
+            return "\n".join((pg.extract_text() or "") for pg in reader.pages)
+    except Exception as e:
+        logger.warning("notes file parse failed for %s: %s", name, e)
+        return ""
+    # .txt / .md / unknown → decode as utf-8
+    return raw.decode("utf-8", errors="ignore")
+
+
+@router.post("/projects/{project_id}/ingest-notes")
+async def ingest_notes(
+    project_id: str,
+    request: Request,
+    text: str = Form(""),
+    title: str = Form(""),
+    file: UploadFile = File(None),
+):
+    """Attach meeting notes / a transcript (pasted text or an uploaded
+    .txt/.md/.docx/.pdf). Bracket extracts changes vs the existing memory and
+    adds them as PENDING (detected) items for the owner to review."""
+    project = await _owned_project(project_id, request, require_write=True)
+    user = await current_user(request, db)
+
+    notes = (text or "").strip()
+    if file is not None:
+        raw = await file.read()
+        if raw:
+            parsed = _parse_uploaded_notes(file.filename or "", raw).strip()
+            notes = (notes + "\n\n" + parsed).strip() if notes else parsed
+    notes = notes[:_NOTES_MAX]
+    if len(notes) < 40:
+        raise HTTPException(422, "Please paste more notes, or upload a readable .txt, .md, .docx or .pdf file.")
+
+    now = _now_iso()
+    src_title = (title or "").strip() or f"Meeting notes · {now[:10]}"
+    conn_id = _uuid()
+    await db.source_connections.insert_one({
+        "id": conn_id, "project_id": project_id, "user_id": user["user_id"],
+        "provider": "meeting", "source_id": conn_id, "source_name": src_title,
+        "status": "connected", "content_hash": _hash(notes), "content_cache": notes[:20000],
+        "last_synced_at": now, "last_activity_at": now, "created_at": now, "updated_at": now,
+    })
+
+    memory_titles = []
+    async for m in db.project_memory.find(
+        {"project_id": project_id, "status": {"$ne": "ignored"}}, {"_id": 0, "title": 1}
+    ).limit(60):
+        memory_titles.append(m["title"])
+
+    new_items, events = [], []
+    try:
+        result = await extract_from_notes(project.get("name", ""), memory_titles, notes)
+        events = result.get("events") or []
+        new_items = result.get("new_items") or []
+    except Exception as e:
+        logger.warning("notes extraction failed for %s: %s", conn_id, e)
+
+    cat_ok = {"requirement", "decision", "deliverable", "deadline", "scope_change", "question"}
+    mem_docs = []
+    for item in new_items[:15]:
+        if not isinstance(item, dict) or not item.get("title"):
+            continue
+        mem_docs.append({
+            "id": _uuid(), "project_id": project_id, "connection_id": conn_id,
+            "provider": "meeting", "source_label": src_title,
+            "category": item.get("category") if item.get("category") in cat_ok else "event",
+            "title": str(item["title"])[:200], "detail": str(item.get("detail", ""))[:500],
+            "status": "detected", "requested_by": str(item.get("requested_by", ""))[:120],
+            "occurred_at": now, "created_at": now, "updated_at": now, "history": [],
+        })
+    if mem_docs:
+        await db.project_memory.insert_many(mem_docs)
+
+    # Scope-creep notifications (same treatment as a live sync).
+    scope_items = [d for d in mem_docs if d["category"] == "scope_change"]
+    if scope_items:
+        await db.notifications.insert_many([{
+            "id": _uuid(), "user_id": user["user_id"], "project_id": project_id,
+            "project_name": project.get("name", "") or "your project", "connection_id": conn_id,
+            "provider": "meeting", "source_label": src_title, "memory_id": s["id"],
+            "type": "scope_creep", "title": s["title"], "detail": s.get("detail", ""),
+            "read": False, "created_at": now,
+        } for s in scope_items[:6]])
+
+    ev_docs = []
+    for ev in events[:8]:
+        if not isinstance(ev, dict) or not ev.get("summary"):
+            continue
+        ev_docs.append({
+            "id": _uuid(), "project_id": project_id, "connection_id": conn_id,
+            "provider": "meeting", "source_label": src_title,
+            "event_type": ev.get("event_type", "ACTIVITY"), "summary": str(ev["summary"])[:300],
+            "occurred_at": now, "created_at": now,
+        })
+    ev_docs.append({
+        "id": _uuid(), "project_id": project_id, "connection_id": conn_id,
+        "provider": "meeting", "source_label": src_title,
+        "event_type": "NOTES_ADDED", "summary": f"{src_title} added — {len(mem_docs)} update(s) detected.",
+        "occurred_at": now, "created_at": now,
+    })
+    await db.source_events.insert_many(ev_docs)
+
+    return {"added": len(mem_docs), "events": len(ev_docs), "connection_id": conn_id, "title": src_title}
+
 
 
 @router.delete("/connect/connections/{connection_id}")

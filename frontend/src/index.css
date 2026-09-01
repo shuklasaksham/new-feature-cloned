@@ -4951,6 +4951,27 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .asd-attach { display: inline-flex; align-items: center; gap: 8px; height: 40px; min-width: 96px; justify-content: center; padding: 0 20px; border-radius: 9999px; background: #fff; color: #000; font-size: 13px; font-weight: 600; font-family: var(--font-mono, ui-monospace, monospace); transition: background .14s, opacity .14s; }
 .asd-attach:hover:not(:disabled) { background: #e8e8e8; }
 .asd-attach:disabled { opacity: 0.45; cursor: default; }
+/* Meeting notes / transcript panel */
+.asd-notes-title { width: 100%; height: 42px; padding: 0 14px; border-radius: 10px; background: #0b0b0b; border: 1px solid #262626; color: #ededed; font-size: 13px; outline: none; margin-bottom: 10px; }
+.asd-notes-title::placeholder { color: #5f5f5f; }
+.asd-notes-text { width: 100%; resize: vertical; min-height: 130px; padding: 12px 14px; border-radius: 12px; background: #0b0b0b; border: 1px solid #262626; color: #ededed; font-size: 13.5px; line-height: 1.5; outline: none; }
+.asd-notes-text::placeholder { color: #5f5f5f; }
+.asd-notes-text:focus, .asd-notes-title:focus { border-color: #3a3a3a; }
+.asd-notes-file { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 0 14px; height: 42px; border-radius: 10px; border: 1px dashed #333; color: #9a9a9a; font-size: 12.5px; cursor: pointer; transition: border-color .14s, color .14s; }
+.asd-notes-file:hover { border-color: #4a4a4a; color: #cfcfcf; }
+/* Meeting Notes tab */
+.notes-wrap { display: flex; flex-direction: column; min-height: 0; height: 100%; overflow-y: auto; padding-right: 4px; }
+.notes-composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--hairline); }
+.notes-composer-foot { display: flex; align-items: center; gap: 10px; }
+.notes-list-label { margin: 26px 0 12px; font-size: 10px; letter-spacing: 0.14em; color: var(--text-3); font-family: var(--font-mono, ui-monospace, monospace); }
+.notes-list { display: flex; flex-direction: column; gap: 8px; }
+.notes-item { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--hairline); cursor: pointer; transition: background .14s, border-color .14s; }
+.notes-item:hover { background: var(--surface-3, #171717); border-color: var(--hairline-strong, #2a2a2a); }
+.notes-item-icon { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,0.05); color: var(--text-2); flex-shrink: 0; }
+.notes-item-title { display: block; font-size: 13.5px; font-weight: 500; color: var(--text); }
+.notes-item-meta { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-3); font-family: var(--font-mono, ui-monospace, monospace); }
+.notes-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 0; color: var(--text-3); font-size: 13px; }
+.notes-content { white-space: pre-wrap; word-break: break-word; font-family: var(--font-mono, ui-monospace, monospace); font-size: 12.5px; line-height: 1.6; color: var(--text-2); max-height: 60vh; overflow-y: auto; }
 
 /* Conversations: refined 2-line rows + region + Ask Bracket bar */
 .conv-stream-region { flex: 1; min-height: 0; overflow-y: auto; padding-right: 6px; }
@@ -5007,6 +5028,8 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .pu-item { display: flex; align-items: flex-start; gap: 10px; text-align: left; padding: 6px 8px; border-radius: 8px; transition: background .12s; }
 .pu-item:hover { background: #151515; }
 .pu-item-text { font-size: 13.5px; line-height: 1.45; color: var(--text); }
+.pu-item-by { display: block; margin-top: 2px; font-size: 11px; color: var(--text-3); font-family: var(--font-mono, ui-monospace, monospace); letter-spacing: 0.01em; }
+.pu-item--off .pu-item-by { color: #4a4a4a; }
 .pu-item--off .pu-item-text { color: #5f5f5f; text-decoration: line-through; }
 .pu-check { flex-shrink: 0; margin-top: 1px; width: 17px; height: 17px; border-radius: 5px; display: grid; place-items: center; background: var(--accent); color: #000; }
 .pu-check--off { background: transparent; border: 1px solid #3a3a3a; }

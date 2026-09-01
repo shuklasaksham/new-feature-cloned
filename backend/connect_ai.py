@@ -36,6 +36,7 @@ CRITICAL RULES:
 - If the content is thin, return fewer items. Empty arrays are fine.
 - Extract ONLY what actually matters to running the project. Skip greetings, small talk, pleasantries and generic chatter.
 - Keep it concise: titles under 6 words, details to one short factual clause.
+- For each item set "requested_by" to the NAME (or email) of the person who raised/requested it, taken from the sender attribution in the content. Use "" when it's the owner's own item or you can't tell.
 
 EXISTING PROJECTS (for matching — use client names, participants, keywords, titles):
 {cand_lines}
@@ -50,11 +51,11 @@ Return STRICT JSON only:
     "client": "client/company name or empty string",
     "description": "1-2 sentence project description based on the source"
   }},
-  "requirements": [{{"title": "short", "detail": "1 sentence with evidence", "status": "confirmed|detected"}}],
-  "decisions": [{{"title": "short", "detail": "who decided what", "status": "confirmed|detected"}}],
-  "deliverables": [{{"title": "short", "detail": "1 sentence", "status": "confirmed|detected"}}],
-  "deadlines": [{{"title": "what is due", "detail": "date or timeframe as stated", "status": "confirmed|detected"}}],
-  "open_questions": [{{"title": "the unresolved question", "detail": "", "status": "detected"}}],
+  "requirements": [{{"title": "short", "detail": "1 sentence with evidence", "status": "confirmed|detected", "requested_by": "name or empty"}}],
+  "decisions": [{{"title": "short", "detail": "who decided what", "status": "confirmed|detected", "requested_by": "name or empty"}}],
+  "deliverables": [{{"title": "short", "detail": "1 sentence", "status": "confirmed|detected", "requested_by": "name or empty"}}],
+  "deadlines": [{{"title": "what is due", "detail": "date or timeframe as stated", "status": "confirmed|detected", "requested_by": "name or empty"}}],
+  "open_questions": [{{"title": "the unresolved question", "detail": "", "status": "detected", "requested_by": "name or empty"}}],
   "match": {{"project_id": "id from existing projects list or null", "confidence": 0, "reason": "1 sentence"}}
 }}"""
     data = await _run(prompt, "sonnet")
@@ -80,11 +81,41 @@ potential scope creep (requests outside known scope), approvals, blockers.
 - status "confirmed" ONLY for explicit agreements; ambiguous statements are "detected".
 - If nothing meaningful is new, return empty arrays.
 - Ignore greetings, small talk and chatter. Keep titles under 6 words and details to one short factual clause.
+- For each new item set "requested_by" to the NAME (or email) of the person who raised it, from the sender attribution; use "" if unclear.
 
 Return STRICT JSON only:
 {{
   "events": [{{"summary": "1 short sentence, e.g. 'Client requested a testimonials section'", "event_type": "REQUIREMENT_DETECTED|DECISION_DETECTED|SCOPE_CHANGE_DETECTED|DEADLINE_CHANGED|DELIVERABLE_STATUS_DETECTED|ACTIVITY"}}],
-  "new_items": [{{"category": "requirement|decision|deliverable|deadline|scope_change|question", "title": "short", "detail": "1 sentence with evidence", "status": "confirmed|detected"}}]
+  "new_items": [{{"category": "requirement|decision|deliverable|deadline|scope_change|question", "title": "short", "detail": "1 sentence with evidence", "status": "confirmed|detected", "requested_by": "name or empty"}}]
+}}"""
+    data = await _run(prompt, "sonnet")
+    return data if isinstance(data, dict) else {"events": [], "new_items": []}
+
+
+async def extract_from_notes(project_name: str, memory_titles: list, notes_text: str) -> dict:
+    """Extract project changes from user-attached meeting notes / a transcript,
+    comparing against what the project already knows. Same shape as
+    detect_source_updates so it flows through the identical review pipeline."""
+    known = "\n".join(f"- {t}" for t in memory_titles[:60]) or "- (nothing yet)"
+    prompt = f"""You are Bracket's meeting-notes analyst for project "{project_name}".
+The project owner just attached notes / a transcript from a meeting. Extract what it means for the project.
+
+The project ALREADY KNOWS these items (do NOT repeat them):
+{known}
+
+MEETING NOTES / TRANSCRIPT:
+{notes_text[:_MAX_CONTENT]}
+
+Identify only MEANINGFUL new or changed information: new requirements, decisions made, deliverables,
+deadline changes, scope changes (work added or removed), approvals, blockers or open questions.
+- Ignore small talk and logistics. Keep titles under 6 words, details to one short factual clause.
+- For each item set "requested_by" to the NAME of the person who raised it in the notes (a participant), or "" if not attributable.
+- If nothing meaningful is present, return empty arrays.
+
+Return STRICT JSON only:
+{{
+  "events": [{{"summary": "1 short sentence about what changed in the meeting", "event_type": "REQUIREMENT_DETECTED|DECISION_DETECTED|SCOPE_CHANGE_DETECTED|DEADLINE_CHANGED|DELIVERABLE_STATUS_DETECTED|ACTIVITY"}}],
+  "new_items": [{{"category": "requirement|decision|deliverable|deadline|scope_change|question", "title": "short", "detail": "1 sentence with evidence", "status": "detected", "requested_by": "name or empty"}}]
 }}"""
     data = await _run(prompt, "sonnet")
     return data if isinstance(data, dict) else {"events": [], "new_items": []}

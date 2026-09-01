@@ -1,0 +1,37 @@
+{
+  "summary": "Frontend E2E verification of the three deliverables on project 222535e8: (A) Author attribution on pending changes, (B) Meeting Notes sidebar tab + ingest flow, (C) Collapsed sidebar single-tooltip bug fix. All three passed end-to-end via Playwright against the public preview URL.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (not requested)", "frontend": "100%"},
+  "test_credentials": "support@use-bracket.com / Bracket@123 (admin, /login password flow)",
+  "seed_data_creation": "Created one meeting note titled 'TEST Sync Aug notes' via POST /projects/{id}/ingest-notes for the ingest test. Backend attributed extraction to 'Maria' (banner now shows 'Requested by Maria', 5 updates extracted). Recommend cleaning if needed.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Login on /login uses placeholder-based inputs: input[placeholder='Enter your email'] + input[placeholder='Enter your password'], then button with EXACT accessible name 'Sign In' (not substring — 'Sign In' substring hits Google/Apple buttons). Support admin credentials in /app/memory/test_credentials.md work for the app itself and redirect to their latest project. The Project Update drawer content is loaded asynchronously (shows 'Bracket is gathering the full impact…' initially) — poll pu-item-by-* for up to 10-15s after clicking change-banner-review.",
+  "verification_evidence": {
+    "nav_order": ["psb-nav-search","psb-nav-overview","psb-nav-conversations","psb-nav-notes","psb-nav-timeline","psb-nav-settings","psb-nav-help"],
+    "nav_native_title_attrs": "all null (bug fix confirmed — data-tip preserved for styled tooltip)",
+    "sources_section_content": "Only 'New Project — SaaS Dashboard Redesign' (Gmail connector). No meeting notes leaked into Sources.",
+    "notes_view_testids_present": ["notes-view","notes-composer","notes-title-input","notes-text-input","notes-file-label","notes-submit","notes-list"],
+    "notes_existing_count_before_ingest": 2,
+    "notes_count_after_paste_ingest": 3,
+    "ingest_toast": "'5 updates found — review them from Home.'",
+    "banner_after_ingest": "'Something changed in TEST Sync Aug notes — 7 new updates affect this project. · Requested by Maria'",
+    "notes_view_modal": "opened on notes-item click; content rendered; notes-view-close closes it",
+    "pu_item_by_entries": [
+      "Requested by Maria (Blog section added)",
+      "Requested by Maria (Pricing page updates requested)",
+      "Requested by Sarah Chen (Homepage testimonials carousel added)",
+      "Requested by Maria (Deadline moved to Oct 1)"
+    ],
+    "collapsed_sidebar_hover": "Only styled data-tip tooltip appears; no native browser tooltip (title=null on all psb-nav-* buttons). Expand toggle restores full labels and navigation continues to work."
+  }
+}

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Search, Unplug, RefreshCw, Loader2, Archive, ArchiveRestore,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Search, Unplug, RefreshCw, Loader2, Archive, ArchiveRestore, FileText,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
@@ -21,6 +21,7 @@ const BRACKET_LOGO =
 const NAV = [
   { key: "overview", label: "Home", icon: Hexagon },
   { key: "conversations", label: "Conversations", icon: MessagesSquare },
+  { key: "notes", label: "Meeting Notes", icon: FileText },
   { key: "timeline", label: "Timeline", icon: CalendarClock },
 ];
 
@@ -216,7 +217,6 @@ export default function ProjectSidebar({
           className="psb-nav-item psb-nav-search"
           data-tip="Search"
           onClick={() => onOpenSearch?.()}
-          title="Search"
           data-testid="psb-nav-search"
         >
           <Search size={20} strokeWidth={1.9} />
@@ -235,7 +235,6 @@ export default function ProjectSidebar({
               data-active={active ? "true" : "false"}
               data-tip={n.label}
               onClick={() => setView(n.key)}
-              title={n.label}
               data-testid={`psb-nav-${n.key}`}
             >
               <Icon size={20} strokeWidth={1.9} />
@@ -252,7 +251,7 @@ export default function ProjectSidebar({
       <div className="psb-sources">
         <div className="psb-section-head">
           <span className="psb-section-label psb-label">Sources</span>
-          <button type="button" className="psb-add" onClick={() => setSourcesOpen(true)} aria-label="Add a source" data-tip="Add a source" title="Add a source" data-testid="psb-add-source">
+          <button type="button" className="psb-add" onClick={() => setSourcesOpen(true)} aria-label="Add a source" data-tip="Add a source" data-testid="psb-add-source">
             <Plus size={16} />
           </button>
         </div>
@@ -301,10 +300,10 @@ export default function ProjectSidebar({
 
       {/* Settings / Help */}
       <div className="psb-foot-nav">
-        <button type="button" className="psb-nav-item" data-active={view === "settings" ? "true" : "false"} onClick={() => setView("settings")} title="Settings" data-tip="Settings" data-testid="psb-nav-settings">
+        <button type="button" className="psb-nav-item" data-active={view === "settings" ? "true" : "false"} onClick={() => setView("settings")} data-tip="Settings" data-testid="psb-nav-settings">
           <Settings size={20} strokeWidth={1.9} /> <span className="psb-label">Settings</span>
         </button>
-        <button type="button" className="psb-nav-item" data-active={view === "help" ? "true" : "false"} onClick={() => setView("help")} title="Help" data-tip="Help" data-testid="psb-nav-help">
+        <button type="button" className="psb-nav-item" data-active={view === "help" ? "true" : "false"} onClick={() => setView("help")} data-tip="Help" data-testid="psb-nav-help">
           <HelpCircle size={20} strokeWidth={1.9} /> <span className="psb-label">Help</span>
         </button>
       </div>

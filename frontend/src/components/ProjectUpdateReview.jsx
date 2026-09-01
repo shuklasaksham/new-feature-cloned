@@ -80,7 +80,7 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
   // Build a flat, keyed list of every proposed part (direct + downstream).
   const parts = useMemo(() => {
     const out = [];
-    (update?.direct || []).forEach((d) => out.push({ key: `d:${d.id}`, id: d.id, kind: "direct", category: d.category || "requirement", title: d.title }));
+    (update?.direct || []).forEach((d) => out.push({ key: `d:${d.id}`, id: d.id, kind: "direct", category: d.category || "requirement", title: d.title, requestedBy: d.requested_by || "" }));
     (update?.downstream || []).forEach((d) => out.push({ key: `x:${keyOfDown(d)}`, kind: "down", category: d.category || "requirement", title: d.title, downKey: keyOfDown(d) }));
     return out;
   }, [update]);
@@ -221,7 +221,12 @@ export default function ProjectUpdateReview({ projectId, open, onClose, onResolv
                               onClick={() => setRemoved((r) => ({ ...r, [p.key]: !r[p.key] }))}
                               data-testid={`pu-item-${p.key}`}>
                               <span className={`pu-check ${off ? "pu-check--off" : ""}`}>{!off && <Check size={11} />}</span>
-                              <span className="pu-item-text">{isTime ? "" : "+ "}{p.title}</span>
+                              <span className="pu-item-text">
+                                {isTime ? "" : "+ "}{p.title}
+                                {p.requestedBy && (
+                                  <span className="pu-item-by" data-testid={`pu-item-by-${p.key}`}>Requested by {p.requestedBy}</span>
+                                )}
+                              </span>
                             </button>
                           );
                         })}

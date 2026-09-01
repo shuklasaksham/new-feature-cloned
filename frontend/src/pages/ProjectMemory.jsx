@@ -7,7 +7,7 @@ import {
   Check, RotateCcw, Send, User, Unplug, Plug, SlidersHorizontal,
   Rows3, AlignJustify, Bookmark, BookmarkPlus, Trash2, ChevronDown, Search,
   ArrowRight, Clock, CheckCircle2, CalendarClock,
-  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus, X, AlertCircle, Lock,
+  Flag, Bell, MoreHorizontal, ChevronRight, Calendar, Paperclip, Smile, Zap, Star, Info, Plus, X, AlertCircle, Lock, FileText, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
@@ -159,7 +159,7 @@ export default function ProjectMemory() {
     });
     if (!best) return null;
     const label = best.source_label || PROVIDER_META[best.provider]?.label || best.provider || "a source";
-    return { title: best.title, sourceLabel: label };
+    return { title: best.title, sourceLabel: label, requestedBy: best.requested_by || "" };
   }, [memory]);
 
   const showChangeBanner = detectedCount > 0 && detectedCount !== dismissedChangeCount;
@@ -236,6 +236,7 @@ export default function ProjectMemory() {
                       {detectedCount === 1
                         ? (latestChange?.title || "A new update affects this project.")
                         : `${detectedCount} new updates affect this project.`}
+                      {latestChange?.requestedBy ? ` · Requested by ${latestChange.requestedBy}` : ""}
                     </span>
                   </span>
                 </div>
@@ -319,6 +320,10 @@ export default function ProjectMemory() {
             ) : view === "timeline" ? (
               <motion.div key="timeline" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
                 <TimelineView projectId={id} project={project} memory={memory} headerActions={headerActions} />
+              </motion.div>
+            ) : view === "notes" ? (
+              <motion.div key="notes" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
+                <NotesView projectId={id} project={project} headerActions={headerActions} onChanged={() => load({ silent: true })} />
               </motion.div>
             ) : view === "settings" ? (
               <motion.div key="settings" className="project-view" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}>
@@ -804,6 +809,133 @@ function HelpPanel({ onBack }) {
     </div>
   );
 }
+
+/* ─── Meeting Notes — attach transcripts/notes; Bracket extracts changes ── */
+function NotesView({ projectId, headerActions, onChanged }) {
+  const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [viewing, setViewing] = useState(null); // { title, content }
+
+  const load = async () => {
+    try {
+      const { data } = await api.get(`/projects/${projectId}/notes`);
+      setNotes(data.notes || []);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  };
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [projectId]);
+
+  const submit = async () => {
+    if (busy) return;
+    if (!text.trim() && !file) { toast.error("Paste your notes or choose a file."); return; }
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      if (text.trim()) fd.append("text", text.trim());
+      if (title.trim()) fd.append("title", title.trim());
+      if (file) fd.append("file", file);
+      const { data } = await api.post(`/projects/${projectId}/ingest-notes`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      if (data.added > 0) toast.success(`${data.added} update${data.added === 1 ? "" : "s"} found — review them from Home.`);
+      else toast.info("Notes saved. No new changes were detected.");
+      setTitle(""); setText(""); setFile(null);
+      await load();
+      onChanged?.();
+    } catch (e) { toast.error(formatApiError(e)); }
+    finally { setBusy(false); }
+  };
+
+  const openNote = async (n) => {
+    try {
+      const { data } = await api.get(`/projects/${projectId}/connections/${n.id}/content`);
+      setViewing({ title: n.title, content: data.content || "" });
+    } catch { toast.error("Couldn't load that note."); }
+  };
+
+  return (
+    <div className="notes-wrap" data-testid="notes-view">
+      <div className="ov-head">
+        <HeaderActions {...(headerActions || {})} />
+        <h1 className="mt-1 text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] leading-[1.03]" style={{ color: "var(--text)" }} data-testid="notes-title">
+          Meeting Notes
+        </h1>
+        <p className="mt-2 text-[13.5px]" style={{ color: "var(--text-3)", maxWidth: 620 }}>
+          Paste or upload notes and transcripts — Bracket extracts what changed and queues it for your review.
+        </p>
+      </div>
+
+      <div className="notes-composer" data-testid="notes-composer">
+        <input
+          className="asd-notes-title"
+          placeholder="Title (optional) — e.g. Kickoff call, Sep 3"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          data-testid="notes-title-input"
+        />
+        <textarea
+          className="asd-notes-text"
+          placeholder="Paste meeting notes or a transcript here…"
+          rows={6}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          data-testid="notes-text-input"
+        />
+        <div className="notes-composer-foot">
+          <label className="asd-notes-file" style={{ marginTop: 0, flex: 1 }} data-testid="notes-file-label">
+            <Upload size={14} />
+            <span className="truncate">{file ? file.name : "Upload .txt, .md, .docx or .pdf"}</span>
+            <input type="file" accept=".txt,.md,.docx,.pdf" style={{ display: "none" }}
+              onChange={(e) => setFile(e.target.files?.[0] || null)} data-testid="notes-file-input" />
+          </label>
+          <button type="button" className="asd-attach" disabled={busy || (!text.trim() && !file)} onClick={submit} data-testid="notes-submit">
+            {busy ? <><Loader2 size={14} className="animate-spin" /> Reading…</> : <><Sparkles size={14} /> Extract changes</>}
+          </button>
+        </div>
+      </div>
+
+      <p className="notes-list-label">ATTACHED NOTES</p>
+      {loading ? (
+        <p className="text-[13px]" style={{ color: "var(--text-3)" }}><Loader2 size={13} className="animate-spin inline mr-1" /> Loading…</p>
+      ) : notes.length === 0 ? (
+        <div className="notes-empty" data-testid="notes-empty">
+          <FileText size={22} style={{ color: "var(--text-3)" }} />
+          <p>No notes yet. Add your first meeting notes above.</p>
+        </div>
+      ) : (
+        <ul className="notes-list" data-testid="notes-list">
+          {notes.map((n) => (
+            <li key={n.id} className="notes-item" onClick={() => openNote(n)} role="button" data-testid={`notes-item-${n.id}`}>
+              <span className="notes-item-icon"><FileText size={16} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="notes-item-title">{n.title}</span>
+                <span className="notes-item-meta">{n.items} update{n.items === 1 ? "" : "s"} extracted · {timeAgo(n.created_at)}</span>
+              </span>
+              <ChevronRight size={16} style={{ color: "var(--text-3)" }} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {viewing && (
+        <div className="bkt-modal-overlay" style={{ zIndex: 70 }} onClick={() => setViewing(null)} data-testid="notes-view-modal">
+          <div className="pu-modal" onClick={(e) => e.stopPropagation()} style={{ width: "min(94vw, 720px)" }}>
+            <div className="bkt-modal-head">
+              <span className="text-[15px] font-semibold" style={{ color: "var(--text)" }}>{viewing.title}</span>
+              <button type="button" className="bkt-modal-x" onClick={() => setViewing(null)} data-testid="notes-view-close"><X size={16} /></button>
+            </div>
+            <div className="pu-body">
+              <pre className="notes-content">{viewing.content}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 /* ─── Home — lightweight "where are we now" + drill-in details ─────────── */
 function OverviewView({ project, projectId, memory, connections, detectedCount, counts, updatedAt, headerActions, onReviewUpdate }) {
