@@ -1,0 +1,58 @@
+{
+  "summary": "Frontend-only pass at 1366x768. Verified #2 (test plan removal), #4 (collapsed sidebar switcher solid bg), #5 (Settings removed from main sidebar, only in profile menu), and ran #6 responsiveness audit across authenticated pages. All three targeted fixes (#2/#4/#5) are correctly implemented. Responsiveness audit surfaced a few real overflow issues, most notably on /plan where the primary CTA sits below the 768 fold.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ChoosePlan (/plan)", "issue": "Page content overflows vertically at 1366x768 (documentElement.scrollHeight = 830, viewport = 768). The primary 'Pay with UPI / Card' button (data-testid=plan-continue) sits at the very bottom and is clipped/below the fold. Needs page-level scroll or tighter vertical spacing so the CTA is visible without scrolling.", "selector": "[data-testid=plan-continue]", "priority": "HIGH"},
+      {"component": "Projects dashboard (/app)", "issue": "Last 'Recent' row in Overview panel extends past viewport (top=762, bottom=805) - approx 37px clipped below the 768 fold. Row is not scrollable into view (page docSH stays 768).", "selector": "[data-testid^='home-recent-'] li.ov-recent-row (last)", "priority": "MEDIUM"},
+      {"component": "Help page (project → Help)", "issue": "help-faq UL bottom = 775 (7px below viewport). Last .help-faq-item bottom=775 is slightly clipped. Container .ov-panel bottom=790. Only ~7-22px clipped so minor, but content is not scrollable at page level (docSH=768).", "selector": ".help-faq / .help-faq-item (last)", "priority": "LOW"},
+      {"component": "Meeting Notes (project → notes)", "issue": "notes-list UL extends to bottom=894 (126px below viewport). Notes further down the list (e.g. notes-item-3894db51-...) are only partially visible. Behaves as internally scrollable panel (page docSH stays 768) so likely intended, but user experiences an item straddling the fold with only ~20px visible - consider tightening list max-height or increasing internal padding so partial rows aren't half-shown.", "selector": "[data-testid=notes-list] .notes-item", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/plan at 1366x768", "issues": ["Primary CTA below fold - user must scroll to see 'Pay with UPI / Card'"]}
+    ]
+  },
+  "verified_fixes": {
+    "#2_test_plan_removed": {
+      "/plan": "PASS - [data-testid=plan-test-activate] absent, [data-testid=plan-continue] present, no '₹0' or 'Activate free' text, ₹999 and ₹199 plans still visible.",
+      "/admin": "PASS - [data-testid=admin-test-plan-toggle] absent, Product Hunt toggle still present (visible 'Product Hunt offer ON' in header).",
+      "PlanModal_from_switcher": "N/A - Clicking 'New project' from psb-switcher opened onboarding/welcome dialog (project quota not reached for this account). No '₹0' / 'Test · free' text encountered in that flow."
+    },
+    "#4_collapsed_switcher_solid": {
+      "before_collapse": "bg=rgb(10,10,10), border=1px solid rgb(61,61,61), opacity=1",
+      "after_collapse": "bg=rgb(10,10,10), borderColor=rgb(61,61,61), borderWidth=1px, opacity=1, parent has 'is-collapsed' class",
+      "hover_collapsed": "bg=rgb(16,16,16) (visible hover state)",
+      "after_expand": "bg=rgb(10,10,10)",
+      "result": "PASS - Collapsed psb-switcher retains solid dark background and visible border; no transparency."
+    },
+    "#5_settings_only_in_profile_menu": {
+      "psb-nav-settings": "PASS - Absent from sidebar footer",
+      "psb-nav-help": "PASS - Present",
+      "psb-user opens psb-user-menu": "PASS",
+      "Settings button inside psb-user-menu": "PASS - Present as <button>Settings</button>",
+      "Clicking Settings navigates to Settings/Account view": "PASS - Account page rendered with Profile/Password sections"
+    }
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix /plan vertical overflow at 1366x768 so [data-testid=plan-continue] is above the fold (tighten spacing on the Product Hunt promo card + plan cards, or reduce top padding).",
+    "Fix /app dashboard: last home-recent row extends ~37px below the 768 fold; either reduce grid heights, allow the recents list to scroll internally, or drop one row.",
+    "Minor: Help page .help-faq slightly clipped (~7px) at 1366x768 - consider internal scroll on .ov-panel or shrinking padding.",
+    "Optional: Meeting Notes list shows a half-visible row at the fold; adjust max-height to snap to full-row heights."
+  ],
+  "critical_code_review_comments": [
+    "The .project-sidebar.is-collapsed .psb-switch styling is now correct (solid bg + border + hover). Good.",
+    "ProjectSidebar footer nav no longer renders Settings item; Settings is only inside psb-user-menu - matches requirement.",
+    "PlanModal / ChoosePlan / AdminDashboard no longer expose the free-test plan option in any surface I could reach.",
+    "Fixed 100dvh shell holds - no horizontal overflow anywhere I visited (dashboard, project home, conversations, notes, timeline, help, settings, /admin, /plan). Only /plan reports docSH > 768."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "Fixes #2/#4/#5: 100% pass. Responsiveness #6: 4 overflow issues found (1 HIGH, 1 MEDIUM, 2 LOW)."},
+  "test_credentials": "support@use-bracket.com / Bracket@123 (works via email/password Sign In button - be careful not to match the 'Sign in with Google' partial text).",
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Login selector tip: use page.get_by_role('button', name='Sign In', exact=True) - the partial-text selector 'Sign In' matches the Google OAuth button. Project test id: 222535e8-18f0-403d-b62f-d0048acbbc72. Ran everything at 1366x768. psb-add-source testid was NOT found in the collapsed/expanded sidebar for this account/project - possibly renamed; check ProjectSidebar.jsx if you need to open AddSourceDialog. The 'New project' button from psb-switcher launches an onboarding welcome dialog rather than PlanModal for this account (still under quota).",
+  "rca of the issue": "Not a bug regression - #2/#4/#5 all correctly landed. The /plan vertical overflow appears to stem from the Product Hunt promo card (Try free 14 days) being added above the plan cards which pushed the CTA below 768; the page has no scroll-friendly container so the button is clipped at fixed 100dvh viewport."
+}

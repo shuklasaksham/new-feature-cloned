@@ -58,15 +58,6 @@ export default function PlanModal({ open, onClose, defaultPlan = "monthly", titl
 
   const options = [
     ...PLANS,
-    ...(user?.can_test_plan
-      ? [{
-          id: "test",
-          label: "Test · free",
-          unit: "temporary",
-          price: { inr: "0", usd: "0" },
-          features: ["Instant access — no payment", "Up to 10 projects", "For testing only"],
-        }]
-      : []),
   ];
 
   const activateTest = async () => {

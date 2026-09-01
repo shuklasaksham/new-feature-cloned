@@ -298,11 +298,8 @@ export default function ProjectSidebar({
         </ul>
       </div>
 
-      {/* Settings / Help */}
+      {/* Help */}
       <div className="psb-foot-nav">
-        <button type="button" className="psb-nav-item" data-active={view === "settings" ? "true" : "false"} onClick={() => setView("settings")} data-tip="Settings" data-testid="psb-nav-settings">
-          <Settings size={20} strokeWidth={1.9} /> <span className="psb-label">Settings</span>
-        </button>
         <button type="button" className="psb-nav-item" data-active={view === "help" ? "true" : "false"} onClick={() => setView("help")} data-tip="Help" data-testid="psb-nav-help">
           <HelpCircle size={20} strokeWidth={1.9} /> <span className="psb-label">Help</span>
         </button>

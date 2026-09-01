@@ -4675,18 +4675,10 @@ async def admin_set_test_plan(body: TestPlanToggleIn, request: Request):
 
 @api.post("/payments/test-activate")
 async def test_activate_plan(request: Request):
-    """TEMPORARY: activate the free ₹0 test plan for allowlisted accounts, no
-    payment. Behaves like Monthly (10 projects) so the full flow can be tested."""
-    user = await current_user(request, db)
-    if not can_use_test_plan(user):
-        raise HTTPException(status_code=403, detail="The test plan isn't available for this account.")
-    await db.users.update_one(
-        {"user_id": user["user_id"]},
-        {"$set": {"plan": "test", "plan_kind": "subscription", "plan_currency": "inr",
-                  "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
-    )
-    logger.info(f"[test-plan] activated free test plan for {user.get('email')}")
-    return {"success": True}
+    """Removed. The free ₹0 test plan has been fully retired from the product;
+    this endpoint now rejects so no account can self-activate a free plan."""
+    await current_user(request, db)
+    raise HTTPException(status_code=410, detail="The test plan has been removed.")
 
 
 class PhLaunchToggleIn(BaseModel):

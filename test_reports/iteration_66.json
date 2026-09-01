@@ -1,0 +1,55 @@
+{
+  "summary": "Re-verified 4 responsiveness fixes at 1366x768 (from iteration_65). All 4 fixes pass. No new horizontal scrollbars introduced.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verification_details": {
+    "FIX_A_plan": {
+      "status": "PASS",
+      "plan_continue_in_viewport_initially": true,
+      "plan_continue_box": {"x": 70, "y": 670.78, "width": 433.72, "height": 50, "bottom": 720.78},
+      "viewport_height": 768,
+      "scrollable_ancestor": "div.overflow-y-auto.max-h-screen (scrollH=787, clientH=768, canScroll=true)",
+      "plan_cards_render": {"plan-monthly": 1, "plan-project": 1},
+      "documentElement_scrollHeight": 768,
+      "horizontal_overflow": false
+    },
+    "FIX_B_project_overview": {
+      "status": "PASS",
+      "ov_wrap_overflowY": "auto",
+      "ov_wrap_overflowX": "hidden",
+      "ov_wrap_scrollH": 623,
+      "ov_wrap_clientH": 623,
+      "note": "Content fits entirely within .ov-wrap (scrollH==clientH). Overflow-y:auto is applied so any future longer content will scroll rather than clip. No content is clipped below the fold at 1366x768.",
+      "horizontal_overflow": false
+    },
+    "FIX_C_timeline": {
+      "status": "PASS",
+      "scrollable_region": ".conv-stream-region (scrollH=504, clientH=283)",
+      "horizontal_overflow": false
+    },
+    "FIX_D_notes": {
+      "status": "PASS",
+      "scrollable_region": ".notes-wrap (scrollH=775, clientH=623)",
+      "horizontal_overflow": false
+    },
+    "HELP_view": {
+      "status": "PASS",
+      "scrollable_region": ".settings-embed-main (scrollH=812, clientH=623)",
+      "horizontal_overflow": false
+    }
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A", "frontend": "100%"},
+  "test_credentials": "support@use-bracket.com / Bracket@123",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 66 re-verified the 4 responsiveness fixes from iteration 65 at exactly 1366x768. All fixes pass: (A) /plan plan-continue CTA is fully in-viewport at y=670..720 and its scrollable ancestor (.overflow-y-auto.max-h-screen) has scrollH=787>clientH=768 confirming panel scrolls if needed; (B) .ov-wrap has computed overflow-y:auto and overflow-x:hidden, content currently fits (623=623); (C) Timeline .conv-stream-region scrollable 504>283; (D) Notes .notes-wrap scrollable 775>623; Help .settings-embed-main scrollable 812>623. No horizontal overflow on any page (docW==winW==1366)."
+}

@@ -2033,6 +2033,46 @@ async def ask_project(project_id: str, body: AskIn, request: Request):
 # ---------------------------------------------------------------------------
 # Sync engine — shared by manual "Sync now" and the background poller
 # ---------------------------------------------------------------------------
+def _event_uid(conn_id: str, provider: str, raw: str) -> str:
+    return hashlib.sha1(f"{conn_id}|{provider}|{raw.strip()[:400]}".encode()).hexdigest()[:20]
+
+
+def _owner_idents(account: dict) -> set:
+    vals = set()
+    for k in ("label", "name", "external_name", "handle", "email"):
+        v = str(account.get(k) or "").strip().lower()
+        if v:
+            vals.add(v)
+    return vals
+
+
+def _split_events(provider: str, conn_id: str, digest: str, owner_idents: set) -> list:
+    """Break a source digest into individual events (one per message / comment /
+    commit / issue) with a STABLE id and an owner flag. This is what lets sync
+    dedup per-event and skip the freelancer's own replies."""
+    units = []
+    if not digest:
+        return units
+    if provider == "gmail":
+        for b in re.split(r"\n(?=--- From:)", digest):
+            b = b.strip()
+            if not b.startswith("--- From:"):
+                continue
+            header = b.split("\n", 1)[0].lower()
+            is_owner = any(("@" in ident and ident in header) for ident in owner_idents)
+            units.append({"uid": _event_uid(conn_id, provider, b), "is_owner": is_owner, "text": b})
+    else:
+        for ln in digest.split("\n"):
+            s = ln.strip()
+            if not s.startswith("- "):
+                continue
+            m = re.match(r"- ([^(]+?) \(", s)  # "- Author (date): message"
+            author = m.group(1).strip().lower() if m else ""
+            is_owner = bool(author) and author in owner_idents
+            units.append({"uid": _event_uid(conn_id, provider, s), "is_owner": is_owner, "text": s})
+    return units
+
+
 async def _sync_connection(conn: dict) -> dict:
     account = await db.integration_accounts.find_one({"user_id": conn["user_id"], "provider": conn["provider"]}, {"_id": 0})
     now = _now_iso()
@@ -2054,13 +2094,46 @@ async def _sync_connection(conn: dict) -> dict:
         await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"last_synced_at": now, "status": "connected", "updated_at": now}})
         return {"changed": False, "status": "connected"}
 
+    # ---- Per-event processing ledger ------------------------------------
+    # Dedup at the level of individual messages/comments/commits (NOT the whole
+    # thread) so historical content is never re-extracted and the same change
+    # can't fire repeat alerts. Events the OWNER authored (their own replies)
+    # are marked processed but never analysed — a freelancer's reply must not
+    # change project truth.
+    owner_idents = _owner_idents(account)
+    units = _split_events(conn["provider"], conn["id"], digest, owner_idents)
+    processed = set(conn.get("processed_event_ids") or [])
+    if "processed_event_ids" not in conn:
+        # First time this source is ledgered: everything already captured in the
+        # connect-time baseline (content_cache) counts as processed, so we never
+        # re-mine history the initial extraction already covered.
+        baseline = _split_events(conn["provider"], conn["id"], conn.get("content_cache") or "", owner_idents)
+        processed |= {u["uid"] for u in baseline}
+
+    new_units = [u for u in units if u["uid"] not in processed]
+    client_units = [u for u in new_units if not u["is_owner"]]
+    all_processed = list(processed | {u["uid"] for u in units})[-800:]
+
+    # Nothing genuinely new from the client (only the owner's own replies, or no
+    # change worth analysing) → record the ledger and stop. No re-extraction,
+    # no alerts.
+    if not client_units:
+        await db.source_connections.update_one({"id": conn["id"]}, {"$set": {
+            "content_hash": h, "content_cache": digest[:20000], "processed_event_ids": all_processed,
+            "last_synced_at": now, "status": "connected", "updated_at": now,
+        }})
+        return {"changed": False, "status": "connected", "new_items": 0}
+
     memory_titles = []
     async for m in db.project_memory.find({"project_id": conn["project_id"], "status": {"$ne": "ignored"}}, {"_id": 0, "title": 1}).limit(60):
         memory_titles.append(m["title"])
     project = await db.projects.find_one({"id": conn["project_id"]}, {"_id": 0, "name": 1})
+    # Analyse ONLY the genuinely-new client events — never the whole thread.
+    focused = (f"NEW {conn['provider'].upper()} ACTIVITY in {conn['source_name']}:\n"
+               + "\n".join(u["text"] for u in client_units))[:16000]
     new_items, events = [], []
     try:
-        result = await detect_source_updates(conn["provider"], conn["source_name"], (project or {}).get("name", ""), memory_titles, digest)
+        result = await detect_source_updates(conn["provider"], conn["source_name"], (project or {}).get("name", ""), memory_titles, focused)
         events = result.get("events") or []
         new_items = result.get("new_items") or []
     except Exception as e:
@@ -2076,32 +2149,32 @@ async def _sync_connection(conn: dict) -> dict:
             "provider": conn["provider"], "source_label": conn["source_name"],
             "category": item.get("category") if item.get("category") in cat_ok else "event",
             "title": str(item["title"])[:200], "detail": str(item.get("detail", ""))[:500],
-            # A change detected on an ONGOING sync must always be surfaced for
-            # review — never auto-confirmed — so the user gets a notification /
-            # change banner for every client update (even explicit ones). The
-            # AI's own confirmed/detected guess is only trusted for the INITIAL
-            # baseline extraction at project creation, not for live changes.
+            # A change detected on an ONGOING sync is always surfaced for review —
+            # never auto-confirmed — so the owner gets a notification for every
+            # real client update. The AI's confirmed/detected guess is only
+            # trusted for the INITIAL baseline extraction at project creation.
             "status": "detected",
             "requested_by": str(item.get("requested_by", ""))[:120],
             "occurred_at": now, "created_at": now, "updated_at": now, "history": [],
         })
     if mem_docs:
         await db.project_memory.insert_many(mem_docs)
-    # Notifications — surface scope-creep items so risky client asks pop up.
+
+    # Notifications + scope-creep email — deduped by fingerprint so the SAME
+    # detected change can never generate a second "Scope Alert".
+    alerted = set(conn.get("alerted_fingerprints") or [])
     scope_items = [d for d in mem_docs if d["category"] == "scope_change"]
-    if scope_items:
+    fresh_scope = [s for s in scope_items if _hash(s["title"].strip().lower())[:16] not in alerted]
+    if fresh_scope:
         project_name = (project or {}).get("name", "") or "your project"
-        notif_docs = [{
+        await db.notifications.insert_many([{
             "id": _uuid(), "user_id": conn["user_id"], "project_id": conn["project_id"],
             "project_name": project_name, "connection_id": conn["id"],
             "provider": conn["provider"], "source_label": conn["source_name"],
             "memory_id": s["id"], "type": "scope_creep",
             "title": s["title"], "detail": s.get("detail", ""),
             "read": False, "created_at": now,
-        } for s in scope_items[:6]]
-        await db.notifications.insert_many(notif_docs)
-        # Email nudge — one batched alert per sync so the owner never misses a
-        # client request that quietly expands scope. Fire-and-forget.
+        } for s in fresh_scope[:6]])
         try:
             owner = await db.users.find_one({"user_id": conn["user_id"]}, {"_id": 0, "email": 1, "name": 1})
             proj_full = await db.projects.find_one({"id": conn["project_id"]}, {"_id": 0, "client_name": 1})
@@ -2112,11 +2185,13 @@ async def _sync_connection(conn: dict) -> dict:
                     project_name=project_name,
                     project_id=conn["project_id"],
                     client_name=(proj_full or {}).get("client_name", ""),
-                    items=[{"title": s["title"], "detail": s.get("detail", "")} for s in scope_items[:8]],
+                    items=[{"title": s["title"], "detail": s.get("detail", "")} for s in fresh_scope[:8]],
                     public_base_url=PUBLIC_BASE,
                 ))
         except Exception as e:
             logger.warning("scope-creep alert scheduling failed for %s: %s", conn["id"], e)
+        alerted |= {_hash(s["title"].strip().lower())[:16] for s in fresh_scope}
+
     ev_docs = []
     for ev in events[:8]:
         if not isinstance(ev, dict) or not ev.get("summary"):
@@ -2127,17 +2202,19 @@ async def _sync_connection(conn: dict) -> dict:
             "event_type": ev.get("event_type", "ACTIVITY"), "summary": str(ev["summary"])[:300],
             "occurred_at": now, "created_at": now,
         })
-    if not ev_docs:
+    if not ev_docs and mem_docs:
         ev_docs.append({
             "id": _uuid(), "project_id": conn["project_id"], "connection_id": conn["id"],
             "provider": conn["provider"], "source_label": conn["source_name"],
             "event_type": "SOURCE_UPDATED", "summary": f"{conn['source_name']} changed — {len(mem_docs)} new items detected.",
             "occurred_at": now, "created_at": now,
         })
-    await db.source_events.insert_many(ev_docs)
+    if ev_docs:
+        await db.source_events.insert_many(ev_docs)
     await db.source_connections.update_one({"id": conn["id"]}, {"$set": {
-        "content_hash": h, "content_cache": digest[:20000], "last_synced_at": now,
-        "last_activity_at": now, "status": "connected", "updated_at": now,
+        "content_hash": h, "content_cache": digest[:20000],
+        "processed_event_ids": all_processed, "alerted_fingerprints": list(alerted)[-400:],
+        "last_synced_at": now, "last_activity_at": now, "status": "connected", "updated_at": now,
     }})
     return {"changed": True, "status": "connected", "new_items": len(mem_docs), "events": len(ev_docs)}
 

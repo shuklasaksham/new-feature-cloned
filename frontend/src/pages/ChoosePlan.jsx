@@ -111,8 +111,8 @@ export default function ChoosePlan() {
     <div className="min-h-screen w-full flex" style={{ background: "#000" }} data-testid="choose-plan-page">
       <Seo title="Choose your plan" path="/plan" noindex />
 
-      <div className="relative flex flex-col justify-center w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-10">
-        <div className="max-w-[480px] w-full page-enter">
+      <div className="relative flex flex-col justify-center w-full lg:w-[46%] xl:w-[42%] px-7 sm:px-14 lg:px-16 xl:px-20 py-6 lg:py-10 overflow-y-auto max-h-screen">
+        <div className="max-w-[480px] w-full page-enter my-auto">
           <Link to="/" aria-label="Bracket home" className="inline-flex mb-6">
             <img src={BRACKET_LOGO} alt="Bracket" width={46} height={46} style={{ display: "block" }} />
           </Link>
@@ -162,7 +162,7 @@ export default function ChoosePlan() {
             ))}
           </div>
 
-          <div className="mt-8 flex flex-col gap-4">
+          <div className="mt-6 flex flex-col gap-3">
             {PLANS.map((p) => {
               const active = selected === p.id;
               return (
@@ -170,7 +170,7 @@ export default function ChoosePlan() {
                   key={p.id}
                   type="button"
                   onClick={() => setSelected(p.id)}
-                  className="text-left px-6 py-5 transition-colors"
+                  className="text-left px-6 py-4 transition-colors"
                   style={{ background: "#0a0a0a", border: `1px solid ${active ? "#5f5f5f" : "#242424"}`, borderRadius: 16 }}
                   data-testid={`plan-${p.id}`}
                   aria-pressed={active}
@@ -199,18 +199,6 @@ export default function ChoosePlan() {
           <button type="button" onClick={payWithRazorpay} disabled={loading} className="login-submit mt-6" data-testid="plan-continue">
             {loading ? <Loader2 size={16} className="animate-spin" /> : <>Pay with UPI / Card <ArrowRight size={15} /></>}
           </button>
-          {user?.can_test_plan && (
-            <button
-              type="button"
-              onClick={activateTestPlan}
-              disabled={loading}
-              className="mt-3 w-full inline-flex items-center justify-center gap-2 h-11 text-[12.5px] font-semibold transition-colors disabled:opacity-60"
-              style={{ ...MONO, background: "transparent", color: "#c9c9c9", border: "1px dashed #3a3a3a", borderRadius: 9999 }}
-              data-testid="plan-test-activate"
-            >
-              <Zap size={14} /> Activate free test plan (₹0)
-            </button>
-          )}
           <p className="text-center mt-4 text-[11px]" style={{ ...MONO, color: "#565656" }}>
             UPI, cards & netbanking · Razorpay · Test mode
           </p>
