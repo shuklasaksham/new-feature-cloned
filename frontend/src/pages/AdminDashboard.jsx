@@ -47,9 +47,12 @@ export default function AdminDashboard() {
   const [purging, setPurging] = useState(false);
   const [testPlanOn, setTestPlanOn] = useState(false);
   const [togglingTp, setTogglingTp] = useState(false);
+  const [phLaunchOn, setPhLaunchOn] = useState(false);
+  const [togglingPh, setTogglingPh] = useState(false);
 
   useEffect(() => {
     api.get("/admin/test-plan").then(({ data }) => setTestPlanOn(!!data.enabled)).catch(() => {});
+    api.get("/admin/ph-launch").then(({ data }) => setPhLaunchOn(!!data.enabled)).catch(() => {});
   }, []);
 
   const toggleTestPlan = async () => {
@@ -62,6 +65,19 @@ export default function AdminDashboard() {
       toast.error(formatApiError(e));
     } finally {
       setTogglingTp(false);
+    }
+  };
+
+  const togglePhLaunch = async () => {
+    setTogglingPh(true);
+    try {
+      const { data } = await api.post("/admin/ph-launch", { enabled: !phLaunchOn });
+      setPhLaunchOn(!!data.enabled);
+      toast.success(`Product Hunt launch offer ${data.enabled ? "enabled for all users" : "disabled"}.`);
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setTogglingPh(false);
     }
   };
 
@@ -227,11 +243,12 @@ export default function AdminDashboard() {
               Everyone using Bracket · every project · every decision.
             </p>
           </div>
+          <div className="self-start sm:self-auto flex flex-col sm:flex-row items-start sm:items-center gap-2.5">
           <button
             type="button"
             onClick={toggleTestPlan}
             disabled={togglingTp}
-            className="self-start sm:self-auto inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full border text-[12.5px] transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full border text-[12.5px] transition-colors disabled:opacity-60"
             style={{ borderColor: "var(--hairline)", background: "rgba(255,255,255,0.03)" }}
             data-testid="admin-test-plan-toggle"
             title="When ON, every signed-in user sees a free ₹0 test plan on the plan screen. Temporary."
@@ -242,6 +259,22 @@ export default function AdminDashboard() {
             </span>
             <span className="mono-label text-[10px]" style={{ color: testPlanOn ? "#22c55e" : "var(--text-3)" }}>{testPlanOn ? "ON" : "OFF"}</span>
           </button>
+          <button
+            type="button"
+            onClick={togglePhLaunch}
+            disabled={togglingPh}
+            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full border text-[12.5px] transition-colors disabled:opacity-60"
+            style={{ borderColor: phLaunchOn ? "rgba(255,111,60,0.5)" : "var(--hairline)", background: phLaunchOn ? "rgba(255,111,60,0.08)" : "rgba(255,255,255,0.03)" }}
+            data-testid="admin-ph-launch-toggle"
+            title="Product Hunt launch: when ON, every signed-in user can claim their first project free for 14 days (no card)."
+          >
+            <span className="text-[var(--text-2)]">🚀 Product Hunt offer</span>
+            <span className="inline-flex items-center h-5 w-9 rounded-full transition-colors" style={{ background: phLaunchOn ? "#ff6f3c" : "#3a3a3a" }}>
+              <span className="h-4 w-4 rounded-full bg-white transition-transform" style={{ transform: phLaunchOn ? "translateX(18px)" : "translateX(2px)" }} />
+            </span>
+            <span className="mono-label text-[10px]" style={{ color: phLaunchOn ? "#ff6f3c" : "var(--text-3)" }}>{phLaunchOn ? "ON" : "OFF"}</span>
+          </button>
+          </div>
         </div>
 
         {/* Tabs */}

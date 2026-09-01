@@ -74,6 +74,8 @@ from auth import (
     public_user,
     can_use_test_plan,
     TEST_PLAN_STATE,
+    can_use_ph_launch,
+    PH_LAUNCH_STATE,
     iso as auth_iso,
     now_utc as auth_now,
 )
@@ -4491,8 +4493,8 @@ async def razorpay_create_order(body: RzpOrderIn, request: Request):
     plan = PLANS.get(body.plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail="Unknown plan.")
-    if body.plan_id == "test":
-        raise HTTPException(status_code=400, detail="The test plan is activated directly, not via checkout.")
+    if body.plan_id in ("test", "ph_launch"):
+        raise HTTPException(status_code=400, detail="This plan is activated directly, not via checkout.")
     currency = (body.currency or "inr").lower()
     if currency not in ("inr", "usd"):
         raise HTTPException(status_code=400, detail="Unsupported currency.")
@@ -4622,6 +4624,47 @@ async def test_activate_plan(request: Request):
                   "plan_since": auth_iso(auth_now()), "updated_at": auth_iso(auth_now())}},
     )
     logger.info(f"[test-plan] activated free test plan for {user.get('email')}")
+    return {"success": True}
+
+
+class PhLaunchToggleIn(BaseModel):
+    enabled: bool
+
+
+@api.get("/admin/ph-launch")
+async def admin_get_ph_launch(request: Request):
+    await auth_current_admin(request, db)
+    return {"enabled": bool(PH_LAUNCH_STATE.get("enabled"))}
+
+
+@api.post("/admin/ph-launch")
+async def admin_set_ph_launch(body: PhLaunchToggleIn, request: Request):
+    admin = await auth_current_admin(request, db)
+    await db.app_settings.update_one(
+        {"key": "ph_launch"},
+        {"$set": {"key": "ph_launch", "enabled": bool(body.enabled),
+                  "updated_at": auth_iso(auth_now()), "updated_by": admin.get("email")}},
+        upsert=True,
+    )
+    PH_LAUNCH_STATE["enabled"] = bool(body.enabled)
+    logger.info("[ph-launch] toggle set to %s by %s", body.enabled, admin.get("email"))
+    return {"enabled": bool(body.enabled)}
+
+
+@api.post("/payments/ph-activate")
+async def ph_activate_plan(request: Request):
+    """Product Hunt launch offer: activate a free 14-day single-project plan,
+    no card. Guarded by the admin toggle + one claim per account."""
+    user = await current_user(request, db)
+    if not can_use_ph_launch(user):
+        raise HTTPException(status_code=403, detail="The launch offer isn't available for this account.")
+    now = auth_iso(auth_now())
+    await db.users.update_one(
+        {"user_id": user["user_id"]},
+        {"$set": {"plan": "ph_launch", "plan_kind": "ph_launch", "plan_currency": "inr",
+                  "plan_since": now, "ph_claimed": True, "updated_at": now}},
+    )
+    logger.info(f"[ph-launch] activated free launch plan for {user.get('email')}")
     return {"success": True}
 
 
@@ -4858,6 +4901,13 @@ async def on_startup():
         logger.info("[startup] test_plan toggle = %s", TEST_PLAN_STATE["enabled"])
     except Exception as e:  # noqa: BLE001
         logger.warning(f"[startup] test_plan toggle load skipped: {e}")
+    # Load the Product Hunt launch-offer toggle into memory (admin-controlled).
+    try:
+        _ph = await db.app_settings.find_one({"key": "ph_launch"})
+        PH_LAUNCH_STATE["enabled"] = bool(_ph and _ph.get("enabled"))
+        logger.info("[startup] ph_launch toggle = %s", PH_LAUNCH_STATE["enabled"])
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[startup] ph_launch toggle load skipped: {e}")
 
     # 4) Purge legacy/decommissioned accounts declared via PURGE_USER_EMAILS
     #    (comma-separated). Idempotent + cascades projects/sessions/OTPs. Guarded

@@ -976,8 +976,9 @@ def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str
 # ---- Plan-gated project quota --------------------------------------------
 # monthly subscription → up to 10 ACTIVE (non-archived) projects, unlimited
 # archived; single-project ($9) → 1 active project for 60 days; none → 1.
-PLAN_PROJECT_LIMITS = {"monthly": 10, "project": 1, "test": 10}
+PLAN_PROJECT_LIMITS = {"monthly": 10, "project": 1, "test": 10, "ph_launch": 1}
 PROJECT_PLAN_DAYS = 60
+PH_LAUNCH_DAYS = 14
 
 
 def _plan_limit(plan):
@@ -985,9 +986,12 @@ def _plan_limit(plan):
 
 
 def _plan_expires_at(user):
-    """The $9 single-project plan grants access for 60 days from purchase.
-    Returns an aware datetime, or None when the plan never expires (monthly)."""
-    if user.get("plan") != "project":
+    """The $9 single-project plan grants 60 days; the Product Hunt launch offer
+    grants 14 days. Returns an aware datetime, or None when the plan never
+    expires (monthly / test)."""
+    plan = user.get("plan")
+    days = {"project": PROJECT_PLAN_DAYS, "ph_launch": PH_LAUNCH_DAYS}.get(plan)
+    if not days:
         return None
     since = user.get("plan_since")
     if not since:
@@ -996,7 +1000,7 @@ def _plan_expires_at(user):
         start = datetime.fromisoformat(since)
         if start.tzinfo is None:
             start = start.replace(tzinfo=timezone.utc)
-        return start + timedelta(days=PROJECT_PLAN_DAYS)
+        return start + timedelta(days=days)
     except Exception:
         return None
 

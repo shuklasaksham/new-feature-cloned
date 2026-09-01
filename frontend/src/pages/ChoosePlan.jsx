@@ -39,6 +39,19 @@ export default function ChoosePlan() {
     }
   };
 
+  const activatePhLaunch = async () => {
+    setLoading(true);
+    try {
+      await api.post("/payments/ph-activate");
+      await refresh();
+      toast.success("🚀 Your first project is free for 14 days — welcome to Bracket!");
+      navigate("/welcome", { replace: true });
+    } catch (e) {
+      toast.error(formatApiError(e));
+      setLoading(false);
+    }
+  };
+
   const loadRazorpay = () =>
     new Promise((resolve) => {
       if (window.Razorpay) return resolve(true);
@@ -109,6 +122,30 @@ export default function ChoosePlan() {
           <p className="mt-3 text-[13px]" style={{ ...MONO, color: "#7a7a7a" }}>
             Choose monthly or pay for a single project
           </p>
+
+          {user?.can_ph_launch && (
+            <div
+              className="mt-6 px-6 py-5 relative overflow-hidden"
+              style={{ background: "linear-gradient(135deg, rgba(255,111,60,0.14), rgba(255,111,60,0.04))", border: "1px solid rgba(255,111,60,0.45)", borderRadius: 16 }}
+              data-testid="ph-launch-offer"
+            >
+              <p className="text-[11px] font-semibold tracking-[0.08em] uppercase" style={{ ...MONO, color: "#ff6f3c" }}>🚀 Product Hunt Launch Offer</p>
+              <p className="mt-2 font-display font-semibold text-[22px] leading-tight" style={{ color: "#fff" }}>
+                Try your first project free for 14 days.
+              </p>
+              <p className="mt-1.5 text-[13px]" style={{ ...MONO, color: "#c9c9c9" }}>No card required.</p>
+              <button
+                type="button"
+                onClick={activatePhLaunch}
+                disabled={loading}
+                className="mt-4 w-full inline-flex items-center justify-center gap-2 h-11 text-[13px] font-semibold transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                style={{ background: "#ff6f3c", color: "#fff", borderRadius: 9999 }}
+                data-testid="ph-launch-activate"
+              >
+                {loading ? <Loader2 size={16} className="animate-spin" /> : <>Start free — 14 days <ArrowRight size={15} /></>}
+              </button>
+            </div>
+          )}
 
           <div className="mt-5 inline-flex p-0.5" style={{ background: "#161616", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 9999 }} data-testid="choose-plan-currency-toggle">
             {["inr", "usd"].map((c) => (

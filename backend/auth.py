@@ -206,6 +206,7 @@ def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
     out["is_admin"] = is_admin(user)
     out["is_guest"] = bool(user.get("is_guest"))
     out["can_test_plan"] = can_use_test_plan(user)
+    out["can_ph_launch"] = can_use_ph_launch(user)
     return out
 
 
@@ -217,6 +218,22 @@ def _test_plan_emails() -> set:
 # Runtime toggle for the TEMPORARY ₹0 test plan, flipped from the admin panel.
 # Loaded from the app_settings collection at startup and mutated on toggle.
 TEST_PLAN_STATE = {"enabled": False}
+
+# Runtime toggle for the Product Hunt launch offer (first project free 14 days).
+PH_LAUNCH_STATE = {"enabled": False}
+
+
+def can_use_ph_launch(user: Dict[str, Any]) -> bool:
+    """Product Hunt launch offer — first project free for 14 days, no card.
+    Available to any signed-in account that hasn't already claimed it or bought a
+    plan, while the admin toggle is ON."""
+    if not PH_LAUNCH_STATE.get("enabled"):
+        return False
+    if user.get("ph_claimed"):
+        return False
+    if user.get("plan") in ("monthly", "project", "ph_launch"):
+        return False
+    return True
 
 
 def can_use_test_plan(user: Dict[str, Any]) -> bool:
