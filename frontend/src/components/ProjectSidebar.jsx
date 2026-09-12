@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
-import { api } from "../lib/api";
+import { api, formatApiError } from "../lib/api";
 import { toast } from "sonner";
 import { useDialog } from "../components/Dialog";
 import AddSourceDialog from "./AddSourceDialog";
@@ -53,6 +53,7 @@ export default function ProjectSidebar({
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [reconnectKey, setReconnectKey] = useState(null);
   const [busyConn, setBusyConn] = useState(null);
+  const [syncingConn, setSyncingConn] = useState(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   const dialog = useDialog();
   const switchRef = useRef(null);
@@ -81,6 +82,30 @@ export default function ProjectSidebar({
   const reconnectSource = (conn) => {
     setReconnectKey(conn?.provider || null);
     setSourcesOpen(true);
+  };
+
+  // Force an immediate sync of one source (bypasses the background poller's
+  // per-provider cadence, e.g. Figma's 15-min spacing) so the user never has to
+  // wait — or wonder why refreshing the page didn't pull new activity.
+  const syncSource = async (conn) => {
+    if (syncingConn) return;
+    setSyncingConn(conn.id);
+    try {
+      const { data } = await api.post(`/connect/connections/${conn.id}/sync`);
+      if (data?.rate_limited) {
+        toast.message("Figma is briefly rate-limiting — try again in about a minute.");
+      } else if (data?.changed) {
+        const n = data.new_items || 0;
+        toast.success(n ? `Synced — ${n} new update${n === 1 ? "" : "s"}` : "Synced");
+      } else {
+        toast.success("Synced — already up to date");
+      }
+      onSourcesChanged?.();
+    } catch (e) {
+      toast.error(formatApiError(e));
+    } finally {
+      setSyncingConn(null);
+    }
   };
 
   const archiveProject = async (e, p) => {
@@ -310,6 +335,9 @@ export default function ProjectSidebar({
                   </button>
                 )}
                 <span className="psb-source-actions psb-label">
+                  <button type="button" className="psb-src-btn" title="Sync now" disabled={syncingConn === c.id || busyConn === c.id} onClick={() => syncSource(c)} data-testid={`psb-source-sync-${c.id}`}>
+                    {syncingConn === c.id ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  </button>
                   <button type="button" className="psb-src-btn psb-src-btn--danger" title="Disconnect" disabled={busyConn === c.id} onClick={() => disconnectSource(c)} data-testid={`psb-source-disconnect-${c.id}`}>
                     {busyConn === c.id ? <Loader2 size={13} className="animate-spin" /> : <Unplug size={13} />}
                   </button>

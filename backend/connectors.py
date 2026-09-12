@@ -2603,11 +2603,10 @@ async def demo_reset(request: Request):
 # ---------------------------------------------------------------------------
 POLL_INTERVAL_S = 30
 POLL_BATCH = 12
-# Per-provider minimum seconds between syncs of the SAME source. Figma's file
-# endpoint is cost-limited and its 429 penalty windows are long, so we sync
-# design files far less aggressively than chat/mail. Everything else keeps the
-# near-live default cadence.
-PROVIDER_MIN_SYNC_S = {"figma": 900, "github": 300}
+# Per-provider minimum seconds between AUTOMATIC syncs of the same source.
+# Figma's file endpoint is cost-limited, so we don't sync it as aggressively as
+# chat/mail — but users also get a manual "Sync now" button for on-demand pulls.
+PROVIDER_MIN_SYNC_S = {"figma": 300, "github": 300}
 
 
 async def poller_loop():
