@@ -1,0 +1,24 @@
+{
+  "summary": "Verified all 5 items in review request at 1366x768 on the live preview URL, OTP-logged in as shuklasaksham1000@gmail.com and opened project 58b8dba2-... (Flowdesk Website Redesign). ALL PASS. (1) Timeline fixed view header: on click of psb-nav-timeline, .ov-head is position:sticky, .ov-head-actions is position:absolute. Before scroll: title(top=106.98) actions(top=106.98) — same row, right=1311.28. Scrolled .tl-scroll to scrollTop=76.7 (max = scrollHeight822 - clientHeight745 = 77, so effectively fully scrolled): title.top and actions.top REMAINED 106.98 (unchanged) — header AND actions stay fixed. 'Ask Bracket' box + example chips are reachable at the bottom of tl-scroll (visible in screenshot before scroll and reachable after). (2) Top actions on same row + fixed: Gmail connected pill + bell + more(⋯) all present in .ov-head-actions on both Timeline and Home (Overview) views; on Home: title.top=109.67, actions.top=106.98 (Δ<3px), right-aligned at 1311.28; on Timeline: Δ=0. Both views: headPosition='sticky', actionsPosition='absolute'. (3) LEFT sidebar shows everything: .project-sidebar computed overflow='hidden' and overflowY='hidden'; scrollHeight (768) == clientHeight (768) — no scrollbar on frame. User card psb-user 'Saksham Shukla shuklasaksham1000@gmail.com' fully visible (rect top=688, bottom=748, within 768 viewport, NOT clipped). Help item visible (top=624, bottom=674). Brand logo, project switcher, nav (Search/Home/Conversations/Meeting Notes/Timeline), Sources list (Website redesign for Flowdesk / demo file), Help, and user card ALL visible in screenshot. (4) Responsive fill: window.innerWidth=1366, innerHeight=768; documentElement.scrollHeight=768 == clientHeight=768; body.scrollHeight=768 — document/body does NOT scroll, app fills viewport with no empty gap. (5) Regression: navigated Home(psb-nav-overview)/Conversations/Meeting Notes/Timeline — all rendered fine at 1366x768 with 0 console errors; OTP login (POST /api/auth/otp/request → dev_code; /api/auth/otp/verify → 200 with session cookie) works; desktop gate does not block 1366x768.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Timeline .ov-head sticky + .ov-head-actions absolute is working perfectly — header stays pinned while .tl-scroll content moves under it. Actions row is precisely aligned with the title (same top within 3px on Home, 0px on Timeline).",
+    "Sidebar refactor (.psb-sources flex:1 min-height:0 with .psb-source-list overflow-y:auto and .project-sidebar overflow:hidden) works correctly: user card + Help + brand + nav + switcher are all visible simultaneously at 1366x768, with only the long source list scrolling internally.",
+    "Note: review request mentioned data-testid 'psb-nav-home' but actual testid is 'psb-nav-overview' — no bug, just clarifying for future tests."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped per request)", "frontend": "100% (5/5 items verified)" },
+  "test_credentials": "OTP: shuklasaksham1000@gmail.com — /api/auth/otp/request returns dev_code (OTP_TEST_MODE=1), /api/auth/otp/verify sets session cookie.",
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "For 1366x768 UI verification: set viewport 1366x768 BEFORE goto. Home nav testid is 'psb-nav-overview' (NOT 'psb-nav-home'). Timeline scroll container is '.tl-scroll' (also has .ov-wrap .conv-wrap). To verify sticky header, measure title/actions boundingClientRect().top before AND after evaluating `document.querySelector('.tl-scroll').scrollTop = 300` — top values must remain identical. Sidebar must have computed overflow='hidden' and scrollHeight==clientHeight to guarantee user card isn't clipped.",
+  "rca of the issue": "N/A — all fixes verified working."
+}
