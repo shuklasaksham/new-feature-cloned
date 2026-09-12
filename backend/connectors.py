@@ -2097,13 +2097,18 @@ def _split_events(provider: str, conn_id: str, digest: str, owner_idents: set) -
             is_owner = any(("@" in ident and ident in header) for ident in owner_idents)
             units.append({"uid": _event_uid(conn_id, provider, b), "is_owner": is_owner, "text": b})
     else:
+        # Figma is a DESIGN surface: a comment the owner leaves on the file is a
+        # real design note worth capturing, so we do NOT treat owner-authored
+        # Figma comments as "own replies" to skip. For chat-like sources
+        # (Slack/GitHub), the owner's own lines are still skipped.
+        skip_owner = provider != "figma"
         for ln in digest.split("\n"):
             s = ln.strip()
             if not s.startswith("- "):
                 continue
             m = re.match(r"- ([^(]+?) \(", s)  # "- Author (date): message"
             author = m.group(1).strip().lower() if m else ""
-            is_owner = bool(author) and author in owner_idents
+            is_owner = skip_owner and bool(author) and author in owner_idents
             units.append({"uid": _event_uid(conn_id, provider, s), "is_owner": is_owner, "text": s})
     return units
 

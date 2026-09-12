@@ -15,6 +15,20 @@ import PlanModal from "./PlanModal";
 const BRACKET_LOGO =
   "https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/jl2k3bid_new-logo-1.png";
 
+// Compact "time since" for the per-source sync badge (e.g. 5s / 3m / 2h / 1d).
+function relTime(iso) {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
 // Simplified IA: only Home, Conversations, and Timeline live in the main nav.
 // Scope / Deliverables / Requirements / Decisions are surfaced inside Home
 // (drill-in modals). Deadlines + History are folded into Timeline.
@@ -262,15 +276,24 @@ export default function ProjectSidebar({
             (connections || []).map((c) => {
               const level = c.health?.level;
               const stale = level === "red" || level === "amber";
-              const dot = level === "red" ? "#D95757" : level === "amber" ? "#D4A72C" : "#52A874";
-              const statusText = level === "red" ? "Token expired" : level === "amber" ? (c.health?.message || "Expiring soon") : "Connected";
+              const isError = c.status === "error" || c.status === "needs_attention";
+              const dot = level === "red" ? "#D95757" : (level === "amber" || isError) ? "#D4A72C" : "#52A874";
+              const statusText = level === "red"
+                ? "Token expired"
+                : level === "amber"
+                  ? (c.health?.message || "Expiring soon")
+                  : isError
+                    ? "Retrying…"
+                    : (c.last_synced_at ? `Synced ${relTime(c.last_synced_at)} ago` : "Connected");
               return (
               <li key={c.id} className="psb-source-row group" title={c.source_name} data-testid={`psb-source-${c.id}`}>
                 <span className="psb-source-icon"><ProviderIcon provider={c.provider} size={18} bare /></span>
                 <span className="psb-label min-w-0 flex-1">
                   <span className="psb-source-name">{c.source_name || c.provider}</span>
-                  <span className="psb-source-status">
-                    <span className="psb-dot" style={{ background: dot }} />
+                  <span className="psb-source-status" data-testid={`psb-source-status-${c.id}`}>
+                    {isError
+                      ? <RefreshCw size={10} className="animate-spin" style={{ color: "#D4A72C" }} />
+                      : <span className="psb-dot" style={{ background: dot }} />}
                     {statusText}
                   </span>
                 </span>
