@@ -160,16 +160,42 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
     const prov = picker.provider;
     const isFig = prov === "figma";
     const val = query.trim();
+
+    // Figma paste-and-go: parse the file key from the pasted link (or a bare key)
+    // LOCALLY and synthesize a selectable row immediately, so the user can click
+    // "Add" without waiting on (or being blocked by) a backend pre-resolution
+    // that can fail on rate limits / token hiccups. The backend still validates
+    // the file on Add and surfaces a clear error if it truly can't open it.
+    let synthKey = null;
+    let synthName = "Figma file";
+    if (isFig && val) {
+      const m = val.match(/figma\.com\/(?:file|design|board|proto)\/([A-Za-z0-9]+)(?:\/([^/?#]+))?/i);
+      if (m) {
+        synthKey = m[1];
+        if (m[2]) synthName = decodeURIComponent(m[2]).replace(/[-_]+/g, " ").trim() || synthName;
+      } else {
+        const bare = val.match(/^([A-Za-z0-9]{15,})$/);
+        if (bare) synthKey = bare[1];
+      }
+    }
+    if (isFig && synthKey) {
+      const row = { id: synthKey, name: synthName, url: val, meta: { detail: "Figma file" } };
+      setPicker((cur) => (cur && cur.provider === prov ? { ...cur, sources: [row] } : cur));
+      setSelected([synthKey]);
+    }
+
     const t = setTimeout(async () => {
+      // If we already have a valid pasted-link file, we're done — do NOT hit the
+      // backend just to "confirm" it (that's where rate limits used to block us).
+      if (isFig && synthKey) return;
+      // Figma with free text (no link/key) → team-file search by name. Others → search by q.
+      if (isFig && !val) return;
       setPickerLoading(true);
       try {
-        // Figma: send the text as BOTH url (resolves a pasted file/team link) and
-        // q (filters the team's files by name). Others just search by q.
         const params = isFig ? { q: val, url: val } : { q: val };
         const { data } = await api.get(`/connect/${prov}/sources`, { params });
         const rows = data?.sources || [];
         setPicker((cur) => (cur && cur.provider === prov ? { ...cur, sources: rows } : cur));
-        // Paste-and-Go: a valid Figma link resolves to exactly one file → auto-select it.
         if (isFig && val && rows.length === 1) setSelected([rows[0].id]);
       } catch { /* keep previous */ }
       finally { setPickerLoading(false); }
@@ -185,6 +211,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
     setAttaching(true);
     const chosen = picker.sources.filter((s) => selected.includes(s.id));
     let okCount = 0;
+    let lastErr = null;
     for (const src of chosen) {
       setStatus((st) => ({ ...st, [src.id]: "attaching" }));
       try {
@@ -195,7 +222,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
         await api.post("/connect/establish", { preview_id: prev.preview_id, mode: "existing", project_id: projectId });
         setStatus((st) => ({ ...st, [src.id]: "done" }));
         okCount += 1;
-      } catch { setStatus((st) => ({ ...st, [src.id]: "error" })); }
+      } catch (e) { lastErr = e; setStatus((st) => ({ ...st, [src.id]: "error" })); }
     }
     setAttaching(false);
     const failed = chosen.length - okCount;
@@ -207,7 +234,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
       onChanged?.();
       setTimeout(() => onClose?.(), 650);
     } else {
-      toast.error("Couldn't attach the selected sources.");
+      toast.error(lastErr ? formatApiError(lastErr) : "Couldn't attach the selected sources.");
     }
   };
 
