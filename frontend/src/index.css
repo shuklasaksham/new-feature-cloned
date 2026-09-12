@@ -142,11 +142,14 @@ html, body, #root {
 /* Selection */
 ::selection { background: var(--accent-glow); color: var(--text); }
 
-/* Scrollbar — minimal */
+/* Scrollbar — minimal, tuned for the dark UI (a light translucent thumb so it's
+   actually visible on #0a0a0a/#151515 surfaces; the old near-black thumb was
+   invisible and read as an empty gutter). */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(15, 18, 38, 0.10); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
-::-webkit-scrollbar-thumb:hover { background: rgba(15, 18, 38, 0.20); border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.14); border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); border: 2px solid transparent; background-clip: padding-box; }
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 

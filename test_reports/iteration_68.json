@@ -1,0 +1,24 @@
+{
+  "summary": "Frontend-only verification of Timeline/workspace scroll fix at 1366x768 for Flowdesk Website Redesign project (id 58b8dba2...) using OTP login as shuklasaksham1000@gmail.com. All primary items PASS: (1) Timeline is reachable via psb-nav-timeline and renders under /project/{id} with sidebar nav, notification banner, Timeline heading, Approaching Deadlines (Homepage finalized for dev / Final designs delivered / Revised deadline), Project History rows, 'View earlier history' link, 'Ask Bracket' input and example question chips (When did the client first ask for mobile screens? / Who approved Option B? / What was the original homepage deadline? / Why did the deadline change?). (2) Fixed viewport is intact — document.documentElement.scrollHeight (768) == clientHeight (768) == window.innerHeight; the document/body does NOT scroll. (3) Only the inner .ov-wrap.conv-wrap (which is the same node as data-testid='project-timeline', classes 'ov-wrap conv-wrap tl-scroll') scrolls: scrollHeight=862, clientHeight=623, scrollable=true. Scrolling to bottom reaches atBottom=true and both the Ask Bracket input and every example chip are inViewport=true — no cramped/clipped inner box, everything reachable. (4) The top notification banner (Something changed in Website redesign for Flowdesk — Review 11 changes) stays fixed at top=32px both BEFORE and AFTER scrolling the inner region (delta 0). (5) Scrollbar CSS confirmed: computed scrollbar-color=rgba(255,255,255,0.18) transparent, scrollbar-width=thin — matches the intended fix. (6) Home (psb-nav-overview), Conversations (psb-nav-conversations) and Meeting Notes (psb-nav-notes) navigation all succeed without console errors, URLs remain under /project/{id}. 0 console errors during entire flow. (7) DeviceGate does NOT block desktop at 1366x768. Skipped: Figma paste-and-go regression (Add-source dialog not exercised — user has an already connected Gmail source and orphan third-party accounts per agent note; not treated as bug).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Timeline scroll fix is functionally correct: the outer viewport is truly locked (html scrollHeight == clientHeight == 768) and only .ov-wrap.conv-wrap.tl-scroll (which carries data-testid=project-timeline) scrolls. Ask Bracket input + all example chips are reachable by scrolling. Nice.",
+    "Global scrollbar theming is applied (computed scrollbar-color rgba(255,255,255,0.18) transparent, scrollbar-width thin) — the invisible dark thumb reported by the user is resolved.",
+    "The notification banner (top: 32px) stays pinned at the same y-coordinate before/after inner scroll — banner is outside the scroll container as intended.",
+    "Minor doc/testid drift (pre-existing, not blocking): review request refers to Home as psb-nav-overview (correct) and Meeting Notes as psb-nav-notes (correct); no action needed."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a (skipped per request)", "frontend": "100% of testable items (5/5)" },
+  "test_credentials": "OTP: shuklasaksham1000@gmail.com — dev_code returned by /api/auth/otp/request (OTP_TEST_MODE=1). Session cookie set on /api/auth/otp/verify.",
+  "seed_data_creation": "None.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Project route is /project/{id} (NOT /p/{id} — /p/... redirects to marketing page). Timeline scroll container: .ov-wrap.conv-wrap.tl-scroll (also data-testid='project-timeline'). Ask Bracket input placeholder: \"Ask anything about this project's history…\". Example chips end with '?'. Notification banner is pinned above the scroll region. For OTP login use POST /api/auth/otp/request → dev_code → /api/auth/otp/verify via in-page fetch with credentials:'include', then navigate. Live user shuklasaksham1000@gmail.com owns project 58b8dba2-f25c-462b-b911-8dccd977697d with real Gmail source and Timeline data."
+}

@@ -496,7 +496,7 @@ async def figma_list_sources(account: dict, q: str, url: str) -> List[dict]:
                 if len(out) >= 60:
                     break
     except FigmaRateLimited:
-        raise HTTPException(429, "Figma is rate-limiting your account right now — wait a minute, then click Try again.")
+        raise HTTPException(429, "Figma is temporarily limiting requests on their side (API rate limit). It clears on its own — wait about a minute and try again.")
     out.sort(key=lambda x: x["meta"].get("updated", ""), reverse=True)
     return out[:60]
 
@@ -935,7 +935,7 @@ async def preview_sources(body: PreviewIn, request: Request):
     if not items:
         first_err = next((r for r in results if isinstance(r, Exception)), None)
         if isinstance(first_err, FigmaRateLimited):
-            raise HTTPException(429, "Figma is rate-limiting your account right now — wait a minute, then try again.")
+            raise HTTPException(429, "Figma is temporarily limiting requests on their side (API rate limit). It clears on its own — wait about a minute and try again.")
         if isinstance(first_err, HTTPException):
             raise first_err
         logger.warning("preview failed: %s", first_err)
