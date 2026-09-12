@@ -152,14 +152,18 @@ async def _http() -> httpx.AsyncClient:
     return httpx.AsyncClient(timeout=httpx.Timeout(25.0, connect=10.0))
 
 
-async def _access_token(account: dict) -> str:
-    """Live access token; refresh where the provider supports it."""
+async def _access_token(account: dict, force: bool = False) -> str:
+    """Live access token; refresh where the provider supports it.
+    `force=True` refreshes even when the stored token looks unexpired — used
+    when the provider returns 401 on a token whose local expiry hasn't elapsed
+    (e.g. Figma tokens revoked server-side by a re-authorization)."""
     blob = _read_blob(account)
     exp = blob.get("expires_at") or 0
-    if not exp or exp > time.time() + 60:
+    if not force and (not exp or exp > time.time() + 60):
         return blob["access_token"]
     provider = account["provider"]
     conf = OAUTH_CONF.get(provider) or {}
+    refreshed = False
     async with await _http() as c:
         if provider == "gmail":
             r = await c.post("https://oauth2.googleapis.com/token", data={
@@ -168,6 +172,7 @@ async def _access_token(account: dict) -> str:
             if r.status_code == 200:
                 tok = r.json()
                 blob.update(access_token=tok["access_token"], expires_at=time.time() + int(tok.get("expires_in", 3600)))
+                refreshed = True
             else:
                 logger.warning("[connect] gmail token refresh failed: status=%s body=%s has_refresh_token=%s",
                                r.status_code, (r.text or "")[:300], bool(blob.get("refresh_token")))
@@ -179,12 +184,16 @@ async def _access_token(account: dict) -> str:
                 blob.update(access_token=tok["access_token"], expires_at=time.time() + int(tok.get("expires_in", 7776000)))
                 if tok.get("refresh_token"):
                     blob["refresh_token"] = tok["refresh_token"]
+                refreshed = True
             else:
                 logger.warning("[connect] figma token refresh failed: status=%s body=%s has_refresh_token=%s",
                                r.status_code, (r.text or "")[:300], bool(blob.get("refresh_token")))
         else:
             return blob["access_token"]
-    if blob.get("expires_at", 0) <= time.time():
+    # If we were FORCED to refresh (provider rejected the current token) but the
+    # refresh itself failed, the authorization is dead → signal reconnect. Also
+    # catch the ordinary local-expiry case.
+    if (force and not refreshed) or blob.get("expires_at", 0) <= time.time():
         raise HTTPException(401, f"{PROVIDERS[provider]['label']} connection expired — please reconnect.")
     await db.integration_accounts.update_one({"id": account["id"]}, {"$set": {"token_enc": _enc(_json.dumps(blob))}})
     return blob["access_token"]
@@ -400,6 +409,26 @@ def _fig_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}", "X-Figma-Token": token}
 
 
+class FigmaRateLimited(Exception):
+    """Figma returned 429. Transient — the caller should back off, NOT mark the
+    connection dead or tell the user their file can't be opened."""
+
+
+async def _figma_get(account: dict, client: httpx.AsyncClient, path: str):
+    """GET https://api.figma.com/v1/{path} with automatic token recovery.
+    On 401 (token revoked server-side even though our local expiry hasn't
+    elapsed) we FORCE a refresh once and retry; a dead refresh raises 401 so the
+    source shows a clean 'reconnect'. On 429 we raise FigmaRateLimited."""
+    token = await _access_token(account)
+    r = await client.get(f"https://api.figma.com/v1/{path}", headers=_fig_headers(token))
+    if r.status_code == 401:
+        token = await _access_token(account, force=True)  # raises 401 if refresh is dead
+        r = await client.get(f"https://api.figma.com/v1/{path}", headers=_fig_headers(token))
+    if r.status_code == 429:
+        raise FigmaRateLimited()
+    return r
+
+
 def _upstream_fail(provider: str, r, action: str):
     """Log an upstream provider failure and raise a 4xx. We deliberately avoid 5xx
     here: Cloudflare masks any 5xx from the origin with its own 'origin error' page,
@@ -422,62 +451,61 @@ def _upstream_fail(provider: str, r, action: str):
 
 
 async def figma_list_sources(account: dict, q: str, url: str) -> List[dict]:
-    token = await _access_token(account)
-    h = _fig_headers(token)
-    async with await _http() as c:
-        # A pasted file link resolves directly to that one file.
-        fm = FIGMA_FILE_RE.search(url or "")
-        if fm:
-            key = fm.group(1)
-            r = await c.get(f"https://api.figma.com/v1/files/{key}?depth=1", headers=h)
-            if r.status_code != 200:
-                raise HTTPException(404 if r.status_code == 404 else 403, "Couldn't open that Figma file with your account.")
-            f = r.json()
-            return [{"id": key, "name": f.get("name") or "Figma file", "url": f"https://www.figma.com/design/{key}",
-                     "meta": {"updated": f.get("lastModified", ""), "detail": "Figma file"}}]
-        # Fallback: user pasted just the file key or a "key/name?…" path (no domain).
-        bare = re.match(r"^\s*([A-Za-z0-9]{15,})(?:[/?].*)?$", url or "")
-        if bare:
-            key = bare.group(1)
-            r = await c.get(f"https://api.figma.com/v1/files/{key}?depth=1", headers=h)
-            if r.status_code == 200:
+    try:
+        async with await _http() as c:
+            # A pasted file link resolves directly to that one file.
+            fm = FIGMA_FILE_RE.search(url or "")
+            if fm:
+                key = fm.group(1)
+                r = await _figma_get(account, c, f"files/{key}?depth=1")
+                if r.status_code != 200:
+                    raise HTTPException(404 if r.status_code == 404 else 403, "Couldn't open that Figma file with your account.")
                 f = r.json()
                 return [{"id": key, "name": f.get("name") or "Figma file", "url": f"https://www.figma.com/design/{key}",
                          "meta": {"updated": f.get("lastModified", ""), "detail": "Figma file"}}]
-        # A team link (or a remembered team) lists every file across its projects.
-        tm = FIGMA_TEAM_RE.search(url or "")
-        team_id = tm.group(1) if tm else (account.get("figma_team_id") or "")
-        if not team_id:
-            return []
-        pr = await c.get(f"https://api.figma.com/v1/teams/{team_id}/projects", headers=h)
-        if pr.status_code != 200:
-            raise HTTPException(403, "Couldn't read that Figma team — make sure you're a member and the link is a team link.")
-        if tm:
-            await db.integration_accounts.update_one({"id": account["id"]}, {"$set": {"figma_team_id": team_id}})
-        out: List[dict] = []
-        for proj in (pr.json().get("projects") or [])[:12]:
-            fr = await c.get(f"https://api.figma.com/v1/projects/{proj['id']}/files", headers=h)
-            if fr.status_code != 200:
-                continue
-            for f in (fr.json().get("files") or []):
-                name = f.get("name", "")
-                if q and q.lower() not in name.lower():
+            # Fallback: user pasted just the file key or a "key/name?…" path (no domain).
+            bare = re.match(r"^\s*([A-Za-z0-9]{15,})(?:[/?].*)?$", url or "")
+            if bare:
+                key = bare.group(1)
+                r = await _figma_get(account, c, f"files/{key}?depth=1")
+                if r.status_code == 200:
+                    f = r.json()
+                    return [{"id": key, "name": f.get("name") or "Figma file", "url": f"https://www.figma.com/design/{key}",
+                             "meta": {"updated": f.get("lastModified", ""), "detail": "Figma file"}}]
+            # A team link (or a remembered team) lists every file across its projects.
+            tm = FIGMA_TEAM_RE.search(url or "")
+            team_id = tm.group(1) if tm else (account.get("figma_team_id") or "")
+            if not team_id:
+                return []
+            pr = await _figma_get(account, c, f"teams/{team_id}/projects")
+            if pr.status_code != 200:
+                raise HTTPException(403, "Couldn't read that Figma team — make sure you're a member and the link is a team link.")
+            if tm:
+                await db.integration_accounts.update_one({"id": account["id"]}, {"$set": {"figma_team_id": team_id}})
+            out: List[dict] = []
+            for proj in (pr.json().get("projects") or [])[:12]:
+                fr = await _figma_get(account, c, f"projects/{proj['id']}/files")
+                if fr.status_code != 200:
                     continue
-                out.append({"id": f["key"], "name": name, "url": f"https://www.figma.com/design/{f['key']}",
-                            "meta": {"updated": f.get("last_modified", ""), "detail": proj.get("name", "")}})
-            if len(out) >= 60:
-                break
+                for f in (fr.json().get("files") or []):
+                    name = f.get("name", "")
+                    if q and q.lower() not in name.lower():
+                        continue
+                    out.append({"id": f["key"], "name": name, "url": f"https://www.figma.com/design/{f['key']}",
+                                "meta": {"updated": f.get("last_modified", ""), "detail": proj.get("name", "")}})
+                if len(out) >= 60:
+                    break
+    except FigmaRateLimited:
+        raise HTTPException(429, "Figma is rate-limiting your account right now — wait a minute, then click Try again.")
     out.sort(key=lambda x: x["meta"].get("updated", ""), reverse=True)
     return out[:60]
 
 
 async def figma_fetch_digest(account: dict, key: str) -> str:
-    token = await _access_token(account)
-    h = _fig_headers(token)
     async with await _http() as c:
-        fr = await c.get(f"https://api.figma.com/v1/files/{key}?depth=2", headers=h)
-        cr = await c.get(f"https://api.figma.com/v1/files/{key}/comments", headers=h)
-        vr = await c.get(f"https://api.figma.com/v1/files/{key}/versions", headers=h)
+        fr = await _figma_get(account, c, f"files/{key}?depth=2")
+        cr = await _figma_get(account, c, f"files/{key}/comments")
+        vr = await _figma_get(account, c, f"files/{key}/versions")
     if fr.status_code != 200:
         _upstream_fail("figma", fr, "read file")
     f = fr.json()
@@ -906,6 +934,8 @@ async def preview_sources(body: PreviewIn, request: Request):
     items = [r for r in results if isinstance(r, dict)]
     if not items:
         first_err = next((r for r in results if isinstance(r, Exception)), None)
+        if isinstance(first_err, FigmaRateLimited):
+            raise HTTPException(429, "Figma is rate-limiting your account right now — wait a minute, then try again.")
         if isinstance(first_err, HTTPException):
             raise first_err
         logger.warning("preview failed: %s", first_err)
@@ -2125,6 +2155,11 @@ async def _sync_connection(conn: dict) -> dict:
         # caused unrelated projects to bleed into a project's memory. Each source
         # stays tied to exactly the conversation the user attached.
         digest = await _fetch_digest(conn["provider"], account, conn["source_id"])
+    except FigmaRateLimited:
+        # Transient: Figma is throttling us. Keep the connection healthy and just
+        # back off — the per-provider poll interval spaces the next attempt out.
+        await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": "connected", "last_synced_at": now, "updated_at": now}})
+        return {"changed": False, "status": "connected", "rate_limited": True}
     except HTTPException as e:
         status = "expired" if e.status_code == 401 else "error"
         # Stamp last_synced_at even on failure so a transiently-failing source
@@ -2568,20 +2603,26 @@ async def demo_reset(request: Request):
 # ---------------------------------------------------------------------------
 POLL_INTERVAL_S = 30
 POLL_BATCH = 12
+# Per-provider minimum seconds between syncs of the SAME source. Figma's file
+# endpoint is cost-limited and its 429 penalty windows are long, so we sync
+# design files far less aggressively than chat/mail. Everything else keeps the
+# near-live default cadence.
+PROVIDER_MIN_SYNC_S = {"figma": 900, "github": 300}
 
 
 async def poller_loop():
     while True:
         try:
             await asyncio.sleep(POLL_INTERVAL_S)
-            cutoff = datetime.now(timezone.utc).timestamp() - POLL_INTERVAL_S
+            now_ts = datetime.now(timezone.utc).timestamp()
             count = 0
             async for conn in db.source_connections.find({"status": {"$in": ["connected", "error", "expired"]}, "provider": {"$ne": "meeting"}}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
                 try:
                     last = datetime.fromisoformat(conn.get("last_synced_at", "").replace("Z", "+00:00")).timestamp()
                 except Exception:
                     last = 0
-                if last > cutoff:
+                min_gap = PROVIDER_MIN_SYNC_S.get(conn.get("provider"), POLL_INTERVAL_S)
+                if last > now_ts - min_gap:
                     continue
                 try:
                     await _sync_connection(conn)

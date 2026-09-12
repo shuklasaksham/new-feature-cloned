@@ -1450,7 +1450,7 @@ function TimelineView({ projectId, project, memory, headerActions }) {
   const fmtTime = (iso) => (iso ? new Date(iso).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "");
 
   return (
-    <div className="ov-wrap conv-wrap" data-testid="project-timeline">
+    <div className="ov-wrap conv-wrap tl-scroll" data-testid="project-timeline">
       <div className="ov-head">
         <HeaderActions {...(headerActions || {})} />
         <h1 className="text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em]" style={{ color: "var(--text)" }}>Timeline</h1>

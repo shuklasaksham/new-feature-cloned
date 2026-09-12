@@ -4988,6 +4988,11 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 
 /* Conversations: refined 2-line rows + region + Ask Bracket bar */
 .conv-stream-region { flex: 1; min-height: 0; overflow-y: auto; padding-right: 6px; }
+/* Timeline: scroll the WHOLE view as one natural column (the outer .ov-wrap
+   already scrolls). The old nested layout crammed project history into a tiny
+   inner scrollbox while pinning Ask Bracket, clipping rows top & bottom. */
+.tl-scroll .conv-stream-region { flex: 0 0 auto; min-height: 0; overflow: visible; padding-right: 0; }
+.tl-scroll .ask-bar { margin-top: 28px; }
 .stream-row2 { display: grid; grid-template-columns: 40px minmax(0,1fr) auto auto; gap: 16px; align-items: center; padding: 15px 2px; border-bottom: 1px solid #1a1a1a; }
 .stream-row2:last-child { border-bottom: none; }
 .stream-ring { width: 40px; height: 40px; border-radius: 50%; background: #141414; border: 1px solid #242424; display: grid; place-items: center; }
