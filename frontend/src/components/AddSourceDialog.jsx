@@ -278,7 +278,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={picker.provider === "figma" ? "Paste a Figma link, or search your team files by name…" : "Search…"}
+                placeholder={picker.provider === "figma" ? "Paste your Figma design file link (figma.com/design/…)" : "Search…"}
                 data-testid="add-source-search"
                 autoFocus
               />
@@ -288,7 +288,7 @@ export default function AddSourceDialog({ open, onClose, projectId, onChanged, r
               {picker.sources.length === 0 ? (
                 <p className="text-[12.5px] py-8 text-center" style={{ color: "var(--text-3)" }}>
                   {picker.provider === "figma"
-                    ? "Paste a Figma file link, or type a name to search your team's files."
+                    ? "Paste your Figma design file link above and Bracket will connect that file."
                     : "Type to search your sources."}
                 </p>
               ) : picker.sources.map((s) => {

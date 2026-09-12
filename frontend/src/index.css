@@ -5599,3 +5599,38 @@ body::after {
 @media (prefers-reduced-motion: reduce) {
   .ov-stats > *, .stream .stream-row2, .tl-hist .tl-h-row, .ov-panel--flush { animation: none; }
 }
+
+/* ============================================================
+   Device gate — Bracket is desktop-only (phones + tablets blocked)
+   ============================================================ */
+.device-gate {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 28px; background: #08090A; color: var(--text);
+}
+.device-gate-card {
+  max-width: 420px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.device-gate-logo { height: 56px; width: auto; display: block; opacity: 0.95; }
+.device-gate-title {
+  font-family: "Geist", sans-serif; font-weight: 600;
+  font-size: 22px; letter-spacing: -0.02em; color: #fff;
+}
+.device-gate-copy { font-size: 14px; line-height: 1.6; color: var(--text-2); }
+.device-gate-copy strong { color: #fff; font-weight: 600; }
+.device-gate-url {
+  font-family: "Geist Mono", monospace; font-size: 12px;
+  letter-spacing: 0.06em; color: var(--text-3); margin-top: 4px;
+}
+
+/* ============================================================
+   Laptop de-zoom — the UI was authored at ~1920px and reads
+   "oversized" on 1366×768 laptops (esp. with OS display scaling).
+   Tailwind spacing + our rem type ramp are rem-based, so trimming
+   the root font-size compacts padding, gaps and type app-wide
+   without touching layout logic.
+   ============================================================ */
+@media (max-width: 1512px) { html, body, #root { font-size: 13.25px; } }
+@media (max-width: 1366px) { html, body, #root { font-size: 12.5px; } }
+@media (max-width: 1200px) { html, body, #root { font-size: 12px; } }
