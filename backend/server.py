@@ -340,24 +340,35 @@ async def google_native_callback(request: Request, code: str = "", state: str = 
 
 @api.post("/auth/otp/request")
 async def auth_otp_request(body: OtpRequestIn):
-    code = gen_otp()
-    await store_otp(db, body.email, code)
-    name = (body.name or "").strip()
-    if not name:
-        u = await db.users.find_one({"email": body.email.lower().strip()}, {"_id": 0, "name": 1})
-        name = (u or {}).get("name", "")
-    await send_otp_email(body.email, name, code)
-    resp: Dict[str, Any] = {"ok": True, "ttl_minutes": 10}
-    # Test-only convenience: return the OTP in the response so the testing
-    # agent can log in headlessly. THREE independent server-side guards —
-    # ALL must pass. Client-controlled headers (Host/X-Forwarded-Host) are
-    # deliberately NOT trusted here because they can be spoofed.
-    #   1) BRACKET_ENV must NOT be "production"
-    #   2) OTP_TEST_MODE must be exactly "1"
-    #   3) The internal K8s service hostname must look like a preview pod
+    from datetime import datetime as _dt, timezone as _tz
+    email_norm = body.email.lower().strip()
     bracket_env = (os.environ.get("BRACKET_ENV") or "").strip().lower()
     otp_flag = os.environ.get("OTP_TEST_MODE") == "1"
-    if bracket_env != "production" and otp_flag:
+    test_mode = bracket_env != "production" and otp_flag
+    # Throttle: never send more than one passcode email per ~45s for the same
+    # address. Stops passcode-spam from double submits, client retries, browser
+    # prefetch, or an unexpected caller. Skipped in test mode so headless tests
+    # always receive a fresh dev_code.
+    if not test_mode:
+        recent = await db.email_otps.find_one({"email": email_norm}, {"_id": 0, "issued_at": 1})
+        if recent and recent.get("issued_at"):
+            try:
+                issued = _dt.fromisoformat(str(recent["issued_at"]).replace("Z", "+00:00"))
+                if (_dt.now(_tz.utc) - issued).total_seconds() < 45:
+                    return {"ok": True, "ttl_minutes": 10, "throttled": True}
+            except Exception:
+                pass
+    code = gen_otp()
+    await store_otp(db, email_norm, code)
+    name = (body.name or "").strip()
+    if not name:
+        u = await db.users.find_one({"email": email_norm}, {"_id": 0, "name": 1})
+        name = (u or {}).get("name", "")
+    await send_otp_email(email_norm, name, code)
+    resp: Dict[str, Any] = {"ok": True, "ttl_minutes": 10}
+    # Test-only convenience: return the OTP in the response so the testing
+    # agent can log in headlessly (guarded by BRACKET_ENV + OTP_TEST_MODE).
+    if test_mode:
         resp["dev_code"] = code
     return resp
 
@@ -4869,6 +4880,17 @@ else:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+
+@app.middleware("http")
+async def _security_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Clickjacking protection — forbid the app/API from being framed by any site.
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'none'")
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
 
 
 @app.on_event("startup")

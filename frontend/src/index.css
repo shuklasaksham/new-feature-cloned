@@ -4553,7 +4553,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
   width: 288px; flex-shrink: 0;
   background: #0a0a0a; border-right: none;
   display: flex; flex-direction: column; gap: 14px;
-  padding: 20px 16px; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  padding: 20px 16px; position: sticky; top: 0; height: 100vh; overflow: hidden;
   z-index: 60;
 }
 .project-sidebar.is-collapsed { width: 76px; padding: 20px 12px; align-items: stretch; overflow: visible; }
@@ -5637,3 +5637,23 @@ body::after {
 @media (max-width: 1512px) { html, body, #root { font-size: 13.25px; } }
 @media (max-width: 1366px) { html, body, #root { font-size: 12.5px; } }
 @media (max-width: 1200px) { html, body, #root { font-size: 12px; } }
+
+/* ============================================================
+   App workspace scale-to-fit for laptops (1366×768 etc.)
+   The shell/main containers keep their dvh sizing so they always FILL the
+   screen; only the CONTENT is uniformly zoomed, so everything scales together
+   (like the aspect ratio) and nothing overflows or leaves an empty gap. The
+   left sidebar is set to never scroll (overflow:hidden above).
+   ============================================================ */
+@media (max-width: 1440px) {
+  .project-main-inner { zoom: 0.9; }
+  .project-sidebar > * { zoom: 0.94; }
+}
+@media (max-width: 1366px) {
+  .project-main-inner { zoom: 0.86; }
+  .project-sidebar > * { zoom: 0.9; }
+}
+@media (max-width: 1200px) {
+  .project-main-inner { zoom: 0.8; }
+  .project-sidebar > * { zoom: 0.85; }
+}

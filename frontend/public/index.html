@@ -2,6 +2,12 @@
 <html lang="en">
     <head>
         <meta charset="utf-8" />
+        <script>
+          /* Clickjacking defense (frame-buster): if Bracket is loaded inside an
+             iframe by another site, break out to the top window. Backs up the
+             X-Frame-Options / CSP frame-ancestors headers set server-side. */
+          try { if (window.top !== window.self) { window.top.location = window.self.location.href; } } catch (e) { document.documentElement.style.display = "none"; }
+        </script>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
         <meta name="theme-color" content="#08090A" />
         <link rel="manifest" href="/manifest.json" />
