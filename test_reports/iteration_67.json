@@ -1,0 +1,39 @@
+{
+  "summary": "Verified fix for /welcome/building Cloudflare 502 error + regression checks (desktop gate, mobile gate, OTP login, Timeline layout, nav). Backend: 6/6 pytest tests pass — /api/connect/preview, /api/connect/establish, /api/connect/providers all return structured JSON (not Cloudflare HTML) and are reachable through external URL. Auth-required endpoints properly return JSON 4xx when unauthenticated. Frontend: OTP login flow works, DeviceGate correctly blocks mobile (414x820) with title 'Bracket is built for desktop' and does NOT block desktop (1366x768). Direct nav to /welcome/building correctly redirects to /welcome (needs router state). BuildingProject.jsx code review confirms retry loop (3 attempts, transient-only ~502/503/504/timeout/network, 1.5s*i backoff), friendlyError() replaces raw Cloudflare HTML with human copy, and the error state exposes data-testid='building-retry' (re-runs build via runBuild) and data-testid='building-goback' (navigate(-1)). Could not exercise live Timeline data or a full onboarding build because the support@ DB user has 0 projects (DB reset — expected per agent note; project 222535e8 no longer exists → 'Project not found').",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_67.py",
+    "/app/test_reports/pytest/iter67.xml"
+  ],
+  "action_items": [
+    "Consider re-seeding a demo project for support@use-bracket.com so future test agents can exercise Timeline scroll + Ask Bracket UI end-to-end (currently the user has 0 projects and the referenced project id 222535e8-18f0-403d-b62f-d0048acbbc72 returns 'Project not found', so the Timeline scroll fix could only be reviewed at the CSS/DOM level).",
+    "Minor testid naming inconsistency: review request references data-testid='psb-nav-home' and 'psb-nav-meeting-notes' but actual DOM uses 'psb-nav-overview' and 'psb-nav-notes'. Not a bug, just a doc drift — update either docs or testids for consistency."
+  ],
+  "critical_code_review_comments": [
+    "BuildingProject.jsx runBuild retry logic is correct: isTransient() covers no-response, ECONNABORTED (axios timeout), and 502/503/504; loop retries up to 3 times only for transient, then throws for the outer catch to render friendlyError — no infinite loop, no retry on 4xx business errors. Good.",
+    "friendlyError only swaps copy for transient failures — non-transient errors still surface formatApiError(), which is appropriate.",
+    "DeviceGate: gate condition is (coarse pointer) OR (mobile UA) OR (width<768). Verified working at 1366x768 (no gate) and 414x820 (gate shown). Logic is sound.",
+    "Timeline scroll fix (.tl-scroll .conv-stream-region) is a CSS-only change and could not be validated with live data due to zero projects on the test account."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_67.py (new)"
+  ],
+  "success_rate": {
+    "backend": "100% (6/6)",
+    "frontend": "100% of items exercisable (OTP login, desktop gate, mobile gate, /welcome/building redirect, project not-found handling). Timeline live-data + full onboarding build not exercisable due to zero-project state."
+  },
+  "test_credentials": "OTP: support@use-bracket.com (admin). Password login for admin: Bracket@123 (also works). OTP_TEST_MODE=1 returns dev_code.",
+  "seed_data_creation": "None. No projects were created (would pollute DB).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest lives at /app/backend/tests/test_iteration_67.py — reusable smoke for OTP + /connect endpoints returning JSON (never Cloudflare HTML). To test Timeline scroll + full onboarding UI you'll need a user with an existing project; support@ currently has 0 projects. /welcome/building requires location.state.provider + location.state.sources — direct navigation redirects to /welcome by design. To manually verify the retry/friendly-error path you can navigate to /welcome/building with router state via app flow (Add source → Continue) — retry button testid is 'building-retry', back is 'building-goback'.",
+  "rca of the issue": "Original bug: POST /api/connect/preview intermittently hit Cloudflare's 502 'origin returned invalid/incomplete response' during long LLM analysis, and the frontend rendered the raw HTML body as the error. Fix (verified in code + endpoint health test): (1) frontend auto-retries the preview+establish pair up to 3 times for transient failures with 1.5s * attempt backoff, so most single-request 502s self-heal; (2) friendlyError() masks raw HTML/gateway text with human copy; (3) error screen offers 'Try again' (in-place re-run) and 'Go back'. Origin is currently healthy — all 3 onboarding endpoints returned proper JSON on this iteration."
+}

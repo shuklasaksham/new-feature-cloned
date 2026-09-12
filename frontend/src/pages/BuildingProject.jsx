@@ -25,40 +25,66 @@ export default function BuildingProject() {
   const [error, setError] = useState("");
   const startedRef = useRef(false);
 
-  useEffect(() => {
-    if (!provider || !sources || !sources.length) { navigate("/welcome"); return; }
-    if (startedRef.current) return;
-    startedRef.current = true;
+  // A transient failure = network drop / gateway 5xx (502/503/504) / timeout —
+  // exactly the "origin returned an invalid response" case. These are worth an
+  // automatic retry before we ever show the user an error.
+  const isTransient = (e) => {
+    const s = e?.response?.status;
+    return !e?.response || e?.code === "ECONNABORTED" || (typeof s === "number" && s >= 502 && s <= 504);
+  };
+  const friendlyError = (e) => {
+    if (isTransient(e)) return "Bracket's server was briefly unavailable while building your project. This is usually temporary — please try again.";
+    return formatApiError(e);
+  };
 
+  const runBuild = async () => {
+    setError("");
+    setPhase("building");
+    setStep(0);
     const t0 = performance.now();
     const timers = [];
     timers.push(setTimeout(() => setStep((s) => Math.max(s, 1)), 700));
     timers.push(setTimeout(() => setStep((s) => Math.max(s, 2)), 1700));
-
-    (async () => {
-      try {
-        const { data: prev } = await api.post("/connect/preview", { provider, sources });
-        const { data: est } = await api.post("/connect/establish", { preview_id: prev.preview_id, mode: "new" });
-        const res = {
-          project_id: est.project_id,
-          name: prev.project?.name || sources[0]?.name || "Your project",
-          counts: prev.counts || {},
-        };
-        // Ensure the checklist has time to breathe before revealing the result.
-        const elapsed = performance.now() - t0;
-        const wait = Math.max(0, 2400 - elapsed);
-        setTimeout(() => {
-          setStep(3);
-          setResult(res);
-          setTimeout(() => setPhase("ready"), 550);
-        }, wait);
-      } catch (e) {
-        setError(formatApiError(e));
-        setPhase("error");
+    const attempt = async () => {
+      const { data: prev } = await api.post("/connect/preview", { provider, sources });
+      const { data: est } = await api.post("/connect/establish", { preview_id: prev.preview_id, mode: "new" });
+      return { prev, est };
+    };
+    try {
+      let out;
+      // Up to 3 attempts total for transient gateway blips.
+      for (let i = 0; i < 3; i += 1) {
+        try { out = await attempt(); break; }
+        catch (e) {
+          if (i < 2 && isTransient(e)) { await new Promise((r) => setTimeout(r, 1500 * (i + 1))); continue; }
+          throw e;
+        }
       }
-    })();
+      const res = {
+        project_id: out.est.project_id,
+        name: out.prev.project?.name || sources[0]?.name || "Your project",
+        counts: out.prev.counts || {},
+      };
+      const elapsed = performance.now() - t0;
+      const wait = Math.max(0, 2400 - elapsed);
+      setTimeout(() => {
+        setStep(3);
+        setResult(res);
+        setTimeout(() => setPhase("ready"), 550);
+      }, wait);
+    } catch (e) {
+      setError(friendlyError(e));
+      setPhase("error");
+    } finally {
+      timers.forEach(clearTimeout);
+    }
+  };
 
-    return () => timers.forEach(clearTimeout);
+  useEffect(() => {
+    if (!provider || !sources || !sources.length) { navigate("/welcome"); return; }
+    if (startedRef.current) return;
+    startedRef.current = true;
+    runBuild();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -100,7 +126,10 @@ export default function BuildingProject() {
                   <div className="mt-10">
                     <p className="text-[13.5px] leading-[1.6] max-w-[420px]" style={{ color: "#c9c9c9" }}>{error}</p>
                     <div className="mt-6 flex items-center gap-5">
-                      <button type="button" onClick={() => navigate(-1)} className="login-submit" style={{ width: "auto", padding: "0 26px", height: 48 }} data-testid="building-retry">
+                      <button type="button" onClick={() => runBuild()} className="login-submit" style={{ width: "auto", padding: "0 26px", height: 48 }} data-testid="building-retry">
+                        Try again
+                      </button>
+                      <button type="button" onClick={() => navigate(-1)} className="text-[13px]" style={{ ...MONO, color: "#8a8a8a" }} data-testid="building-goback">
                         Go back
                       </button>
                     </div>
