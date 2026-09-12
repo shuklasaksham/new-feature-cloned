@@ -2112,7 +2112,7 @@ async def _sync_connection(conn: dict) -> dict:
     account = await db.integration_accounts.find_one({"user_id": conn["user_id"], "provider": conn["provider"]}, {"_id": 0})
     now = _now_iso()
     if not account:
-        await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": "needs_attention", "updated_at": now}})
+        await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": "needs_attention", "last_synced_at": now, "updated_at": now}})
         return {"changed": False, "status": "needs_attention"}
     try:
         # Scope every source to its OWN thread/conversation only. We deliberately
@@ -2122,7 +2122,11 @@ async def _sync_connection(conn: dict) -> dict:
         digest = await _fetch_digest(conn["provider"], account, conn["source_id"])
     except HTTPException as e:
         status = "expired" if e.status_code == 401 else "error"
-        await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": status, "updated_at": now}})
+        # Stamp last_synced_at even on failure so a transiently-failing source
+        # rotates to the BACK of the poller queue instead of monopolising it —
+        # and so the background poller (which now retries error/expired sources)
+        # doesn't hammer the same broken connection every cycle.
+        await db.source_connections.update_one({"id": conn["id"]}, {"$set": {"status": status, "last_synced_at": now, "updated_at": now}})
         return {"changed": False, "status": status}
     h = _hash(digest)
     if h == conn.get("content_hash"):
@@ -2567,7 +2571,7 @@ async def poller_loop():
             await asyncio.sleep(POLL_INTERVAL_S)
             cutoff = datetime.now(timezone.utc).timestamp() - POLL_INTERVAL_S
             count = 0
-            async for conn in db.source_connections.find({"status": "connected", "provider": {"$ne": "meeting"}}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
+            async for conn in db.source_connections.find({"status": {"$in": ["connected", "error", "expired"]}, "provider": {"$ne": "meeting"}}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
                 try:
                     last = datetime.fromisoformat(conn.get("last_synced_at", "").replace("Z", "+00:00")).timestamp()
                 except Exception:
