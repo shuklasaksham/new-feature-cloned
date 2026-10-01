@@ -195,7 +195,7 @@ export default function Landing() {
               alt="Bracket - The memory layer for your business | Product Hunt"
               width="250"
               height="54"
-              src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1258620&theme=light&t=1790848229024"
+              src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1258620&theme=dark&t=1790848229024"
             />
           </motion.a>
         </div>
