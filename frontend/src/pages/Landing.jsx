@@ -183,6 +183,21 @@ export default function Landing() {
               See pricing
             </Link>
           </motion.div>
+          <motion.a
+            initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.42 }}
+            href="https://www.producthunt.com/products/bracket-2027?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-bracket-2028"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lp-ph-badge"
+            data-testid="landing-hero-ph-badge"
+          >
+            <img
+              alt="Bracket - The memory layer for your business | Product Hunt"
+              width="250"
+              height="54"
+              src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1258620&theme=light&t=1790848229024"
+            />
+          </motion.a>
         </div>
       </section>
 

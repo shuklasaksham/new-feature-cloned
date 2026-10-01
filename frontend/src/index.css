@@ -5397,6 +5397,9 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 
 .lp-cta-row { margin-top: 40px; display: flex; align-items: center; gap: 18px; }
 .lp-wrap--narrow .lp-cta-row { justify-content: center; }
+.lp-ph-badge { display: inline-flex; margin-top: 28px; line-height: 0; opacity: 0.96; transition: opacity .16s ease, transform .16s ease; }
+.lp-ph-badge:hover { opacity: 1; transform: translateY(-1px); }
+.lp-ph-badge img { width: 250px; height: 54px; display: block; }
 .lp-btn-primary {
   display: inline-flex; align-items: center; gap: 9px; height: 46px; padding: 0 24px;
   border-radius: 9999px; background: #fff; color: #0a0a0a; font-weight: 600; font-size: 14.5px;
