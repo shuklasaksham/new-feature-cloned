@@ -103,7 +103,7 @@ export default function App() {
           <Route path="/app/activity" element={<Tool><AppShell><Activity /></AppShell></Tool>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
           <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />
-          <Route path="/project/:id" element={<Tool><ProjectMemory /></Tool>} />
+          <Route path="/project/:id" element={<ProtectedRoute><ProjectMemory /></ProtectedRoute>} />
           <Route path="/project/:id/legacy" element={<Tool><AppShell><ProjectOverview /></AppShell></Tool>} />
           <Route path="/project/:id/flow" element={<Tool><AppShell><ProjectFlow /></AppShell></Tool>} />
           <Route path="/project/:id/document" element={<Tool><AppShell><ProjectDocument /></AppShell></Tool>} />

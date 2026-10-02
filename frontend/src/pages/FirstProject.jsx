@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { PROVIDER_META } from "../lib/providersMeta";
@@ -23,8 +23,21 @@ export default function FirstProject() {
   const navigate = useNavigate();
   const [statuses, setStatuses] = useState({}); // key -> status
   const [busy, setBusy] = useState(null);
+  const [demoBusy, setDemoBusy] = useState(false);
   const pendingOAuth = useRef(null);
   const popupRef = useRef(null);
+
+  const openDemo = async () => {
+    setDemoBusy(true);
+    try {
+      const { data } = await api.post("/demo/open");
+      if (data?.project_id) navigate(`/project/${data.project_id}`);
+      else throw new Error();
+    } catch (e) {
+      toast.error(formatApiError(e) || "Couldn't open the demo — please try again.");
+      setDemoBusy(false);
+    }
+  };
 
   const loadProviders = async () => {
     try {
@@ -113,7 +126,37 @@ export default function FirstProject() {
             Connect where the conversation is already happening.
           </p>
 
-          <div className="mt-9 flex flex-col gap-4 max-w-[600px]">
+          <button
+            type="button"
+            onClick={openDemo}
+            disabled={demoBusy}
+            className="demo-choice group mt-8 text-left w-full flex items-center gap-4 px-5 py-4 transition-colors disabled:opacity-60"
+            data-testid="first-project-demo"
+          >
+            <span className="shrink-0 inline-flex items-center justify-center demo-choice-icon" style={{ width: 40, height: 40 }}>
+              {demoBusy ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={20} />}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2">
+                <span className="block font-display font-semibold text-[18px] tracking-[-0.01em]" style={{ color: "#fff" }}>Try a demo workspace</span>
+                <span className="demo-choice-badge">Recommended</span>
+              </span>
+              <span className="block mt-0.5 text-[12.5px]" style={{ ...MONO, color: "#9a9a9a" }}>
+                Experience Bracket with a fictional project. No integrations required.
+              </span>
+            </span>
+            <span className="shrink-0" style={{ color: "#ba9" }} aria-hidden="true">
+              <ArrowRight size={18} className="first-project-arrow" />
+            </span>
+          </button>
+
+          <div className="mt-8 mb-1 flex items-center gap-3">
+            <span className="h-px flex-1" style={{ background: "#1e1e1e" }} />
+            <span className="text-[11px]" style={{ ...MONO, color: "#6a6a6a", letterSpacing: "0.14em" }}>OR CONNECT MY BUSINESS</span>
+            <span className="h-px flex-1" style={{ background: "#1e1e1e" }} />
+          </div>
+
+          <div className="mt-5 flex flex-col gap-4 max-w-[600px]">
             {CARDS.map(({ key, title, desc, Icon }) => (
               <button
                 key={key}

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Hexagon, MessagesSquare, Target, Package, Calendar, ListChecks, Check,
-  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Search, Unplug, RefreshCw, Loader2, Archive, ArchiveRestore, FileText,
+  CalendarClock, Settings, HelpCircle, Plus, ChevronDown, ChevronsLeft, ChevronsRight, Search, Unplug, RefreshCw, Loader2, Archive, ArchiveRestore, FileText, FlaskConical,
 } from "lucide-react";
 import { ProviderIcon } from "../lib/providersMeta";
 import { useAuth } from "../lib/AuthContext";
@@ -58,6 +58,21 @@ export default function ProjectSidebar({
   const dialog = useDialog();
   const switchRef = useRef(null);
   const userRef = useRef(null);
+  const [demoBusy, setDemoBusy] = useState(false);
+
+  const openDemo = async (existingId) => {
+    if (existingId) { setSwitchOpen(false); if (existingId !== project?.id) onSwitchProject?.(existingId); return; }
+    setDemoBusy(true);
+    try {
+      const { data } = await api.post("/demo/open");
+      setSwitchOpen(false);
+      if (data?.project_id) onSwitchProject?.(data.project_id);
+    } catch {
+      toast.error("Couldn't open the demo workspace.");
+    } finally {
+      setDemoBusy(false);
+    }
+  };
 
   const disconnectSource = async (conn) => {
     const ok = await dialog.confirm({
@@ -165,8 +180,9 @@ export default function ProjectSidebar({
         {switchOpen && (() => {
           const q = projQuery.trim().toLowerCase();
           const match = (p) => !q || (p.name || "").toLowerCase().includes(q);
-          const active = projects.filter((p) => !p.archived && match(p));
-          const archived = projects.filter((p) => p.archived && match(p));
+          const active = projects.filter((p) => !p.archived && !p.is_demo && match(p));
+          const archived = projects.filter((p) => p.archived && !p.is_demo && match(p));
+          const demoProj = projects.find((p) => p.is_demo);
           return (
           <div className="psb-switch-menu" data-testid="psb-switcher-menu">
             {projects.length > 6 && (
@@ -226,6 +242,21 @@ export default function ProjectSidebar({
                   ))}
                 </>
               )}
+              <p className="psb-switch-section" data-testid="psb-demo-heading">Demo</p>
+              <div
+                className={`psb-switch-item group psb-demo-item${demoProj && demoProj.id === project?.id ? " is-current" : ""}`}
+                onClick={() => openDemo(demoProj?.id)}
+                role="button"
+                data-testid="psb-demo-workspace"
+              >
+                <FlaskConical size={13} className="shrink-0" style={{ color: "#c9a27a" }} />
+                <span className="truncate flex-1">{demoProj ? "Demo Workspace" : "Try a demo workspace"}</span>
+                {demoBusy
+                  ? <Loader2 size={13} className="animate-spin shrink-0" />
+                  : demoProj && demoProj.id === project?.id
+                    ? <Check size={14} className="shrink-0" />
+                    : <span className="psb-demo-badge">Demo</span>}
+              </div>
             </div>
             <div className="psb-switch-div" />
             {quota && !quota.can_create ? (

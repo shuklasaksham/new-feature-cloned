@@ -14,7 +14,9 @@ export default function AppEntry() {
       .then(({ data }) => {
         if (cancelled) return;
         const list = Array.isArray(data) ? data : [];
-        if (list.length && list[0]?.id) navigate(`/project/${list[0].id}`, { replace: true });
+        const real = list.find((p) => p && !p.is_demo && p.id);
+        const target = real || list.find((p) => p?.id);
+        if (target?.id) navigate(`/project/${target.id}`, { replace: true });
         else navigate("/welcome", { replace: true });
       })
       .catch(() => { if (!cancelled) navigate("/welcome", { replace: true }); });

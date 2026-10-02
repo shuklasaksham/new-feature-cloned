@@ -1044,7 +1044,7 @@ def _plan_expired(user):
 
 
 async def _active_project_count(uid):
-    return await db.projects.count_documents({"owner_user_id": uid, "archived": {"$ne": True}})
+    return await db.projects.count_documents({"owner_user_id": uid, "archived": {"$ne": True}, "is_demo": {"$ne": True}})
 
 
 def _assert_not_expired(user):
@@ -2291,6 +2291,8 @@ async def sync_now(connection_id: str, request: Request):
     conn = await db.source_connections.find_one({"id": connection_id, "user_id": user["user_id"]}, {"_id": 0})
     if not conn:
         raise HTTPException(404, "Connection not found")
+    if conn.get("is_demo"):
+        return {"changed": False, "status": "connected", "new_items": 0, "demo": True}
     return await _sync_connection(conn)
 
 
@@ -2615,7 +2617,7 @@ async def poller_loop():
             await asyncio.sleep(POLL_INTERVAL_S)
             now_ts = datetime.now(timezone.utc).timestamp()
             count = 0
-            async for conn in db.source_connections.find({"status": {"$in": ["connected", "error", "expired"]}, "provider": {"$ne": "meeting"}}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
+            async for conn in db.source_connections.find({"status": {"$in": ["connected", "error", "expired"]}, "provider": {"$ne": "meeting"}, "is_demo": {"$ne": True}}, {"_id": 0}).sort("last_synced_at", 1).limit(40):
                 try:
                     last = datetime.fromisoformat(conn.get("last_synced_at", "").replace("Z", "+00:00")).timestamp()
                 except Exception:

@@ -19,9 +19,11 @@ import { useDialog } from "../components/Dialog";
 import { EmptyState } from "../components/EmptyState";
 import ProjectSidebar from "../components/ProjectSidebar";
 import PlanModal from "../components/PlanModal";
+import DemoDock from "../components/DemoDock";
 import Settings from "./Settings";
 import { MEMORY_CATEGORIES, CATEGORY_BY_KEY, STATUS_META } from "../lib/memoryCategories";
 import { ProviderIcon, PROVIDER_META, timeAgo } from "../lib/providersMeta";
+import { useAuth } from "../lib/AuthContext";
 
 /**
  * ProjectMemory (v2) — Notion-inspired dark, minimal.
@@ -41,6 +43,7 @@ const STATUS_FILTERS = [
 export default function ProjectMemory() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [project, setProject] = useState(null);
   const [memory, setMemory] = useState({ grouped: {}, counts: {}, total: 0 });
@@ -64,6 +67,15 @@ export default function ProjectMemory() {
     api.get("/projects").then(({ data }) => setProjects(Array.isArray(data) ? data : [])).catch(() => {});
     api.get("/project-quota").then(({ data }) => setQuota(data)).catch(() => {});
   };
+
+  // Paywall: real projects still require a plan (admins exempt). The demo
+  // workspace is intentionally free so users can try Bracket before paying.
+  useEffect(() => {
+    if (!project) return;
+    if (!project.is_demo && user && !user.plan && !user.is_admin) {
+      navigate("/plan", { replace: true });
+    }
+  }, [project, user, navigate]);
 
   useEffect(() => { refreshProjects(); }, []);
 
@@ -205,6 +217,7 @@ export default function ProjectMemory() {
           </div>
         ) : project ? (
           <div className="project-main-inner" data-testid="project-memory-page">
+            {project?.is_demo && <DemoDock project={project} onRefresh={() => load({ silent: true })} />}
             {quota?.plan_expired && (
               <div className="plan-lock-banner" data-testid="plan-lock-banner">
                 <div className="flex items-center gap-3 min-w-0">

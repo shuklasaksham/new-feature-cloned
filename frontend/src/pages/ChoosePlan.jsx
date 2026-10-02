@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Loader2, Zap } from "lucide-react";
+import { ArrowRight, Loader2, Zap, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { api, formatApiError } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
@@ -23,8 +23,21 @@ export default function ChoosePlan() {
   const [selected, setSelected] = useState("monthly");
   const [currency, setCurrency] = useState("inr");
   const [loading, setLoading] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
+
+  const openDemo = async () => {
+    setDemoBusy(true);
+    try {
+      const { data } = await api.post("/demo/open");
+      if (data?.project_id) navigate(`/project/${data.project_id}`);
+      else throw new Error();
+    } catch (e) {
+      toast.error(formatApiError(e) || "Couldn't open the demo — please try again.");
+      setDemoBusy(false);
+    }
+  };
 
   const activateTestPlan = async () => {
     setLoading(true);
@@ -202,6 +215,28 @@ export default function ChoosePlan() {
           <p className="text-center mt-4 text-[11px]" style={{ ...MONO, color: "#565656" }}>
             UPI, cards & netbanking · Razorpay · Test mode
           </p>
+
+          <div className="mt-6 flex items-center gap-3">
+            <span className="h-px flex-1" style={{ background: "#1e1e1e" }} />
+            <span className="text-[11px]" style={{ ...MONO, color: "#6a6a6a", letterSpacing: "0.12em" }}>NOT READY?</span>
+            <span className="h-px flex-1" style={{ background: "#1e1e1e" }} />
+          </div>
+          <button
+            type="button"
+            onClick={openDemo}
+            disabled={demoBusy}
+            className="demo-choice group mt-4 text-left w-full flex items-center gap-4 px-5 py-4 transition-colors disabled:opacity-60"
+            data-testid="choose-plan-demo"
+          >
+            <span className="shrink-0 inline-flex items-center justify-center demo-choice-icon" style={{ width: 38, height: 38 }}>
+              {demoBusy ? <Loader2 size={17} className="animate-spin" /> : <Sparkles size={18} />}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display font-semibold text-[15.5px] tracking-[-0.01em]" style={{ color: "#fff" }}>Try a demo workspace first</span>
+              <span className="block mt-0.5 text-[12px]" style={{ ...MONO, color: "#9a9a9a" }}>Experience Bracket with a fictional project. No card, no integrations.</span>
+            </span>
+            <ArrowRight size={17} className="first-project-arrow shrink-0" style={{ color: "#ba9" }} />
+          </button>
         </div>
       </div>
 

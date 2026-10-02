@@ -3119,7 +3119,7 @@ async def list_my_projects(request: Request):
             {
                 "_id": 0, "id": 1, "name": 1, "status": 1, "step": 1,
                 "locked_at": 1, "share_status": 1, "created_at": 1, "updated_at": 1,
-                "archived": 1, "archived_at": 1,
+                "archived": 1, "archived_at": 1, "is_demo": 1, "demo_tag": 1,
             },
         )
         .sort("updated_at", -1)
@@ -4849,6 +4849,10 @@ app.include_router(api)
 # --- Connect Work (source connections) router + background poller ---
 import connectors as _connectors  # noqa: E402
 app.include_router(_connectors.router)
+
+# --- Demo Workspace (sandbox) router ---
+import demo as _demo  # noqa: E402
+app.include_router(_demo.router)
 
 
 @app.on_event("startup")
