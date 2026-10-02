@@ -1,0 +1,29 @@
+{
+  "summary": "Full backend + frontend verification of the Bracket Demo Workspace sandbox. 15/15 pytest cases pass against the live preview URL. Playwright E2E runs the full happy path end-to-end: /plan → choose-plan-demo card → /project/{pid} → demo-banner + demo-dock → simulate-start → next-event (x5) → conflict card (beat 3) → draft-email composer → send-email → demo-resolved toast → demo-convert + demo-connect-tools conversion CTA. Paywall bypass confirmed: fresh@use-bracket.com (no plan) opens the demo project fine (demo-banner visible). Quota exclusion confirmed: /api/project-quota 'used' excludes is_demo projects.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_demo_workspace.py",
+    "/app/test_reports/pytest/iter71_demo.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "demo.py idempotency hinges on callers deleting first; /open does NOT clear duplicates if two concurrent /open calls race before the first insert completes. Low risk, but a unique index on (owner_user_id, demo_tag) would make it bulletproof.",
+    "In demo.py simulate/next, the real engine's events[0].summary silently overrides the curated beat.summary. The figma_conflict beat is mode='curated' so it is safe, but if the engine ever returns a misleading summary for 'detect' beats, the UI will display the model's text instead of the curated line. Current fallback is correct; just noting the implicit precedence.",
+    "ProjectMemory paywall gate `if (!project.is_demo && user && !user.plan && !user.is_admin) navigate('/plan')` only runs after the project load succeeds. If a no-plan user visits a non-existent project id, the project fetch 404s and no redirect fires. Not a security issue (nothing to see), just a minor UX edge case."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_demo_workspace.py (new)"
+  ],
+  "success_rate": { "backend": "100% (15/15)", "frontend": "100% (all 13 testids resolved on the happy-path flow)" },
+  "test_credentials": "OTP: pro@use-bracket.com (plan=monthly, 2 non-demo projects per credentials file — observed 0 after prior cleanup; not a test blocker) and fresh@use-bracket.com (no plan). POST /api/auth/otp/request → dev_code; POST /api/auth/otp/verify → session cookie.",
+  "seed_data_creation": "Demo workspace is self-seeded by POST /api/demo/open and reset to a clean baseline by POST /api/demo/reset before each pytest run.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file: /app/backend/tests/test_demo_workspace.py (15 cases, ~18s wall time, exercises real Claude engine on 5 sim beats). Always call POST /api/demo/reset before asserting baseline counts (another test or manual run may have left the demo in an advanced state). Memory endpoint shape: GET /api/projects/{pid}/memory returns {grouped:{cat:[...]}, counts:{cat:N}, total:N, categories:[...]} — NOT a flat list. The scope-change beat uses category='scope_change' which the project_memory handler maps to display_category='scope'. demo-convert + demo-connect-tools require BOTH simDone (step>=5) AND state.conflict_resolved=true; a test that only runs through the conflict beat and sends the email will see demo-resolved but NOT demo-convert until all 5 beats finish (6s auto-advance pacing or click Next event). Paywall redirect in ProjectMemory.jsx fires only after the project loads successfully, so test with a real non-demo project id (not a random UUID).",
+  "rca of the issue": "N/A — no bugs found."
+}

@@ -4963,6 +4963,12 @@ async def on_startup():
     await _safe_index(db.projects, [("creator_email", 1), ("updated_at", -1)])
     await _safe_index(db.projects, [("creator_email", 1), ("name", 1)])
     await _safe_index(db.projects, [("owner_user_id", 1), ("updated_at", -1)])
+    # Demo workspace: one demo project per owner (bulletproof idempotency).
+    await _safe_index(
+        db.projects, [("owner_user_id", 1), ("demo_tag", 1)],
+        unique=True,
+        partialFilterExpression={"demo_tag": {"$type": "string"}},
+    )
 
     # 3) Auth indexes — unique but partial so legacy nulls don't poison them.
     # Use string-type filter so only real values participate in the constraint.

@@ -12,6 +12,17 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Demo Workspace (sandbox)** — free, fully-interactive demo project
+  "Harbor — Payments App Launch" that shows Bracket's full loop before connecting anything.
+  Backend `/app/backend/demo.py` (router `/api/demo`): `open` (idempotent seed; unique index on
+  owner+demo_tag), `project`, `simulate/next` (5 beats through the real change-detection engine +
+  curated safety net, incl. a sourced Gmail-vs-Figma launch-date conflict), `send-email` (no real
+  email), `client-reply` (Sarah confirms Oct 27, resolves conflict), `reset`, `track` (funnel →
+  `demo_funnel`). Reuses existing Ask + suggest-reply endpoints. Demo bypasses the paywall and is
+  excluded from quota, the poller and manual sync. Frontend `DemoDock.jsx` (banner + live dock +
+  composer + conversion); entry points on `/welcome`, `/plan`, and the sidebar switcher;
+  `/project/:id` relaxed to ProtectedRoute with an in-page paywall for non-demo projects.
+  Verified 100% by testing agent (iteration_71.json).
 - 2026-06: Product Hunt "Featured" badge in homepage hero (dark theme, post_id 1258620), below CTAs.
 - 2026-06: **Homepage marketing rebuild** — `/app/frontend/src/pages/Landing.jsx` rewritten with
   clearer positioning and full story structure:
