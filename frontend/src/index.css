@@ -5431,6 +5431,54 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
   .lp-step, .lp-step + .lp-step { padding-left: 0; }
 }
 
+/* ── Integrations strip ── */
+.lp-integrations { padding-top: 24px !important; padding-bottom: 40px !important; }
+.lp-integrations-line { font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #6b6b72; }
+.lp-logos { margin-top: 26px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 14px 26px; }
+.lp-logo { display: inline-flex; align-items: center; gap: 9px; padding: 9px 16px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.10); background: rgba(255,255,255,0.02); color: #d4d4d8; font-size: 13.5px; font-weight: 500; transition: border-color .16s ease, background .16s ease; }
+.lp-logo:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.045); }
+.lp-logo img { opacity: 0.92; }
+.lp-logo-more { font-family: "Geist Mono", ui-monospace, monospace; font-size: 12.5px; color: #71717a; }
+
+/* ── Problem prose ── */
+.lp-prose { margin-top: 32px; max-width: 680px; display: flex; flex-direction: column; gap: 20px; }
+.lp-prose p { font-size: 17px; line-height: 1.7; color: #a7a7af; }
+.lp-prose p strong { color: #e4e4e7; font-weight: 600; }
+
+/* ── How it works — pillars ── */
+.lp-pillars { margin-top: 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+.lp-pillar { padding: 30px 28px 10px 0; border-top: 1px solid rgba(255,255,255,0.12); }
+.lp-pillar + .lp-pillar { padding-left: 28px; }
+.lp-pillar-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #fff; }
+.lp-pillar-num { display: block; margin-top: 18px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.1em; color: #71717a; }
+.lp-pillar-title { margin-top: 8px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: -0.01em; color: #fff; }
+.lp-pillar-copy { margin-top: 10px; font-size: 14px; line-height: 1.65; color: #a1a1aa; }
+
+/* ── Benefits ── */
+.lp-benefits { margin-top: 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.lp-benefit { padding: 26px 24px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.09); background: rgba(255,255,255,0.015); }
+.lp-benefit-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); color: #e5e5e5; }
+.lp-benefit-title { margin-top: 16px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 16.5px; letter-spacing: -0.01em; color: #fff; }
+.lp-benefit-copy { margin-top: 8px; font-size: 13.5px; line-height: 1.6; color: #a1a1aa; }
+
+/* ── FAQ ── */
+.lp-faq-wrap { text-align: left; }
+.lp-faq-wrap .lp-label, .lp-faq-wrap .lp-h2 { text-align: center; }
+.lp-faq-wrap .lp-h2 { margin-left: auto; margin-right: auto; }
+.lp-faq { margin-top: 48px; border-top: 1px solid rgba(255,255,255,0.10); }
+.lp-faq-item { border-bottom: 1px solid rgba(255,255,255,0.10); }
+.lp-faq-q { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 4px; background: none; border: none; cursor: pointer; text-align: left; font-family: "Geist", sans-serif; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; color: #fff; transition: color .14s ease; }
+.lp-faq-q:hover { color: #d4d4d8; }
+.lp-faq-q svg { flex-shrink: 0; color: #a1a1aa; }
+.lp-faq-a { overflow: hidden; padding: 0 44px 22px 4px; font-size: 14.5px; line-height: 1.7; color: #a1a1aa; }
+
+@media (max-width: 760px) {
+  .lp-pillars { grid-template-columns: 1fr; }
+  .lp-pillar, .lp-pillar + .lp-pillar { padding-left: 0; }
+  .lp-benefits { grid-template-columns: 1fr; }
+}
+
+
 /* ── Product visual — faithful in-browser Overview recreation ── */
 .lp-shot { display: block; border: 1px solid rgba(255,255,255,0.10); border-radius: 16px; overflow: hidden; background: #0d0d0d; box-shadow: 0 40px 120px -60px rgba(0,0,0,0.9); }
 .lp-shot-bar { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid rgba(255,255,255,0.07); background: #0a0a0a; }
