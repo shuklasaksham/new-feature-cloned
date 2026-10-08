@@ -12,6 +12,18 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **FIX — first-run onboarding wizard was 405/404 (critical).** The v2 UI's `/welcome`
+  wizard called `POST /v2/workspaces` + `GET/POST /v2/w/{id}/onboarding*` which were never wired
+  on the backend (only `GET /workspaces` existed → "Method Not Allowed"). Added the missing
+  adapters in v2_workspace.py over the EXISTING real stack (no rebuild): `POST /v2/workspaces`
+  (real project create + plan-limit 402 `{code:plan_limit}`), `GET /onboarding` (real linked
+  providers + live Gmail threads / Slack channels), `POST /sources/connect` (real OAuth auth-url),
+  `POST /onboarding/connect` (persist connect state), `POST /onboarding/start` (background real
+  extraction), `GET /onboarding/progress` (live counts), `POST /onboarding/finish` (real category
+  counts + first attention). Reuses a new `extract_sources_into_project()` in connectors.py that
+  mirrors the proven `establish_connection` loop (fetch→analyze→persist). Verified via curl
+  (create, state, auth-url=accounts.google.com, finish) + UI: step 1 now creates a workspace and
+  advances to step 2. OAuth popup + live extraction need a real linked Gmail/Slack to fully exercise.
 - 2026-06: **Admin: permanent account deletion (irreversible, GDPR-grade)** — new
   `POST /api/v2/admin/users/{uid}/delete` (admin_v2.py) hard-erases a user and ALL their data
   across every collection via `_cascade_delete_users` (projects, project_memory, source_connections,

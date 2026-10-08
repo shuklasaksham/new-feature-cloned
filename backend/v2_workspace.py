@@ -15,11 +15,20 @@ from typing import Optional
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
+import asyncio
+import logging
+import uuid
+from fastapi import HTTPException
+from fastapi.responses import JSONResponse
+
 from auth import current_user_optional, current_user
-from connectors import db
+from connectors import (db, _get_account, gmail_list_sources, slack_list_sources,
+                        oauth_auth_url, extract_sources_into_project, _plan_limit,
+                        _active_project_count, PROVIDERS)
 import v2_real
 import v2_categories
 
+logger = logging.getLogger("bracket.v2")
 router = APIRouter(prefix="/api/v2")
 
 SEED_IDS = {"p1", "p2"}
@@ -225,6 +234,185 @@ async def workspaces(request: Request):
                           "status": "active", "summary": p.get("description", ""), "created_at": p.get("created_at"),
                           "memory_updated_at": p.get("updated_at"), "last_seen_prev": p.get("updated_at"), "is_demo": p.get("is_demo", False)})
     return {"workspaces": items}
+
+
+# ── Onboarding wizard (real: create project + connect sources + extract) ─────
+class CreateWorkspaceIn(BaseModel):
+    client_name: str = ""
+    name: str = ""
+    kind: str = ""
+
+
+@router.post("/workspaces")
+async def create_workspace(request: Request, payload: CreateWorkspaceIn):
+    user = await current_user(request, db)
+    udoc = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0, "plan": 1}) or {}
+    limit = _plan_limit(udoc.get("plan"))
+    if limit is not None:
+        used = await _active_project_count(user["user_id"])
+        if used >= limit:
+            return JSONResponse(status_code=402, content={"code": "plan_limit", "detail": "You've reached your plan's active-project limit."})
+    now = iso(_now())
+    name = (payload.name or payload.client_name or "Untitled workspace").strip()[:120]
+    pid = uuid.uuid4().hex
+    await db.projects.insert_one({
+        "id": pid, "name": name, "name_source": "user",
+        "client_name": (payload.client_name or "").strip(), "kind": (payload.kind or "").strip(),
+        "creator_name": user.get("name", ""), "creator_email": user.get("email", ""),
+        "owner_user_id": user["user_id"], "engine": "claude", "status": "in_progress", "step": 1,
+        "onboarding": {"connected": {}}, "created_at": now, "updated_at": now,
+    })
+    return {"id": pid, "name": name, "client_name": payload.client_name, "kind": payload.kind}
+
+
+def _msg_count(meta):
+    extra = (meta or {}).get("extra") or ""
+    digits = "".join(ch for ch in extra if ch.isdigit())
+    return int(digits) if digits else 0
+
+
+async def _onboarding_project(wid, request):
+    user = await current_user(request, db)
+    proj = await db.projects.find_one({"id": wid, "owner_user_id": user["user_id"]}, {"_id": 0})
+    if not proj:
+        raise HTTPException(404, "Workspace not found.")
+    return user, proj
+
+
+@router.get("/w/{wid}/onboarding")
+async def onboarding_state(wid: str, request: Request):
+    user, proj = await _onboarding_project(wid, request)
+    connected = dict((proj.get("onboarding") or {}).get("connected") or {})
+    client = proj.get("client_name") or ""
+    tok = (client.split() or [""])[0].lower()
+    threads, channels = [], []
+    # Reflect real OAuth links + list candidate sources for connected providers.
+    for prov in ("gmail", "slack", "figma", "github", "notion"):
+        try:
+            account = await _get_account(user["user_id"], prov)
+        except Exception:
+            account = None
+        if not account:
+            continue
+        if connected.get(prov) != "cancelled":
+            connected[prov] = "connected"
+        try:
+            if prov == "gmail":
+                srcs = await gmail_list_sources(account, "")
+                for i, s in enumerate(srcs):
+                    meta = s.get("meta") or {}
+                    frm = meta.get("detail") or ""
+                    threads.append({"id": s["id"], "name": s.get("name") or "(no subject)", "from": frm,
+                                    "messages": _msg_count(meta) or 1, "at": meta.get("updated") or "",
+                                    "mentions": bool(tok and (tok in (s.get("name", "").lower()) or tok in frm.lower())),
+                                    "selected": i < 5})
+            elif prov == "slack":
+                srcs = await slack_list_sources(account, "")
+                for s in srcs:
+                    meta = s.get("meta") or {}
+                    channels.append({"id": s["id"], "name": s.get("name") or "channel", "messages": _msg_count(meta) or 0})
+        except Exception as e:
+            logger.warning("[onboarding] list %s failed: %s", prov, e)
+    return {"workspace": {"client_name": client, "name": proj.get("name", "")},
+            "connected": connected, "threads": threads, "channels": channels}
+
+
+class ConnectUrlIn(BaseModel):
+    provider: str = ""
+
+
+@router.post("/w/{wid}/sources/connect")
+async def onboarding_connect_url(wid: str, request: Request, payload: ConnectUrlIn):
+    await _onboarding_project(wid, request)
+    return await oauth_auth_url(payload.provider, request)
+
+
+class OnbConnectIn(BaseModel):
+    provider: str = ""
+    cancelled: bool = False
+
+
+@router.post("/w/{wid}/onboarding/connect")
+async def onboarding_connect(wid: str, request: Request, payload: OnbConnectIn):
+    user, proj = await _onboarding_project(wid, request)
+    status = "cancelled" if payload.cancelled else ("Added" if payload.provider in ("notes", "files") else "connected")
+    await db.projects.update_one({"id": wid}, {"$set": {f"onboarding.connected.{payload.provider}": status, "updated_at": iso(_now())}})
+    return {"ok": True}
+
+
+class OnbStartIn(BaseModel):
+    thread_ids: list = []
+    channel_ids: list = []
+
+
+async def _run_onboarding(user, wid, gmail_ids, slack_ids):
+    run = {"status": "running", "providers": {}, "found": [], "found_count": 0, "done": False}
+    try:
+        for prov, ids in (("gmail", gmail_ids), ("slack", slack_ids)):
+            if not ids:
+                continue
+            try:
+                account = await _get_account(user["user_id"], prov)
+                listed = await (gmail_list_sources if prov == "gmail" else slack_list_sources)(account, "")
+            except Exception:
+                listed = []
+            picked = [{"id": s["id"], "name": s.get("name", ""), "url": s.get("url", "")} for s in listed if s["id"] in set(ids)]
+            run["providers"][prov] = {"label": f"Reading {len(picked)} {'threads' if prov == 'gmail' else 'channels'}", "done": False, "pct": 0.1, "eta": "about a minute"}
+            await db.projects.update_one({"id": wid}, {"$set": {"onboarding.run": run}})
+            res = await extract_sources_into_project(user, wid, prov, picked)
+            run["found"] = (res.get("found") or []) + run["found"]
+            run["found_count"] += res.get("memory_count", 0)
+            run["providers"][prov] = {"label": f"{len(picked)} {'threads' if prov == 'gmail' else 'channels'} read", "done": True, "pct": 1, "eta": ""}
+            await db.projects.update_one({"id": wid}, {"$set": {"onboarding.run": run}})
+    except Exception as e:
+        logger.exception("[onboarding] run failed: %s", e)
+    run["status"] = "done"
+    run["done"] = True
+    await db.projects.update_one({"id": wid}, {"$set": {"onboarding.run": run, "updated_at": iso(_now())}})
+
+
+@router.post("/w/{wid}/onboarding/start")
+async def onboarding_start(wid: str, request: Request, payload: OnbStartIn):
+    user, proj = await _onboarding_project(wid, request)
+    full = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0}) or user
+    asyncio.create_task(_run_onboarding(full, wid, list(payload.thread_ids or []), list(payload.channel_ids or [])))
+    return {"ok": True}
+
+
+@router.get("/w/{wid}/onboarding/progress")
+async def onboarding_progress(wid: str, request: Request):
+    _, proj = await _onboarding_project(wid, request)
+    run = (proj.get("onboarding") or {}).get("run") or {}
+    providers = run.get("providers") or {}
+    out = {"found_count": run.get("found_count", 0), "found": (run.get("found") or [])[:12], "done": run.get("done", False)}
+    if "gmail" in providers:
+        out["gmail"] = {"label": providers["gmail"]["label"]}
+    if "slack" in providers:
+        s = providers["slack"]
+        out["slack"] = {"label": s["label"], "pct": s.get("pct", 0), "done": s.get("done", False), "eta": s.get("eta", "")}
+    return out
+
+
+@router.post("/w/{wid}/onboarding/finish")
+async def onboarding_finish(wid: str, request: Request):
+    user, proj = await _onboarding_project(wid, request)
+    counts = {}
+    async for row in db.project_memory.aggregate([
+        {"$match": {"project_id": wid, "status": {"$ne": "ignored"}}},
+        {"$group": {"_id": "$category", "n": {"$sum": 1}}}]):
+        counts[row["_id"]] = row["n"]
+    view_counts = {k: counts.get(k, 0) for k in ("scope", "decision", "deliverable", "requirement", "commitment", "person")}
+    parts = []
+    by_prov = {}
+    async for c in db.source_connections.find({"project_id": wid, "status": {"$ne": "disconnected"}}, {"_id": 0, "provider": 1}):
+        by_prov[c["provider"]] = by_prov.get(c["provider"], 0) + 1
+    for prov, n in by_prov.items():
+        unit = {"gmail": "Gmail thread", "slack": "Slack channel", "meeting": "note", "file": "file"}.get(prov, prov)
+        parts.append(f"{n} {unit}{'s' if n != 1 else ''}")
+    read = " and ".join(parts) if parts else "your sources"
+    first = await db.project_memory.find_one({"project_id": wid, "status": "detected"}, {"_id": 0, "id": 1, "title": 1})
+    attention = {"title": first["title"], "review_id": first["id"]} if first else None
+    return {"workspace": {"name": proj.get("name", "")}, "read": read, "counts": view_counts, "attention": attention}
 
 
 @router.get("/w/{wid}")

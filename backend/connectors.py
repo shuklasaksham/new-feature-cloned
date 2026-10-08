@@ -1169,6 +1169,68 @@ async def establish_connection(body: EstablishIn, request: Request):
     return {"ok": True, "project_id": project_id, "connection_ids": connected, "memory_count": total_mem}
 
 
+async def extract_sources_into_project(user, project_id, provider, sources):
+    """Shared core of establish_connection, reusable outside a request (e.g. the
+    v2 onboarding wizard). Fetches + analyzes + persists a list of
+    SourceRef-like dicts onto an EXISTING project. Returns memory count,
+    the new connection ids, and a flat list of what was found."""
+    account = await _get_account(user["user_id"], provider)
+    now = _now_iso()
+    own_email = (account.get("label") or user.get("email", "")) if provider == "gmail" else ""
+    total_mem, conns, found = 0, [], []
+    for src in sources:
+        sid = src.get("id")
+        if not sid:
+            continue
+        sname = src.get("name") or sid
+        surl = src.get("url", "")
+        try:
+            digest = await _fetch_digest(provider, account, sid)
+        except Exception as e:
+            logger.warning("[onboarding] digest failed %s %s: %s", provider, sid, e)
+            continue
+        if not digest or len(digest) < 40:
+            continue
+        try:
+            analysis = await analyze_connected_source(provider, sname, digest, [], own_email=own_email, own_name=user.get("name", ""))
+        except Exception as e:
+            logger.warning("[onboarding] analyze failed %s %s: %s", provider, sid, e)
+            continue
+        dup = await db.source_connections.find_one({"project_id": project_id, "provider": provider,
+                                                    "source_id": sid, "status": {"$ne": "disconnected"}})
+        if dup:
+            continue
+        conn_id = _uuid()
+        client_email = _extract_client_email(digest, own_email) if provider == "gmail" else ""
+        await db.source_connections.insert_one({
+            "id": conn_id, "project_id": project_id, "user_id": user["user_id"],
+            "provider": provider, "source_type": provider,
+            "source_id": sid, "source_name": sname, "source_url": surl,
+            "client_email": client_email,
+            "status": "connected", "content_hash": _hash(digest),
+            "content_cache": digest[:20000],
+            "extracted_stats": {k: len(analysis.get(k) or []) for k in ("requirements", "decisions", "deliverables", "deadlines", "open_questions")},
+            "last_synced_at": now, "last_activity_at": now, "created_at": now, "updated_at": now,
+        })
+        mem = _memory_docs(project_id, conn_id, provider, sname, analysis)
+        if mem:
+            await db.project_memory.insert_many(mem)
+        total_mem += len(mem)
+        for m in mem[:8]:
+            found.append({"category": m.get("category"), "text": m.get("title"),
+                          "provider": provider, "attention": m.get("status") == "detected"})
+        await db.source_events.insert_one({
+            "id": _uuid(), "project_id": project_id, "connection_id": conn_id,
+            "provider": provider, "source_label": sname, "event_type": "SOURCE_CONNECTED",
+            "summary": f"Connected {PROVIDERS[provider]['label']} — {sname}. Bracket extracted {len(mem)} items.",
+            "occurred_at": now, "created_at": now,
+        })
+        conns.append(conn_id)
+    await db.projects.update_one({"id": project_id}, {"$set": {"updated_at": now}})
+    return {"memory_count": total_mem, "connections": conns, "found": found}
+
+
+
 # ---------------------------------------------------------------------------
 # Project-scoped: connections / memory / activity / ask
 # ---------------------------------------------------------------------------
