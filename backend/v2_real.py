@@ -1,9 +1,15 @@
 """Builders that turn a real Bracket project (project_memory, source_events,
 source_connections, notifications) into the v2 workspace response shapes, with
 dynamic categories. Reuses the existing AI (ask / suggest-reply)."""
+from datetime import datetime, timezone
+
 from connectors import db
 from connect_ai import answer_project_question, suggest_project_reply
 from v2_categories import get_or_infer_categories, classify_items
+
+
+def _now_iso():
+    return datetime.now(timezone.utc).isoformat()
 
 _TONE = {"scope_creep": "warning", "conflict": "danger", "deadline": "warning"}
 _PROVIDER_LABEL = {"gmail": "Gmail", "slack": "Slack", "figma": "Figma", "github": "GitHub", "meeting": "Notes", "notes": "Notes"}
@@ -242,3 +248,69 @@ async def draft(project, thread_id, instruction):
     if not body:
         body = "Thanks for the note — I'll follow up shortly with details."
     return {"draft": body, "to": (conn or {}).get("source_name", "")}
+
+
+
+async def accept_review(project, rid, selected, edits):
+    """Apply a reviewed change to the exact memory field.
+
+    For real projects each review id IS the memory id and carries one proposal
+    (`pp_<memory_id>`). We apply the (possibly edited) proposed text to the
+    memory's title, keep the previous version in history, and confirm it."""
+    pid = project["id"]
+    selected = selected or []
+    edits = edits or {}
+    reviews = await build_reviews(project)
+    review = next((r for r in reviews if r["id"] == rid), None)
+    if not review:
+        return {"accepted": 0, "impact": "", "applied": False}
+
+    m = await db.project_memory.find_one({"id": rid, "project_id": pid}, {"_id": 0})
+    if not m:
+        return {"accepted": 0, "impact": "", "applied": False}
+
+    proposals = review.get("proposals") or []
+    chosen = [p for p in proposals if (not selected or p["id"] in selected)]
+    if not chosen:
+        return {"accepted": 0, "impact": "", "applied": False}
+
+    # One memory per real review — take the (edited) text of the first chosen.
+    p = chosen[0]
+    after = (edits.get(p["id"]) or p.get("after") or m.get("title") or "").strip()
+    old_title = m.get("title", "")
+    versions = list(m.get("versions") or [])
+    history = list(m.get("history") or [])
+    changed = bool(after) and after != old_title
+    now = _now_iso()
+    if changed:
+        versions.append({"at": m.get("updated_at") or m.get("created_at") or now,
+                         "title": old_title, "superseded_at": now})
+        history.insert(0, {"at": now, "text": f"Accepted change: now “{after}”"})
+    else:
+        history.insert(0, {"at": now, "text": "Change accepted"})
+
+    await db.project_memory.update_one(
+        {"id": rid, "project_id": pid},
+        {"$set": {"title": after or old_title, "status": "confirmed", "is_conflict": False,
+                  "versions": versions, "history": history, "updated_at": now,
+                  "pre_accept_title": old_title},
+         "$unset": {"conflict_values": ""}})
+
+    cats = await get_or_infer_categories(project)
+    label = next((c["singular"] for c in cats if c["key"] == p.get("category")), p.get("category", "memory"))
+    return {"accepted": len(chosen), "impact": f"{label} updated +{len(chosen)}", "applied": True}
+
+
+async def undo_review(project, rid):
+    """Restore the pre-accept title for a memory that was just accepted."""
+    pid = project["id"]
+    m = await db.project_memory.find_one({"id": rid, "project_id": pid}, {"_id": 0})
+    if not m or "pre_accept_title" not in m:
+        return {"ok": True}
+    versions = [v for v in (m.get("versions") or []) if v.get("title") != m.get("pre_accept_title")]
+    await db.project_memory.update_one(
+        {"id": rid, "project_id": pid},
+        {"$set": {"title": m["pre_accept_title"], "status": "detected",
+                  "versions": versions, "updated_at": _now_iso()},
+         "$unset": {"pre_accept_title": ""}})
+    return {"ok": True}

@@ -90,11 +90,13 @@ async def get_or_infer_categories(project):
     return cats
 
 
-async def classify_items(project, categories, items):
+async def classify_items(project, categories, items, force=False):
     """Return {memory_id: category_key} for the given memory items, caching the
-    mapping on the project doc and only classifying newly-seen items."""
+    mapping on the project doc and only classifying newly-seen items.
+    When force=True, every item is re-classified from scratch (used after a
+    user renames / merges / adds a category and asks to re-map memory)."""
     pid = project["id"]
-    cat_map = dict(project.get("v2_cat_map") or {})
+    cat_map = {} if force else dict(project.get("v2_cat_map") or {})
     valid = {c["key"] for c in categories}
     unmapped = [it for it in items if it["id"] not in cat_map or cat_map[it["id"]] not in valid]
 
@@ -150,3 +152,55 @@ def _nearest(item, categories):
         if target and (target in c["key"] or c["key"] in target):
             return c["key"]
     return categories[0]["key"]
+
+
+
+async def _mem_items(pid):
+    out = []
+    async for m in db.project_memory.find({"project_id": pid, "status": {"$ne": "ignored"}}, {"_id": 0}).sort("occurred_at", -1):
+        out.append(m)
+    return out
+
+
+async def rename_category(project, key, label):
+    """Rename a category in place (key stays stable so the memory map holds)."""
+    label = (label or "").strip()
+    if not label:
+        return await get_or_infer_categories(project)
+    cats = await get_or_infer_categories(project)
+    for c in cats:
+        if c["key"] == key:
+            c["label"] = label
+            c["singular"] = label
+    await db.projects.update_one({"id": project["id"]}, {"$set": {"v2_categories": cats}})
+    return cats
+
+
+async def add_category(project, name, description=""):
+    """Add a new category and re-map all memory so existing items can flow into
+    it (and any other category). Returns the updated category set."""
+    name = (name or "").strip()
+    cats = await get_or_infer_categories(project)
+    key = _slug(name)
+    if not name or any(c["key"] == key for c in cats):
+        return cats
+    singular = name[:-1] if name.endswith("s") and len(name) > 3 else name
+    cats = cats + [{"key": key, "label": name, "singular": singular, "description": (description or "").strip()}]
+    await db.projects.update_one({"id": project["id"]}, {"$set": {"v2_categories": cats}})
+    mem = await _mem_items(project["id"])
+    await classify_items({**project, "v2_categories": cats}, cats, mem, force=True)
+    return cats
+
+
+async def merge_category(project, key, into):
+    """Merge category `key` into `into`: remap every memory item and drop `key`."""
+    cats = await get_or_infer_categories(project)
+    if key == into or not any(c["key"] == into for c in cats):
+        return cats
+    cat_map = dict(project.get("v2_cat_map") or {})
+    for mid, k in list(cat_map.items()):
+        if k == key:
+            cat_map[mid] = into
+    cats = [c for c in cats if c["key"] != key]
+    await db.projects.update_one({"id": project["id"]}, {"$set": {"v2_categories": cats, "v2_cat_map": cat_map}})
+    return cats

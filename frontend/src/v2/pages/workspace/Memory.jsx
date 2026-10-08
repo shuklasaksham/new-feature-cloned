@@ -172,7 +172,7 @@ function CategoryRail({ base, categories, counts, active, q, onSuggest, canEdit 
         {(categories || []).map((c) => (
           <div key={c.key} className="group/cat relative">
             {row(`${base}/memory/${c.key}`, c.label, c.count, c.pending > 0, active === c.key)}
-            <CategoryMenu c={c} canEdit={canEdit} />
+            <CategoryMenu c={c} canEdit={canEdit} categories={categories} />
           </div>
         ))}
       </div>
@@ -182,30 +182,47 @@ function CategoryRail({ base, categories, counts, active, q, onSuggest, canEdit 
   );
 }
 
-function CategoryMenu({ c, canEdit }) {
+function CategoryMenu({ c, canEdit, categories }) {
   const { projectId } = useWorkspace();
+  const navigate = useNavigate();
   const [rename, setRename] = useState(false);
+  const [merge, setMerge] = useState(false);
   const [name, setName] = useState(c.label);
+  const [into, setInto] = useState("");
+  const others = (categories || []).filter((x) => x.key !== c.key);
+  const base = `/w/${projectId}`;
   return (
     <>
       <Menu>
         <MenuTrigger asChild>
-          <button aria-label={`${c.label} options`} className="absolute right-7 top-1/2 hidden h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-fg-tertiary hover:bg-hover hover:text-fg group-hover/cat:flex data-[state=open]:flex">
+          <button aria-label={`${c.label} options`} data-testid={`category-menu-${c.key}`} className="absolute right-7 top-1/2 hidden h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-fg-tertiary hover:bg-hover hover:text-fg group-hover/cat:flex data-[state=open]:flex">
             <MoreHorizontal size={14} />
           </button>
         </MenuTrigger>
         <MenuContent align="start" side="right" className="w-[200px]">
           <MenuItem icon={Pencil} disabled={!canEdit} onSelect={() => setRename(true)}>Rename</MenuItem>
-          <MenuItem icon={Merge} disabled={!canEdit} onSelect={() => toast("Choose a category to merge into", { description: "Drag one category onto another, or pick from the list." })}>Merge into…</MenuItem>
+          <MenuItem icon={Merge} disabled={!canEdit || !others.length} onSelect={() => { setInto(others[0]?.key || ""); setMerge(true); }}>Merge into…</MenuItem>
           <MenuItem icon={EyeOff} onSelect={() => toast(`${c.label} hidden from the sidebar`)}>Hide from sidebar</MenuItem>
           <MenuItem icon={Pin} onSelect={() => toast(`${c.label} pinned to Overview`)}>Pin to Overview</MenuItem>
-          <MenuSeparator />
-          <MenuItem icon={X} danger disabled={!canEdit} onSelect={() => toast(`Bracket will stop using “${c.label}”`, { description: "Its memories move to All memory." })}>Not a real category</MenuItem>
         </MenuContent>
       </Menu>
       <Dialog open={rename} onOpenChange={setRename} title="Rename category" size="s"
-        footer={<><Button variant="ghost" onClick={() => setRename(false)}>Cancel</Button><Button variant="primary" onClick={async () => { await v2.renameCategory(projectId, c.key, name); setRename(false); refreshAll(); toast.success("Category renamed"); }}>Rename</Button></>}>
-        <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus aria-label="Category name" />
+        footer={<><Button variant="ghost" onClick={() => setRename(false)}>Cancel</Button><Button variant="primary" data-testid="category-rename-confirm" onClick={async () => { await v2.renameCategory(projectId, c.key, name); setRename(false); refreshAll(); toast.success("Category renamed"); }}>Rename</Button></>}>
+        <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus aria-label="Category name" data-testid="category-rename-input" />
+      </Dialog>
+      <Dialog open={merge} onOpenChange={setMerge} title={`Merge “${c.label}” into…`} size="s"
+        description="All memories in this category move to the one you choose, and this category is removed."
+        footer={<><Button variant="ghost" onClick={() => setMerge(false)}>Cancel</Button><Button variant="primary" disabled={!into} data-testid="category-merge-confirm" onClick={async () => { await v2.mergeCategory(projectId, c.key, into); setMerge(false); refreshAll(); if (window.location.pathname.includes(`/memory/${c.key}`)) navigate(`${base}/memory/${into}`); toast.success(`Merged into ${others.find((x) => x.key === into)?.label || "category"}`); }}>Merge</Button></>}>
+        <div role="radiogroup" className="space-y-2">
+          {others.map((o) => (
+            <button key={o.key} role="radio" aria-checked={into === o.key} data-testid={`category-merge-target-${o.key}`} onClick={() => setInto(o.key)}
+              className={cn("flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left transition-colors duration-fast", into === o.key ? "border-fg bg-selected text-fg" : "border-line-control text-fg-secondary hover:text-fg")}>
+              <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded-full border", into === o.key ? "border-fg bg-fg" : "border-line-control")}>{into === o.key && <span className="h-1.5 w-1.5 rounded-full bg-app" />}</span>
+              <span className="flex-1 text-[12px]">{o.label}</span>
+              <span className="font-mono text-[12px] text-fg-tertiary">{o.count}</span>
+            </button>
+          ))}
+        </div>
       </Dialog>
     </>
   );
@@ -218,7 +235,7 @@ function SuggestCategory({ open, onOpenChange, wid }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Suggest a category"
       description="Tell Bracket what else to keep track of. It looks through your sources and proposes memories for review."
-      footer={<><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button variant="primary" disabled={!name.trim()} onClick={async () => { await v2.suggestCategory(wid, name.trim()); onOpenChange(false); toast.success(`Looking for ${name.trim().toLowerCase()}…`, { description: "New memories will show up under Needs review." }); }}>Create category</Button></>}>
+      footer={<><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button variant="primary" disabled={!name.trim()} data-testid="suggest-category-confirm" onClick={async () => { await v2.suggestCategory(wid, name.trim()); onOpenChange(false); refreshAll(); toast.success(`Added “${name.trim()}”`, { description: "Bracket re-mapped your memory into the new categories." }); }}>Create category</Button></>}>
       <label className="block text-[12px] font-medium text-fg-secondary" htmlFor="cat-name">Category name</label>
       <Input id="cat-name" className="mt-2" value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="e.g. Risks" />
       <AnimatePresence>{hint && <motion.p initial={{ opacity: 0, y: -2 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={T.fast} className="mt-2 text-[12px] text-fg-tertiary">{hint}</motion.p>}</AnimatePresence>

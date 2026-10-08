@@ -38,6 +38,7 @@ export const v2 = {
   categories: (wid) => g(`${W(wid)}/categories`),
   suggestCategory: (wid, name, description) => p(`${W(wid)}/categories/suggest`, { name, description }),
   renameCategory: (wid, key, label) => pa(`${W(wid)}/categories/${key}`, { label }),
+  mergeCategory: (wid, key, into) => p(`${W(wid)}/categories/${key}/merge`, { into }),
   memory: (wid, params) => g(`${W(wid)}/memory`, params),
   memoryItem: (wid, mid) => g(`${W(wid)}/memory/${mid}`),
   addMemory: (wid, body) => p(`${W(wid)}/memory`, body),

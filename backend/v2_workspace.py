@@ -14,9 +14,10 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
-from auth import current_user_optional
+from auth import current_user_optional, current_user
 from connectors import db
 import v2_real
+import v2_categories
 
 router = APIRouter(prefix="/api/v2")
 
@@ -284,6 +285,46 @@ async def categories(wid: str):
     return {"categories": _seed()["categories"]}
 
 
+class CategoryRenameIn(BaseModel):
+    label: str = ""
+
+
+class CategorySuggestIn(BaseModel):
+    name: str = ""
+    description: str = ""
+
+
+class CategoryMergeIn(BaseModel):
+    into: str = ""
+
+
+@router.patch("/w/{wid}/categories/{key}")
+async def category_rename(wid: str, key: str, payload: CategoryRenameIn):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        cats = await v2_categories.rename_category(proj, key, payload.label)
+        return {"categories": cats}
+    return {"categories": _seed()["categories"]}
+
+
+@router.post("/w/{wid}/categories/suggest")
+async def category_suggest(wid: str, payload: CategorySuggestIn):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        cats = await v2_categories.add_category(proj, payload.name, payload.description)
+        return {"categories": cats, "ok": True}
+    return {"ok": True, "categories": _seed()["categories"]}
+
+
+@router.post("/w/{wid}/categories/{key}/merge")
+async def category_merge(wid: str, key: str, payload: CategoryMergeIn):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        cats = await v2_categories.merge_category(proj, key, payload.into)
+        return {"categories": cats, "ok": True}
+    return {"ok": True, "categories": _seed()["categories"]}
+
+
 @router.get("/w/{wid}/memory")
 async def memory(wid: str, category: str = "", status: str = "", q: str = ""):
     mode, proj = await _resolve(wid)
@@ -433,6 +474,16 @@ class SendIn(BaseModel):
     to: object = ""
 
 
+class AcceptIn(BaseModel):
+    selected: list = []
+    edits: dict = {}
+
+
+class DismissIn(BaseModel):
+    reason: str = ""
+    note: str = ""
+
+
 @router.post("/w/{wid}/threads/{tid}/send")
 async def send(wid: str, tid: str, payload: SendIn):
     return {"ok": True, "sent_at": mins(0)}
@@ -464,15 +515,36 @@ async def att_save(wid: str, aid: str):
 
 
 @router.post("/w/{wid}/reviews/{rid}/accept")
-async def review_accept(wid: str, rid: str):
-    # rid is the memory id for real projects — confirm it.
-    res = await db.project_memory.update_one({"id": rid, "project_id": wid}, {"$set": {"status": "confirmed", "updated_at": iso(_now())}})
-    return {"ok": True, "applied": res.modified_count > 0}
+async def review_accept(wid: str, rid: str, payload: AcceptIn):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        res = await v2_real.accept_review(proj, rid, payload.selected, payload.edits)
+        if not res.get("applied"):
+            # stale review — the memory no longer exists or nothing matched
+            from fastapi import HTTPException
+            raise HTTPException(status_code=409, detail="This review is already up to date.")
+        return res
+    n = len(payload.selected) if payload.selected else 1
+    return {"accepted": n, "impact": f"memories updated +{n}", "applied": True}
+
+
+@router.post("/w/{wid}/reviews/{rid}/undo")
+async def review_undo(wid: str, rid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return await v2_real.undo_review(proj, rid)
+    return {"ok": True}
+
+
+@router.post("/w/{wid}/reviews/{rid}/save")
+async def review_save(wid: str, rid: str):
+    await db.project_memory.update_one({"id": rid, "project_id": wid}, {"$set": {"review_saved": True, "updated_at": iso(_now())}})
+    return {"ok": True}
 
 
 @router.post("/w/{wid}/reviews/{rid}/dismiss")
-async def review_dismiss(wid: str, rid: str):
-    await db.project_memory.update_one({"id": rid, "project_id": wid}, {"$set": {"status": "ignored", "updated_at": iso(_now())}})
+async def review_dismiss(wid: str, rid: str, payload: DismissIn = DismissIn()):
+    await db.project_memory.update_one({"id": rid, "project_id": wid}, {"$set": {"status": "ignored", "dismiss_reason": payload.reason, "updated_at": iso(_now())}})
     return {"ok": True}
 
 
@@ -494,3 +566,136 @@ async def source_sync(wid: str, sid: str):
         except Exception:
             pass
     return {"ok": True, "status": "synced"}
+
+
+
+# ── Billing (bridges the v2 account UI to the real plan + Razorpay data) ─────
+BILLING_PRICES = {"monthly": {"inr": 999, "usd": 12}, "project": {"inr": 199, "usd": 2}}
+BILLING_LIMITS = {"monthly": 10, "project": 1, "test": 10, "ph_launch": 1}
+PAID_PLANS = {"monthly", "project", "test", "ph_launch"}
+TRIAL_DAYS = 14
+
+
+def _parse_dt(s):
+    try:
+        dt = datetime.fromisoformat(s)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+def _renews_on(plan, plan_since):
+    dt = _parse_dt(plan_since or "")
+    if not dt:
+        return None
+    days = 30 if plan in ("monthly", "test", "ph_launch") else 60 if plan == "project" else None
+    return iso(dt + timedelta(days=days)) if days else None
+
+
+async def _billing_view(u):
+    plan = u.get("plan")
+    currency = (u.get("plan_currency") or "inr").lower()
+    used = await db.projects.count_documents({"owner_user_id": u["user_id"], "archived": {"$ne": True}, "is_demo": {"$ne": True}})
+    interval = "project" if plan == "project" else "month"
+    label = {"monthly": "Monthly", "project": "Per project", "test": "Monthly", "ph_launch": "Launch offer"}.get(plan, "Trial")
+    renews_on = _renews_on(plan, u.get("plan_since"))
+    invoices = []
+    async for t in db.payment_transactions.find({"user_id": u["user_id"], "payment_status": "paid"}, {"_id": 0}).sort("created_at", -1).limit(12):
+        invoices.append({"id": t.get("razorpay_payment_id") or t.get("session_id"), "at": t.get("created_at"),
+                         "label": (PLANS_LABEL.get(t.get("plan_id")) or "Bracket"), "amount": t.get("amount") or 0,
+                         "currency": (t.get("currency") or currency)})
+    out = {
+        "plan": plan, "label": label, "interval": interval, "currency": currency,
+        "prices": BILLING_PRICES, "workspaces": {"used": used, "limit": BILLING_LIMITS.get(plan, 10)},
+        "renews_on": renews_on, "invoices": invoices, "card": None,
+    }
+    if plan in PAID_PLANS:
+        if u.get("billing_canceled_at") and plan == "monthly":
+            out["status"] = "canceled"
+            out["ends_on"] = renews_on
+        else:
+            out["status"] = "active"
+            if u.get("billing_pending_plan") and u["billing_pending_plan"] != plan:
+                out["pending_change"] = {"plan": u["billing_pending_plan"], "on": renews_on}
+    else:
+        created = _parse_dt(u.get("created_at") or "")
+        ends = iso(created + timedelta(days=TRIAL_DAYS)) if created else None
+        out["trial_ends_at"] = ends
+        out["status"] = "trialing" if (created and datetime.now(timezone.utc) < created + timedelta(days=TRIAL_DAYS)) else "expired"
+    return out
+
+
+PLANS_LABEL = {"monthly": "Bracket Monthly", "project": "Bracket Single Project", "test": "Bracket", "ph_launch": "Launch offer"}
+
+
+async def _user_doc(request: Request):
+    user = await current_user(request, db)
+    return await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0}) or {}
+
+
+@router.get("/billing")
+async def billing_get(request: Request):
+    return await _billing_view(await _user_doc(request))
+
+
+class BillingPatchIn(BaseModel):
+    currency: str = ""
+
+
+@router.patch("/billing")
+async def billing_patch(request: Request, payload: BillingPatchIn):
+    u = await _user_doc(request)
+    cur = (payload.currency or "").lower()
+    if cur in ("inr", "usd"):
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"plan_currency": cur, "updated_at": iso(_now())}})
+        u["plan_currency"] = cur
+    return await _billing_view(u)
+
+
+class BillingChangeIn(BaseModel):
+    plan: str = ""
+
+
+@router.post("/billing/change")
+async def billing_change(request: Request, payload: BillingChangeIn):
+    u = await _user_doc(request)
+    set_fields = {"updated_at": iso(_now())}
+    unset_fields = {}
+    if payload.plan and payload.plan != u.get("plan"):
+        set_fields["billing_pending_plan"] = payload.plan
+    else:
+        unset_fields["billing_pending_plan"] = ""
+    op = {"$set": set_fields}
+    if unset_fields:
+        op["$unset"] = unset_fields
+    await db.users.update_one({"user_id": u["user_id"]}, op)
+    u.update(set_fields)
+    if unset_fields:
+        u.pop("billing_pending_plan", None)
+    return {"billing": await _billing_view(u)}
+
+
+class BillingCancelIn(BaseModel):
+    reason: str = ""
+    note: str = ""
+
+
+@router.post("/billing/cancel")
+async def billing_cancel(request: Request, payload: BillingCancelIn):
+    u = await _user_doc(request)
+    await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"billing_canceled_at": iso(_now()), "billing_cancel_reason": payload.reason, "updated_at": iso(_now())}})
+    u["billing_canceled_at"] = iso(_now())
+    return {"billing": await _billing_view(u)}
+
+
+@router.post("/billing/resume")
+async def billing_resume(request: Request):
+    u = await _user_doc(request)
+    await db.users.update_one({"user_id": u["user_id"]}, {"$unset": {"billing_canceled_at": "", "billing_cancel_reason": ""}, "$set": {"updated_at": iso(_now())}})
+    u.pop("billing_canceled_at", None)
+    return {"billing": await _billing_view(u)}
+
+
+@router.post("/billing/retry")
+async def billing_retry(request: Request):
+    return {"billing": await _billing_view(await _user_doc(request))}

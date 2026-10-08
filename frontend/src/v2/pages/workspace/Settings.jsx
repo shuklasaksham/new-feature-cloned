@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "../../../lib/AuthContext";
 import { useWorkspace, fetchProjects, useProjects } from "../../lib/workspace";
-import { useBilling, setBilling } from "../../lib/account";
+import { useBilling, setBilling, loadBilling } from "../../lib/account";
 import { v2 } from "../../lib/api2";
 import { useResource } from "../../lib/data";
 import { useIsMobile } from "../../lib/useMedia";
@@ -487,11 +487,20 @@ function PlanRadio({ on, title, sub, price, onClick }) {
   );
 }
 
+function loadRazorpay() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
+
 function ChoosePlan({ open, onOpenChange, b }) {
+  const { user } = useAuth();
   const [plan, setPlan] = useState("monthly");
-  const [card, setCard] = useState("");
-  const [exp, setExp] = useState("");
-  const [cvc, setCvc] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   useEffect(() => { if (open) { setPlan(b.plan === "project" ? "project" : "monthly"); setErr(null); } }, [open, b.plan]);
@@ -500,37 +509,44 @@ function ChoosePlan({ open, onOpenChange, b }) {
   const pay = async () => {
     setBusy(true); setErr(null);
     try {
-      const r = await v2.checkout(plan, b.currency, card || "4242 4242 4242 4242", exp || "08/28");
-      setBilling(r.billing); onOpenChange(false);
-      toast.success(plan === "monthly" ? `Monthly plan active${trialing ? ` · first charge ${format(new Date(r.billing.first_charge_at), "MMM d")}` : ""}` : "Workspace active for 60 days");
-    } catch (e) { setErr(e?.response?.data?.detail || "Payment didn’t go through. Nothing was charged."); } finally { setBusy(false); }
+      const { api } = await import("../../../lib/api");
+      const ok = await loadRazorpay();
+      if (!ok) { setErr("Couldn’t load the payment window — check your connection and retry."); setBusy(false); return; }
+      const { data } = await api.post("/payments/razorpay/order", { plan_id: plan, currency: b.currency });
+      const rzp = new window.Razorpay({
+        key: data.key_id, amount: data.amount, currency: data.currency, name: "Bracket", description: data.plan_label, order_id: data.order_id,
+        prefill: { email: user?.email, name: user?.name }, theme: { color: "#08090A" },
+        handler: async (resp) => {
+          try {
+            await api.post("/payments/razorpay/verify", { razorpay_order_id: resp.razorpay_order_id, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature });
+            setBilling(await loadBilling(true));
+            onOpenChange(false);
+            toast.success(plan === "monthly" ? "Monthly plan active" : "Workspace active for 60 days");
+          } catch (e) { setErr(e?.response?.data?.detail || "We couldn’t confirm the payment. If money was deducted it’ll reconcile shortly."); }
+          setBusy(false);
+        },
+        modal: { ondismiss: () => setBusy(false) },
+      });
+      rzp.on("payment.failed", (r) => { setErr(r?.error?.description || "Payment failed — please try again."); setBusy(false); });
+      rzp.open();
+    } catch (e) { setErr(e?.response?.data?.detail || "Payment didn’t go through. Nothing was charged."); setBusy(false); }
   };
-  const fmtCard = (v) => v.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ");
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={b.status === "past_due" ? "Update card" : "Choose a plan"}
-      footer={<><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button variant="primary" loading={busy} onClick={pay}>{b.status === "past_due" ? "Save card & retry" : plan === "monthly" ? "Start Monthly plan" : `Pay ${money(amount, b.currency)}`}</Button></>}>
+    <Dialog open={open} onOpenChange={onOpenChange} title={b.status === "past_due" ? "Update payment" : "Choose a plan"}
+      footer={<><Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button><Button variant="primary" data-testid="billing-pay-btn" loading={busy} onClick={pay}>{b.status === "past_due" ? "Pay now" : plan === "monthly" ? `Pay ${money(b.prices?.monthly?.[b.currency] ?? 0, b.currency)} / mo` : `Pay ${money(amount, b.currency)}`}</Button></>}>
       {b.status !== "past_due" && (
         <div role="radiogroup" className="space-y-3">
           <PlanRadio on={plan === "monthly"} onClick={() => setPlan("monthly")} title="Monthly" sub="Up to 10 active projects · cancel anytime" price={`${money(b.prices?.monthly?.[b.currency] ?? 0, b.currency)} / mo`} />
           <PlanRadio on={plan === "project"} onClick={() => setPlan("project")} title="Per project" sub="This workspace, active for 60 days" price={`${money(b.prices?.project?.[b.currency] ?? 0, b.currency)} once`} />
         </div>
       )}
-      <p className="mt-5 text-[12px] font-medium text-fg-secondary">Payment</p>
-      <FieldRow label="Card number" id="cc"><Input id="cc" inputMode="numeric" autoComplete="cc-number" value={card} onChange={(e) => setCard(fmtCard(e.target.value))} placeholder="1234 1234 1234 1234" /></FieldRow>
-      <div className="grid grid-cols-2 gap-3">
-        <FieldRow label="Expiry" id="ccexp"><Input id="ccexp" autoComplete="cc-exp" value={exp} onChange={(e) => setExp(e.target.value.replace(/[^\d/ ]/g, "").slice(0, 7))} placeholder="MM / YY" /></FieldRow>
-        <FieldRow label="CVC" id="cccvc"><Input id="cccvc" autoComplete="cc-csc" inputMode="numeric" value={cvc} onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="···" /></FieldRow>
+      <div className="mt-4 space-y-1.5 text-[12px]">
+        <div className="flex"><span className="flex-1 text-fg-secondary">{plan === "monthly" ? "Monthly plan" : "Per project"}</span><span className="font-mono text-fg">{money2(amount, b.currency)}</span></div>
+        <div className="flex"><span className="flex-1 text-fg-secondary">Tax</span><span className="font-mono text-fg">{b.currency === "inr" ? "incl. GST" : money2(0, b.currency)}</span></div>
+        <div className="flex"><span className="flex-1 text-fg-secondary">Due today</span><span className="font-mono text-fg">{money2(amount, b.currency)}</span></div>
       </div>
       {err && <p className="mt-3 text-[12px] text-danger">{err}</p>}
-      {b.status !== "past_due" && (
-        <div className="mt-4 space-y-1.5 text-[12px]">
-          <div className="flex"><span className="flex-1 text-fg-secondary">{plan === "monthly" ? "Monthly plan" : "Per project"}</span><span className="font-mono text-fg">{money2(amount, b.currency)}</span></div>
-          <div className="flex"><span className="flex-1 text-fg-secondary">Tax</span><span className="font-mono text-fg">{b.currency === "inr" ? "incl. GST" : money2(0, b.currency)}</span></div>
-          <div className="flex"><span className="flex-1 text-fg-secondary">Due today</span><span className="font-mono text-fg">{money2(trialing && plan === "monthly" ? 0 : amount, b.currency)}</span></div>
-          {trialing && plan === "monthly" && <p className="pt-1 text-fg-tertiary">First charge of {money2(amount, b.currency)} on {format(new Date(b.trial_ends_at), "MMM d")}, when your trial ends. Cancel anytime before then.</p>}
-        </div>
-      )}
-      <p className="mt-3 flex items-center gap-2 text-[12px] text-fg-tertiary"><Lock size={14} /> Card details go straight to our payment provider. Bracket never stores them.</p>
+      <p className="mt-3 flex items-center gap-2 text-[12px] text-fg-tertiary"><Lock size={14} /> Secure checkout by Razorpay — UPI, cards and netbanking. Bracket never sees your card.</p>
     </Dialog>
   );
 }

@@ -12,6 +12,8 @@ import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "../../u
 import { AnimatePresence, Stagger, StaggerItem, motion, t as T } from "../../ui/motion";
 import { MobileSubHeader } from "../../shell/AppShell";
 import { AddNoteDialog, AddSourceDialog, ChooseItemsDialog, SourceStatus, UploadDialog, num } from "../../features/sources";
+import { ConnectFlow } from "../../features/connect";
+import { Dialog } from "../../ui/overlays";
 import { FileStatus } from "./Files";
 import { cn } from "../../../lib/utils";
 
@@ -29,6 +31,7 @@ export default function Sources() {
   const [choose, setChoose] = useState(null);
   const [note, setNote] = useState(false);
   const [upload, setUpload] = useState(false);
+  const [connectProvider, setConnectProvider] = useState(null);
   const [noteResult, setNoteResult] = useState(null);
   const location = useLocation();
 
@@ -47,16 +50,23 @@ export default function Sources() {
 
   const pick = (key) => {
     setPicker(false);
-    if (key === "slack") setChoose("slack");
-    else if (key === "gmail") { const g = data?.sources.find((s) => s.provider === "gmail"); if (g && g.status !== "disconnected") navigate(`${base}/sources/${g.id}?add=1`); else setChoose("gmail"); }
-    else if (key === "notes") setNote(true);
+    if (key === "notes") setNote(true);
     else if (key === "files") setUpload(true);
-    else toast(`${key[0].toUpperCase() + key.slice(1)} connects through OAuth`, { description: "You’ll pick exactly what Bracket can read next." });
+    else setConnectProvider(key); // gmail / slack / figma / github / notion → real OAuth connect
   };
   const sync = async (s) => { await v2.syncSource(projectId, s.id); reload(); };
   const reconnect = (s) => navigate(`${base}/sources/${s.id}?reconnect=1`);
 
   const sources = data?.sources || [];
+  const connectDialog = (
+    <Dialog open={!!connectProvider} onOpenChange={(o) => !o && setConnectProvider(null)} title="Add a source" size="l">
+      {connectProvider && (
+        <ConnectFlow projectId={projectId} mode="existing" initialProvider={connectProvider}
+          onCancel={() => setConnectProvider(null)}
+          onDone={() => { setConnectProvider(null); reload(); window.dispatchEvent(new Event("bk:refresh")); }} />
+      )}
+    </Dialog>
+  );
   /* Mobile — Figma › Sources — Mobile 390 (43:4601) + Note added (147:755) + After disconnecting Gmail (147:813). */
   if (mobile) {
     const live = sources.filter((s) => s.status !== "disconnected");
@@ -119,6 +129,7 @@ export default function Sources() {
         <ChooseItemsDialog open={!!choose} onOpenChange={(o) => !o && setChoose(null)} wid={projectId} provider={choose} onDone={() => { setChoose(null); reload(); }} onBack={() => { setChoose(null); setPicker(true); }} />
         <AddNoteDialog open={note} onOpenChange={setNote} wid={projectId} quiet onAdded={(r) => { setNoteResult(r?.nothing_new ? null : r); reload(); }} />
         <UploadDialog open={upload} onOpenChange={(o) => { setUpload(o); if (!o) reload(); }} wid={projectId} />
+        {connectDialog}
       </div>
     );
   }
@@ -238,6 +249,7 @@ export default function Sources() {
       <ChooseItemsDialog open={!!choose} onOpenChange={(o) => !o && setChoose(null)} wid={projectId} provider={choose} onDone={() => { setChoose(null); reload(); }} onBack={() => { setChoose(null); setPicker(true); }} />
       <AddNoteDialog open={note} onOpenChange={setNote} wid={projectId} onAdded={() => reload()} />
       <UploadDialog open={upload} onOpenChange={(o) => { setUpload(o); if (!o) reload(); }} wid={projectId} />
+      {connectDialog}
     </div>
   );
 }
