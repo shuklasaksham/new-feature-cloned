@@ -16,8 +16,21 @@ from pydantic import BaseModel
 
 from auth import current_user_optional
 from connectors import db
+import v2_real
 
 router = APIRouter(prefix="/api/v2")
+
+SEED_IDS = {"p1", "p2"}
+
+
+async def _resolve(wid):
+    """Return (mode, project). 'real' for a stored non-seed project, else 'seed'."""
+    if wid in SEED_IDS:
+        return "seed", None
+    proj = await db.projects.find_one({"id": wid}, {"_id": 0})
+    if proj and not proj.get("is_sandbox_showcase"):
+        return "real", proj
+    return "seed", None
 
 MIN = 60
 HOUR = 3600
@@ -214,6 +227,9 @@ async def workspaces(request: Request):
 
 @router.get("/w/{wid}")
 async def workspace(wid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return v2_real._workspace(proj)
     s = _seed()
     w = dict(s["workspace"]); w["id"] = wid
     return w
@@ -221,6 +237,9 @@ async def workspace(wid: str):
 
 @router.get("/w/{wid}/overview")
 async def overview(wid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return await v2_real.build_overview(proj)
     s = _seed()
     w = dict(s["workspace"]); w["id"] = wid
     att = s["attention"]
@@ -238,6 +257,11 @@ async def overview(wid: str):
 
 @router.get("/w/{wid}/attention")
 async def attention(wid: str, view: str = ""):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        if view == "later":
+            return {"snoozed": [], "saved": []}
+        return {"items": await v2_real.build_attention(proj)}
     s = _seed()
     att = s["attention"]
     if view == "later":
@@ -253,11 +277,19 @@ async def conflict(wid: str, cid: str):
 
 @router.get("/w/{wid}/categories")
 async def categories(wid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        cats, *_ = await v2_real.build_categories(proj)
+        return {"categories": cats}
     return {"categories": _seed()["categories"]}
 
 
 @router.get("/w/{wid}/memory")
 async def memory(wid: str, category: str = "", status: str = "", q: str = ""):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        items = await v2_real.build_memory(proj, category, q)
+        return {"items": items, "total": len(items)}
     items = _seed()["memory"]
     if category:
         items = [m for m in items if m["category"] == category]
@@ -269,56 +301,92 @@ async def memory(wid: str, category: str = "", status: str = "", q: str = ""):
 
 @router.get("/w/{wid}/memory/{mid}")
 async def memory_item(wid: str, mid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        items = await v2_real.build_memory(proj)
+        return next((m for m in items if m["id"] == mid), None) or {}
     return next((m for m in _seed()["memory"] if m["id"] == mid), None) or {}
 
 
 @router.get("/w/{wid}/people")
 async def people(wid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return {"people": await v2_real.build_people(proj)}
     return {"people": _seed()["people"]}
 
 
 @router.get("/w/{wid}/people/{pid}")
 async def person(wid: str, pid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return next((p for p in await v2_real.build_people(proj) if p["id"] == pid), None) or {}
     return next((p for p in _seed()["people"] if p["id"] == pid), None) or {}
 
 
 @router.get("/w/{wid}/timeline")
 async def timeline(wid: str, filter: str = ""):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        evs = await v2_real.build_timeline(proj)
+        return {"events": evs, "total": len(evs)}
     return {"events": _seed()["events"], "total": len(_seed()["events"])}
 
 
 @router.get("/w/{wid}/timeline/{eid}")
 async def event(wid: str, eid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return next((e for e in await v2_real.build_timeline(proj) if e["id"] == eid), None) or {}
     return next((e for e in _seed()["events"] if e["id"] == eid), None) or {}
 
 
 @router.get("/w/{wid}/sources")
 async def sources(wid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return {"sources": await v2_real.build_sources(proj)}
     return {"sources": _seed()["sources"]}
 
 
 @router.get("/w/{wid}/sources/{sid}")
 async def source(wid: str, sid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return next((x for x in await v2_real.build_sources(proj) if x["id"] == sid), None) or {}
     return next((x for x in _seed()["sources"] if x["id"] == sid), None) or {}
 
 
 @router.get("/w/{wid}/reviews")
 async def reviews(wid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return {"reviews": await v2_real.build_reviews(proj)}
     return {"reviews": _seed()["reviews"]}
 
 
 @router.get("/w/{wid}/reviews/{rid}")
 async def review(wid: str, rid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return next((r for r in await v2_real.build_reviews(proj) if r["id"] == rid), None) or {}
     return next((r for r in _seed()["reviews"] if r["id"] == rid), None) or {}
 
 
 @router.get("/w/{wid}/threads")
 async def threads(wid: str, filter: str = ""):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        th = await v2_real.build_threads(proj)
+        return {"threads": th, "total": len(th)}
     return {"threads": _seed()["threads"], "total": len(_seed()["threads"])}
 
 
 @router.get("/w/{wid}/threads/{tid}")
 async def thread(wid: str, tid: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return next((t for t in await v2_real.build_threads(proj) if t["id"] == tid), None) or {}
     return next((t for t in _seed()["threads"] if t["id"] == tid), None) or {}
 
 
@@ -334,6 +402,9 @@ class AskIn(BaseModel):
 
 @router.post("/w/{wid}/ask")
 async def ask(wid: str, payload: AskIn):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return await v2_real.ask(proj, (payload.question or "").strip())
     q = (payload.question or "").strip()
     return {
         "id": "q_" + str(int(_now().timestamp())),
@@ -351,6 +422,9 @@ class DraftIn(BaseModel):
 
 @router.post("/w/{wid}/threads/{tid}/draft")
 async def draft(wid: str, tid: str, payload: DraftIn):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        return await v2_real.draft(proj, tid, payload.instruction or "")
     return {"draft": "Hi Sarah — thanks for the note. Before we lock this in: adding tablet layouts expands the scope beyond the desktop + mobile we agreed, so the Oct 17 launch would be at risk unless we move the date or ship tablet in a second phase. Which would you prefer? Happy to send an updated timeline either way.", "to": "sarah.chen@acmefinance.com"}
 
 
@@ -372,11 +446,15 @@ async def seen(wid: str):
 
 @router.post("/w/{wid}/attention/{aid}/snooze")
 async def att_snooze(wid: str, aid: str):
+    nid = aid[4:] if aid.startswith("att_") else aid
+    await db.notifications.update_one({"id": nid, "project_id": wid}, {"$set": {"read": True}})
     return {"ok": True}
 
 
 @router.post("/w/{wid}/attention/{aid}/dismiss")
 async def att_dismiss(wid: str, aid: str):
+    nid = aid[4:] if aid.startswith("att_") else aid
+    await db.notifications.update_one({"id": nid, "project_id": wid}, {"$set": {"read": True}})
     return {"ok": True}
 
 
@@ -387,19 +465,32 @@ async def att_save(wid: str, aid: str):
 
 @router.post("/w/{wid}/reviews/{rid}/accept")
 async def review_accept(wid: str, rid: str):
-    return {"ok": True, "applied": True}
+    # rid is the memory id for real projects — confirm it.
+    res = await db.project_memory.update_one({"id": rid, "project_id": wid}, {"$set": {"status": "confirmed", "updated_at": iso(_now())}})
+    return {"ok": True, "applied": res.modified_count > 0}
 
 
 @router.post("/w/{wid}/reviews/{rid}/dismiss")
 async def review_dismiss(wid: str, rid: str):
+    await db.project_memory.update_one({"id": rid, "project_id": wid}, {"$set": {"status": "ignored", "updated_at": iso(_now())}})
     return {"ok": True}
 
 
 @router.post("/w/{wid}/conflicts/{cid}/resolve")
 async def conflict_resolve(wid: str, cid: str):
+    await db.project_memory.update_one({"id": cid, "project_id": wid},
+        {"$set": {"is_conflict": False, "status": "confirmed", "updated_at": iso(_now())},
+         "$unset": {"conflict_values": ""}})
     return {"ok": True}
 
 
 @router.post("/w/{wid}/sources/{sid}/sync")
 async def source_sync(wid: str, sid: str):
+    conn = await db.source_connections.find_one({"id": sid, "project_id": wid}, {"_id": 0})
+    if conn and not conn.get("is_demo"):
+        try:
+            import connectors
+            await connectors._sync_connection(conn)
+        except Exception:
+            pass
     return {"ok": True, "status": "synced"}
