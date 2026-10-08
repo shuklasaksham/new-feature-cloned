@@ -1,0 +1,32 @@
+{
+  "summary": "Backend-only testing of /api/v2 workspace read API + /api/v2/workspaces + auth regression. 31/31 pytest tests pass against the public preview URL. Covered: overview shape, memory list/filter(category,q)/detail, attention default/later, categories (6 w/ n+count), people list(5)/detail, timeline list/detail, sources list(3: gmail/slack/notes)/detail (threads+candidates+learned), reviews list(2)/detail (proposals+trigger+compared), threads list(4)/detail (messages), ask POST (id,question,answer,confidence,sources,at) + history, thread draft/send, action stubs (seen/snooze/dismiss/review accept/conflict resolve/source sync all {ok:true}), /api/v2/workspaces includes seeded p1+p2 for authenticated pro user, auth regression (OTP request+verify, /api/auth/me, /api/auth/logout).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/v2/w/{wid}/threads/{tid}/send", "issue": "SendIn.to is typed as str (not list[str]); the review spec's example {body,to:[...]} would 422. Minor contract/typing mismatch — if the UI already sends a string this is fine, otherwise widen to Union[str, list[str]]."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_v2_workspace.py",
+    "/app/test_reports/pytest/v2_workspace.xml"
+  ],
+  "action_items": [
+    "(Optional) Widen /threads/{tid}/send `to` field to accept list[str] in addition to str to match the review-request contract example."
+  ],
+  "critical_code_review_comments": [
+    "v2_workspace.py: per-workspace endpoints intentionally ignore `wid` and always return the same seed fixture — fine for this phase but worth adding a comment/validation when real DB-backed data lands.",
+    "Draft and ask answers are hardcoded strings; make sure UI copy guards against stale canned responses when AI integration ships.",
+    "File is ~400 lines, within limits; no MongoDB _id leakage observed in v2 responses."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_v2_workspace.py (new)"
+  ],
+  "success_rate": {"backend": "100% (31/31)", "frontend": "not tested (out of scope)"},
+  "test_credentials": "pro@use-bracket.com via OTP_TEST_MODE (dev_code from /api/auth/otp/request)",
+  "seed_data_creation": "none; relied on existing seed fixture served by v2_workspace._seed()",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "pytest suite /app/backend/tests/test_v2_workspace.py covers all v2 workspace read endpoints + /api/v2/workspaces + auth regression (31 tests, all green). Backend auth endpoints live under /api/auth/* (not /auth/*). Note SendIn.to typing is `str`, not `list`.",
+  "rca of the issue": "N/A — no production issues found."
+}

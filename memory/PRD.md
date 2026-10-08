@@ -12,6 +12,19 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **v2 Workspace API** (`/app/backend/v2_workspace.py`, mounted `/api/v2`). Serves a rich
+  seeded workspace ("Fintech Landing Page Redesign" fixture, ported from the repo mock `seed.js`)
+  so the new UI's Overview/Memory/Attention/Timeline/Sources/Reviews/Threads/Ask screens are fully
+  populated and clickable. Endpoints: `/workspaces` (seed + the user's real projects),
+  `/w/{wid}` `/overview` `/attention` `/conflicts/{id}` `/categories` `/memory(+/{id})`
+  `/people(+/{id})` `/timeline(+/{id})` `/sources(+/{id})` `/reviews(+/{id})` `/threads(+/{id})`
+  `/ask` `/ask/history` `/threads/{id}/draft` `/send` + action stubs (seen/snooze/dismiss/
+  accept/resolve/sync). The per-workspace reads return the fixture for ANY wid (so the sandbox
+  workspace renders). Verified: testing_agent iteration_73.json **100% (31/31)**; UI Overview,
+  Memory and Timeline render with no errors.
+  Real sign-in confirmed working via existing `/auth/me` + `/auth/logout` (AuthContext).
+  NOTE (intentional this phase): workspace reads serve a fixed seed fixture, not live DB data;
+  `ask`/`draft` text is canned. Next: derive these from each project's real memory/events.
 - 2026-06: **v2 backend wiring — admin + sandbox + auth** (step 1 of connecting the swapped UI).
   Ported the repo's `admin_v2.py` (owner panel `/api/v2/admin/*`) and `sandbox_v2.py`
   (`/api/v2/sandbox/*`, reusing our `demo.py` seed) into the backend and mounted them via

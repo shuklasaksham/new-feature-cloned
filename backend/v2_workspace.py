@@ -356,7 +356,7 @@ async def draft(wid: str, tid: str, payload: DraftIn):
 
 class SendIn(BaseModel):
     body: str = ""
-    to: str = ""
+    to: object = ""
 
 
 @router.post("/w/{wid}/threads/{tid}/send")
