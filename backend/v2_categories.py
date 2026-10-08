@@ -162,18 +162,37 @@ async def _mem_items(pid):
     return out
 
 
-async def rename_category(project, key, label):
-    """Rename a category in place (key stays stable so the memory map holds)."""
-    label = (label or "").strip()
-    if not label:
-        return await get_or_infer_categories(project)
+async def rename_category(project, key, label=None, hidden=None, pinned=None):
+    """Update a category in place (key stays stable so the memory map holds).
+    Persists label/singular rename and hidden/pinned flags."""
     cats = await get_or_infer_categories(project)
     for c in cats:
         if c["key"] == key:
-            c["label"] = label
-            c["singular"] = label
+            if label and label.strip():
+                c["label"] = label.strip()
+                c["singular"] = label.strip()
+            if hidden is not None:
+                c["hidden"] = bool(hidden)
+            if pinned is not None:
+                c["pinned"] = bool(pinned)
     await db.projects.update_one({"id": project["id"]}, {"$set": {"v2_categories": cats}})
     return cats
+
+
+async def delete_category(project, key):
+    """Stop using a category: remove it and re-map its memory to the nearest
+    remaining category (items are never lost, just recategorised)."""
+    cats = await get_or_infer_categories(project)
+    remaining = [c for c in cats if c["key"] != key]
+    if not remaining or len(remaining) == len(cats):
+        return cats
+    cat_map = dict(project.get("v2_cat_map") or {})
+    for mid, k in list(cat_map.items()):
+        if k == key:
+            # re-map using the heuristic against the remaining set
+            cat_map[mid] = _nearest({"category": key}, remaining)
+    await db.projects.update_one({"id": project["id"]}, {"$set": {"v2_categories": remaining, "v2_cat_map": cat_map}})
+    return remaining
 
 
 async def add_category(project, name, description=""):

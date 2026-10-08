@@ -11,6 +11,7 @@ the sandbox workspace id, the demo project, and real project ids all render).
 own data is visible in the switcher.
 """
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
@@ -260,9 +261,10 @@ async def overview(wid: str):
 async def attention(wid: str, view: str = ""):
     mode, proj = await _resolve(wid)
     if mode == "real":
+        active, snoozed, saved = await v2_real.partition_attention(proj)
         if view == "later":
-            return {"snoozed": [], "saved": []}
-        return {"items": await v2_real.build_attention(proj)}
+            return {"snoozed": snoozed, "saved": saved}
+        return {"items": active}
     s = _seed()
     att = s["attention"]
     if view == "later":
@@ -287,6 +289,8 @@ async def categories(wid: str):
 
 class CategoryRenameIn(BaseModel):
     label: str = ""
+    hidden: Optional[bool] = None
+    pinned: Optional[bool] = None
 
 
 class CategorySuggestIn(BaseModel):
@@ -302,9 +306,18 @@ class CategoryMergeIn(BaseModel):
 async def category_rename(wid: str, key: str, payload: CategoryRenameIn):
     mode, proj = await _resolve(wid)
     if mode == "real":
-        cats = await v2_categories.rename_category(proj, key, payload.label)
+        cats = await v2_categories.rename_category(proj, key, payload.label, payload.hidden, payload.pinned)
         return {"categories": cats}
     return {"categories": _seed()["categories"]}
+
+
+@router.post("/w/{wid}/categories/{key}/delete")
+async def category_delete(wid: str, key: str):
+    mode, proj = await _resolve(wid)
+    if mode == "real":
+        cats = await v2_categories.delete_category(proj, key)
+        return {"categories": cats, "ok": True}
+    return {"ok": True, "categories": _seed()["categories"]}
 
 
 @router.post("/w/{wid}/categories/suggest")
@@ -495,22 +508,42 @@ async def seen(wid: str):
     return {"ok": True}
 
 
+class SnoozeIn(BaseModel):
+    until: str = ""
+
+
 @router.post("/w/{wid}/attention/{aid}/snooze")
-async def att_snooze(wid: str, aid: str):
-    nid = aid[4:] if aid.startswith("att_") else aid
-    await db.notifications.update_one({"id": nid, "project_id": wid}, {"$set": {"read": True}})
-    return {"ok": True}
-
-
-@router.post("/w/{wid}/attention/{aid}/dismiss")
-async def att_dismiss(wid: str, aid: str):
-    nid = aid[4:] if aid.startswith("att_") else aid
-    await db.notifications.update_one({"id": nid, "project_id": wid}, {"$set": {"read": True}})
+async def att_snooze(wid: str, aid: str, payload: SnoozeIn = SnoozeIn()):
+    mode, _ = await _resolve(wid)
+    if mode == "real":
+        await v2_real.set_attention_state(wid, aid, "snoozed", payload.until or None)
     return {"ok": True}
 
 
 @router.post("/w/{wid}/attention/{aid}/save")
 async def att_save(wid: str, aid: str):
+    mode, _ = await _resolve(wid)
+    if mode == "real":
+        await v2_real.set_attention_state(wid, aid, "saved")
+    return {"ok": True}
+
+
+@router.post("/w/{wid}/attention/{aid}/restore")
+async def att_restore(wid: str, aid: str):
+    mode, _ = await _resolve(wid)
+    if mode == "real":
+        await v2_real.clear_attention_state(wid, aid)
+    return {"ok": True}
+
+
+@router.post("/w/{wid}/attention/{aid}/dismiss")
+async def att_dismiss(wid: str, aid: str):
+    rid = aid[4:] if aid.startswith("att_") else aid
+    await db.notifications.update_one({"id": rid, "project_id": wid}, {"$set": {"read": True}})
+    await db.project_memory.update_one({"id": rid, "project_id": wid}, {"$set": {"status": "ignored", "updated_at": iso(_now())}})
+    mode, _ = await _resolve(wid)
+    if mode == "real":
+        await v2_real.clear_attention_state(wid, aid)
     return {"ok": True}
 
 

@@ -34,6 +34,7 @@ const TONE_M = {
 export default function WorkspaceBanner() {
   const { workspace, projectId, sources } = useWorkspace();
   const [dismissed, setDismissed] = useState(() => new Set());
+  const [nudgeOff, setNudgeOff] = useState(false);
   const broken = (sources || []).find((s) => (s.status === "error" || s.health === "reconnect") && !dismissed.has(s.id));
   const { billing, reload } = useBilling();
   const online = useOnline();
@@ -86,6 +87,10 @@ export default function WorkspaceBanner() {
     const n = daysUntil(billing.trial_ends_at);
     b = { tone: "info", icon: Clock, title: `Your free trial ends in ${n} day${n === 1 ? "" : "s"}`, body: "Choose a plan to keep syncing. Nothing is deleted if you don’t.", cta: "Choose a plan", onClick: () => toBilling("?choose=1"),
       m: { strip: true, title: `Trial ends in ${n} day${n === 1 ? "" : "s"}`, body: null, cta: "Choose plan" } };
+  } else if (!nudgeOff && billing?.status === "active" && billing.workspaces && billing.workspaces.used >= billing.workspaces.limit) {
+    const { used, limit } = billing.workspaces;
+    b = { tone: "info", icon: Info, title: `You’re using all ${used} of ${limit} projects`, body: "Add this one with Per project pricing, or archive a finished workspace to free a slot.", cta: "Add a project", onClick: () => toBilling("?choose=1"), dismiss: () => setNudgeOff(true),
+      m: { tone: "info", icon: Info, title: `All ${limit} projects in use`, body: "Add one with Per project, or archive a finished workspace.", cta: "Add" } };
   }
   if (b && mobile && b.m) b = { ...b, ...Object.fromEntries(Object.entries(b.m).filter(([, v]) => v !== undefined)), primary: false };
 

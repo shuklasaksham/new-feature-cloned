@@ -169,7 +169,7 @@ function CategoryRail({ base, categories, counts, active, q, onSuggest, canEdit 
       </div>
       <p className="eyebrow px-2 pt-4 pb-2">Discovered categories</p>
       <div className="space-y-0.5">
-        {(categories || []).map((c) => (
+        {(categories || []).filter((c) => !c.hidden).map((c) => (
           <div key={c.key} className="group/cat relative">
             {row(`${base}/memory/${c.key}`, c.label, c.count, c.pending > 0, active === c.key)}
             <CategoryMenu c={c} canEdit={canEdit} categories={categories} />
@@ -202,8 +202,10 @@ function CategoryMenu({ c, canEdit, categories }) {
         <MenuContent align="start" side="right" className="w-[200px]">
           <MenuItem icon={Pencil} disabled={!canEdit} onSelect={() => setRename(true)}>Rename</MenuItem>
           <MenuItem icon={Merge} disabled={!canEdit || !others.length} onSelect={() => { setInto(others[0]?.key || ""); setMerge(true); }}>Merge into…</MenuItem>
-          <MenuItem icon={EyeOff} onSelect={() => toast(`${c.label} hidden from the sidebar`)}>Hide from sidebar</MenuItem>
-          <MenuItem icon={Pin} onSelect={() => toast(`${c.label} pinned to Overview`)}>Pin to Overview</MenuItem>
+          <MenuItem icon={EyeOff} disabled={!canEdit} onSelect={async () => { await v2.updateCategory(projectId, c.key, { hidden: true }); refreshAll(); if (window.location.pathname.includes(`/memory/${c.key}`)) navigate(`${base}/memory`); toast(`${c.label} hidden from the sidebar`); }}>Hide from sidebar</MenuItem>
+          <MenuItem icon={Pin} disabled={!canEdit} onSelect={async () => { await v2.updateCategory(projectId, c.key, { pinned: !c.pinned }); refreshAll(); toast(c.pinned ? `${c.label} unpinned` : `${c.label} pinned to Overview`); }}>{c.pinned ? "Unpin from Overview" : "Pin to Overview"}</MenuItem>
+          <MenuSeparator />
+          <MenuItem icon={X} danger disabled={!canEdit || !others.length} onSelect={async () => { await v2.deleteCategory(projectId, c.key); refreshAll(); if (window.location.pathname.includes(`/memory/${c.key}`)) navigate(`${base}/memory`); toast(`Bracket stopped using “${c.label}”`, { description: "Its memories moved to the closest category." }); }}>Not a real category</MenuItem>
         </MenuContent>
       </Menu>
       <Dialog open={rename} onOpenChange={setRename} title="Rename category" size="s"

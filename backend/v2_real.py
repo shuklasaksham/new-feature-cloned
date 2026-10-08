@@ -11,6 +11,56 @@ from v2_categories import get_or_infer_categories, classify_items
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
+
+def _parse(s):
+    try:
+        dt = datetime.fromisoformat(s)
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+async def attention_state(pid):
+    out = {}
+    async for s in db.v2_attention_state.find({"project_id": pid}, {"_id": 0}):
+        out[s["aid"]] = s
+    return out
+
+
+async def set_attention_state(pid, aid, state, until=None):
+    await db.v2_attention_state.update_one(
+        {"project_id": pid, "aid": aid},
+        {"$set": {"project_id": pid, "aid": aid, "state": state, "until": until, "updated_at": _now_iso()}},
+        upsert=True)
+
+
+async def clear_attention_state(pid, aid):
+    await db.v2_attention_state.delete_one({"project_id": pid, "aid": aid})
+
+
+async def partition_attention(project):
+    """Split attention items into active / snoozed / saved using per-item state.
+    An elapsed snooze flows back into the active list automatically."""
+    items = await build_attention(project)
+    state = await attention_state(project["id"])
+    now = datetime.now(timezone.utc)
+    active, snoozed, saved = [], [], []
+    for it in items:
+        s = state.get(it["id"])
+        st = s.get("state") if s else None
+        if st == "saved":
+            saved.append({**it, "saved": True})
+        elif st == "snoozed":
+            until = s.get("until")
+            exp = _parse(until) if until else None
+            if until and exp and exp <= now:
+                active.append(it)
+            else:
+                snoozed.append({**it, "snoozed_until": until})
+        else:
+            active.append(it)
+    return active, snoozed, saved
+
 _TONE = {"scope_creep": "warning", "conflict": "danger", "deadline": "warning"}
 _PROVIDER_LABEL = {"gmail": "Gmail", "slack": "Slack", "figma": "Figma", "github": "GitHub", "meeting": "Notes", "notes": "Notes"}
 
@@ -136,9 +186,9 @@ async def build_overview(project):
     coming = [{"id": m["id"], "title": m.get("title", ""), "at": m.get("occurred_at"), "owner": m.get("requested_by", ""), "state": "open"}
               for m in mem if m.get("category") == "deadline"][:6]
     recent = [{"id": e["id"], "at": e.get("occurred_at"), "text": e.get("summary", "")} for e in (await _events(project["id"], 6))]
-    att = await build_attention(project)
-    return {"workspace": _workspace(project), "attention": att, "snoozed": 0, "saved": 0,
-            "categories": cats, "sources": sources, "coming_up": coming, "since_last_visit": recent}
+    active, snoozed, saved = await partition_attention(project)
+    return {"workspace": _workspace(project), "attention": active, "snoozed": len(snoozed), "saved": len(saved),
+            "categories": [c for c in cats if not c.get("hidden")], "sources": sources, "coming_up": coming, "since_last_visit": recent}
 
 
 async def build_people(project):
