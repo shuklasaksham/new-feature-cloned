@@ -9,6 +9,7 @@ import {
   Check,
   BarChart3,
   Users,
+  Mail,
   Trash2,
   UserX,
 } from "lucide-react";
@@ -37,7 +38,8 @@ export default function AdminDashboard() {
   const [resetTarget, setResetTarget] = useState(null); // user obj
   const [resetPw, setResetPw] = useState("");
   const [resetting, setResetting] = useState(false);
-  const [tab, setTab] = useState("analytics"); // "analytics" | "users"
+  const [tab, setTab] = useState("analytics"); // "analytics" | "users" | "contact"
+  const [contactMsgs, setContactMsgs] = useState(null);
   const [detailProjectId, setDetailProjectId] = useState(null);
   const [filterKind, setFilterKind] = useState("all");        // all | guest | registered
   const [filterProjects, setFilterProjects] = useState("any"); // any | none | one | few | many
@@ -100,6 +102,14 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (tab === "users") load();
   }, [tab, filterKind, filterProjects]);
+
+  useEffect(() => {
+    if (tab !== "contact") return;
+    setContactMsgs(null);
+    api.get("/admin/contact-messages")
+      .then(({ data }) => setContactMsgs(data.messages || []))
+      .catch(() => setContactMsgs([]));
+  }, [tab]);
 
   const filtered = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -288,9 +298,50 @@ export default function AdminDashboard() {
           >
             <Users size={14} /> Users
           </button>
+          <button
+            type="button"
+            onClick={() => setTab("contact")}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 text-[13px] transition-colors ${
+              tab === "contact"
+                ? "text-[var(--text)] border-b-2 border-[var(--accent)] -mb-px"
+                : "text-[var(--text-3)] hover:text-[var(--text)]"
+            }`}
+            data-testid="admin-tab-contact"
+          >
+            <Mail size={14} /> Contact
+          </button>
         </div>
 
         {tab === "analytics" && <div className="mt-6"><AdminAnalytics /></div>}
+
+        {tab === "contact" && (
+          <div className="mt-6" data-testid="admin-contact-panel">
+            <h2 className="font-display text-2xl sm:text-3xl leading-none">
+              Contact messages{contactMsgs ? <span className="text-[var(--accent)]"> — {contactMsgs.length}</span> : null}
+            </h2>
+            {contactMsgs === null ? (
+              <div className="mt-8 flex items-center gap-2 text-[var(--text-3)] text-sm"><Loader2 size={15} className="animate-spin" /> Loading…</div>
+            ) : contactMsgs.length === 0 ? (
+              <p className="mt-8 text-[var(--text-3)] text-sm">No messages yet.</p>
+            ) : (
+              <div className="mt-6 flex flex-col gap-3">
+                {contactMsgs.map((m) => (
+                  <div key={m.id} className="rounded-lg border border-[var(--hairline)] bg-[var(--surface)] p-4" data-testid="admin-contact-item">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display font-semibold text-[15px] text-[var(--text)]">{m.name}</span>
+                        <a href={`mailto:${m.email}`} className="text-[13px] text-[var(--accent)] hover:underline">{m.email}</a>
+                        {m.company ? <span className="text-[12px] text-[var(--text-3)]">· {m.company}</span> : null}
+                      </div>
+                      <span className="font-mono text-[11px] text-[var(--text-3)]">{(m.created_at || "").slice(0, 16).replace("T", " ")}</span>
+                    </div>
+                    <p className="mt-2 text-[14px] leading-relaxed text-[var(--text-2)] whitespace-pre-wrap">{m.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {tab === "users" && (
         <>

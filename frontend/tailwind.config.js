@@ -67,8 +67,8 @@ module.exports = {
         hairline:  "rgba(255,255,255,0.08)",
       },
       fontFamily: {
-        display: ["'Geist'", "sans-serif"],
-        body:    ["'Geist'", "sans-serif"],
+        display: ["'Urbanist'", "sans-serif"],
+        body:    ["'Urbanist'", "sans-serif"],
         mono:    ["'Geist Mono'", "ui-monospace", "monospace"],
       },
       fontSize: {

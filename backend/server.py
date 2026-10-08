@@ -1035,6 +1035,17 @@ class AdminResetPasswordIn(_BM):
     new_password: str = _Fd(min_length=8, max_length=128)
 
 
+@api.get("/admin/contact-messages")
+async def admin_contact_messages(request: Request, limit: int = 200):
+    """Contact-form submissions from the marketing site (admin-only)."""
+    await auth_current_admin(request, db)
+    msgs = []
+    async for m in db.contact_messages.find({}, {"_id": 0}).sort("created_at", -1).limit(max(1, min(limit, 500))):
+        msgs.append(m)
+    return {"messages": msgs, "total": await db.contact_messages.count_documents({})}
+
+
+
 @api.get("/admin/users")
 async def admin_list_users(
     request: Request,

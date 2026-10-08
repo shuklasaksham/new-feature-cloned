@@ -10,6 +10,7 @@ import AppShell from "./components/AppShell";
 import ScrollToTop from "./components/ScrollToTop";
 import DeviceGate from "./components/DeviceGate";
 import InstallPrompt from "./components/InstallPrompt";
+import CommandPalette from "./components/CommandPalette";
 import { DialogProvider } from "./components/Dialog";
 import { AuthProvider } from "./lib/AuthContext";
 
@@ -71,6 +72,7 @@ export default function App() {
         <BrowserRouter>
         <ScrollToTop />
         <AnalyticsTrackerMount />
+        <CommandPalette />
         <Toaster position="top-right" richColors />
         <InstallPrompt />
         <Routes>

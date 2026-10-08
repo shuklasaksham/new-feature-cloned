@@ -12,7 +12,18 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
-- 2026-06: **Bracket 2.0 visual overhaul — Phase 1 (marketing + design foundation)**.
+- 2026-06: **Bracket 2.0 overhaul — Phase 2** (backend unchanged):
+  - **Typography overhaul**: swapped the whole app's sans from Geist → **Urbanist** (`index.css`
+    sans refs + `tailwind.config` display/body; Geist Mono kept). The workspace, auth and
+    onboarding now match the marketing site's type; the dark palette already matched v2.
+  - **Command Palette (⌘K / Ctrl+K)**: new global `src/components/CommandPalette.jsx` mounted in
+    `App.js`; searches projects (from `/projects`) + nav actions (Home/Connect/Activity/Settings),
+    arrow-key + enter navigation. Styled with `.bk` v2 tokens.
+  - **Contact Inbox**: admin console "Contact" tab (`AdminDashboard.jsx`) backed by new
+    `GET /api/admin/contact-messages` (admin-only) listing marketing contact-form submissions.
+  - Auth (`/login`, `/admin/login`) now render in the new type; white primary button already
+    matches v2 `primary=inverse`. (Deeper per-component workspace parity remains for a later pass.)
+- 2026-06: **Bracket 2.0 overhaul — Phase 1** (marketing site + design foundation). See below.
   Ported the repo (github.com/shuklasaksham/bracket-v2) frontend's public marketing site and
   design system into the current app, **backend unchanged**. Added v2 design tokens (Urbanist +
   JetBrains Mono, `#08090a` palette, `.bk` scoped base, status/fg/line tokens) into

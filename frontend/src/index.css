@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /* --- Fonts --- */
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap");
 
 /* ============================================================
    BRACKET — Linear-grade Design System v3
@@ -131,7 +131,7 @@
 html, body, #root {
   background: var(--bg);
   color: var(--text);
-  font-family: "Geist", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Urbanist", -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.005em;
@@ -181,19 +181,19 @@ body::after { content: none; }
 /* ============================================================
    Type ramp — Linear-grade, restrained
    ============================================================ */
-.t-display  { font-family: "Geist", sans-serif; font-weight: 600; font-size: clamp(2.5rem, 6vw, 5.5rem); line-height: 1.02; letter-spacing: -0.038em; color: var(--text); }
-.t-hero     { font-family: "Geist", sans-serif; font-weight: 600; font-size: clamp(1.9rem, 4vw, 3.25rem); line-height: 1.06; letter-spacing: -0.03em; color: var(--text); }
-.t-h1       { font-family: "Geist", sans-serif; font-weight: 600; font-size: clamp(1.5rem, 2.2vw, 2rem); line-height: 1.15; letter-spacing: -0.022em; color: var(--text); }
-.t-h2       { font-family: "Geist", sans-serif; font-weight: 600; font-size: 1.25rem; line-height: 1.3; letter-spacing: -0.015em; color: var(--text); }
-.t-h3       { font-family: "Geist", sans-serif; font-weight: 600; font-size: 1rem; line-height: 1.4; letter-spacing: -0.01em; color: var(--text); }
-.t-body     { font-family: "Geist", sans-serif; font-weight: 400; font-size: 0.875rem; line-height: 1.6; color: var(--text); }
-.t-body-lg  { font-family: "Geist", sans-serif; font-weight: 400; font-size: 1rem; line-height: 1.6; color: var(--text); }
-.t-helper   { font-family: "Geist", sans-serif; font-weight: 400; font-size: 0.8125rem; line-height: 1.5; color: var(--text-2); }
+.t-display  { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: clamp(2.5rem, 6vw, 5.5rem); line-height: 1.02; letter-spacing: -0.038em; color: var(--text); }
+.t-hero     { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: clamp(1.9rem, 4vw, 3.25rem); line-height: 1.06; letter-spacing: -0.03em; color: var(--text); }
+.t-h1       { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: clamp(1.5rem, 2.2vw, 2rem); line-height: 1.15; letter-spacing: -0.022em; color: var(--text); }
+.t-h2       { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 1.25rem; line-height: 1.3; letter-spacing: -0.015em; color: var(--text); }
+.t-h3       { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 1rem; line-height: 1.4; letter-spacing: -0.01em; color: var(--text); }
+.t-body     { font-family: "Urbanist", sans-serif; font-weight: 400; font-size: 0.875rem; line-height: 1.6; color: var(--text); }
+.t-body-lg  { font-family: "Urbanist", sans-serif; font-weight: 400; font-size: 1rem; line-height: 1.6; color: var(--text); }
+.t-helper   { font-family: "Urbanist", sans-serif; font-weight: 400; font-size: 0.8125rem; line-height: 1.5; color: var(--text-2); }
 .t-meta     { font-family: "Geist Mono", monospace; font-weight: 500; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
 .t-numeral  { font-family: "Geist Mono", monospace; font-variant-numeric: tabular-nums; }
 
 /* Display / mono labels — legacy */
-.font-display { font-family: "Geist", sans-serif; font-weight: 600; letter-spacing: -0.022em; color: var(--text); }
+.font-display { font-family: "Urbanist", sans-serif; font-weight: 600; letter-spacing: -0.022em; color: var(--text); }
 .font-mono    { font-family: "Geist Mono", monospace; }
 .mono-tag, .mono-label {
   font-family: "Geist Mono", monospace;
@@ -217,7 +217,7 @@ body::after { content: none; }
   color: var(--primary-fg);
   border: 1px solid var(--primary-bg);
   border-radius: 9999px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 13.5px;
   font-weight: 600;
   letter-spacing: -0.005em;
@@ -256,7 +256,7 @@ body::after { content: none; }
   color: var(--secondary-fg);
   border: 1px solid var(--hairline-strong);
   border-radius: 9999px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -295,7 +295,7 @@ body::after { content: none; }
   color: #FFFFFF;
   border: 1px solid var(--coral);
   border-radius: 6px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 13.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -321,7 +321,7 @@ body::after { content: none; }
   background: var(--primary-bg); color: var(--primary-fg); border: 1px solid var(--primary-bg); border-radius: 6px;
   height: 40px; padding: 0 20px;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  font-family: "Geist", sans-serif; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; text-transform: none;
+  font-family: "Urbanist", sans-serif; font-size: 13.5px; font-weight: 500; letter-spacing: -0.005em; text-transform: none;
   transition: background var(--d-fast) var(--ease-out), transform var(--d-fast) var(--ease-out);
 }
 .clay-signal:hover:not(:disabled) { background: var(--primary-bg-hov); }
@@ -337,7 +337,7 @@ body::after { content: none; }
   height: 40px;
   padding: 0 16px;
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  font-family: "Geist", sans-serif; font-size: 13px; font-weight: 500;
+  font-family: "Urbanist", sans-serif; font-size: 13px; font-weight: 500;
   letter-spacing: -0.005em; cursor: pointer;
   transition: background var(--d-fast) var(--ease-out),
               border-color var(--d-fast) var(--ease-out),
@@ -418,7 +418,7 @@ body::after { content: none; }
 }
 .bracket-dialog-body { display: flex; flex-direction: column; gap: 14px; }
 .bracket-dialog-title {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -585,7 +585,7 @@ body::after { content: none; }
   border: 1px solid var(--hairline);
   border-radius: 8px;
   padding: 12px 14px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
@@ -654,7 +654,7 @@ body::after { content: none; }
   border: 1px solid var(--hairline);
   background: var(--surface);
   border-radius: 6px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-2);
@@ -678,7 +678,7 @@ body::after { content: none; }
   border: 1px solid var(--hairline);
   background: var(--surface);
   border-radius: 6px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-2);
@@ -726,7 +726,7 @@ body::after { content: none; }
   height: 22px;
   padding: 0 9px;
   border-radius: 6px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -795,7 +795,7 @@ body::after { content: none; }
   background: transparent;
   border: 0;
   border-radius: 0;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 12.5px;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -812,7 +812,7 @@ body::after { content: none; }
   border-radius: 6px;
   border: 1px solid var(--hairline-strong);
   background: var(--surface);
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-variant-numeric: tabular-nums;
   font-size: 11.5px;
   font-weight: 500;
@@ -893,7 +893,7 @@ body::after { content: none; }
   background: var(--surface);
   border: 1px solid var(--hairline);
   border-radius: 6px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 12px;
   color: var(--text-2);
 }
@@ -1012,7 +1012,7 @@ body::after { content: none; }
   background: transparent;
   border: 0;
   padding: 14px 18px 10px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 14px; line-height: 1.55;
   color: var(--text);
   outline: none;
@@ -1352,7 +1352,7 @@ body:has(.app-shell) {
   gap: 10px;
   color: var(--text);
   text-decoration: none;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 600;
   font-size: 13.5px;
   letter-spacing: -0.012em;
@@ -1423,7 +1423,7 @@ body:has(.app-shell) {
 }
 
 .sidebar-section-label {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 10.5px;
   letter-spacing: 0.10em;
   text-transform: uppercase;
@@ -1450,7 +1450,7 @@ body:has(.app-shell) {
   border: 0;
   color: var(--text-2);
   text-decoration: none;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 13px;
   font-weight: 400;
   letter-spacing: -0.005em;
@@ -1530,7 +1530,7 @@ body:has(.app-shell) {
   color: #FFFFFF;
   border: 1px solid var(--accent);
   border-radius: 6px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -1566,7 +1566,7 @@ body:has(.app-shell) {
   padding: 0 10px 8px;
 }
 .sidebar-legal-link {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 11px;
   color: var(--text-3);
   text-decoration: none;
@@ -1599,7 +1599,7 @@ body:has(.app-shell) {
 .user-info:hover { background: var(--surface-2); }
 .user-meta { min-width: 0; flex: 1; }
 .user-name {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 12.5px;
   font-weight: 500;
   color: var(--text);
@@ -1608,7 +1608,7 @@ body:has(.app-shell) {
   text-overflow: ellipsis;
 }
 .user-email {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 11px;
   color: var(--text-3);
   white-space: nowrap;
@@ -1662,7 +1662,7 @@ body:has(.app-shell) {
 }
 .project-row:hover { background: var(--surface-2); }
 .project-row-title {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 500;
   font-size: 14px;
   line-height: 1.4;
@@ -1675,7 +1675,7 @@ body:has(.app-shell) {
 }
 .project-row .group:hover .project-row-title { color: var(--accent); }
 .project-row-meta {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 12px;
   color: var(--text-3);
   margin-top: 2px;
@@ -1698,7 +1698,7 @@ body:has(.app-shell) {
 }
 .marketing-nav-link {
   position: relative;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.005em;
@@ -1812,7 +1812,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 .landing-cta-primary {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
   height: 40px; padding: 0 22px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 500; font-size: 13.5px; letter-spacing: 0.01em;
   color: var(--primary-fg);
   background: var(--primary-bg);
@@ -1832,7 +1832,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
 .landing-cta-ghost {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 40px; padding: 0 20px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 500; font-size: 13px; letter-spacing: 0.02em;
   color: var(--text);
   background: rgba(255,255,255,0.04);
@@ -2015,7 +2015,7 @@ a.link-accent:hover { text-decoration: underline; text-underline-offset: 2px; }
   max-height: calc(100dvh - 24px);
 }
 .review-modal-panel .bracket-dialog-close {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 20px;
   line-height: 1;
   padding-bottom: 2px;
@@ -2561,7 +2561,7 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 .landing-plan-cta {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 40px; padding: 0 20px;
-  font-family: "Geist", sans-serif; font-weight: 500; font-size: 13.5px; letter-spacing: 0.01em;
+  font-family: "Urbanist", sans-serif; font-weight: 500; font-size: 13.5px; letter-spacing: 0.01em;
   color: var(--text);
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.10);
@@ -2701,7 +2701,7 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   position: relative;
   display: inline-flex; align-items: center;
   padding: 8px 14px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 400; font-size: 13.5px; letter-spacing: -0.005em;
   color: var(--text-2);
   border-radius: 8px;
@@ -2723,7 +2723,7 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 .cinema-cta-pill {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   height: 40px; padding: 0 20px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 500; font-size: 13px; letter-spacing: 0.01em;
   color: var(--primary-fg);
   background: var(--primary-bg);
@@ -2766,7 +2766,7 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
 }
 .cinema-nav-mobile-link {
   padding: 12px 14px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 400; font-size: 14px;
   color: var(--text-2);
   border-radius: 8px;
@@ -2878,7 +2878,7 @@ body:has(.review-modal-overlay) .review-action-bar { display: none; }
   gap: 6px;
   padding: 6px 10px;
   border-radius: 8px;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-size: 12px;
   font-weight: 400;
   color: var(--text-2);
@@ -3720,7 +3720,7 @@ html { -webkit-text-size-adjust: 100%; }
     border: none;
     background: transparent;
     color: var(--text-3);
-    font-family: "Geist", sans-serif;
+    font-family: "Urbanist", sans-serif;
     font-size: 10px;
     letter-spacing: 0.02em;
     border-radius: 12px;
@@ -3853,7 +3853,7 @@ html { -webkit-text-size-adjust: 100%; }
   border: 1px solid rgba(129, 132, 196, 0.35);
 }
 .install-prompt-title {
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 600; font-size: 15px;
   color: var(--text);
 }
@@ -3874,7 +3874,7 @@ html { -webkit-text-size-adjust: 100%; }
   background: var(--accent);
   color: #fff;
   border: 1px solid #6E7AE8;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   font-weight: 600; font-size: 13.5px;
   box-shadow: none;
 }
@@ -4580,14 +4580,14 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 
 .psb-brand { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px; }
 .psb-logo { display: inline-flex; align-items: center; gap: 10px; }
-.psb-wordmark { font-family: "Geist", sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: #fff; }
+.psb-wordmark { font-family: "Urbanist", sans-serif; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: #fff; }
 .psb-collapse { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; color: #7a7a7a; transition: background .18s, color .18s; }
 .psb-collapse:hover { background: #161616; color: #e5e5e5; }
 
 .psb-switch-wrap { position: relative; }
 .psb-switch { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; height: 52px; padding: 0 18px; border-radius: 14px; background: #0a0a0a; border: 1px solid #3d3d3d; color: #fff; }
 .psb-switch:hover { border-color: #575757; }
-.psb-switch-name { font-family: "Geist", sans-serif; font-weight: 600; font-size: 16px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.psb-switch-name { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 16px; letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .psb-switch-menu { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; right: 0; background: #111; border: 1px solid #262626; border-radius: 12px; padding: 6px; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.8); max-height: 380px; overflow: hidden; }
 .psb-switch-search { display: flex; align-items: center; gap: 8px; padding: 0 14px; height: 40px; margin-bottom: 6px; border-radius: 9999px; background: #0b0b0b; border: 1px solid #262626; color: #6b6b6b; }
 .psb-switch-search input { flex: 1; background: transparent; border: none; outline: none; color: #ededed; font-size: 13px; font-family: var(--font-mono, ui-monospace, monospace); }
@@ -4641,7 +4641,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .change-banner-close:hover { background: rgba(255,255,255,0.08); color: var(--text); }
 
 .psb-nav { display: flex; flex-direction: column; gap: 4px; }
-.psb-nav-item { display: flex; align-items: center; gap: 14px; height: 50px; padding: 0 16px; border-radius: 9999px; color: #8a8a8a; font-family: "Geist", sans-serif; font-size: 15.5px; font-weight: 500; transition: background .16s ease, color .16s ease; }
+.psb-nav-item { display: flex; align-items: center; gap: 14px; height: 50px; padding: 0 16px; border-radius: 9999px; color: #8a8a8a; font-family: "Urbanist", sans-serif; font-size: 15.5px; font-weight: 500; transition: background .16s ease, color .16s ease; }
 .psb-nav-item:hover { background: #171717; color: #d8d8d8; }
 .psb-nav-item[data-active="true"] { background: #1c1c1c; color: #fff; }
 .psb-nav-item svg { flex-shrink: 0; }
@@ -4652,7 +4652,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 
 .psb-sources { display: flex; flex-direction: column; gap: 10px; flex: 1 1 auto; min-height: 0; }
 .psb-section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 6px; }
-.psb-section-label { font-family: "Geist", sans-serif; font-weight: 700; font-size: 15px; color: #fff; }
+.psb-section-label { font-family: "Urbanist", sans-serif; font-weight: 700; font-size: 15px; color: #fff; }
 .psb-add { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; border: 1px solid #2a2a2a; color: #cfcfcf; transition: background .16s, border-color .16s; }
 .psb-add:hover { background: #161616; border-color: #3a3a3a; color: #fff; }
 .psb-source-list { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; min-height: 0; }
@@ -4760,7 +4760,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
   color: #f0f0f0;
   font-size: 12px;
   font-weight: 500;
-  font-family: "Geist", sans-serif;
+  font-family: "Urbanist", sans-serif;
   pointer-events: none;
   opacity: 0;
   z-index: 60;
@@ -5296,7 +5296,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 
 .app-sidebar .sidebar-brand { padding: 2px 4px; margin-bottom: 4px; }
 .app-sidebar .brand-mark { display: inline-flex; align-items: center; gap: 10px; }
-.app-sidebar .brand-text { font-family: "Geist", sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -0.02em; color: #fff; }
+.app-sidebar .brand-text { font-family: "Urbanist", sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -0.02em; color: #fff; }
 .app-sidebar .collapse-btn {
   width: 34px; height: 34px; border-radius: 8px; color: #7a7a7a;
   background: transparent; border: none;
@@ -5314,7 +5314,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
   display: flex; align-items: center; gap: 14px;
   height: 48px; padding: 0 16px !important; border-radius: 9999px !important;
   color: #8a8a8a !important; background: transparent !important;
-  font-family: "Geist", sans-serif; font-size: 15px !important; font-weight: 500 !important;
+  font-family: "Urbanist", sans-serif; font-size: 15px !important; font-weight: 500 !important;
   transition: background .16s ease, color .16s ease;
 }
 .app-sidebar .nav-item:hover { background: #141414 !important; color: #d8d8d8 !important; }
@@ -5382,12 +5382,12 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 }
 .lp-wrap--narrow .lp-label { display: inline-flex; }
 .lp-h1 {
-  margin-top: 26px; font-family: "Geist", sans-serif; font-weight: 600;
+  margin-top: 26px; font-family: "Urbanist", sans-serif; font-weight: 600;
   letter-spacing: -0.035em; line-height: 1.02; color: #fff;
   font-size: clamp(38px, 6.2vw, 74px);
 }
 .lp-h2 {
-  font-family: "Geist", sans-serif; font-weight: 600; letter-spacing: -0.03em;
+  font-family: "Urbanist", sans-serif; font-weight: 600; letter-spacing: -0.03em;
   line-height: 1.05; color: #fff; font-size: clamp(30px, 4.2vw, 50px);
 }
 .lp-lede {
@@ -5424,7 +5424,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .lp-step { padding: 26px 28px 4px 0; border-top: 1px solid rgba(255,255,255,0.12); }
 .lp-step + .lp-step { padding-left: 28px; }
 .lp-step-num { font-family: "Geist Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: 0.1em; color: #71717a; }
-.lp-step-title { margin-top: 16px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -0.01em; color: #fff; }
+.lp-step-title { margin-top: 16px; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -0.01em; color: #fff; }
 .lp-step-copy { margin-top: 10px; font-size: 13.5px; line-height: 1.6; color: #a1a1aa; }
 @media (max-width: 760px) {
   .lp-steps { grid-template-columns: 1fr; }
@@ -5451,14 +5451,14 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .lp-pillar + .lp-pillar { padding-left: 28px; }
 .lp-pillar-icon { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #fff; }
 .lp-pillar-num { display: block; margin-top: 18px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.1em; color: #71717a; }
-.lp-pillar-title { margin-top: 8px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: -0.01em; color: #fff; }
+.lp-pillar-title { margin-top: 8px; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 19px; letter-spacing: -0.01em; color: #fff; }
 .lp-pillar-copy { margin-top: 10px; font-size: 14px; line-height: 1.65; color: #a1a1aa; }
 
 /* ── Benefits ── */
 .lp-benefits { margin-top: 56px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .lp-benefit { padding: 26px 24px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.09); background: rgba(255,255,255,0.015); }
 .lp-benefit-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); color: #e5e5e5; }
-.lp-benefit-title { margin-top: 16px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 16.5px; letter-spacing: -0.01em; color: #fff; }
+.lp-benefit-title { margin-top: 16px; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 16.5px; letter-spacing: -0.01em; color: #fff; }
 .lp-benefit-copy { margin-top: 8px; font-size: 13.5px; line-height: 1.6; color: #a1a1aa; }
 
 /* ── FAQ ── */
@@ -5467,7 +5467,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .lp-faq-wrap .lp-h2 { margin-left: auto; margin-right: auto; }
 .lp-faq { margin-top: 48px; border-top: 1px solid rgba(255,255,255,0.10); }
 .lp-faq-item { border-bottom: 1px solid rgba(255,255,255,0.10); }
-.lp-faq-q { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 4px; background: none; border: none; cursor: pointer; text-align: left; font-family: "Geist", sans-serif; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; color: #fff; transition: color .14s ease; }
+.lp-faq-q { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 4px; background: none; border: none; cursor: pointer; text-align: left; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; color: #fff; transition: color .14s ease; }
 .lp-faq-q:hover { color: #d4d4d8; }
 .lp-faq-q svg { flex-shrink: 0; color: #a1a1aa; }
 .lp-faq-a { overflow: hidden; padding: 0 44px 22px 4px; font-size: 14.5px; line-height: 1.7; color: #a1a1aa; }
@@ -5486,7 +5486,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .lp-app { display: grid; grid-template-columns: 236px 1fr; min-height: 440px; background: #0d0d0d; }
 
 .lp-side { padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; background: #0a0a0a; }
-.lp-brand { display: flex; align-items: center; gap: 8px; color: #fff; font-family: "Geist", sans-serif; font-weight: 600; font-size: 15px; margin-bottom: 14px; }
+.lp-brand { display: flex; align-items: center; gap: 8px; color: #fff; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 15px; margin-bottom: 14px; }
 .lp-switch { font-size: 12.5px; color: #cfcfcf; padding: 9px 12px; border-radius: 9px; border: 1px solid #1e1e1e; background: #0e0e0e; margin-bottom: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lp-nav { display: flex; flex-direction: column; gap: 2px; }
 .lp-nav-item { position: relative; font-size: 13.5px; color: #8a8a8a; padding: 9px 12px; border-radius: 9px; }
@@ -5505,13 +5505,13 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .lp-src-dot { width: 6px; height: 6px; border-radius: 50%; background: #6f6f6f; }
 
 .lp-main { background: #111; padding: 30px 34px; }
-.lp-eyebrow { font-family: "Geist", sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.02em; color: #fff; }
+.lp-eyebrow { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.02em; color: #fff; }
 .lp-synced { margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 11.5px; color: #8a8a8a; }
 .lp-live { width: 7px; height: 7px; border-radius: 50%; background: #d4d4d8; }
 .lp-attn-label { margin-top: 30px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; letter-spacing: 0.14em; color: #6f6f6f; }
 .lp-attn { margin-top: 14px; display: flex; gap: 15px; padding: 18px 20px; border-radius: 14px; background: #0c0c0c; border: 1px solid #1e1e1e; }
 .lp-attn-ring { width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,0.22); color: #e5e5e5; }
-.lp-attn-title { font-family: "Geist", sans-serif; font-weight: 600; font-size: 16px; color: #fff; letter-spacing: -0.01em; }
+.lp-attn-title { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 16px; color: #fff; letter-spacing: -0.01em; }
 .lp-attn-desc { margin-top: 4px; font-size: 13px; color: #9a9a9a; }
 .lp-attn-row { margin-top: 14px; display: flex; align-items: center; gap: 16px; }
 .lp-review { display: inline-flex; align-items: center; gap: 6px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 12.5px; font-weight: 600; color: #0a0a0a; background: #fff; padding: 7px 14px; border-radius: 9999px; }
@@ -5519,7 +5519,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .lp-tag { display: inline-flex; align-items: center; height: 24px; padding: 0 11px; border-radius: 9999px; border: 1px solid #262626; background: #0c0c0c; font-family: "Geist Mono", ui-monospace, monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: #c7c7c7; }
 .lp-mem { margin-top: 26px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .lp-mem-cell { display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; border-radius: 12px; border: 1px solid #1c1c1c; background: #0c0c0c; }
-.lp-mem-n { font-family: "Geist", sans-serif; font-weight: 600; font-size: 26px; color: #fff; line-height: 1; }
+.lp-mem-n { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 26px; color: #fff; line-height: 1; }
 .lp-mem-l { font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; color: #8a8a8a; }
 @media (max-width: 760px) {
   .lp-app { grid-template-columns: 1fr; }
@@ -5533,7 +5533,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 @keyframes gs-fade { from { opacity: 0; } to { opacity: 1; } }
 .gs-box { width: min(640px, 92vw); background: #0e0e0e; border: 1px solid #262626; border-radius: 16px; overflow: hidden; box-shadow: 0 40px 120px -40px rgba(0,0,0,0.9); }
 .gs-input-row { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #1c1c1c; }
-.gs-input-row input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 15px; font-family: "Geist", sans-serif; }
+.gs-input-row input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-size: 15px; font-family: "Urbanist", sans-serif; }
 .gs-input-row input::placeholder { color: #5f5f5f; }
 .gs-esc { font-family: "Geist Mono", ui-monospace, monospace; font-size: 10px; color: #6f6f6f; border: 1px solid #2a2a2a; border-radius: 6px; padding: 3px 6px; }
 .gs-results { max-height: 56vh; overflow-y: auto; padding: 6px; }
@@ -5551,7 +5551,7 @@ ul[data-testid="project-memory-items"] > li:last-child .memory-ledger-row { bord
 .ob-overlay { position: fixed; inset: 0; z-index: 120; background: rgba(4,4,4,0.72); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; padding: 24px; animation: gs-fade .2s ease; }
 .ob-card { width: min(460px, 94vw); background: #0d0d0d; border: 1px solid #242424; border-radius: 20px; padding: 34px 32px 26px; text-align: left; }
 .ob-step-badge { font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; letter-spacing: 0.14em; color: #6f6f6f; }
-.ob-title { margin-top: 14px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.02em; color: #fff; line-height: 1.1; }
+.ob-title { margin-top: 14px; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 24px; letter-spacing: -0.02em; color: #fff; line-height: 1.1; }
 .ob-copy { margin-top: 12px; font-size: 14px; line-height: 1.6; color: #a1a1aa; }
 .ob-dots { display: flex; gap: 7px; margin-top: 26px; }
 .ob-dot { width: 7px; height: 7px; border-radius: 50%; background: #2f2f2f; transition: background .2s; }
@@ -5668,7 +5668,7 @@ body::after {
 }
 .device-gate-logo { height: 56px; width: auto; display: block; opacity: 0.95; }
 .device-gate-title {
-  font-family: "Geist", sans-serif; font-weight: 600;
+  font-family: "Urbanist", sans-serif; font-weight: 600;
   font-size: 22px; letter-spacing: -0.02em; color: #fff;
 }
 .device-gate-copy { font-size: 14px; line-height: 1.6; color: var(--text-2); }
@@ -5738,7 +5738,7 @@ body::after {
   border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02);
 }
 .demo-dock-title {
-  display: inline-flex; align-items: center; gap: 7px; font-family: "Geist", sans-serif;
+  display: inline-flex; align-items: center; gap: 7px; font-family: "Urbanist", sans-serif;
   font-weight: 600; font-size: 13.5px; color: #fff;
 }
 .demo-dock-title svg { color: #d8b088; }
@@ -5778,7 +5778,7 @@ body::after {
 .demo-btn--warn:hover:not(:disabled) { background: #e2b94a; }
 
 .demo-conflict { padding: 12px; border-radius: 12px; border: 1px solid rgba(212,167,44,0.4); background: rgba(212,167,44,0.07); display: flex; flex-direction: column; gap: 9px; }
-.demo-conflict-head { display: inline-flex; align-items: center; gap: 7px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 13px; color: #e2b94a; }
+.demo-conflict-head { display: inline-flex; align-items: center; gap: 7px; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 13px; color: #e2b94a; }
 .demo-conflict-body { font-size: 12.5px; line-height: 1.55; color: #cfc4a6; }
 .demo-conflict-body strong { color: #fff; }
 
@@ -5786,7 +5786,7 @@ body::after {
 .demo-resolved svg { color: #52a874; flex-shrink: 0; }
 
 .demo-convert { padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 4px; }
-.demo-convert-title { font-family: "Geist", sans-serif; font-weight: 600; font-size: 14px; color: #fff; }
+.demo-convert-title { font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 14px; color: #fff; }
 .demo-convert-sub { font-size: 12.5px; color: #a1a1aa; margin-bottom: 8px; }
 
 .demo-reset { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 11.5px; color: #8a8a8a; transition: color .14s ease; }
@@ -5796,11 +5796,11 @@ body::after {
 .demo-modal-overlay { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 24px; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
 .demo-modal { width: 560px; max-width: 100%; background: #121212; border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; overflow: hidden; box-shadow: 0 40px 100px -40px rgba(0,0,0,0.9); }
 .demo-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-.demo-modal-head span { display: inline-flex; align-items: center; gap: 8px; font-family: "Geist", sans-serif; font-weight: 600; font-size: 14px; color: #fff; }
+.demo-modal-head span { display: inline-flex; align-items: center; gap: 8px; font-family: "Urbanist", sans-serif; font-weight: 600; font-size: 14px; color: #fff; }
 .demo-modal-head button { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: #8a8a8a; transition: background .14s, color .14s; }
 .demo-modal-head button:hover { background: rgba(255,255,255,0.08); color: #fff; }
 .demo-modal-meta { display: flex; flex-direction: column; gap: 3px; padding: 12px 16px; font-family: "Geist Mono", ui-monospace, monospace; font-size: 11.5px; color: #8a8a8a; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.demo-modal-textarea { width: 100%; padding: 16px; background: transparent; border: none; outline: none; resize: vertical; font-size: 14px; line-height: 1.65; color: #e4e4e4; font-family: "Geist", sans-serif; }
+.demo-modal-textarea { width: 100%; padding: 16px; background: transparent; border: none; outline: none; resize: vertical; font-size: 14px; line-height: 1.65; color: #e4e4e4; font-family: "Urbanist", sans-serif; }
 .demo-modal-drafting { display: flex; align-items: center; gap: 9px; padding: 28px 16px; font-size: 13px; color: #9a9a9a; }
 .demo-modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02); }
 .demo-modal-note { font-family: "Geist Mono", ui-monospace, monospace; font-size: 11px; color: #7a7a7a; }
