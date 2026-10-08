@@ -1,0 +1,33 @@
+{
+  "summary": "Backend-only testing of v2 real-data mapping + AI-inferred dynamic categories for Harbor project. 22/22 pytest tests pass. Verified: OTP auth + admin login regression; /api/demo/reset+simulate/next pipeline; /api/v2/w/{pid}/categories returns dynamic AI-inferred categories (People, Deliverables, Integrations, Decisions, Open Questions, Compliance, Milestones — payments-domain specific, NOT the fixed legacy Scope/Decision/Deliverable/Requirement/Commitment set) and is stable across repeated calls (persisted on project.v2_categories); /overview carries workspace name 'Harbor — Payments App Launch', dynamic categories, real connected sources (gmail/slack/figma/github/meeting), attention array; /memory items all use dynamic keys and counts match /categories; /people, /timeline, /sources derive from real DB; /reviews lists detected items with proposals+trigger; /attention surfaces conflicts after beats; live /ask returns grounded answer with confidence+sources via LLM; /threads/{connId}/draft returns non-empty draft + to; mutations persist (/reviews/{mid}/accept flips status to confirmed and removes from reviews, /dismiss removes from memory, /conflicts/{mid}/resolve clears is_conflict, /attention/{aid}/dismiss marks notification read); /api/v2/workspaces includes Harbor alongside p1/p2 seed showcases; sandbox p1/p2 seed fixture unchanged with fixed legacy categories.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/v2/w/{pid}/attention (real mode)", "issue": "Snoozed/saved sub-view (?view=later) always returns empty for real projects (hardcoded) — fine for current UI but worth wiring to notifications state later."},
+      {"endpoint": "POST /api/v2/w/{pid}/reviews/{rid}/accept", "issue": "Returns ok:true even when memory_id doesn't match (res.modified_count==0) → silent no-op; consider 404 when applied=false."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_74_v2_real_dynamic.py",
+    "/app/test_reports/pytest/iteration_74.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "v2_real.build_memory/categories calls classify_items on every memory read → re-persists v2_cat_map each call. Fine for correctness but a hot read-path write; consider short in-process cache or writing only when the mapping actually changes.",
+    "v2_categories.get_or_infer_categories calls the LLM synchronously on first access; the first /overview or /categories hit for a new project will block for several seconds. Acceptable but worth noting for UX (loading state).",
+    "v2_workspace.send endpoint accepts SendIn.to as object (`to: object = ''`) — loose typing papers over the earlier str/list mismatch; worth tightening to Union[str, list[str]].",
+    "v2_real.build_people uses abs(hash(name)) % 100000 which is NOT stable across Python process restarts (PYTHONHASHSEED randomised) — person ids will drift between workers/restarts. Use a deterministic hash (hashlib) instead.",
+    "No MongoDB _id leakage observed — all find() calls include projection {'_id':0}."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration_74_v2_real_dynamic.py (new)"
+  ],
+  "success_rate": {"backend": "100% (22/22)", "frontend": "not tested (out of scope)"},
+  "test_credentials": "pro@use-bracket.com via OTP_TEST_MODE; admin via /api/v2/admin/login admin / Bracket@Admin2026",
+  "seed_data_creation": "Harbor demo project seeded via /api/demo/reset per module; 5 /api/demo/simulate/next beats run to create detected items + a conflict.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iteration_74_v2_real_dynamic.py covers end-to-end real-data + dynamic categories for Harbor. Observed AI categories for the payments project: [People, Deliverables, Integrations, Decisions, Open Questions, Compliance, Milestones]. Tests tolerate category label variation across LLM runs — they only assert dynamic keys are not identical to the fixed legacy set, counts match, and keys persist across calls. Seed p1/p2 remain the fixed fixture.",
+  "rca of the issue": "N/A — no production issues found."
+}

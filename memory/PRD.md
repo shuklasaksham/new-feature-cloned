@@ -12,7 +12,24 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
-- 2026-06: **v2 Workspace API** (`/app/backend/v2_workspace.py`, mounted `/api/v2`). Serves a rich
+- 2026-06: **Old-Bracket parity in the new UI + DYNAMIC categories (critical)**. The v2 workspace
+  endpoints now serve REAL data for real projects while the sandbox keeps the seed showcase:
+  - `v2_categories.py`: AI-infers a per-project category set via `ai_engine._run` (Claude), stores
+    `v2_categories` + `v2_cat_map` on the project, evolves as content arrives. e.g. the Harbor
+    payments project yields Features/Integrations/Decisions/Open Questions/Milestones/Compliance/
+    People instead of the fixed Scope/Deliverables. UI shows them under "DISCOVERED CATEGORIES".
+  - `v2_real.py`: builds overview/categories/memory/people/timeline/sources/threads/reviews/
+    attention/ask/draft from `project_memory`, `source_events`, `source_connections`,
+    `notifications`, reusing the existing `answer_project_question` + `suggest_project_reply`.
+  - `v2_workspace.py`: `_resolve(wid)` → real (stored project) vs seed (p1/p2 showcase). Mutations
+    persist: accept→confirm memory, dismiss→ignore, resolve→clear is_conflict, snooze/dismiss→mark
+    notification read, source sync→existing `_sync_connection`.
+  - `/api/v2/workspaces` lists the user's real projects + the seed showcases.
+  - Real sign-in works via existing `/auth/me` + `/auth/logout`.
+  Verified: testing_agent iteration_74.json **100% (22/22)**; dynamic categories render in the UI.
+  NOT yet wired (next): the new UI's billing/account/members/files screens still call v2 endpoints
+  that map to the old payments/account APIs; real OAuth connect-new-source flow inside the new UI.
+- 2026-06: **v2 Workspace API** (`v2_workspace.py`) — seed showcase + per-workspace reads.
   seeded workspace ("Fintech Landing Page Redesign" fixture, ported from the repo mock `seed.js`)
   so the new UI's Overview/Memory/Attention/Timeline/Sources/Reviews/Threads/Ask screens are fully
   populated and clickable. Endpoints: `/workspaces` (seed + the user's real projects),
