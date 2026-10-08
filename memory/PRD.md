@@ -12,7 +12,21 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
-- 2026-06: **Demo Workspace (sandbox)** — free, fully-interactive demo project
+- 2026-06: **Bracket 2.0 visual overhaul — Phase 1 (marketing + design foundation)**.
+  Ported the repo (github.com/shuklasaksham/bracket-v2) frontend's public marketing site and
+  design system into the current app, **backend unchanged**. Added v2 design tokens (Urbanist +
+  JetBrains Mono, `#08090a` palette, `.bk` scoped base, status/fg/line tokens) into
+  `tailwind.config.js` + `index.css` additively (legacy tokens preserved so existing screens still
+  work). New pages under `src/v2/` (ui/primitives, ui/motion, shell/Logo+Seo, pages/marketing/
+  Layout+Landing+Pages+More) wired to routes `/ /pricing /privacy /terms /security /use-cases
+  /changelog /about /contact` + a branded 404. Marketing is fully responsive and allowed on mobile
+  (DeviceGate now bypasses public marketing paths). New backend endpoint `POST /api/contact`
+  (stores to `contact_messages`, best-effort Resend email to support) — a v2 feature v1.9 lacked.
+  Verified via screenshots (desktop + mobile) and curl. Existing login/workspace/demo untouched.
+  PENDING PHASES (not yet done): auth screens, onboarding, and the whole workspace UI
+  (Overview/Memory/Timeline/Conversations/Ask/Sources/Settings) still use the old look — these
+  must be restyled to v2 tokens while keeping the current `/api/projects|connect|demo` contract.
+- 2026-06: Demo Workspace (sandbox) — "Harbor — Payments App Launch" (see /app/backend/demo.py).
   "Harbor — Payments App Launch" that shows Bracket's full loop before connecting anything.
   Backend `/app/backend/demo.py` (router `/api/demo`): `open` (idempotent seed; unique index on
   owner+demo_tag), `project`, `simulate/next` (5 beats through the real change-detection engine +

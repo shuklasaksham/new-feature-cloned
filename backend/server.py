@@ -710,6 +710,51 @@ async def push_unsubscribe(body: PushSubscribeIn, request: Request):
     return {"ok": True}
 
 
+class ContactIn(BaseModel):
+    name: str
+    email: EmailStr
+    company: str = ""
+    message: str
+
+
+@api.post("/contact")
+async def submit_contact(payload: ContactIn):
+    """Public contact form (marketing site). Stores the message and best-effort
+    emails support. Never leaks mail-provider errors to the visitor."""
+    name = payload.name.strip()
+    message = payload.message.strip()
+    if not name:
+        raise HTTPException(422, "Enter your name.")
+    if not message:
+        raise HTTPException(422, "Tell us how we can help.")
+    doc = {
+        "id": _uuid(), "name": name, "email": str(payload.email).strip(),
+        "company": payload.company.strip(), "message": message,
+        "created_at": _now_iso(),
+    }
+    await db.contact_messages.insert_one({**doc})
+    try:
+        import resend
+        api_key = os.environ.get("RESEND_API_KEY")
+        if api_key:
+            resend.api_key = api_key
+            body = (
+                f"New contact message from the Bracket site\n\n"
+                f"Name: {name}\nEmail: {doc['email']}\nCompany: {doc['company'] or '—'}\n\n{message}\n"
+            )
+            await asyncio.to_thread(resend.Emails.send, {
+                "from": "Bracket <onboarding@resend.dev>",
+                "to": ["support@use-bracket.com"],
+                "reply_to": doc["email"],
+                "subject": f"Contact: {name}",
+                "text": body,
+            })
+    except Exception as e:  # noqa: BLE001
+        logger.warning(f"[contact] email send skipped: {e}")
+    return {"ok": True}
+
+
+
 @api.get("/public/metrics")
 async def public_metrics(response: Response):
     """Aggregate KPIs shown on the landing page's metrics strip. All counts

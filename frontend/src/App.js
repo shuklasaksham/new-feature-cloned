@@ -4,7 +4,6 @@ import { HelmetProvider } from "react-helmet-async";
 import { MotionConfig } from "framer-motion";
 import { Toaster } from "sonner";
 
-import MarketingLayout from "./components/MarketingLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RequirePlan from "./components/RequirePlan";
 import AppShell from "./components/AppShell";
@@ -14,10 +13,11 @@ import InstallPrompt from "./components/InstallPrompt";
 import { DialogProvider } from "./components/Dialog";
 import { AuthProvider } from "./lib/AuthContext";
 
-import Landing from "./pages/Landing";
-import Pricing from "./pages/Pricing";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
+// ── Bracket 2.0 marketing (new look) ──────────────────────────────────────
+import V2MarketingLayout from "./v2/pages/marketing/Layout";
+import V2Landing from "./v2/pages/marketing/Landing";
+import { Pricing as V2Pricing, Privacy as V2Privacy, Terms as V2Terms, Security as V2Security, NotFound as V2NotFound } from "./v2/pages/marketing/Pages";
+import { UseCases as V2UseCases, Changelog as V2Changelog, About as V2About, Contact as V2Contact } from "./v2/pages/marketing/More";
 
 import Login from "./pages/Login";
 import ChoosePlan from "./pages/ChoosePlan";
@@ -74,12 +74,18 @@ export default function App() {
         <Toaster position="top-right" richColors />
         <InstallPrompt />
         <Routes>
-          {/* Marketing — public */}
-          <Route element={<MarketingLayout />}>
-            <Route path="/" element={<Landing />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/terms" element={<Terms />} />
+          {/* Marketing — public (Bracket 2.0 look) */}
+          <Route element={<V2MarketingLayout />}>
+            <Route path="/" element={<V2Landing />} />
+            <Route path="/pricing" element={<V2Pricing />} />
+            <Route path="/privacy" element={<V2Privacy />} />
+            <Route path="/terms" element={<V2Terms />} />
+            <Route path="/security" element={<V2Security />} />
+            <Route path="/use-cases" element={<V2UseCases />} />
+            <Route path="/changelog" element={<V2Changelog />} />
+            <Route path="/about" element={<V2About />} />
+            <Route path="/contact" element={<V2Contact />} />
+            <Route path="*" element={<V2NotFound />} />
           </Route>
 
           {/* Auth flow */}
@@ -114,8 +120,6 @@ export default function App() {
           {/* Hidden admin console — not linked from anywhere public */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<ProtectedAdminRoute><AppShell><AdminDashboard /></AppShell></ProtectedAdminRoute>} />
-
-          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
         </DialogProvider>

@@ -20,20 +20,40 @@ function computeBlocked() {
   return Boolean(coarse || uaMobile || tiny);
 }
 
+// Public, fully-responsive marketing pages are allowed on any device; only the
+// dense desktop workspace is gated.
+const MARKETING_PATHS = new Set(["/", "/pricing", "/privacy", "/terms", "/security", "/use-cases", "/changelog", "/about", "/contact"]);
+function isMarketingPath() {
+  if (typeof window === "undefined") return false;
+  return MARKETING_PATHS.has(window.location.pathname);
+}
+
 export default function DeviceGate({ children }) {
   const [blocked, setBlocked] = useState(computeBlocked);
+  const [marketing, setMarketing] = useState(isMarketingPath);
 
   useEffect(() => {
     const onResize = () => setBlocked(computeBlocked());
+    const onNav = () => setMarketing(isMarketingPath());
     window.addEventListener("resize", onResize);
     window.addEventListener("orientationchange", onResize);
+    window.addEventListener("popstate", onNav);
+    // react-router uses history.pushState (no popstate) — patch to emit nav events.
+    const origPush = window.history.pushState;
+    window.history.pushState = function (...args) {
+      const r = origPush.apply(this, args);
+      onNav();
+      return r;
+    };
     return () => {
       window.removeEventListener("resize", onResize);
       window.removeEventListener("orientationchange", onResize);
+      window.removeEventListener("popstate", onNav);
+      window.history.pushState = origPush;
     };
   }, []);
 
-  if (!blocked) return children;
+  if (!blocked || marketing) return children;
 
   return (
     <div className="device-gate" data-testid="device-gate">
