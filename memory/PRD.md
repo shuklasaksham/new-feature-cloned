@@ -12,6 +12,19 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **v2 backend wiring — admin + sandbox + auth** (step 1 of connecting the swapped UI).
+  Ported the repo's `admin_v2.py` (owner panel `/api/v2/admin/*`) and `sandbox_v2.py`
+  (`/api/v2/sandbox/*`, reusing our `demo.py` seed) into the backend and mounted them via
+  `install(app)` in `server.py`. Set `ADMIN_USERNAME=admin` + bcrypt `ADMIN_PASSWORD_HASH`
+  (pw `Bracket@Admin2026`) in backend/.env. **FIXED the reported "cannot login to admin" bug** —
+  the repo admin UI (`/admin/login`) now authenticates against `/api/v2/admin/login` and the
+  Overview dashboard renders with real data. Verified by testing_agent iteration_72.json (15/15).
+  Sandbox session start/next/reset/leave + the account-lock middleware all work.
+  STILL MISSING for a fully interactive product workspace: the `/api/v2/w/:id/*` read API
+  (overview, memory, attention, conflicts, reviews, threads, ask, timeline, sources) — the repo
+  frontend's workspace screens call these and they are not implemented yet (only in the JS mock).
+  So "Open the sandbox" starts a guest + seeds the demo project, but the workspace screens 404 until
+  that API is built next.
 - 2026-06: **FULL FRONTEND SWAP to the bracket-v2 repo UI** (backend untouched, per user).
   Replaced all of `/app/frontend/src` and `/app/frontend/public` with the repo
   (github.com/shuklasaksham/bracket-v2) frontend verbatim. Copied repo `tailwind.config.js`,

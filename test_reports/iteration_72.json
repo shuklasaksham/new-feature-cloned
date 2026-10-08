@@ -1,0 +1,27 @@
+{
+  "summary": "Backend-only verification of the admin_v2 + sandbox_v2 wiring (bug fix for 'cannot login to admin'). Wrote /app/backend/tests/test_iteration_72_admin_sandbox.py covering 15 scenarios across admin login/session/data endpoints, sandbox v2 full flow + account-lock middleware, and OTP regression. All 15 tests PASSED against the public REACT_APP_BACKEND_URL. Admin login with 'admin' / 'Bracket@Admin2026' returns 200 with ok/username/expires_at and sets the bk_admin cookie; wrong password returns 401 {code:'admin_credentials', attempts_left} and 429 {code:'admin_paused', retry_at} after 5 fails; GET /session returns {username, expires_at, minutes}; logout clears session; missing cookie yields 401 {code:'admin_session'}. All six data endpoints (overview, users, revenue, usage, sandbox, audit) return 200 JSON. Sandbox start/get/next/reset/leave work end-to-end and SandboxLockMiddleware returns 403 {code:'sandbox_locked', action:'workspace'} on POST /api/projects. OTP regression intact (dev_code returned, verify logs in).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/v2/admin/login (and other v2 error responses)", "issue": "Error payload is flat (code/attempts_left/retry_at are top-level alongside detail) rather than nested under FastAPI's standard 'detail' object. Works, but deviates from FastAPI convention — any FE code expecting detail.code would break. Document or standardize."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_72_admin_sandbox.py",
+    "/app/test_reports/pytest/iter72.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "admin_v2 error shape: returns HTTP 401/429 with a flat JSON body containing both 'detail' (string) and sibling keys like 'code', 'attempts_left', 'retry_at'. Non-standard for FastAPI — consider HTTPException(detail={...}) so clients can rely on one path.",
+    "Admin lockout state (db.admin_login_attempts) is per-IP and persistent; after this run it was cleared manually. Consider auto-expiring entries or exposing an admin-side reset to avoid locking out the real admin during tests."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration_72_admin_sandbox.py"],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "N/A (skipped as requested)"},
+  "test_credentials": "Admin: admin / Bracket@Admin2026 at /api/v2/admin/login. OTP: pro@use-bracket.com with OTP_TEST_MODE=1.",
+  "seed_data_creation": "None. Cleared db.admin_login_attempts before and after lockout tests to leave the admin unlocked.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iteration_72_admin_sandbox.py is self-contained (uses REACT_APP_BACKEND_URL and drops admin_login_attempts in setup). Rerun with: pytest /app/backend/tests/test_iteration_72_admin_sandbox.py -v. The v2 error-body shape is flat (code is at root, not under detail) — key gotcha for future admin_v2 tests. v2 workspace read API (/api/v2/w/:id/*) is intentionally NOT implemented yet; do not test workspace data screens.",
+  "rca of the issue": "User-reported 'cannot login to admin' is resolved. Root cause (per main-agent context) was that the v2 admin router was not mounted; it is now mounted in server.py after the demo router via admin_v2.install(app). Credentials ADMIN_USERNAME=admin and ADMIN_PASSWORD_HASH (bcrypt of Bracket@Admin2026) are correctly read from backend/.env; verified by a successful 200 login setting the bk_admin cookie and successful session/overview calls."
+}
