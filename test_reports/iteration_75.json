@@ -1,0 +1,32 @@
+{
+  "summary": "Backend-only regression of the four newly wired v2 bridges — Billing, Categories, Live Change-Review Apply, and Connect-Sources auth-url. 11/11 pytest tests pass against the real backend using support@use-bracket.com and real project PID=58b8dba2-f25c-462b-b911-8dccd977697d (Flowdesk Website Redesign). Verified: (1) GET /api/v2/billing returns full shape {status, plan, currency, prices{monthly,project{inr,usd}}, workspaces{used,limit}, invoices, renews_on}; PATCH toggles currency inr↔usd and GET reflects; POST /billing/change|cancel|resume all return {billing:{...}} without error. (2) GET /categories returns 4-7 AI-inferred categories with key/label/n/count; PATCH /categories/{key} renames in place (key stays, label changes); POST /categories/{key}/merge removes src key and keeps dst; POST /categories/suggest {name:'Risks'} adds 'risks' key — first LLM call ~15-20s, subsequent fast. (3) Live review apply: picked a fresh detected review, POST /reviews/{rid}/accept with selected=[pp_<rid>] and edits={pp_<rid>:'TEST edited...'} returns {accepted:1, impact, applied:true}; verified via direct Mongo read that project_memory doc has title=EDITED, status='confirmed', versions[] contains the previous title, and pre_accept_title stored; follow-up GET /memory reflects edited title + 'current' status + history entry 'Accepted change'; POST /reviews/{rid}/undo restores title & flips status back to 'detected' (pending in memory view). Accept on a non-existent review id correctly returns HTTP 409. (4) GET /api/connect/providers returns gmail/slack/figma/github with status 'available' (OAuth creds configured) and notion as 'setup_required'; GET /api/connect/gmail/auth-url returns a Google accounts.google.com URL with state+redirect_uri params and inserts an oauth_states row (not followed through consent).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/v2/w/{pid}/memory", "issue": "versions[] side-effect from review accept is persisted in DB but NOT surfaced on memory items (_mem_item in v2_real.py omits versions). History array does include an 'Accepted change: now ...' entry which the UI can show, but if the frontend wants to display previous titles under a 'History' pane it needs versions exposed."},
+      {"endpoint": "POST /api/v2/billing/change", "issue": "When payload.plan equals the user's current plan, endpoint $unsets billing_pending_plan without a 400/no-op signal — fine, but UI can't distinguish 'no change needed' vs 'cleared pending'."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration_75_v2_bridges.py",
+    "/app/test_reports/pytest/iteration_75.xml"
+  ],
+  "action_items": [
+    "Optional: surface memory.versions[] in v2_real._mem_item so the UI can render a timeline of past titles after accept/undo. Currently only reachable via direct DB lookup."
+  ],
+  "critical_code_review_comments": [
+    "v2_real.accept_review stores pre_accept_title on every accept — repeated accepts without undo overwrite the pre_accept_title, so a user who accepts twice loses the ability to undo back to the original. Consider only setting it when transitioning from status!='confirmed' or appending to a stack.",
+    "v2_workspace.review_accept raises 409 only when applied is false; this means an already-confirmed memory still gets re-applied silently (status/history re-written) rather than treated as idempotent. Fine for current flow but worth a flag to short-circuit when status=='confirmed' already.",
+    "_billing_view issues `billing_pending_plan` field only when it differs from current plan — UI should still read {pending_change:null} explicitly rather than hasattr-style guards. Keeping it absent is a mild schema inconsistency.",
+    "connectors.list_providers correctly flags notion as setup_required when credentials missing — no leakage of client secrets detected in response payload.",
+    "No MongoDB _id leakage in any of the four endpoint groups tested."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration_75_v2_bridges.py (new)"],
+  "success_rate": {"backend": "100% (11/11)", "frontend": "not tested (out of scope)"},
+  "test_credentials": "support@use-bracket.com / Bracket@123 via POST /api/auth/login — session_token used as Authorization: Bearer <token>.",
+  "seed_data_creation": "None — used existing real project 58b8dba2-f25c-462b-b911-8dccd977697d (Flowdesk Website Redesign) with pre-seeded detected reviews. Rename test reverts label; merge test leaves PID with one fewer category (idempotent on repeat runs since merge-into-top is safe). Suggest test leaves a 'risks' category in place; subsequent runs re-use it.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "test_iteration_75_v2_bridges.py is self-contained: it loads BASE from /app/frontend/.env and MONGO_URL/DB_NAME from /app/backend/.env for the direct DB check on versions[]. Review-accept consumes one detected memory per run — if /reviews on PID becomes empty, run /api/demo/reset or seed more detected memories on the Flowdesk project. First /categories call per project triggers LLM infer + classify (~15-20s); timeouts set to 60s accordingly."
+}

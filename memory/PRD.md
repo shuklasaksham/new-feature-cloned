@@ -12,6 +12,29 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Four v2 UI→backend bridges wired (Billing, Connect, Review-Apply, Categories)** —
+  backend-tested 100% (testing_agent iteration_75.json, 11/11).
+  - **Billing Bridge**: new `/api/v2/billing` GET/PATCH + `/billing/change|cancel|resume|retry`
+    in `v2_workspace.py` map the real user plan → the v2 account UI shape (status/plan/currency/
+    prices/workspaces/invoices/renews_on). The workspace Settings "Choose a plan" dialog now opens
+    the **real Razorpay hosted checkout** (order→popup→verify, reusing `/payments/razorpay/*`) —
+    the old fake card form was removed. Currency toggle + cancel/resume/change persist on the user
+    doc (`plan_currency`, `billing_canceled_at`, `billing_pending_plan`).
+  - **Connect Sources in-app**: the workspace Sources "Add source" now opens the real `ConnectFlow`
+    (OAuth popup → pick threads/channels → preview → establish) for Gmail/Slack/Figma/GitHub/Notion,
+    via the existing `/api/connect/*` endpoints (OAuth app creds already in backend/.env; gmail/slack/
+    figma/github report `available`). Replaced the old v2-stub `candidates/addSource` path + the
+    "connects through OAuth" toast.
+  - **Live Change-Review Apply**: `POST /api/v2/w/{id}/reviews/{rid}/accept` now takes `{selected,
+    edits}` and applies the (edited) proposed text to the exact `project_memory` field — sets
+    `title`, status `confirmed`, pushes the old title into `versions[]`+`history`, and stores
+    `pre_accept_title` (first accept only). `undo` restores it. `versions[]` is now surfaced in
+    `_mem_item` so the Memory detail History pane shows the diff. Stale review id → 409.
+  - **Category controls**: `PATCH /categories/{key}` (rename in place, key stable), `POST
+    /categories/suggest` (add + force re-map all memory), `POST /categories/{key}/merge` (remap +
+    drop). UI: Memory rail menu Rename + a new Merge dialog (pick target), "Suggest a category"
+    adds + re-maps. `v2_categories.classify_items` gained a `force` flag.
+  NOTE: frontend compiles clean; these screens were backend-verified (not e2e-clicked this pass).
 - 2026-06: **Old-Bracket parity in the new UI + DYNAMIC categories (critical)**. The v2 workspace
   endpoints now serve REAL data for real projects while the sandbox keeps the seed showcase:
   - `v2_categories.py`: AI-infers a per-project category set via `ai_engine._run` (Claude), stores

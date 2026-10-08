@@ -41,6 +41,7 @@ def _mem_item(m, cat_key):
         "confidence": "high" if m.get("status") == "confirmed" else "medium",
         "created_at": m.get("created_at"), "changed_at": m.get("updated_at") or m.get("created_at"),
         "history": m.get("history") or [], "related": [], "evidence": _evidence(m),
+        "versions": m.get("versions") or [],
         "owner": m.get("requested_by", ""),
     }
     if m.get("is_conflict"):
@@ -282,6 +283,7 @@ async def accept_review(project, rid, selected, edits):
     history = list(m.get("history") or [])
     changed = bool(after) and after != old_title
     now = _now_iso()
+    was_confirmed = m.get("status") == "confirmed"
     if changed:
         versions.append({"at": m.get("updated_at") or m.get("created_at") or now,
                          "title": old_title, "superseded_at": now})
@@ -289,12 +291,15 @@ async def accept_review(project, rid, selected, edits):
     else:
         history.insert(0, {"at": now, "text": "Change accepted"})
 
+    set_fields = {"title": after or old_title, "status": "confirmed", "is_conflict": False,
+                  "versions": versions, "history": history, "updated_at": now}
+    # Only capture the true original the first time (so repeated accepts don't
+    # clobber the value undo should restore to).
+    if not was_confirmed:
+        set_fields["pre_accept_title"] = old_title
     await db.project_memory.update_one(
         {"id": rid, "project_id": pid},
-        {"$set": {"title": after or old_title, "status": "confirmed", "is_conflict": False,
-                  "versions": versions, "history": history, "updated_at": now,
-                  "pre_accept_title": old_title},
-         "$unset": {"conflict_values": ""}})
+        {"$set": set_fields, "$unset": {"conflict_values": ""}})
 
     cats = await get_or_infer_categories(project)
     label = next((c["singular"] for c in cats if c["key"] == p.get("category")), p.get("category", "memory"))
