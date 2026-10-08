@@ -61,7 +61,7 @@ export function UseCases() {
         </div>
       </Wrap>
       <div className="mx-auto flex max-w-[1200px] gap-3 px-4 pb-24 pt-12 md:px-8 xl:px-0">
-        <Button variant="primary" onClick={() => navigate(user ? "/app" : "/login")}>{user ? "Open Bracket" : "Get started free"}</Button>
+        <Button variant="primary" onClick={() => navigate(user ? "/app" : "/signup")}>{user ? "Open Bracket" : "Get started free"}</Button>
         <Link to="/contact"><Button variant="secondary">Talk to us</Button></Link>
       </div>
     </>

@@ -12,6 +12,24 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **FULL FRONTEND SWAP to the bracket-v2 repo UI** (backend untouched, per user).
+  Replaced all of `/app/frontend/src` and `/app/frontend/public` with the repo
+  (github.com/shuklasaksham/bracket-v2) frontend verbatim. Copied repo `tailwind.config.js`,
+  `postcss.config.js`, `jsconfig.json`, `components.json`, and `craco.config.js` (the repo craco
+  has a `DISABLE_VISUAL_EDITS` guard). Set `DISABLE_VISUAL_EDITS=true` in `/app/frontend/.env`
+  (REACT_APP_BACKEND_URL preserved) because the Emergent visual-edits babel plugin stack-overflows
+  on the repo's large JSX (e.g. `v2/shell/CommandPalette.jsx`). Removed `src/setupProxy.js`
+  (it defaulted to the node mock on :4300; the k8s ingress already routes `/api`→8001).
+  Deps were already identical — no installs. Old UI backed up at `/app/frontend/_v1_backup/`.
+  STATUS: all presentational routes render in the new look (landing, pricing, how-it-works,
+  use-cases, auth, sandbox intro, app shell/components). **Data screens are NOT wired**: the repo
+  frontend calls a `/api/v2/...` contract the current backend does not implement, so the workspace,
+  "Open the sandbox", and real sign-in return 404 / "Not Found" until the v2 backend is built.
+  NEXT (explicitly deferred by user): implement the `/api/v2` backend contract to match the mock in
+  the repo's `mock/server.js` + `docs/API_V2.md`. The old `/api/projects|connect|demo` endpoints
+  still exist, untouched.
+- 2026-06: (superseded by the full swap above) prior incremental v2 restyle — marketing port,
+  Urbanist typography, command palette, contact inbox, auth reskin. Reference only.
 - 2026-06: **Bracket 2.0 overhaul — Phase 2** (backend unchanged):
   - **Typography overhaul**: swapped the whole app's sans from Geist → **Urbanist** (`index.css`
     sans refs + `tailwind.config` display/body; Geist Mono kept). The workspace, auth and

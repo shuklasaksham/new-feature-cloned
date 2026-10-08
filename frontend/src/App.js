@@ -1,132 +1,182 @@
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import React, { Suspense, lazy } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { MotionConfig } from "framer-motion";
 import { Toaster } from "sonner";
 
-import ProtectedRoute from "./components/ProtectedRoute";
-import RequirePlan from "./components/RequirePlan";
-import AppShell from "./components/AppShell";
-import ScrollToTop from "./components/ScrollToTop";
-import DeviceGate from "./components/DeviceGate";
-import InstallPrompt from "./components/InstallPrompt";
-import CommandPalette from "./components/CommandPalette";
-import { DialogProvider } from "./components/Dialog";
 import { AuthProvider } from "./lib/AuthContext";
-
-// ── Bracket 2.0 marketing (new look) ──────────────────────────────────────
-import V2MarketingLayout from "./v2/pages/marketing/Layout";
-import V2Landing from "./v2/pages/marketing/Landing";
-import { Pricing as V2Pricing, Privacy as V2Privacy, Terms as V2Terms, Security as V2Security, NotFound as V2NotFound } from "./v2/pages/marketing/Pages";
-import { UseCases as V2UseCases, Changelog as V2Changelog, About as V2About, Contact as V2Contact } from "./v2/pages/marketing/More";
-
-import Login from "./pages/Login";
-import ChoosePlan from "./pages/ChoosePlan";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import PaymentCancel from "./pages/PaymentCancel";
-import AuthCallback from "./pages/AuthCallback";
-import Onboarding from "./pages/Onboarding";
-import FirstProject from "./pages/FirstProject";
-import SelectSource from "./pages/SelectSource";
-import BuildingProject from "./pages/BuildingProject";
-import ClaimProjects from "./pages/ClaimProjects";
-import AppEntry from "./pages/AppEntry";
-import ConnectWork from "./pages/ConnectWork";
-import Activity from "./pages/Activity";
-import Settings from "./pages/Settings";
-import ProjectMemory from "./pages/ProjectMemory";
-import ProjectFlow from "./pages/ProjectFlow";
-import ProjectOverview from "./pages/ProjectOverview";
-import ProjectDocument from "./pages/ProjectDocument";
-import ClientReview from "./pages/ClientReview";
-
-import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
-import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-
+import { DialogProvider } from "./components/Dialog";
 import { useAnalyticsTracker } from "./lib/analyticsTracker";
 
+// ── Bracket 2.0 UI ────────────────────────────────────────────────────────
+import { TooltipProvider } from "./v2/ui/overlays";
+import { CommandProvider } from "./v2/shell/CommandPalette";
+import { AskPanelProvider } from "./v2/shell/AskPanel";
+import { RequireAuth, Tool, AppEntry, FullScreenLoader } from "./v2/shell/Guards";
+import MarketingLayout from "./v2/pages/marketing/Layout";
+import Landing from "./v2/pages/marketing/Landing";
+import { Pricing, Privacy, Terms, Security, NotFound } from "./v2/pages/marketing/Pages";
+import { UseCases, Changelog, About, Contact } from "./v2/pages/marketing/More";
+import { AuthCallback, Onboarding, Claim, PaymentResult } from "./v2/pages/auth";
+import { SignIn, SignUp, VerifyEmail, ForgotPassword, ResetPassword, AcceptInvite, GoogleHandoff } from "./v2/pages/account/Auth";
+import Onboarding2, { OAuthMock } from "./v2/pages/account/Onboarding";
+import WorkspaceLayout, { WorkspaceNotFound } from "./v2/pages/workspace/WorkspaceLayout";
+import Overview from "./v2/pages/workspace/Overview";
+import Review from "./v2/pages/workspace/Review";
+import Memory from "./v2/pages/workspace/Memory";
+import Conversations from "./v2/pages/workspace/Conversations";
+import Ask from "./v2/pages/workspace/Ask";
+import Timeline from "./v2/pages/workspace/Timeline";
+import Sources from "./v2/pages/workspace/Sources";
+import Resolve from "./v2/pages/workspace/Resolve";
+import SourceDetail from "./v2/pages/workspace/SourceDetail";
+import Files from "./v2/pages/workspace/Files";
+import WorkspaceSettings from "./v2/pages/workspace/Settings";
+import { SettingsRedirect } from "./v2/shell/Guards";
+import MockStates from "./v2/pages/MockStates";
+import { SandboxProvider } from "./v2/sandbox/sandbox";
+import SandboxEntry from "./v2/sandbox/SandboxEntry";
+import SandboxPlans from "./v2/sandbox/SandboxPlans";
+import { AdminRoutes } from "./v2/admin/AdminApp";
+
 import "./App.css";
+
+// ── Carried over from v1.9 (restyled through shared tokens) ───────────────
+// Admin console, public client review links, and the legacy brief flow.
+const AdminLogin = lazy(() => import("./pages/AdminLogin"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ProtectedAdminRoute = lazy(() => import("./components/ProtectedAdminRoute"));
+const LegacyAppShell = lazy(() => import("./components/AppShell"));
+const ProjectFlow = lazy(() => import("./pages/ProjectFlow"));
+const ProjectOverview = lazy(() => import("./pages/ProjectOverview"));
+const ProjectDocument = lazy(() => import("./pages/ProjectDocument"));
+const ClientReview = lazy(() => import("./pages/ClientReview"));
 
 function AnalyticsTrackerMount() {
   useAnalyticsTracker();
   return null;
 }
 
-// Tool routes require BOTH auth and an active plan (admins exempt).
-function Tool({ children }) {
-  return (
-    <ProtectedRoute>
-      <RequirePlan>{children}</RequirePlan>
-    </ProtectedRoute>
-  );
+function ProjectRedirect() {
+  const { id } = useParams();
+  return <Navigate to={`/w/${id}`} replace />;
 }
+
+const Legacy = ({ children }) => (
+  <Tool>
+    <DialogProvider>
+      <LegacyAppShell>{children}</LegacyAppShell>
+    </DialogProvider>
+  </Tool>
+);
 
 export default function App() {
   return (
     <HelmetProvider>
       <MotionConfig reducedMotion="user">
-      <DeviceGate>
-      <AuthProvider>
-        <DialogProvider>
-        <BrowserRouter>
-        <ScrollToTop />
-        <AnalyticsTrackerMount />
-        <CommandPalette />
-        <Toaster position="top-right" richColors />
-        <InstallPrompt />
-        <Routes>
-          {/* Marketing — public (Bracket 2.0 look) */}
-          <Route element={<V2MarketingLayout />}>
-            <Route path="/" element={<V2Landing />} />
-            <Route path="/pricing" element={<V2Pricing />} />
-            <Route path="/privacy" element={<V2Privacy />} />
-            <Route path="/terms" element={<V2Terms />} />
-            <Route path="/security" element={<V2Security />} />
-            <Route path="/use-cases" element={<V2UseCases />} />
-            <Route path="/changelog" element={<V2Changelog />} />
-            <Route path="/about" element={<V2About />} />
-            <Route path="/contact" element={<V2Contact />} />
-            <Route path="*" element={<V2NotFound />} />
-          </Route>
+        <AuthProvider>
+          <BrowserRouter>
+            <TooltipProvider delayDuration={350}>
+              <AskPanelProvider>
+                <CommandProvider>
+                  <AnalyticsTrackerMount />
+                  <Toaster
+                    position="bottom-center"
+                    mobileOffset={{ bottom: 96 }}
+                    theme="dark"
+                    toastOptions={{
+                      className: "bk",
+                      style: { background: "#15161a", border: "1px solid rgba(255,255,255,0.14)", color: "#f7f8f8", fontFamily: "Urbanist, system-ui, sans-serif" },
+                    }}
+                  />
+                  <SandboxProvider>
+                  <Suspense fallback={<FullScreenLoader />}>
+                    <Routes>
+                      {/* Marketing — public */}
+                      <Route element={<MarketingLayout />}>
+                        <Route path="/" element={<Landing />} />
+                        <Route path="/pricing" element={<Pricing />} />
+                        <Route path="/privacy" element={<Privacy />} />
+                        <Route path="/terms" element={<Terms />} />
+                        <Route path="/security" element={<Security />} />
+                        <Route path="/use-cases" element={<UseCases />} />
+                        <Route path="/changelog" element={<Changelog />} />
+                        <Route path="/about" element={<About />} />
+                        <Route path="/contact" element={<Contact />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Route>
 
-          {/* Auth flow */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Login signup />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-          <Route path="/plan" element={<ProtectedRoute><ChoosePlan /></ProtectedRoute>} />
-          <Route path="/payment/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-          <Route path="/payment/cancel" element={<ProtectedRoute><PaymentCancel /></ProtectedRoute>} />
-          <Route path="/welcome" element={<Tool><FirstProject /></Tool>} />
-          <Route path="/welcome/select" element={<Tool><SelectSource /></Tool>} />
-          <Route path="/welcome/building" element={<Tool><BuildingProject /></Tool>} />
-          <Route path="/claim" element={<Tool><ClaimProjects /></Tool>} />
+                      {/* Auth & onboarding */}
+                      <Route path="/login" element={<SignIn />} />
+                      <Route path="/signup" element={<SignUp />} />
+                      <Route path="/verify" element={<VerifyEmail />} />
+                      <Route path="/auth/google" element={<GoogleHandoff />} />
+                      <Route path="/oauth-mock" element={<OAuthMock />} />
+                      <Route path="/auth/callback" element={<AuthCallback />} />
+                      <Route path="/forgot-password" element={<ForgotPassword />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/invite/:token" element={<AcceptInvite />} />
+                      <Route path="/__states" element={<MockStates />} />
+                      <Route path="/sandbox" element={<SandboxEntry />} />
+                      <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
+                      <Route path="/claim" element={<RequireAuth><Claim /></RequireAuth>} />
+                      <Route path="/plan" element={<Navigate to="/settings/billing" replace />} />
+                      <Route path="/payment/success" element={<RequireAuth><PaymentResult ok /></RequireAuth>} />
+                      <Route path="/payment/cancel" element={<RequireAuth><PaymentResult ok={false} /></RequireAuth>} />
 
-          {/* Tool (auth + active plan required) — wrapped in AppShell w/ collapsible sidebar */}
-          {/* /app → straight into the latest project (old dashboard removed) */}
-          <Route path="/app" element={<Tool><AppEntry /></Tool>} />
-          <Route path="/app/new" element={<Tool><AppEntry /></Tool>} />
-          <Route path="/app/connect" element={<Tool><ConnectWork /></Tool>} />
-          <Route path="/app/activity" element={<Tool><AppShell><Activity /></AppShell></Tool>} />
-          <Route path="/start" element={<Navigate to="/app" replace />} />
-          <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />
-          <Route path="/project/:id" element={<ProtectedRoute><ProjectMemory /></ProtectedRoute>} />
-          <Route path="/project/:id/legacy" element={<Tool><AppShell><ProjectOverview /></AppShell></Tool>} />
-          <Route path="/project/:id/flow" element={<Tool><AppShell><ProjectFlow /></AppShell></Tool>} />
-          <Route path="/project/:id/document" element={<Tool><AppShell><ProjectDocument /></AppShell></Tool>} />
+                      {/* App */}
+                      <Route path="/app" element={<Tool><AppEntry /></Tool>} />
+                      <Route path="/welcome" element={<Tool><Onboarding2 /></Tool>} />
+                      <Route path="/connect" element={<Tool><Onboarding2 /></Tool>} />
+                      <Route path="/settings" element={<Tool><SettingsRedirect /></Tool>} />
+                      <Route path="/settings/:section" element={<Tool><SettingsRedirect /></Tool>} />
+                      <Route path="/w/:id" element={<Tool><WorkspaceLayout /></Tool>}>
+                        <Route index element={<Overview />} />
+                        <Route path="review" element={<Review />} />
+                        <Route path="review/:rid" element={<Review />} />
+                        <Route path="resolve/:cid" element={<Resolve />} />
+                        <Route path="memory" element={<Memory />} />
+                        <Route path="memory/:category" element={<Memory />} />
+                        <Route path="conversations" element={<Conversations />} />
+                        <Route path="conversations/:tid" element={<Conversations />} />
+                        <Route path="ask" element={<Ask />} />
+                        <Route path="timeline" element={<Timeline />} />
+                        <Route path="timeline/:eid" element={<Timeline />} />
+                        <Route path="sources" element={<Sources />} />
+                        <Route path="sources/:sid" element={<SourceDetail />} />
+                        <Route path="files" element={<Files />} />
+                        <Route path="files/:fid" element={<Files />} />
+                        <Route path="settings" element={<WorkspaceSettings />} />
+                        <Route path="settings/:section" element={<WorkspaceSettings />} />
+                        <Route path="sandbox" element={<SandboxPlans />} />
+                        <Route path="*" element={<WorkspaceNotFound />} />
+                      </Route>
 
-          {/* Public client review */}
-          <Route path="/r/:token" element={<ClientReview />} />
+                      {/* v1.9 links keep working */}
+                      <Route path="/project/:id" element={<ProjectRedirect />} />
+                      <Route path="/start" element={<Navigate to="/app" replace />} />
+                      <Route path="/app/new" element={<Navigate to="/connect?new=1" replace />} />
+                      <Route path="/app/connect" element={<Navigate to="/connect" replace />} />
+                      <Route path="/app/activity" element={<Navigate to="/app" replace />} />
 
-          {/* Hidden admin console — not linked from anywhere public */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin" element={<ProtectedAdminRoute><AppShell><AdminDashboard /></AppShell></ProtectedAdminRoute>} />
-        </Routes>
-      </BrowserRouter>
-        </DialogProvider>
-    </AuthProvider>
-      </DeviceGate>
+                      {/* Legacy brief flow + public client review + admin */}
+                      <Route path="/project/:id/legacy" element={<Legacy><ProjectOverview /></Legacy>} />
+                      <Route path="/project/:id/flow" element={<Legacy><ProjectFlow /></Legacy>} />
+                      <Route path="/project/:id/document" element={<Legacy><ProjectDocument /></Legacy>} />
+                      <Route path="/r/:token" element={<ClientReview />} />
+                      {/* v1.9 console (admin-email accounts) kept for parity */}
+                      <Route path="/admin/legacy/login" element={<AdminLogin />} />
+                      <Route path="/admin/legacy" element={<DialogProvider><ProtectedAdminRoute><LegacyAppShell><AdminDashboard /></LegacyAppShell></ProtectedAdminRoute></DialogProvider>} />
+                      {/* Owner-only admin panel — separate username/password session */}
+                      {AdminRoutes()}
+                    </Routes>
+                  </Suspense>
+                  </SandboxProvider>
+                </CommandProvider>
+              </AskPanelProvider>
+            </TooltipProvider>
+          </BrowserRouter>
+        </AuthProvider>
       </MotionConfig>
     </HelmetProvider>
   );

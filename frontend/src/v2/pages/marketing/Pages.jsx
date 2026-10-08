@@ -50,7 +50,7 @@ export function Pricing() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [currency, setCurrency] = useState(defaultCurrency);
-  const start = (plan) => navigate(user ? `/plan?plan=${plan}` : "/login");
+  const start = (plan) => navigate(user ? `/settings/billing?plan=${plan}` : `/signup?plan=${plan}`);
   return (
     <>
       <Seo title="Pricing" noindex={false} description="Simple, honest pricing. Monthly for ongoing work, or per project." />

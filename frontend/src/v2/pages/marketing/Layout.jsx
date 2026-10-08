@@ -60,7 +60,7 @@ export default function MarketingLayout() {
             ) : (
               <>
                 <Link to="/login"><Button variant="ghost">Sign in</Button></Link>
-                <Link to="/login" className="hidden md:block"><Button variant="primary">Get started</Button></Link>
+                <Link to="/signup" className="hidden md:block"><Button variant="primary">Get started</Button></Link>
               </>
             )}
             <button className="md:hidden -mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-fg-secondary hover:text-fg" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
@@ -98,7 +98,7 @@ export default function MarketingLayout() {
             <div className="flex flex-col gap-2">
               {user ? <Link to="/app"><Button variant="primary" size="l" className="w-full">Open Bracket</Button></Link> : (
                 <>
-                  <Link to="/login"><Button variant="primary" size="l" className="w-full">Get started</Button></Link>
+                  <Link to="/signup"><Button variant="primary" size="l" className="w-full">Get started</Button></Link>
                   <Link to="/login"><Button variant="secondary" size="l" className="w-full">Sign in</Button></Link>
                 </>
               )}
