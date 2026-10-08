@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarPlus, Lock, ShieldOff } from "lucide-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, CalendarPlus, Lock, ShieldOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../../../lib/utils";
 import { useResource, formatApiError } from "../../lib/data";
@@ -58,6 +58,7 @@ export default function UserDetail() {
           {u.suspended
             ? <Button icon={ShieldOff} loading={busy} onClick={unsuspend}>Restore access</Button>
             : <Button variant="danger" onClick={() => setDialog("suspend")}>Suspend account</Button>}
+          <Button variant="danger" icon={Trash2} data-testid="admin-delete-user-btn" onClick={() => setDialog("delete")}>Delete forever</Button>
         </div>
       </header>
       {u.suspended && <Banner tone="danger" title="This account is suspended">{u.suspended_reason ? `Reason: ${u.suspended_reason}. ` : ""}They can’t sign in and syncing is stopped. Nothing has been deleted.</Banner>}
@@ -139,6 +140,7 @@ export default function UserDetail() {
 
       <ExtendTrial open={dialog === "extend"} user={u} onClose={() => setDialog(null)} onDone={reload} />
       <Suspend open={dialog === "suspend"} user={u} onClose={() => setDialog(null)} onDone={reload} />
+      <DeleteUser open={dialog === "delete"} user={u} onClose={() => setDialog(null)} />
     </Page>
   );
 }
@@ -219,6 +221,42 @@ function Suspend({ open, user, onClose, onDone }) {
       </ul>
       <label htmlFor="suspend-reason" className="mb-2 mt-4 block text-body-s font-medium text-fg-secondary">Reason (kept in the audit log)</label>
       <Input id="suspend-reason" autoFocus value={reason} invalid={!!err} onChange={(e) => { setReason(e.target.value); setErr(null); }} />
+      {err && <p role="alert" className="mt-2 text-body-s text-danger">{err}</p>}
+    </Dialog>
+  );
+}
+
+function DeleteUser({ open, user, onClose }) {
+  const navigate = useNavigate();
+  const [reason, setReason] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [err, setErr] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const emailOk = confirm.trim().toLowerCase() === (user.email || "").toLowerCase();
+  const submit = async () => {
+    if (!reason.trim()) { setErr("Add a reason. It’s kept in the audit log."); return; }
+    if (!emailOk) { setErr("Type the account’s email exactly to confirm."); return; }
+    setBusy(true);
+    try {
+      const r = await admin.deleteUser(user.id, { reason: reason.trim(), confirm_email: confirm.trim() });
+      const n = Object.values(r.counts || {}).reduce((a, b) => a + (b || 0), 0);
+      toast.success(`${user.name} deleted permanently`, { description: `${fmtNum(n)} records erased across every collection. This cannot be undone.` });
+      onClose();
+      navigate("/admin/users");
+    } catch (e) { setErr(formatApiError(e)); setBusy(false); }
+  };
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()} title={`Delete ${user.name} forever?`} description="This erases the account and every trace of their data. It cannot be undone."
+      footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="danger" icon={Trash2} loading={busy} disabled={!emailOk || !reason.trim()} data-testid="admin-delete-user-confirm" onClick={submit}>Delete permanently</Button></>}>
+      <ul className="space-y-1.5 rounded-lg border border-danger/30 bg-danger/5 p-3 text-body-m text-fg">
+        <li>• The account, all {user.workspaces.length} workspace{user.workspaces.length === 1 ? "" : "s"}, memory, sources, files and billing history are wiped</li>
+        <li>• They’re signed out everywhere; the email is freed to sign up fresh</li>
+        <li>• There is <b>no</b> grace period and <b>no</b> recovery — this is final</li>
+      </ul>
+      <label htmlFor="delete-reason" className="mb-2 mt-4 block text-body-s font-medium text-fg-secondary">Reason (kept in the audit log)</label>
+      <Input id="delete-reason" value={reason} invalid={!!err && !reason.trim()} onChange={(e) => { setReason(e.target.value); setErr(null); }} placeholder="e.g. GDPR erasure request" data-testid="admin-delete-reason" />
+      <label htmlFor="delete-confirm" className="mb-2 mt-4 block text-body-s font-medium text-fg-secondary">Type <span className="font-mono text-fg">{user.email}</span> to confirm</label>
+      <Input id="delete-confirm" value={confirm} invalid={!!err && !emailOk} onChange={(e) => { setConfirm(e.target.value); setErr(null); }} placeholder={user.email} data-testid="admin-delete-confirm-email" />
       {err && <p role="alert" className="mt-2 text-body-s text-danger">{err}</p>}
     </Dialog>
   );

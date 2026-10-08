@@ -452,6 +452,33 @@ async def unsuspend(uid: str, request: Request):
     return {"ok": True}
 
 
+class DeleteUserIn(BaseModel):
+    reason: str = Field("", max_length=500)
+    confirm_email: str = Field("", max_length=320)
+
+
+@router.post("/users/{uid}/delete")
+async def delete_user(uid: str, body: DeleteUserIn, request: Request):
+    """Permanently erase a user and ALL their data across every collection.
+    Irreversible — guarded by a reason + typed-email confirmation. Runs against
+    whichever environment's database this instance is connected to."""
+    await require_admin(request)
+    u = await db.users.find_one({"user_id": uid}, {"_id": 0, "user_id": 1, "email": 1, "name": 1})
+    if not u:
+        raise HTTPException(404, "No user with that ID.")
+    if not body.reason.strip():
+        raise HTTPException(422, "Add a reason for the audit log.")
+    email = (u.get("email") or "").strip()
+    if (body.confirm_email or "").strip().lower() != email.lower():
+        raise HTTPException(422, "Type the account’s email exactly to confirm permanent deletion.")
+    await db.user_sessions.delete_many({"user_id": uid})  # signed out everywhere first
+    from server import _cascade_delete_users  # lazy import (avoids circular load)
+    counts = await _cascade_delete_users([uid], [email] if email else [])
+    await _audit("delete_user", _ip(request), {"user_id": uid, "email": email, "reason": body.reason.strip(), "counts": counts})
+    logger.warning("admin permanently deleted user %s (%s) — counts=%s", uid, email, counts)
+    return {"ok": True, "deleted": {"user_id": uid, "email": email}, "counts": counts}
+
+
 @router.get("/revenue")
 async def revenue(request: Request, range: int = Query(30, ge=1, le=365), currency: str = Query("usd")):
     await require_admin(request)

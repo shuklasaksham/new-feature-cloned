@@ -33,6 +33,7 @@ export const admin = {
   extendTrial: (id, body) => p(`/users/${id}/extend-trial`, body),
   suspend: (id, reason) => p(`/users/${id}/suspend`, { reason }),
   unsuspend: (id) => p(`/users/${id}/unsuspend`),
+  deleteUser: (id, body) => p(`/users/${id}/delete`, body),
   revenue: (params) => g("/revenue", params),
   usage: (params) => g("/usage", params),
   sandbox: (params) => g("/sandbox", params),

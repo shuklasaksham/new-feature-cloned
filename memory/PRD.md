@@ -12,6 +12,22 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Admin: permanent account deletion (irreversible, GDPR-grade)** — new
+  `POST /api/v2/admin/users/{uid}/delete` (admin_v2.py) hard-erases a user and ALL their data
+  across every collection via `_cascade_delete_users` (projects, project_memory, source_connections,
+  source_events, notifications, files, knowledge_items, click_events, v2_attention_state, sessions,
+  oauth_states, payment_transactions, email_otps, …). Guarded by a required audit reason + typed
+  email confirmation (422 otherwise), signs the user out everywhere first, and writes an
+  `admin_audit` entry. UI: "Delete forever" button + confirmation dialog in admin UserDetail.jsx
+  (testids admin-delete-user-btn / -confirm / -reason / -confirm-email). Runs against whichever
+  environment's DB the instance is bound to — so it erases prod data when run from the prod admin
+  console, preview data from preview. Verified via curl (full cascade, guard rejections) + UI screenshot.
+  NOTE added `v2_attention_state` to `_CASCADE_BY_PROJECT` so snooze/save state is also erased.
+- 2026-06: **Snoozed/Saved attention (real), category hide/pin/delete, plan-limit upgrade nudge.**
+  `v2_attention_state` collection persists snooze(+until)/save; `?view=later` returns real lists;
+  elapsed snooze auto-returns to active. Category menu Hide/Pin persist flags (rail filters hidden),
+  "Not a real category" deletes + re-maps memory to nearest. WorkspaceBanner shows a dismissible
+  "using all N of N projects" nudge → real Razorpay checkout. Backend curl-verified.
 - 2026-06: **Four v2 UI→backend bridges wired (Billing, Connect, Review-Apply, Categories)** —
   backend-tested 100% (testing_agent iteration_75.json, 11/11).
   - **Billing Bridge**: new `/api/v2/billing` GET/PATCH + `/billing/change|cancel|resume|retry`

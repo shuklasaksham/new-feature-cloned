@@ -1227,7 +1227,7 @@ async def admin_purge_users(body: PurgeUsersIn, request: Request):
 # erase a user + everything they created — no orphaned rows left behind.
 _CASCADE_BY_PROJECT = [
     "project_memory", "source_connections", "source_events", "project_updates",
-    "notifications", "files", "knowledge_items", "click_events",
+    "notifications", "files", "knowledge_items", "click_events", "v2_attention_state",
 ]
 _CASCADE_BY_USER = [
     "user_sessions", "integration_accounts", "oauth_states", "push_subscriptions",
