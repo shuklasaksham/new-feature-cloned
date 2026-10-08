@@ -92,7 +92,7 @@ export default function App() {
 
           {/* Auth flow */}
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Navigate to="/login" replace />} />
+          <Route path="/signup" element={<Login signup />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/plan" element={<ProtectedRoute><ChoosePlan /></ProtectedRoute>} />

@@ -22,7 +22,7 @@ function computeBlocked() {
 
 // Public, fully-responsive marketing pages are allowed on any device; only the
 // dense desktop workspace is gated.
-const MARKETING_PATHS = new Set(["/", "/pricing", "/privacy", "/terms", "/security", "/use-cases", "/changelog", "/about", "/contact"]);
+const MARKETING_PATHS = new Set(["/", "/pricing", "/privacy", "/terms", "/security", "/use-cases", "/changelog", "/about", "/contact", "/login", "/signup"]);
 function isMarketingPath() {
   if (typeof window === "undefined") return false;
   return MARKETING_PATHS.has(window.location.pathname);

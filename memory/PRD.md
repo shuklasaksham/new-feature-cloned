@@ -21,6 +21,9 @@ LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend
     arrow-key + enter navigation. Styled with `.bk` v2 tokens.
   - **Contact Inbox**: admin console "Contact" tab (`AdminDashboard.jsx`) backed by new
     `GET /api/admin/contact-messages` (admin-only) listing marketing contact-form submissions.
+  - Auth (`/login`, `/signup`) **fully reskinned** to the v2 marketing look (`Login.jsx` rewritten
+    with v2 `AuthLayout` + primitives; logic/testids preserved; `/signup` opens in sign-up mode;
+    DeviceGate now allows `/login` `/signup` on mobile). OTP code flow verified end-to-end.
   - Auth (`/login`, `/admin/login`) now render in the new type; white primary button already
     matches v2 `primary=inverse`. (Deeper per-component workspace parity remains for a later pass.)
 - 2026-06: **Bracket 2.0 overhaul — Phase 1** (marketing site + design foundation). See below.
