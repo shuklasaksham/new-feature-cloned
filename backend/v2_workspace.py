@@ -23,6 +23,7 @@ from fastapi.responses import JSONResponse
 
 from auth import current_user_optional, current_user
 from connectors import (db, _get_account, gmail_list_sources, slack_list_sources,
+                        figma_list_sources, github_list_sources,
                         oauth_auth_url, extract_sources_into_project, _plan_limit,
                         _active_project_count, PROVIDERS)
 import v2_real
@@ -280,13 +281,15 @@ async def _onboarding_project(wid, request):
 
 
 @router.get("/w/{wid}/onboarding")
-async def onboarding_state(wid: str, request: Request):
+async def onboarding_state(wid: str, request: Request, q: str = ""):
     user, proj = await _onboarding_project(wid, request)
     connected = dict((proj.get("onboarding") or {}).get("connected") or {})
     client = proj.get("client_name") or ""
     tok = (client.split() or [""])[0].lower()
     threads, channels = [], []
     # Reflect real OAuth links + list candidate sources for connected providers.
+    # `q` performs a real server-side search in the provider (whole mailbox /
+    # workspace), not just a filter over the first page.
     for prov in ("gmail", "slack", "figma", "github", "notion"):
         try:
             account = await _get_account(user["user_id"], prov)
@@ -298,16 +301,16 @@ async def onboarding_state(wid: str, request: Request):
             connected[prov] = "connected"
         try:
             if prov == "gmail":
-                srcs = await gmail_list_sources(account, "")
+                srcs = await gmail_list_sources(account, q)
                 for i, s in enumerate(srcs):
                     meta = s.get("meta") or {}
                     frm = meta.get("detail") or ""
                     threads.append({"id": s["id"], "name": s.get("name") or "(no subject)", "from": frm,
                                     "messages": _msg_count(meta) or 1, "at": meta.get("updated") or "",
                                     "mentions": bool(tok and (tok in (s.get("name", "").lower()) or tok in frm.lower())),
-                                    "selected": i < 5})
+                                    "selected": (not q) and i < 5})
             elif prov == "slack":
-                srcs = await slack_list_sources(account, "")
+                srcs = await slack_list_sources(account, q)
                 for s in srcs:
                     meta = s.get("meta") or {}
                     channels.append({"id": s["id"], "name": s.get("name") or "channel", "messages": _msg_count(meta) or 0})
@@ -345,24 +348,53 @@ class OnbStartIn(BaseModel):
     channel_ids: list = []
 
 
+async def _list_provider_sources(account, prov):
+    if prov == "gmail":
+        return await gmail_list_sources(account, "")
+    if prov == "slack":
+        return await slack_list_sources(account, "")
+    if prov == "figma":
+        return await figma_list_sources(account, "", "")
+    if prov == "github":
+        return await github_list_sources(account, "")
+    return []
+
+
 async def _run_onboarding(user, wid, gmail_ids, slack_ids):
+    uid = user["user_id"]
+    # gmail/slack use the user's explicit picks; figma/github auto-include the
+    # most recent sources of any connected account (no per-file picker in the wizard).
+    plan = [("gmail", set(gmail_ids)), ("slack", set(slack_ids))]
+    for prov in ("figma", "github"):
+        try:
+            if await _get_account(uid, prov):
+                plan.append((prov, None))
+        except Exception:
+            pass
     run = {"status": "running", "providers": {}, "found": [], "found_count": 0, "done": False}
+    unit = {"gmail": "threads", "slack": "channels", "figma": "files", "github": "repos"}
     try:
-        for prov, ids in (("gmail", gmail_ids), ("slack", slack_ids)):
-            if not ids:
+        for prov, ids in plan:
+            if ids is not None and not ids:
                 continue
             try:
-                account = await _get_account(user["user_id"], prov)
-                listed = await (gmail_list_sources if prov == "gmail" else slack_list_sources)(account, "")
+                account = await _get_account(uid, prov)
+                listed = await _list_provider_sources(account, prov)
             except Exception:
                 listed = []
-            picked = [{"id": s["id"], "name": s.get("name", ""), "url": s.get("url", "")} for s in listed if s["id"] in set(ids)]
-            run["providers"][prov] = {"label": f"Reading {len(picked)} {'threads' if prov == 'gmail' else 'channels'}", "done": False, "pct": 0.1, "eta": "about a minute"}
+            if ids is None:
+                chosen = listed[:3]
+            else:
+                chosen = [s for s in listed if s["id"] in ids]
+            picked = [{"id": s["id"], "name": s.get("name", ""), "url": s.get("url", "")} for s in chosen]
+            if not picked:
+                continue
+            run["providers"][prov] = {"label": f"Reading {len(picked)} {unit[prov]}", "done": False, "pct": 0.1, "eta": "about a minute"}
             await db.projects.update_one({"id": wid}, {"$set": {"onboarding.run": run}})
             res = await extract_sources_into_project(user, wid, prov, picked)
             run["found"] = (res.get("found") or []) + run["found"]
             run["found_count"] += res.get("memory_count", 0)
-            run["providers"][prov] = {"label": f"{len(picked)} {'threads' if prov == 'gmail' else 'channels'} read", "done": True, "pct": 1, "eta": ""}
+            run["providers"][prov] = {"label": f"{len(picked)} {unit[prov]} read", "done": True, "pct": 1, "eta": ""}
             await db.projects.update_one({"id": wid}, {"$set": {"onboarding.run": run}})
     except Exception as e:
         logger.exception("[onboarding] run failed: %s", e)
@@ -384,7 +416,8 @@ async def onboarding_progress(wid: str, request: Request):
     _, proj = await _onboarding_project(wid, request)
     run = (proj.get("onboarding") or {}).get("run") or {}
     providers = run.get("providers") or {}
-    out = {"found_count": run.get("found_count", 0), "found": (run.get("found") or [])[:12], "done": run.get("done", False)}
+    out = {"found_count": run.get("found_count", 0), "found": (run.get("found") or [])[:12], "done": run.get("done", False),
+           "providers": [{"provider": k, "label": v.get("label", ""), "pct": v.get("pct", 0), "done": v.get("done", False), "eta": v.get("eta", "")} for k, v in providers.items()]}
     if "gmail" in providers:
         out["gmail"] = {"label": providers["gmail"]["label"]}
     if "slack" in providers:

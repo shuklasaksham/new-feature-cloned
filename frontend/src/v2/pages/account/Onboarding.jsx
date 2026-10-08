@@ -135,6 +135,8 @@ function ConnectSources({ wid, go }) {
   const rows = [
     { key: "gmail", title: "Gmail", sub: "Client email threads" },
     { key: "slack", title: "Slack", sub: "Project channels" },
+    { key: "figma", title: "Figma", sub: "Design files & comments" },
+    { key: "github", title: "GitHub", sub: "Repos, issues & PRs" },
     { key: "notes", title: "Notes & transcripts", sub: "Paste meeting notes or calls", icon: FileText, cta: "Add", on: () => setNote(true) },
     { key: "files", title: "Files", sub: "Briefs, contracts, PDFs", icon: Upload, cta: "Add", on: () => setUpload(true) },
     { key: "notion", title: "Notion", sub: "Coming soon", letter: "N", soon: true },
@@ -183,10 +185,26 @@ function ChooseReads({ wid, go }) {
   const [state, setState] = useState(null);
   const [sel, setSel] = useState(new Set());
   const [q, setQ] = useState("");
+  const [searching, setSearching] = useState(false);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { v2.onboarding(wid).then((s) => { setState(s); setSel(new Set(s.threads.filter((t) => t.selected).map((t) => t.id))); }); }, [wid]);
-  const threads = (state?.threads || []).filter((t) => !q || `${t.name} ${t.from}`.toLowerCase().includes(q.toLowerCase()));
+  // Single loader: empty query loads the default suggestions (and seeds the
+  // pre-selected set); a typed query runs a real server-side mailbox search.
+  useEffect(() => {
+    const term = q.trim();
+    const h = setTimeout(async () => {
+      if (term) setSearching(true);
+      try {
+        const s = await v2.onboarding(wid, term);
+        setState(s);
+        if (!term) setSel(new Set((s.threads || []).filter((t) => t.selected).map((t) => t.id)));
+      } finally { setSearching(false); }
+    }, term ? 400 : 0);
+    return () => clearTimeout(h);
+  }, [q, wid]);
+  const threads = state?.threads || [];
   const client = state?.workspace?.client_name || "the client";
+  const extra = Object.entries(state?.connected || {}).filter(([k, v]) => ["figma", "github"].includes(k) && v && v !== "cancelled").map(([k]) => k);
+  const extraLabel = { figma: "Figma", github: "GitHub" };
   const toggle = (id) => setSel((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const start = async () => { setBusy(true); await v2.onboardingStart(wid, [...sel], (state?.channels || []).map((c) => c.id)); go(4); };
   return (
@@ -197,7 +215,7 @@ function ChooseReads({ wid, go }) {
       <div className="mt-6 overflow-hidden rounded-lg border border-line">
         <div className="flex items-center gap-3 border-b border-line-subtle px-3 py-2.5">
           <SourceMark provider="gmail" size={16} /><span className="text-[12px] text-fg">Gmail</span>
-          <label className="flex h-8 flex-1 items-center gap-2 rounded-md border border-line-control px-2.5 sm:max-w-[240px]"><Search size={14} className="text-fg-tertiary" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search threads" className="min-w-0 flex-1 bg-transparent text-[12px] text-fg placeholder:text-fg-tertiary outline-none" aria-label="Search threads" /></label>
+          <label className="flex h-8 flex-1 items-center gap-2 rounded-md border border-line-control px-2.5 sm:max-w-[280px]">{searching ? <Loader2 size={14} className="animate-spin text-fg-tertiary" /> : <Search size={14} className="text-fg-tertiary" />}<input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search all email (sender, subject, keyword)" className="min-w-0 flex-1 bg-transparent text-[12px] text-fg placeholder:text-fg-tertiary outline-none" aria-label="Search email" /></label>
           <span className="hidden flex-1 text-right text-[12px] text-fg-tertiary sm:block">Suggested</span>
         </div>
         <div className="divide-y divide-line-subtle">
@@ -210,6 +228,7 @@ function ChooseReads({ wid, go }) {
               <span className="w-[48px] text-right text-[12px] text-fg-tertiary">{relDay(t.at)}</span>
             </label>
           ))}
+          {!threads.length && <div className="px-3 py-8 text-center text-[12px] text-fg-tertiary">{searching ? "Searching your mailbox…" : q ? `No email matches “${q}”. Try a sender, subject word or keyword.` : "No email found yet."}</div>}
         </div>
         {(state?.channels || []).length > 0 && (
           <div className="flex items-center gap-3 border-t border-line-subtle px-3 py-3 text-[12px]">
@@ -217,12 +236,18 @@ function ChooseReads({ wid, go }) {
             <Button size="s" variant="ghost" onClick={() => toast("Choose channels after setup in Sources")}>Change</Button>
           </div>
         )}
+        {extra.map((p) => (
+          <div key={p} className="flex items-center gap-3 border-t border-line-subtle px-3 py-3 text-[12px]">
+            <SourceMark provider={p} size={14} /><span className="flex-1 text-fg-secondary">{extraLabel[p]} · connected · Bracket will read your most recent {p === "figma" ? "files & comments" : "repos, issues & PRs"}</span>
+            <span className="flex items-center gap-1.5 text-success"><span className="h-1.5 w-1.5 rounded-full bg-success" />Ready</span>
+          </div>
+        ))}
       </div>
       <div className="mt-6 flex items-center gap-3">
         <Button variant="ghost" onClick={() => go(2)}>Back</Button>
         <span className="flex-1" />
-        <span className="text-[12px] text-fg-tertiary">{sel.size} thread{sel.size === 1 ? "" : "s"} · {(state?.channels || []).length} channel{(state?.channels || []).length === 1 ? "" : "s"}</span>
-        <Button variant="primary" icon={ArrowRight} loading={busy} disabled={!sel.size && !(state?.channels || []).length} onClick={start}>Start learning</Button>
+        <span className="text-[12px] text-fg-tertiary">{sel.size} thread{sel.size === 1 ? "" : "s"} · {(state?.channels || []).length} channel{(state?.channels || []).length === 1 ? "" : "s"}{extra.length ? ` · ${extra.length} more source${extra.length === 1 ? "" : "s"}` : ""}</span>
+        <Button variant="primary" icon={ArrowRight} loading={busy} disabled={!sel.size && !(state?.channels || []).length && !extra.length} onClick={start}>Start learning</Button>
       </div>
     </div>
   );
@@ -248,8 +273,13 @@ function Learning({ wid, go }) {
       <Title>Bracket is reading your work</Title>
       <Lead>This takes a few minutes. You’ll see what it understands as it goes — no need to wait here.</Lead>
       <div className="mt-6 space-y-4 rounded-lg border border-line p-4" role="status" aria-live="polite">
-        {p?.gmail && <div><div className="flex items-center gap-2 text-[12px]"><SourceMark provider="gmail" size={14} /><span className="flex-1 text-fg">{p.gmail.label}</span><span className="text-success">Done</span></div>{bar(1, "bg-success")}</div>}
-        {p?.slack && <div><div className="flex items-center gap-2 text-[12px]"><SourceMark provider="slack" size={14} /><span className="flex-1 text-fg">{p.slack.label}</span><span className={p.slack.done ? "text-success" : "text-fg-tertiary"}>{p.slack.done ? "Done" : p.slack.eta}</span></div>{bar(p.slack.pct, p.slack.done ? "bg-success" : "bg-info")}</div>}
+        {(p?.providers || []).map((pv) => (
+          <div key={pv.provider}>
+            <div className="flex items-center gap-2 text-[12px]"><SourceMark provider={pv.provider} size={14} /><span className="flex-1 text-fg">{pv.label}</span><span className={pv.done ? "text-success" : "text-fg-tertiary"}>{pv.done ? "Done" : pv.eta}</span></div>
+            {bar(pv.done ? 1 : pv.pct, pv.done ? "bg-success" : "bg-info")}
+          </div>
+        ))}
+        {!(p?.providers || []).length && <p className="text-[12px] text-fg-tertiary">Starting…</p>}
       </div>
       <div className="mt-4 overflow-hidden rounded-lg border border-line">
         <div className="flex items-center gap-2 border-b border-line-subtle px-4 py-3"><span className="text-[12px] text-fg">Found so far</span><span className="font-mono text-[12px] text-fg-tertiary">{p?.found_count ?? 0}</span><span className="flex-1" />{!p?.done ? <Loader2 size={14} className="animate-spin text-fg-tertiary" /> : <CheckCircle2 size={14} className="text-success" />}</div>
