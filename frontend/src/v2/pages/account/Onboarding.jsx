@@ -22,9 +22,24 @@ const KINDS = ["A client project", "My own business", "A team or department", "S
 export default function Onboarding() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const step = Number(params.get("step") || 1);
   const wid = params.get("w");
-  const go = (n, extra = {}) => setParams({ step: String(n), ...(wid ? { w: wid } : {}), ...extra });
+  // Gate: a plan or active free-trial is required before connecting real tools.
+  useEffect(() => { if (user && !user.plan) navigate("/plan", { replace: true }); }, [user, navigate]);
+  // Resume an unfinished workspace when arriving without one (Save & exit → back).
+  useEffect(() => {
+    if (wid || !user?.plan) return;
+    let on = true;
+    v2.onboardingDraft().then((d) => { if (on && d?.draft) setParams({ step: String(d.draft.step || 2), w: d.draft.id }); }).catch(() => {});
+    return () => { on = false; };
+  }, [wid, user]); // eslint-disable-line react-hooks/exhaustive-deps
+  const go = (n, extra = {}) => {
+    setParams({ step: String(n), ...(wid ? { w: wid } : {}), ...extra });
+    const w = extra.w || wid;
+    if (w) v2.onboardingStep(w, n).catch(() => {});
+  };
+  const saveExit = () => { if (wid) v2.onboardingStep(wid, step).catch(() => {}); navigate("/app"); };
   const Step = { 1: CreateWorkspace, 2: ConnectSources, 3: ChooseReads, 4: Learning, 5: Ready }[step] || CreateWorkspace;
   return (
     <div className="bk flex min-h-[100dvh] flex-col bg-app">
@@ -47,7 +62,7 @@ export default function Onboarding() {
           </ol>
         )}
         <span className="flex-1" />
-        <button onClick={() => navigate(wid ? `/w/${wid}` : "/app")} className="text-[12px] font-medium text-fg hover:underline">Save & exit</button>
+        <button onClick={saveExit} className="text-[12px] font-medium text-fg hover:underline">Save & exit</button>
       </header>
       {step <= 4 && <p className="px-4 pt-4 text-[12px] text-fg-tertiary md:hidden">Step {step} of 4 · {STEPS[step - 1]}</p>}
       <main className="flex flex-1 justify-center px-4 pt-8 pb-16 md:pt-14">
@@ -66,7 +81,7 @@ const Title = ({ children }) => <h1 className="mt-3 text-title-l text-fg">{child
 const Lead = ({ children }) => <p className="mt-3 text-body-m text-fg-secondary">{children}</p>;
 
 /* 1 · Create workspace */
-function CreateWorkspace({ go, setParams }) {
+function CreateWorkspace({ go }) {
   const { user } = useAuth();
   const domainGuess = (user?.email || "").split("@")[1]?.split(".")[0];
   const [client, setClient] = useState("");
@@ -74,13 +89,13 @@ function CreateWorkspace({ go, setParams }) {
   const [kind, setKind] = useState(KINDS[0]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
-  useEffect(() => { if (!client) setClient("Acme Finance"); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!client) setClient("Acme Finance"); }, []); // eslint-disable-line
   const next = async () => {
     setBusy(true); setErr(null);
     try {
       const w = await v2.createWorkspace({ client_name: client.trim(), name: work.trim() ? work.trim().replace(/^\w/, (c) => c.toUpperCase()) : client.trim(), kind });
       fetchProjects(true);
-      setParams({ step: "2", w: w.id });
+      go(2, { w: w.id });
     } catch (e) {
       if (e?.response?.data?.code === "plan_limit") setErr("You’re using all 10 projects. Archive a finished workspace in Settings, or add this one for a one-off fee.");
       else setErr(e?.response?.data?.detail || "Couldn’t create the workspace");

@@ -237,6 +237,31 @@ async def workspaces(request: Request):
     return {"workspaces": items}
 
 
+@router.get("/onboarding/draft")
+async def onboarding_draft(request: Request):
+    """The user's most recent unfinished onboarding workspace, so 'Save & exit'
+    can resume exactly where they left off."""
+    user = await current_user(request, db)
+    p = await db.projects.find_one(
+        {"owner_user_id": user["user_id"], "status": "in_progress", "archived": {"$ne": True}},
+        {"_id": 0, "id": 1, "name": 1, "onboarding": 1}, sort=[("updated_at", -1)])
+    if not p:
+        return {"draft": None}
+    step = ((p.get("onboarding") or {}).get("step")) or 1
+    return {"draft": {"id": p["id"], "name": p.get("name", ""), "step": step}}
+
+
+class OnbStepIn(BaseModel):
+    step: int = 1
+
+
+@router.post("/w/{wid}/onboarding/step")
+async def onboarding_set_step(wid: str, request: Request, payload: OnbStepIn):
+    await _onboarding_project(wid, request)
+    await db.projects.update_one({"id": wid}, {"$set": {"onboarding.step": payload.step, "updated_at": iso(_now())}})
+    return {"ok": True}
+
+
 # ── Onboarding wizard (real: create project + connect sources + extract) ─────
 class CreateWorkspaceIn(BaseModel):
     client_name: str = ""
@@ -445,6 +470,8 @@ async def onboarding_finish(wid: str, request: Request):
     read = " and ".join(parts) if parts else "your sources"
     first = await db.project_memory.find_one({"project_id": wid, "status": "detected"}, {"_id": 0, "id": 1, "title": 1})
     attention = {"title": first["title"], "review_id": first["id"]} if first else None
+    # Onboarding complete → no longer a resumable draft.
+    await db.projects.update_one({"id": wid}, {"$set": {"status": "active", "onboarding.step": 5, "updated_at": iso(_now())}})
     return {"workspace": {"name": proj.get("name", "")}, "read": read, "counts": view_counts, "attention": attention}
 
 

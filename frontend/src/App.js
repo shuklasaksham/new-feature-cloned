@@ -17,7 +17,7 @@ import MarketingLayout from "./v2/pages/marketing/Layout";
 import Landing from "./v2/pages/marketing/Landing";
 import { Pricing, Privacy, Terms, Security, NotFound } from "./v2/pages/marketing/Pages";
 import { UseCases, Changelog, About, Contact } from "./v2/pages/marketing/More";
-import { AuthCallback, Onboarding, Claim, PaymentResult } from "./v2/pages/auth";
+import { AuthCallback, Onboarding, Claim, PaymentResult, Plan } from "./v2/pages/auth";
 import { SignIn, SignUp, VerifyEmail, ForgotPassword, ResetPassword, AcceptInvite, GoogleHandoff } from "./v2/pages/account/Auth";
 import Onboarding2, { OAuthMock } from "./v2/pages/account/Onboarding";
 import WorkspaceLayout, { WorkspaceNotFound } from "./v2/pages/workspace/WorkspaceLayout";
@@ -120,7 +120,7 @@ export default function App() {
                       <Route path="/sandbox" element={<SandboxEntry />} />
                       <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
                       <Route path="/claim" element={<RequireAuth><Claim /></RequireAuth>} />
-                      <Route path="/plan" element={<Navigate to="/settings/billing" replace />} />
+                      <Route path="/plan" element={<RequireAuth><Plan /></RequireAuth>} />
                       <Route path="/payment/success" element={<RequireAuth><PaymentResult ok /></RequireAuth>} />
                       <Route path="/payment/cancel" element={<RequireAuth><PaymentResult ok={false} /></RequireAuth>} />
 

@@ -48,9 +48,9 @@ function GoogleG() {
   );
 }
 
-/* After any sign-in: no plan → /plan · incomplete profile → /onboarding · else next */
+/* After any sign-in: new user or no plan → choose a plan first (gate) · else next */
 function routeAfterAuth(user, isNew, next) {
-  if (isNew) return "/welcome";
+  if (isNew || !user?.plan) return "/plan";
   return next || "/app";
 }
 
@@ -284,7 +284,7 @@ export function Plan() {
   useEffect(() => { api.get("/public/ph-launch").then(({ data }) => setPhOn(!!data?.enabled)).catch(() => {}); }, []);
   const afterPaid = async () => {
     const u = await refresh();
-    navigate(!u?.name || !u?.designation ? "/onboarding?next=%2Fapp" : "/app", { replace: true });
+    navigate(!u?.name || !u?.designation ? "/onboarding?next=%2Fwelcome" : "/welcome", { replace: true });
   };
   const pay = async () => {
     setBusy(true);
@@ -351,6 +351,10 @@ export function Plan() {
         </Button>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-body-s text-fg-tertiary"><ShieldCheck size={13} /> Secure checkout by Razorpay. {currency === "inr" ? "Prices in ₹ include GST." : "USD prices exclude local taxes."}</p>
         <p className="mt-4 text-center text-body-s text-fg-tertiary">Signed in as {user?.email} · <button className="underline hover:text-fg" onClick={async () => { await logout(); navigate("/login"); }}>Sign out</button></p>
+        <div className="mt-6 border-t border-line-subtle pt-5 text-center">
+          <p className="text-body-s text-fg-tertiary">Not ready to connect your own workspace?</p>
+          <Button variant="ghost" size="s" className="mt-2" onClick={() => navigate("/sandbox")}>Explore a sample project first — no card, nothing connected</Button>
+        </div>
       </div>
     </AuthLayout>
   );
@@ -369,7 +373,7 @@ export function PaymentResult({ ok }) {
         </span>
         <h1 className="mt-5 text-display-s">{ok ? "You’re all set" : "Payment cancelled"}</h1>
         <p className="mt-2 text-body-m text-fg-tertiary">{ok ? "Your plan is active. A receipt is on its way to your inbox." : "No charge was made. You can pick a plan whenever you’re ready."}</p>
-        <Button variant="primary" size="l" className="mt-6 w-full" onClick={() => navigate(ok ? "/onboarding?next=%2Fwelcome" : "/plan", { replace: true })}>
+        <Button variant="primary" size="l" className="mt-6 w-full" onClick={() => navigate(ok ? "/welcome" : "/plan", { replace: true })}>
           {ok ? "Set up your first workspace" : "Back to plans"}
         </Button>
       </div>

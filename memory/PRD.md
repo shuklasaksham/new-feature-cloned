@@ -12,6 +12,25 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **FIX — signup flow had no plan gate, no sandbox, no resumable draft (regression from UI swap).**
+  - **Plan gate**: `routeAfterAuth` now sends any new or no-plan user to `/plan` (was dumping
+    everyone straight into `/welcome`). `/plan` route now renders the real `Plan()` screen (was a
+    redirect to billing). `/welcome` self-guards: no `user.plan` → `/plan`.
+  - **Choose-a-plan screen**: real Razorpay Monthly (₹999)/Per-project (₹199) + the "Launch offer:
+    first project free 14 days, no card" claim (`/payments/ph-activate` → plan `ph_launch`). After
+    pay/claim → `/welcome`.
+  - **Sandbox in-flow**: Plan screen now offers "Explore a sample project first — no card, nothing
+    connected" → `/sandbox` for people who want to try before trusting/paying.
+  - **Resumable drafts**: onboarding workspaces are `status:in_progress` until finished; step is
+    persisted (`onboarding.step` via `POST /w/{id}/onboarding/step`). "Save & exit" → `/app`; returning
+    to `/welcome` calls `GET /v2/onboarding/draft` and resumes at the saved step. `finish` flips the
+    project to `active` so it stops being a draft. Verified: create→step3→draft resumes at 3→finish→draft null.
+- 2026-06: **FIX — onboarding Gmail/Slack search was client-side only** (filtered 12 cached rows).
+  Now `GET /w/{id}/onboarding?q=` runs a real server-side mailbox/workspace search; step 3 re-queries
+  the backend as you type (debounced, with spinner + empty state). Verified against a live Gmail account.
+- 2026-06: **FIX — Figma & GitHub missing from onboarding Connect step.** Added both (real OAuth);
+  backend `_run_onboarding` auto-extracts connected Figma files / GitHub repos; Learning screen renders
+  any provider generically.
 - 2026-06: **FIX — first-run onboarding wizard was 405/404 (critical).** The v2 UI's `/welcome`
   wizard called `POST /v2/workspaces` + `GET/POST /v2/w/{id}/onboarding*` which were never wired
   on the backend (only `GET /workspaces` existed → "Method Not Allowed"). Added the missing
