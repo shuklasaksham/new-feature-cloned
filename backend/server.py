@@ -4916,6 +4916,10 @@ import sandbox_v2 as _sandbox_v2  # noqa: E402
 _admin_v2.install(app)
 _sandbox_v2.install(app)
 
+# --- v2 Workspace API (seeded rich workspace for the new UI) ---
+import v2_workspace as _v2ws  # noqa: E402
+app.include_router(_v2ws.router)
+
 
 @app.on_event("startup")
 async def _start_connector_poller():
