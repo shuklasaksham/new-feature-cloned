@@ -12,6 +12,23 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **7 reported bugs fixed (sandbox, onboarding, speed, in-app connect).** Verified by
+  testing_agent iteration_76.json (5/7 e2e; #3 & #4 need live Gmail OAuth, not headless-testable).
+  1. **Sandbox hang** → `demo.py _seed` now pre-seeds `v2_categories` + `v2_cat_map` so the sandbox
+     Overview renders in ~2-4s (was stuck on skeletons while LLM-inferring categories). `demo_simulate`
+     keeps the map in sync so each played beat stays instant.
+  2. **Save & Exit removed** from the onboarding header.
+  3/4. **Connect state / pre-selected threads** — step 2 now fetches a lightweight `?status=1`
+     (connected-only, no live mailbox fetch) so going back shows connected instantly; step 3 pre-selects
+     5 threads and re-queries the server on search (needs live Gmail to fully see).
+  5. **Step 4 renamed** 'Learn' → 'Read'; Learning extraction now runs per-source fetch+analyze
+     **concurrently** (`asyncio.gather` in `extract_sources_into_project`) so it finishes in ~slowest-source
+     time instead of the sum.
+  6. **Speed** — fixed `/api/v2/updates` 404 (added `GET /v2/updates` + `POST /v2/updates/read` backing
+     the notifications bell), lightweight onboarding status, concurrent extraction, pre-seeded sandbox.
+  7. **OAuth popup shifted the background to /sources** → the sidebar 'Connect a source' / '+ Add source'
+     now open an in-place `AddSourceDialog` + `ConnectFlow` overlay in `AppShell.jsx Sidebar()`; the
+     background URL no longer changes. testids: `sidebar-add-source`, `sidebar-connect-source`, `connect-{provider}`.
 - 2026-06: **FIX — signup flow had no plan gate, no sandbox, no resumable draft (regression from UI swap).**
   - **Plan gate**: `routeAfterAuth` now sends any new or no-plan user to `/plan` (was dumping
     everyone straight into `/welcome`). `/plan` route now renders the real `Plan()` screen (was a

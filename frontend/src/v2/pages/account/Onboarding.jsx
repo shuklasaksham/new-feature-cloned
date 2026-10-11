@@ -177,7 +177,7 @@ function ConnectSources({ wid, go }) {
               <span className="min-w-0 flex-1"><span className={cn("block text-[12px] font-medium", r.soon ? "text-fg-tertiary" : "text-fg")}>{r.title}</span><span className="block text-[12px] text-fg-tertiary">{r.sub}</span></span>
               {r.soon ? <Badge>Soon</Badge> : ok ? (
                 <motion.span initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} transition={T.base} className="flex items-center gap-2 text-[12px] text-fg-secondary"><span className="h-1.5 w-1.5 rounded-full bg-success" />{typeof v === "string" ? v : "Added"}</motion.span>
-              ) : <Button size="s" onClick={r.on || (() => connect(r.key))}>{r.cta || (v === "cancelled" ? "Try again" : "Connect")}</Button>}
+              ) : <Button size="s" data-testid={`connect-${r.key}`} onClick={r.on || (() => connect(r.key))}>{r.cta || (v === "cancelled" ? "Try again" : "Connect")}</Button>}
             </StaggerItem>
           );
         })}

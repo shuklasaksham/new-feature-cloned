@@ -270,7 +270,7 @@ function Sidebar({ rail, onNavigate, width }) {
         </div>
 
         <GroupLabel rail={rail} action={
-          <Tooltip content="Add source"><button type="button" onClick={() => setPick(true)} className="flex h-5 w-5 items-center justify-center rounded-md text-fg-tertiary hover:bg-hover hover:text-fg" aria-label="Add source"><Plus size={14} /></button></Tooltip>
+          <Tooltip content="Add source"><button type="button" data-testid="sidebar-add-source" onClick={() => setPick(true)} className="flex h-5 w-5 items-center justify-center rounded-md text-fg-tertiary hover:bg-hover hover:text-fg" aria-label="Add source"><Plus size={14} /></button></Tooltip>
         }>Sources</GroupLabel>
         <div className="space-y-0.5">
           {list.map((s) => {
@@ -289,7 +289,7 @@ function Sidebar({ rail, onNavigate, width }) {
             </Tooltip>
           )}
           {!rail && list.length === 0 && (
-            <button type="button" onClick={() => setPick(true)} className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-body-m text-fg-tertiary hover:text-fg hover:bg-hover">
+            <button type="button" data-testid="sidebar-connect-source" onClick={() => setPick(true)} className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-body-m text-fg-tertiary hover:text-fg hover:bg-hover">
               <Plug size={16} strokeWidth={1.75} /> Connect a source
             </button>
           )}

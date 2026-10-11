@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only verification of 5 user-reported bugs in Bracket v2 onboarding + sandbox + in-app connect flow. ALL VERIFIED FIXED. (1) SANDBOX: /sandbox → 'Open the sandbox' navigates to /w/{id} and the Overview FULLY renders in ~4s — real content visible: 4 'Needs your review' attention items (Payments integration, Mobile-responsive dashboard, Refund policy rules?, Analytics in V1 or V2?), Memory rail shows all 5 categories (Scope 6, Deadlines 1, Decisions 1, Requirements 2, Deliverables 3), sidebar sources (Gmail/Slack/Figma/GitHub/Notes). ZERO skeleton/pulse elements left, ZERO 4xx responses on /v2/updates. (2) APP SPEED: Both sandbox overview and welcome pages render within 2-4s, no perceptible hang. (3) 'Save & Exit' REMOVED: /welcome header no longer renders a 'Save & exit' control (confirmed via full body innerText scan). (4) Step rename: Step 4 label is 'Read' (not 'Learn'); innerText has 'Read' and does NOT contain 'Learn'. (5) Onboarding step 1 → step 2: Filled 'TEST_Workspace_Playwright' and clicked Continue → advanced to ?step=2&w=<id> with full provider list (Gmail, Slack, Figma, GitHub, Notes, Files, Notion). (6) Step-2 Connect popup: Clicking the Gmail 'Connect' row opened an OAuth popup to accounts.google.com with proper state/redirect_uri; main window URL stayed at /welcome?step=2 — did NOT navigate away. (7) BUG 7 IN-APP CONNECT: On real workspace /w/58b8dba2-.../overview, clicked the '+' button adjacent to the SOURCES heading in the sidebar — a modal dialog with heading 'Add a source' opened IN PLACE as an overlay (role=dialog, 1 instance), showing provider grid (Slack, Gmail Connected, Notes Connected, Files, Figma, GitHub, Notion Coming soon, Jira, Meetings); window.location.pathname BEFORE and AFTER the click were IDENTICAL (/w/58b8dba2-f25c-462b-b911-8dccd977697d/overview) — the background page did NOT redirect to /sources. Bugs 3 & 4 (pre-selected threads / back-after-connect) skipped per instructions — require real Gmail OAuth consent.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "In-app Add a source dialog", "issues": ["Minor: 'Add a source' modal lacks a visible dim/backdrop overlay — the dialog floats over the page with full background still visible/interactive-looking. Functionally fine but reduces modal affordance. A semi-transparent backdrop would improve focus."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_76.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Sidebar '+' Add-source trigger has aria-label but no data-testid — adding data-testid=\"sidebar-add-source\" would make this flow test-stable (currently had to probe with multiple selector candidates).",
+    "Welcome step-2 'Connect' buttons on provider rows share identical text and no per-provider data-testid (e.g. data-testid=\"connect-gmail\"); automation currently relies on text proximity which is fragile.",
+    "Add a source dialog could use role='dialog' with aria-modal='true' + a visible backdrop; currently detected as dialog but background pointer-events are not visually blocked."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (out of scope)", "frontend": "100% (7/7 targeted scenarios pass)"},
+  "test_credentials": "support@use-bracket.com / Bracket@123 (plan=test). Real workspace PID: 58b8dba2-f25c-462b-b911-8dccd977697d.",
+  "seed_data_creation": "Started creating TEST_Workspace_Playwright during step 1→2 verification — advanced to step 2 OK. Did not complete onboarding so no permanent write beyond the stub workspace row.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 5 core bugs from the review request are verified fixed in the live preview env (REACT_APP_BACKEND_URL=https://design-decided.preview.emergentagent.com). Bugs 3 and 4 cannot be headlessly tested — they require real Gmail OAuth consent. For future runs: sandbox renders categories from v2_categories/v2_cat_map seed, so if demo.py _seed is reset the sandbox still renders instantly without LLM. The in-place Add-source dialog is wired in AppShell.jsx Sidebar() via setPick/connectKey state — regression test should always re-check window.location.pathname is unchanged after clicking the sidebar '+ Add source' trigger."
+}
