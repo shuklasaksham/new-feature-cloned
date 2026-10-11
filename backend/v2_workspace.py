@@ -306,24 +306,29 @@ async def _onboarding_project(wid, request):
 
 
 @router.get("/w/{wid}/onboarding")
-async def onboarding_state(wid: str, request: Request, q: str = ""):
+async def onboarding_state(wid: str, request: Request, q: str = "", status: int = 0):
     user, proj = await _onboarding_project(wid, request)
     connected = dict((proj.get("onboarding") or {}).get("connected") or {})
     client = proj.get("client_name") or ""
     tok = (client.split() or [""])[0].lower()
     threads, channels = [], []
-    # Reflect real OAuth links + list candidate sources for connected providers.
-    # `q` performs a real server-side search in the provider (whole mailbox /
-    # workspace), not just a filter over the first page.
+    # Reflect real OAuth links. `status=1` returns ONLY the connect state (fast —
+    # step 2 doesn't need a live mailbox fetch, which was making it slow/flicker).
+    linked = {}
     for prov in ("gmail", "slack", "figma", "github", "notion"):
         try:
-            account = await _get_account(user["user_id"], prov)
+            linked[prov] = await _get_account(user["user_id"], prov)
         except Exception:
-            account = None
+            linked[prov] = None
+        if linked[prov] and connected.get(prov) != "cancelled":
+            connected[prov] = "connected"
+    if status:
+        return {"workspace": {"client_name": client, "name": proj.get("name", "")}, "connected": connected, "threads": [], "channels": []}
+    # `q` performs a real server-side search (whole mailbox / workspace).
+    for prov in ("gmail", "slack"):
+        account = linked.get(prov)
         if not account:
             continue
-        if connected.get(prov) != "cancelled":
-            connected[prov] = "connected"
         try:
             if prov == "gmail":
                 srcs = await gmail_list_sources(account, q)
@@ -334,7 +339,7 @@ async def onboarding_state(wid: str, request: Request, q: str = ""):
                                     "messages": _msg_count(meta) or 1, "at": meta.get("updated") or "",
                                     "mentions": bool(tok and (tok in (s.get("name", "").lower()) or tok in frm.lower())),
                                     "selected": (not q) and i < 5})
-            elif prov == "slack":
+            else:
                 srcs = await slack_list_sources(account, q)
                 for s in srcs:
                     meta = s.get("meta") or {}
@@ -343,6 +348,46 @@ async def onboarding_state(wid: str, request: Request, q: str = ""):
             logger.warning("[onboarding] list %s failed: %s", prov, e)
     return {"workspace": {"client_name": client, "name": proj.get("name", "")},
             "connected": connected, "threads": threads, "channels": channels}
+
+
+class UpdatesReadIn(BaseModel):
+    ids: list = []
+
+
+@router.get("/updates")
+async def updates(request: Request):
+    user = await current_user_optional(request, db)
+    if not user:
+        return {"items": [], "unread": 0}
+    pids = [p["id"] async for p in db.projects.find({"owner_user_id": user["user_id"], "archived": {"$ne": True}}, {"_id": 0, "id": 1})]
+    items, unread = [], 0
+    async for n in db.notifications.find({"project_id": {"$in": pids}}, {"_id": 0}).sort("created_at", -1).limit(30):
+        read = bool(n.get("read"))
+        if not read:
+            unread += 1
+        is_conflict = n.get("kind") == "conflict" or n.get("type") == "conflict"
+        items.append({
+            "id": n.get("id"), "read": read, "group": "attention",
+            "icon": "conflict" if is_conflict else "changed",
+            "title": n.get("title") or n.get("summary") or "Update",
+            "body": n.get("body") or n.get("detail") or "",
+            "at": n.get("created_at"),
+            "link": {"kind": "review", "workspace": n.get("project_id"), "id": n.get("memory_id") or n.get("id")},
+        })
+    return {"items": items, "unread": unread}
+
+
+@router.post("/updates/read")
+async def updates_read(request: Request, payload: UpdatesReadIn):
+    user = await current_user_optional(request, db)
+    if not user:
+        return {"ok": True}
+    pids = [p["id"] async for p in db.projects.find({"owner_user_id": user["user_id"]}, {"_id": 0, "id": 1})]
+    query = {"project_id": {"$in": pids}}
+    if payload.ids:
+        query["id"] = {"$in": payload.ids}
+    await db.notifications.update_many(query, {"$set": {"read": True}})
+    return {"ok": True}
 
 
 class ConnectUrlIn(BaseModel):

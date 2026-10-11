@@ -146,6 +146,7 @@ export const v2 = {
 
   /* onboarding */
   onboarding: (wid, q) => g(`${W(wid)}/onboarding`, q ? { q } : undefined),
+  onboardingStatus: (wid) => g(`${W(wid)}/onboarding`, { status: 1 }),
   onboardingStep: (wid, step) => p(`${W(wid)}/onboarding/step`, { step }),
   onboardingDraft: () => g("/v2/onboarding/draft"),
   onboardingConnect: (wid, provider, cancelled) => p(`${W(wid)}/onboarding/connect`, { provider, cancelled }),

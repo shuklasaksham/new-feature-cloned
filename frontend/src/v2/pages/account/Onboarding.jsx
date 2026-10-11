@@ -16,7 +16,7 @@ import { cn } from "../../../lib/utils";
 /* Onboarding — Figma › 04 Flows › Onboarding 1–5 (Create workspace, Connect
    sources, Choose what Bracket reads, Learning (live), Workspace ready) and the
    Onboarding — Mobile 390 frames. Also used for "New workspace". */
-const STEPS = ["Workspace", "Connect", "Choose", "Learn"];
+const STEPS = ["Workspace", "Connect", "Choose", "Read"];
 const KINDS = ["A client project", "My own business", "A team or department", "Something else"];
 
 export default function Onboarding() {
@@ -39,7 +39,6 @@ export default function Onboarding() {
     const w = extra.w || wid;
     if (w) v2.onboardingStep(w, n).catch(() => {});
   };
-  const saveExit = () => { if (wid) v2.onboardingStep(wid, step).catch(() => {}); navigate("/app"); };
   const Step = { 1: CreateWorkspace, 2: ConnectSources, 3: ChooseReads, 4: Learning, 5: Ready }[step] || CreateWorkspace;
   return (
     <div className="bk flex min-h-[100dvh] flex-col bg-app">
@@ -62,7 +61,6 @@ export default function Onboarding() {
           </ol>
         )}
         <span className="flex-1" />
-        <button onClick={saveExit} className="text-[12px] font-medium text-fg hover:underline">Save & exit</button>
       </header>
       {step <= 4 && <p className="px-4 pt-4 text-[12px] text-fg-tertiary md:hidden">Step {step} of 4 · {STEPS[step - 1]}</p>}
       <main className="flex flex-1 justify-center px-4 pt-8 pb-16 md:pt-14">
@@ -140,7 +138,7 @@ function ConnectSources({ wid, go }) {
   const [state, setState] = useState(null);
   const [note, setNote] = useState(false);
   const [upload, setUpload] = useState(false);
-  const load = useCallback(() => v2.onboarding(wid).then(setState), [wid]);
+  const load = useCallback(() => v2.onboardingStatus(wid).then(setState), [wid]);
   useEffect(() => { load(); }, [load]);
   const onResult = useCallback(async (provider, ok) => { await v2.onboardingConnect(wid, provider, !ok); load(); }, [wid, load]);
   const connect = useOAuth(wid, onResult);

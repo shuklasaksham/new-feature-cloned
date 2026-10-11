@@ -9,7 +9,7 @@ import { cn } from "../../lib/utils";
 import { useAuth } from "../../lib/AuthContext";
 import { useWorkspace, useProjects } from "../lib/workspace";
 import { Avatar, IconButton, Kbd, SourceMark, initialsOf } from "../ui/primitives";
-import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator, Popover, PopoverTrigger, PopoverContent, Sheet, Tooltip } from "../ui/overlays";
+import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator, Popover, PopoverTrigger, PopoverContent, Sheet, Tooltip, Dialog } from "../ui/overlays";
 import { Count, t as T } from "../ui/motion";
 import { useIsMobile, useMedia } from "../lib/useMedia";
 import { Logo, Mark } from "./Logo";
@@ -20,6 +20,8 @@ import DemoBar from "./DemoBar";
 import SandboxBar from "../sandbox/SandboxBar";
 import PlanLimit, { canCreateWorkspace } from "./PlanLimit";
 import { loadBilling } from "../lib/account";
+import { ConnectFlow } from "../features/connect";
+import { AddSourceDialog } from "../features/sources";
 
 /* Responsive model (Figma › Breakpoints & layout):
    ≥1280 sidebar (260 / 232 at 1280) — the toggle collapses it to the icon rail
@@ -234,7 +236,15 @@ function GroupLabel({ rail, children, action }) {
 
 function Sidebar({ rail, onNavigate, width }) {
   const { projectId, counts, sources } = useWorkspace();
+  const navigate = useNavigate();
+  const [pick, setPick] = useState(false);
+  const [connectKey, setConnectKey] = useState(null);
   const base = `/w/${projectId}`;
+  const onPick = (key) => {
+    setPick(false);
+    if (["gmail", "slack", "figma", "github", "notion"].includes(key)) setConnectKey(key);
+    else navigate(`${base}/sources?${key === "notes" ? "note" : "upload"}=1`);
+  };
   const list = (sources || []).filter((s) => s.status !== "disconnected" || true);
   const issues = list.filter((s) => s.status === "error" || s.health === "reconnect");
   const healthy = !issues.length;
@@ -260,7 +270,7 @@ function Sidebar({ rail, onNavigate, width }) {
         </div>
 
         <GroupLabel rail={rail} action={
-          <Tooltip content="Add source"><Link to={`${base}/sources?add=1`} className="flex h-5 w-5 items-center justify-center rounded-md text-fg-tertiary hover:bg-hover hover:text-fg" aria-label="Add source"><Plus size={14} /></Link></Tooltip>
+          <Tooltip content="Add source"><button type="button" onClick={() => setPick(true)} className="flex h-5 w-5 items-center justify-center rounded-md text-fg-tertiary hover:bg-hover hover:text-fg" aria-label="Add source"><Plus size={14} /></button></Tooltip>
         }>Sources</GroupLabel>
         <div className="space-y-0.5">
           {list.map((s) => {
@@ -273,15 +283,15 @@ function Sidebar({ rail, onNavigate, width }) {
           })}
           {rail && (
             <Tooltip content="Add source" side="right">
-              <Link to={`${base}/sources?add=1`} className="mx-auto flex h-10 w-10 items-center justify-center rounded-md text-fg-secondary hover:bg-hover hover:text-fg" aria-label="Add source">
+              <button type="button" onClick={() => setPick(true)} className="mx-auto flex h-10 w-10 items-center justify-center rounded-md text-fg-secondary hover:bg-hover hover:text-fg" aria-label="Add source">
                 <span className="flex h-6 w-6 items-center justify-center rounded-md border border-line"><Plus size={14} /></span>
-              </Link>
+              </button>
             </Tooltip>
           )}
           {!rail && list.length === 0 && (
-            <Link to={`${base}/sources?add=1`} className="flex h-8 items-center gap-2 rounded-md px-2 text-body-m text-fg-tertiary hover:text-fg hover:bg-hover">
+            <button type="button" onClick={() => setPick(true)} className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-body-m text-fg-tertiary hover:text-fg hover:bg-hover">
               <Plug size={16} strokeWidth={1.75} /> Connect a source
-            </Link>
+            </button>
           )}
         </div>
 
@@ -303,6 +313,14 @@ function Sidebar({ rail, onNavigate, width }) {
           </Link>
         )}
       </div>
+      <AddSourceDialog open={pick} onOpenChange={setPick} sources={sources} onPick={onPick} />
+      <Dialog open={!!connectKey} onOpenChange={(o) => !o && setConnectKey(null)} title="Add a source" size="l">
+        {connectKey && (
+          <ConnectFlow projectId={projectId} mode="existing" initialProvider={connectKey}
+            onCancel={() => setConnectKey(null)}
+            onDone={() => { setConnectKey(null); window.dispatchEvent(new Event("bk:refresh")); }} />
+        )}
+      </Dialog>
     </motion.nav>
   );
 }

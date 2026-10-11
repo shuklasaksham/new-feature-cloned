@@ -226,6 +226,19 @@ async def _seed(uid: str, user: dict) -> dict:
     mem = _baseline_memory(pid, conns, now)
     if mem:
         await db.project_memory.insert_many(mem)
+    # Pre-seed v2 categories + mapping so the sandbox renders INSTANTLY (no live
+    # LLM category inference on first overview — that was making it hang).
+    demo_cats = [
+        {"key": "scope", "label": "Scope", "singular": "Scope change", "description": "What's in and out of scope"},
+        {"key": "deadlines", "label": "Deadlines", "singular": "Deadline", "description": "Dates and launch timing"},
+        {"key": "decisions", "label": "Decisions", "singular": "Decision", "description": "Choices the team has made"},
+        {"key": "requirements", "label": "Requirements", "singular": "Requirement", "description": "What the client needs"},
+        {"key": "deliverables", "label": "Deliverables", "singular": "Deliverable", "description": "What's being shipped"},
+    ]
+    cat_key = {"deadline": "deadlines", "scope_change": "scope", "requirement": "requirements",
+               "decision": "decisions", "deliverable": "deliverables"}
+    cat_map = {m["id"]: cat_key.get(m.get("category"), "scope") for m in (mem or [])}
+    await db.projects.update_one({"id": pid}, {"$set": {"v2_categories": demo_cats, "v2_cat_map": cat_map}})
     evs = _baseline_events(pid, conns, now)
     if evs:
         await db.source_events.insert_many(evs)
@@ -333,6 +346,11 @@ async def demo_simulate_next(request: Request):
         })
     if mem_docs:
         await db.project_memory.insert_many(mem_docs)
+        # Keep the v2 category map in sync so new beats render instantly (no LLM).
+        _ck = {"deadline": "deadlines", "scope_change": "scope", "requirement": "requirements",
+               "decision": "decisions", "deliverable": "deliverables"}
+        await db.projects.update_one({"id": pid}, {"$set": {
+            **{f"v2_cat_map.{d['id']}": _ck.get(d.get("category"), "scope") for d in mem_docs}}})
 
     await db.source_events.insert_one({
         "id": _uuid(), "project_id": pid, "connection_id": conn_id,
