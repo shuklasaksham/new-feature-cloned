@@ -338,7 +338,7 @@ async def onboarding_state(wid: str, request: Request, q: str = "", status: int 
                     threads.append({"id": s["id"], "name": s.get("name") or "(no subject)", "from": frm,
                                     "messages": _msg_count(meta) or 1, "at": meta.get("updated") or "",
                                     "mentions": bool(tok and (tok in (s.get("name", "").lower()) or tok in frm.lower())),
-                                    "selected": (not q) and i < 5})
+                                    "selected": False})
             else:
                 srcs = await slack_list_sources(account, q)
                 for s in srcs:
@@ -455,7 +455,7 @@ async def _run_onboarding(user, wid, gmail_ids, slack_ids):
             if ids is None:
                 chosen = listed[:3]
             else:
-                chosen = [s for s in listed if s["id"] in ids]
+                chosen = [s for s in listed if s["id"] in ids][:8]
             picked = [{"id": s["id"], "name": s.get("name", ""), "url": s.get("url", "")} for s in chosen]
             if not picked:
                 continue

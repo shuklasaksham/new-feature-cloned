@@ -153,7 +153,7 @@ export function SandboxProvider({ children }) {
     }
   }, [navigate]);
 
-  const leave = useCallback(async (to = "/") => {
+  const leave = useCallback(async (to = "/plan") => {
     setBusy("leave");
     try { await api.post("/v2/sandbox/leave"); } catch { /* leaving anyway */ }
     setTour(0);

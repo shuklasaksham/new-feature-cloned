@@ -277,22 +277,27 @@ function Learning({ wid, go }) {
     const id = setInterval(tick, 1200);
     return () => { alive = false; clearInterval(id); };
   }, [wid]);
+  // Auto-advance to the summary once reading finishes, so nobody gets stuck here.
+  useEffect(() => { if (p?.done) { const t = setTimeout(() => go(5), 1100); return () => clearTimeout(t); } }, [p?.done]); // eslint-disable-line
   const bar = (pct, tone) => (
     <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10"><motion.div className={cn("h-full rounded-full", tone)} animate={{ width: `${Math.round((pct || 0) * 100)}%` }} transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }} /></div>
   );
+  const started = !!(p && (p.providers?.length || p.found_count));
   return (
     <div className="mx-auto max-w-[760px]">
       <Eyebrow>Step 4 of 4</Eyebrow>
       <Title>Bracket is reading your work</Title>
-      <Lead>This takes a few minutes. You’ll see what it understands as it goes — no need to wait here.</Lead>
+      <Lead>This usually takes under a minute. You’ll see what it understands as it goes — no need to wait here.</Lead>
       <div className="mt-6 space-y-4 rounded-lg border border-line p-4" role="status" aria-live="polite">
         {(p?.providers || []).map((pv) => (
           <div key={pv.provider}>
-            <div className="flex items-center gap-2 text-[12px]"><SourceMark provider={pv.provider} size={14} /><span className="flex-1 text-fg">{pv.label}</span><span className={pv.done ? "text-success" : "text-fg-tertiary"}>{pv.done ? "Done" : pv.eta}</span></div>
-            {bar(pv.done ? 1 : pv.pct, pv.done ? "bg-success" : "bg-info")}
+            <div className="flex items-center gap-2 text-[12px]"><SourceMark provider={pv.provider} size={14} /><span className="flex-1 text-fg">{pv.label}</span><span className={pv.done ? "text-success" : "text-fg-tertiary"}>{pv.done ? "Done" : (pv.eta || "working…")}</span></div>
+            {bar(pv.done ? 1 : (pv.pct || 0.4), pv.done ? "bg-success" : "bg-info")}
           </div>
         ))}
-        {!(p?.providers || []).length && <p className="text-[12px] text-fg-tertiary">Starting…</p>}
+        {!(p?.providers || []).length && (
+          <p className="flex items-center gap-2 text-[12px] text-fg-tertiary"><Loader2 size={14} className="animate-spin" />{started ? "Reading your sources…" : "Connecting and reading your sources…"}</p>
+        )}
       </div>
       <div className="mt-4 overflow-hidden rounded-lg border border-line">
         <div className="flex items-center gap-2 border-b border-line-subtle px-4 py-3"><span className="text-[12px] text-fg">Found so far</span><span className="font-mono text-[12px] text-fg-tertiary">{p?.found_count ?? 0}</span><span className="flex-1" />{!p?.done ? <Loader2 size={14} className="animate-spin text-fg-tertiary" /> : <CheckCircle2 size={14} className="text-success" />}</div>

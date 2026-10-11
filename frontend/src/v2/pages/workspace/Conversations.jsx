@@ -27,12 +27,14 @@ const TAG_TONE = {
 };
 const dayTime = (iso) => {
   const d = new Date(iso);
+  if (isNaN(d)) return "";
   const today = new Date();
   const y = new Date(Date.now() - 864e5);
   if (d.toDateString() === today.toDateString()) return `Today, ${format(d, "HH:mm")}`;
   if (d.toDateString() === y.toDateString()) return `Yesterday ${format(d, "HH:mm")}`;
   return format(d, "MMM d, HH:mm");
 };
+const safeFmt = (v, f, fallback = "") => { const d = new Date(v); return isNaN(d) ? fallback : format(d, f); };
 
 export default function Conversations() {
   const { tid } = useParams();
@@ -193,7 +195,7 @@ function ThreadView({ wid, tid, base, mobile, canEdit, params, setParams, wide }
   const firstName = t.who.split(" ")[0];
   const isNote = t.kind === "note";
   const providerName = t.provider === "gmail" ? "Gmail" : t.provider === "slack" ? "Slack" : "Notes";
-  const metaLine = isNote ? `Meeting note · ${format(new Date(t.started_at), "MMM d")} · ${t.participants} · added by Maya` : `${t.participants} · ${t.count} message${t.count === 1 ? "" : "s"} · Started ${format(new Date(t.started_at), "MMM d")}`;
+  const metaLine = isNote ? `Meeting note · ${safeFmt(t.started_at, "MMM d")} · ${t.participants} · added by Maya` : `${t.participants} · ${t.count} message${t.count === 1 ? "" : "s"} · Started ${safeFmt(t.started_at, "MMM d")}`;
 
   const context = <ContextPanel t={t} base={base} navigate={navigate} />;
   const discard = () => { setDraft(null); const n = new URLSearchParams(params); n.delete("draft"); setParams(n, { replace: true }); };
@@ -222,7 +224,7 @@ function ThreadView({ wid, tid, base, mobile, canEdit, params, setParams, wide }
         {mobile && <h2 className="mb-3 text-title-m text-fg">{t.title}</h2>}
         {t.earlier && !showEarlier && (
           <button onClick={() => setShowEarlier(true)} className="mb-4 flex h-9 w-full items-center gap-2 rounded-md border border-line px-3 text-left text-[12px] text-fg-secondary transition-colors duration-fast hover:bg-hover">
-            <ChevronRight size={14} /> {t.earlier.count} earlier message{t.earlier.count === 1 ? "" : "s"} · {format(new Date(t.earlier.at), "MMM d")}
+            <ChevronRight size={14} /> {t.earlier.count} earlier message{t.earlier.count === 1 ? "" : "s"} · {safeFmt(t.earlier.at, "MMM d")}
           </button>
         )}
         <AnimatePresence initial={false}>
@@ -322,7 +324,7 @@ function MobileThread({ t, base, canEdit, draft, setDraft, drafting, makeDraft, 
   const isNote = t.kind === "note";
   const isSlack = t.provider === "slack";
   const meta = isNote
-    ? `Note · added by Maya Rao · ${format(new Date(t.started_at), "MMM d")}`
+    ? `Note · added by Maya Rao · ${safeFmt(t.started_at, "MMM d")}`
     : isSlack
       ? `Slack · ${t.channel}${t.members ? ` · ${t.members} members` : ""} · ${dayTime(t.at).split(",")[0]}`
       : `Gmail · ${t.participants} · ${t.count} message${t.count === 1 ? "" : "s"}`;
@@ -371,7 +373,7 @@ function MobileThread({ t, base, canEdit, draft, setDraft, drafting, makeDraft, 
           <Stagger className="mt-4 space-y-5" step={0.04}>
             {t.messages.map((m) => (
               <StaggerItem key={m.id}>
-                <p className="flex items-center gap-2 text-body-s font-medium text-fg"><Avatar name={m.author} size="s" />{m.author}<span className="font-normal text-fg-tertiary">{format(new Date(m.at), "HH:mm")}{m.sent_by_bracket ? " · via Bracket" : ""}</span></p>
+                <p className="flex items-center gap-2 text-body-s font-medium text-fg"><Avatar name={m.author} size="s" />{m.author}<span className="font-normal text-fg-tertiary">{safeFmt(m.at, "HH:mm")}{m.sent_by_bracket ? " · via Bracket" : ""}</span></p>
                 <div className="mt-2 space-y-2">
                   {m.body.map((b, i) => b.tag ? (
                     <div key={i} className={cn("rounded-[2px] border-l-2 px-3 py-2", TAG_TONE[b.tone] || TAG_TONE.warning)}>
