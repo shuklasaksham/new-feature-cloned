@@ -28,10 +28,14 @@ export default function Onboarding() {
   // Gate: a plan or active free-trial is required before connecting real tools.
   useEffect(() => { if (user && !user.plan) navigate("/plan", { replace: true }); }, [user, navigate]);
   // Resume an unfinished workspace when arriving without one (Save & exit → back).
+  // If there's no workspace and no draft, fall back to step 1 so we never fetch
+  // /w/null/onboarding (which 404s and threw a runtime overlay).
   useEffect(() => {
     if (wid || !user?.plan) return;
     let on = true;
-    v2.onboardingDraft().then((d) => { if (on && d?.draft) setParams({ step: String(d.draft.step || 2), w: d.draft.id }); }).catch(() => {});
+    v2.onboardingDraft()
+      .then((d) => { if (!on) return; if (d?.draft) setParams({ step: String(d.draft.step || 2), w: d.draft.id }, { replace: true }); else if (step !== 1) setParams({ step: "1" }, { replace: true }); })
+      .catch(() => { if (on && step !== 1) setParams({ step: "1" }, { replace: true }); });
     return () => { on = false; };
   }, [wid, user]); // eslint-disable-line react-hooks/exhaustive-deps
   const go = (n, extra = {}) => {
@@ -39,7 +43,8 @@ export default function Onboarding() {
     const w = extra.w || wid;
     if (w) v2.onboardingStep(w, n).catch(() => {});
   };
-  const Step = { 1: CreateWorkspace, 2: ConnectSources, 3: ChooseReads, 4: Learning, 5: Ready }[step] || CreateWorkspace;
+  // Never mount a workspace-dependent step without a workspace id.
+  const Step = (!wid && step > 1) ? CreateWorkspace : ({ 1: CreateWorkspace, 2: ConnectSources, 3: ChooseReads, 4: Learning, 5: Ready }[step] || CreateWorkspace);
   return (
     <div className="bk flex min-h-[100dvh] flex-col bg-app">
       <Seo title="Set up your workspace" />

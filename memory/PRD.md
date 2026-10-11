@@ -12,6 +12,17 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **4 more reported bugs fixed** (testing_agent iteration_77 confirmed #1 & #2; #3/#4 are code-level, need a live Gmail to observe in-browser).
+  1. **Sandbox runtime crash on conversations/pages** ('RangeError: Invalid time value') → added `safeFmt()`
+     in `Conversations.jsx`; all `format(new Date(...))` guard invalid/missing dates. Verified via screenshot.
+  2. **Leaving sandbox logged user out / went to landing** → `sandbox.jsx leave()` now targets `/plan`. Verified.
+  3. **Pre-selected threads on step 3** → backend `onboarding_state` sets thread `selected: False` always.
+  4. **Read step stuck on blank 'Starting…' / minutes** → Learning shows a clear spinner + 'Reading your
+     sources…', per-source fetch+analyze already concurrent, sources capped at 8, and the step
+     **auto-advances to the summary when done** so it can't hang.
+  - **Also fixed (found during test):** visiting `/welcome?step=3` with no workspace fired
+    `GET /w/null/onboarding` → unhandled 404 overlay. Onboarding now forces step 1 (or resumes the draft)
+    whenever there's no workspace id, so workspace-dependent steps never mount with a null id. Verified.
 - 2026-06: **7 reported bugs fixed (sandbox, onboarding, speed, in-app connect).** Verified by
   testing_agent iteration_76.json (5/7 e2e; #3 & #4 need live Gmail OAuth, not headless-testable).
   1. **Sandbox hang** → `demo.py _seed` now pre-seeds `v2_categories` + `v2_cat_map` so the sandbox

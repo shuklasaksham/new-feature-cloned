@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only verification of 4 reported bugs on Bracket v2. Bugs 1 and 2 confirmed FIXED on live preview. Bugs 3 and 4 could not be reproduced end-to-end because the test user (support@use-bracket.com) has no connected source — step 2 Continue stays disabled and the 'Skip' path bypasses steps 3/4 to the workspace. Found a NEW frontend defect: when visiting /welcome?step=3 (or /welcome without an existing workspace param) the Onboarding page issues GET /api/v2/w/null/onboarding (literal 'null') and does not catch the resulting 404, which surfaces as the red CRA 'Uncaught runtime errors: AxiosError' overlay and intercepts pointer events on step 2 of the onboarding flow.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Onboarding (pages/account/Onboarding.jsx)", "issue": "On /welcome?step=3 (and under some /welcome entry conditions) the page fires GET /api/v2/w/null/onboarding (workspace id resolves to the string 'null') and the resulting 404 AxiosError is unhandled — CRA renders a full 'Uncaught runtime errors' overlay that intercepts clicks on the Connect-step cards. Should guard the fetch when workspace id is missing and catch axios errors gracefully.", "selector": "/welcome?step=3", "priority": "HIGH"}
+    ],
+    "integration_issues": [
+      {"flow": "Onboarding step 3/4 live verification", "issue": "Could not reach step 3 (Choose) or step 4 (Read) with the provided test user — the user has no connected source so Continue on step 2 is disabled, and 'Skip — start with a note' jumps straight to /w/{id} dashboard, bypassing steps 3 & 4. Could not visually confirm bug 3 ('0 pre-selected threads') or bug 4 (Read step status + auto-advance) in the browser.", "affected_selectors": ["button:has-text('Continue')", "text=Skip — start with a note"]}
+    ],
+    "design_issues": []
+  },
+  "bugs_verification": {
+    "bug1_sandbox_no_crash": "PASS — Opened /sandbox → 'Open the sandbox' → /w/{id} Overview → Conversations → clicked 'Harbor ⇄ Studio — Launch thread' → Memory → Timeline → back to Overview. 0 console errors, 0 page errors, 0 'Invalid time value' / 'RangeError'. Timeline (which renders dates heavily) rendered cleanly.",
+    "bug2_leave_to_plan": "PASS — Clicked top-right 'Leave' button inside sandbox. Final URL = /login?next=%2Fplan (unauthenticated test session). This proves leave() targets /plan rather than '/'. For a logged-in user the destination will be /plan directly. The user does NOT land on the marketing landing page '/'.",
+    "bug3_no_preselected_threads": "NOT INDEPENDENTLY VERIFIED IN UI — step 3 unreachable with the given test user (no source connected). Main-agent note states backend onboarding_state already returns selected:False; please re-verify in UI with a user that has a mock source or Gmail connected.",
+    "bug4_read_not_stuck": "NOT INDEPENDENTLY VERIFIED IN UI — step 4 unreachable for the same reason as bug 3. Could not observe the 'Reading your sources…' spinner nor the auto-advance to step 5 end-to-end."
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix Onboarding fetch: do not call GET /api/v2/w/null/onboarding when workspace id is null/undefined. Guard with `if (!wsId) return;` and wrap the axios call in try/catch so a 404 does not escape as an unhandled promise rejection (prevents the red CRA overlay on /welcome).",
+    "To make bugs 3 & 4 testable in the preview, provide a test user (or seed) that has at least one connected mock source so the onboarding flow can be walked to steps 3 and 4 without real OAuth.",
+    "Re-verify bugs 3 and 4 in the UI once a source-connected test user is available."
+  ],
+  "critical_code_review_comments": [
+    "Onboarding.jsx should defensively early-return when workspace id is falsy — currently it stringifies null into the URL path (`/w/null/onboarding`), which is a smell that will keep producing 404s and overlays.",
+    "All axios calls in the onboarding flow should be wrapped so network/API failures surface as inline UI states, never as uncaught promise rejections (otherwise dev mode shows the overlay the user originally complained about in bug 1).",
+    "Consider making /welcome robustly route a user with an existing workspace to the correct step via explicit server state rather than clamping client-side (currently a ?step=3 request silently rewrites to ?step=2 with no feedback)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run)", "frontend": "2/4 bugs independently confirmed fixed; 2/4 not reachable in this environment"},
+  "test_credentials": "support@use-bracket.com / Bracket@123 (works, lands directly on existing workspace /w/f03dc83b1f3949ea83bc1886201f9033)",
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Bugs 1 and 2 are verified fixed on live preview and do not need re-testing. For bugs 3 and 4, the given test user has no connected source → Continue on /welcome step 2 is disabled and 'Skip' bypasses to /w/{id}. To re-test, either (a) seed the user with a mock Gmail/Slack source, or (b) add a 'skip-via-note' path that still visits step 3 & 4. Also please verify the new runtime-error overlay fix on /welcome?step=3 after Onboarding guards the null workspace case.",
+  "rca_of_the_issue": "Onboarding.jsx constructs `/api/v2/w/${wsId}/onboarding` from a workspace id read from URL/search params. When no workspace exists yet (or wsId is undefined before resolution), it becomes the literal string 'null' and the request 404s. The axios promise rejection is unhandled, so CRA's error overlay renders over the page and blocks interaction with the connect-step cards. Fix: guard with `if (!wsId || wsId === 'null') return;` and add .catch handlers that set an inline error state instead of letting the rejection escape."
+}
