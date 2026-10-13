@@ -363,7 +363,7 @@ def _otp_html(name: str, code: str) -> str:
 <tr><td align="center">
 <table role="presentation" width="600" style="max-width:600px;background:#FFFFFF;border-radius:14px;border:1px solid #E6E6E8;">
 <tr><td style="padding:28px 32px 0 32px;">
-<img src="https://customer-assets.emergentagent.com/job_924d0756-a607-436d-9175-7507d42548a0/artifacts/vgfuzdp3_image.png" width="26" height="26" alt="Bracket" style="vertical-align:middle;border:0;display:inline-block;"/> <span style="font-size:15px;font-weight:700;color:#18181B;letter-spacing:-0.01em;vertical-align:middle;">bracket</span>
+<img src="https://customer-assets-lqy194kg.emergentagent.net/job_design-decided/artifacts/f63aa7a9eea0f56c_logo-new.png" width="24" height="24" alt="Bracket" style="vertical-align:middle;border:0;display:inline-block;"/> <span style="font-size:16px;font-weight:700;color:#18181B;letter-spacing:-0.01em;vertical-align:middle;padding-left:2px;">Bracket</span>
 </td></tr>
 <tr><td style="padding:22px 32px 0 32px;">
 <h1 style="margin:0;font-size:21px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#18181B;">Confirm your email</h1>
