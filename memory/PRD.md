@@ -12,6 +12,20 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Email templates refreshed to the light design + daily digest email (scheduled).**
+  - New shared light email shell in `emailer.py` (`_light_shell`): 600px, white card on #F4F4F5, ◧ bracket
+    wordmark, single dark CTA, compliant footer (notification settings / unsubscribe). Mail clients handle
+    dark mode.
+  - **Verify-email (OTP)** restyled to the light design (`auth._otp_html`) — "Confirm your email" + spaced code.
+  - **Daily digest** (`emailer.send_daily_digest` + `_daily_digest_html`): "Good morning, {name}", sections
+    Scope change / Conflict / Memory updated (color-coded eyebrows), single "Open Bracket" CTA. Only sends
+    when there's something worth saying; users with `digest_opt_out` are skipped.
+  - **Scheduling** via platform cron: `/app/.emergent/crons.yml` → `POST /api/cron/digest` daily 9am IST.
+    Endpoint is bearer-auth'd with `WEBHOOK_CRON_SECRET` (in backend/.env), acks 2xx immediately and runs
+    `_run_daily_digest()` in the background (aggregates each user's detected memory + recent confirmed items).
+    Verified: 401 without token, 200 with; a live run sent 3 real digest emails via Resend.
+  - NOT yet converted to the light shell: password-reset, invite, attention-alert, source-disconnected,
+    trial-ending, payment-failed (still on older styling / some not yet built as separate templates).
 - 2026-06: **Timeline filters, lighter skeletons, notification bell feed.**
   1. **Timeline filters**: endpoint ignored type/source/range/memory_only/q. Added `filter_timeline()` +
      `timeline_counts()` in v2_real and wired the params in `/w/{wid}/timeline`. Each event is tagged

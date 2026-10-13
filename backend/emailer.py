@@ -1067,3 +1067,82 @@ async def send_scope_digest(owner_email: str, owner_name: str, groups: list, pub
     except Exception as e:
         logger.exception(f"scope digest failed for {owner_email}: {e}")
         return False
+
+
+# ───────────────────────── Light templates (v2) ─────────────────────────
+def _light_shell(body_html: str, footer_to: str = "") -> str:
+    foot = f"You're receiving this because you use Bracket at {footer_to}." if footer_to else "You're receiving this because you use Bracket."
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/></head>
+<body style="margin:0;padding:0;background:#F4F4F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181B;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4F5;padding:40px 16px;">
+<tr><td align="center">
+<table role="presentation" width="600" style="max-width:600px;background:#FFFFFF;border-radius:14px;border:1px solid #E6E6E8;">
+<tr><td style="padding:28px 32px 0 32px;"><span style="font-size:15px;font-weight:700;color:#18181B;letter-spacing:-0.01em;">◧ bracket</span></td></tr>
+{body_html}
+<tr><td style="padding:8px 32px 28px 32px;">
+<p style="margin:20px 0 0 0;font-size:12px;line-height:1.6;color:#A1A1AA;border-top:1px solid #EFEFF1;padding-top:16px;">{foot}<br/>
+<a href="https://use-bracket.com/settings/notifications" style="color:#71717A;text-decoration:none;">Notification settings</a> · <a href="https://use-bracket.com/settings/notifications" style="color:#71717A;text-decoration:none;">Unsubscribe from digests</a> · Bracket Inc · support@use-bracket.com</p>
+</td></tr></table></td></tr></table></body></html>"""
+
+
+_DIGEST_COLORS = {"scope change": "#B45309", "conflict": "#B91C1C", "waiting": "#71717A",
+                  "coming up": "#71717A", "decision": "#4338CA", "memory updated": "#71717A"}
+
+
+def _digest_section(eyebrow: str, items: list) -> str:
+    if not items:
+        return ""
+    color = _DIGEST_COLORS.get(eyebrow.lower().split(" ·")[0], "#71717A")
+    rows = ""
+    for it in items:
+        sub = it.get("sub", "")
+        rows += (f'<p style="margin:0 0 2px 0;font-size:15px;line-height:1.45;color:#18181B;font-weight:500;">{it.get("title","")}</p>'
+                 + (f'<p style="margin:0 0 14px 0;font-size:13px;line-height:1.45;color:#A1A1AA;">{sub}</p>' if sub else '<div style="height:12px"></div>'))
+    return (f'<tr><td style="padding:18px 32px 0 32px;">'
+            f'<p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;font-weight:600;color:{color};border-top:1px solid #EFEFF1;padding-top:16px;">{eyebrow}</p>'
+            f'{rows}</td></tr>')
+
+
+def _daily_digest_html(name: str, needs_count: int, sections: list, open_url: str, footer_to: str) -> str:
+    display = (name or "there").strip() or "there"
+    secs = "".join(_digest_section(s["eyebrow"], s["items"]) for s in sections)
+    body = (f'<tr><td style="padding:22px 32px 0 32px;">'
+            f'<h1 style="margin:0;font-size:21px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#18181B;">Good morning, {display}</h1>'
+            f'<p style="margin:10px 0 0 0;font-size:15px;line-height:1.6;color:#52525B;">Here\'s what changed across your workspaces since yesterday.</p>'
+            f'</td></tr>'
+            f'{secs}'
+            f'<tr><td style="padding:24px 32px 4px 32px;">'
+            f'<a href="{open_url}" style="display:inline-block;background:#18181B;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:500;padding:11px 22px;border-radius:9px;">Open Bracket</a>'
+            f'</td></tr>')
+    return _light_shell(body, footer_to)
+
+
+async def send_daily_digest(to_email: str, name: str, needs_count: int, sections: list, open_url: str) -> bool:
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning(f"[DIGEST DEV] would send to {to_email}: {needs_count} items")
+        return False
+    resend.api_key = api_key
+    subject = f"Your Bracket digest: {needs_count} need{'s' if needs_count == 1 else ''} you" if needs_count else "Your Bracket digest"
+    text_lines = [f"Good morning, {name or 'there'}", ""]
+    for s in sections:
+        for it in s["items"]:
+            text_lines.append(f"[{s['eyebrow']}] {it.get('title','')}" + (f" — {it.get('sub')}" if it.get("sub") else ""))
+    text_lines += ["", f"Open Bracket: {open_url}"]
+    params = {
+        "from": _sender(), "to": [to_email], "subject": subject,
+        "html": _daily_digest_html(name, needs_count, sections, open_url, to_email),
+        "text": "\n".join(text_lines),
+        "headers": {
+            "List-Unsubscribe": f"<mailto:{os.environ.get('SENDER_EMAIL','support@use-bracket.com')}?subject=unsubscribe>",
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+        "tags": [{"name": "category", "value": "digest"}],
+    }
+    try:
+        await asyncio.to_thread(resend.Emails.send, params)
+        return True
+    except Exception as e:
+        logger.exception(f"Daily digest failed for {to_email}: {e}")
+        return False

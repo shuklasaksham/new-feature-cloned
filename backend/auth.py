@@ -349,6 +349,7 @@ async def verify_otp(db, email: str, code: str) -> bool:
 
 def _otp_html(name: str, code: str) -> str:
     display = (name or "there").strip() or "there"
+    pretty = f"{code[:3]} {code[3:]}" if len(code) == 6 else code
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -356,31 +357,26 @@ def _otp_html(name: str, code: str) -> str:
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Your Bracket sign-in code</title>
 </head>
-<body style="margin:0;padding:0;background:#08090A;font-family:'Poppins','Segoe UI',-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;color:#E8EAF0;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your Bracket sign-in code — expires in 10 minutes. Do not share this code with anyone.</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#08090A;padding:44px 16px;">
+<body style="margin:0;padding:0;background:#F4F4F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#18181B;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Use this code within 30 minutes to sign in to Bracket.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F4F4F5;padding:40px 16px;">
 <tr><td align="center">
-<table role="presentation" width="480" style="max-width:480px;background:#0F1114;border-radius:16px;border:1px solid #26282D;">
-<tr><td style="padding:32px 36px 0 36px;">
-<p style="margin:0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.22em;text-transform:uppercase;color:#5E6AD2;">&lt; bracket &middot; sign in &gt;</p>
+<table role="presentation" width="600" style="max-width:600px;background:#FFFFFF;border-radius:14px;border:1px solid #E6E6E8;">
+<tr><td style="padding:28px 32px 0 32px;">
+<span style="font-size:15px;font-weight:700;color:#18181B;letter-spacing:-0.01em;">◧ bracket</span>
 </td></tr>
-<tr><td style="padding:18px 36px 0 36px;">
-<p style="margin:0 0 4px 0;font-size:13.5px;color:#6E7480;">Hi {display},</p>
-<h1 style="margin:0;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#F4F5F7;">Here is your sign-in code.</h1>
+<tr><td style="padding:22px 32px 0 32px;">
+<h1 style="margin:0;font-size:21px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#18181B;">Confirm your email</h1>
+<p style="margin:12px 0 0 0;font-size:15px;line-height:1.6;color:#52525B;">Hi {display}, enter this code in Bracket to finish signing in. It expires in 30 minutes.</p>
 </td></tr>
-<tr><td style="padding:14px 36px 0 36px;">
-<p style="margin:0;font-size:14.5px;line-height:1.65;color:#B9BFC9;">Enter the code below in Bracket to finish signing in. It expires in 10 minutes.</p>
+<tr><td style="padding:22px 32px 0 32px;">
+<div style="display:inline-block;background:#F4F4F5;color:#18181B;padding:14px 24px;font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:26px;letter-spacing:6px;font-weight:600;border-radius:10px;border:1px solid #E6E6E8;">{pretty}</div>
 </td></tr>
-<tr><td style="padding:20px 36px 0 36px;">
-<div style="display:inline-block;background:#16181D;color:#F4F5F7;padding:16px 26px;font-family:'JetBrains Mono','SFMono-Regular',Menlo,Consolas,monospace;font-size:26px;letter-spacing:8px;font-weight:600;border-radius:12px;border:1px solid #2A2D34;">{code}</div>
-</td></tr>
-<tr><td style="padding:22px 36px 30px 36px;">
-<p style="margin:0 0 6px 0;font-size:12.5px;line-height:1.55;color:#6E7480;">If you didn't try to sign in, you can safely ignore this email — no one will be able to access your account without the code.</p>
-<p style="margin:16px 0 0 0;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#6E7480;border-top:1px solid #26282D;padding-top:16px;">Bracket &middot; The AI decision workspace for client projects</p>
-<p style="margin:8px 0 0 0;font-size:12px;color:#6E7480;"><a href="https://use-bracket.com" style="color:#5E6AD2;text-decoration:none;">use-bracket.com</a></p>
+<tr><td style="padding:22px 32px 28px 32px;">
+<p style="margin:0;font-size:13px;line-height:1.55;color:#A1A1AA;">Didn't request this? You can ignore this email — no account is created without it.</p>
+<p style="margin:20px 0 0 0;font-size:12px;line-height:1.6;color:#A1A1AA;border-top:1px solid #EFEFF1;padding-top:16px;">You're receiving this because you use Bracket.<br/>Bracket Inc · <a href="https://use-bracket.com" style="color:#71717A;text-decoration:none;">use-bracket.com</a> · support@use-bracket.com</p>
 </td></tr>
 </table>
-<p style="margin:16px 0 0 0;font-size:11.5px;color:#4B5058;">Sent by Bracket · support@use-bracket.com</p>
 </td></tr>
 </table>
 </body></html>"""

@@ -54,6 +54,7 @@ from emailer import (
     send_document_updated_email,
     send_nps_survey_email,
     send_payment_receipt,
+    send_daily_digest,
 )
 from auth import (
     SESSION_COOKIE,
@@ -91,6 +92,65 @@ db = client[os.environ["DB_NAME"]]
 
 app = FastAPI(title="Bracket API")
 api = APIRouter(prefix="/api")
+
+
+# ───────────────────────── Daily digest cron ─────────────────────────
+import hmac as _hmac_cron
+from fastapi import Header as _Header, BackgroundTasks as _BG
+
+
+async def _build_user_digest_sections(user_id: str):
+    """Aggregate per-user attention + activity into digest sections (newest first)."""
+    pids = [p["id"] async for p in db.projects.find({"owner_user_id": user_id, "archived": {"$ne": True}}, {"_id": 0, "id": 1})]
+    if not pids:
+        return 0, []
+    pname = {}
+    async for p in db.projects.find({"id": {"$in": pids}}, {"_id": 0, "id": 1, "name": 1}):
+        pname[p["id"]] = p.get("name", "")
+    scope, conflict, waiting, memup = [], [], [], []
+    async for m in db.project_memory.find({"project_id": {"$in": pids}, "status": "detected"}, {"_id": 0}).sort("occurred_at", -1).limit(20):
+        row = {"title": m.get("title", ""), "sub": pname.get(m["project_id"], "") + (f" · {m.get('source_label')}" if m.get("source_label") else "")}
+        (conflict if m.get("is_conflict") else scope).append(row)
+    async for m in db.project_memory.find({"project_id": {"$in": pids}, "status": "confirmed"}, {"_id": 0}).sort("updated_at", -1).limit(5):
+        memup.append({"title": m.get("title", ""), "sub": pname.get(m["project_id"], "")})
+    sections = []
+    if scope:
+        sections.append({"eyebrow": f"Scope change · {len(scope)}", "items": scope[:5]})
+    if conflict:
+        sections.append({"eyebrow": f"Conflict · {len(conflict)}", "items": conflict[:5]})
+    if memup:
+        sections.append({"eyebrow": "Memory updated", "items": memup[:3]})
+    needs = len(scope) + len(conflict)
+    return needs, sections
+
+
+async def _run_daily_digest():
+    sent = 0
+    async for u in db.users.find({}, {"_id": 0, "user_id": 1, "email": 1, "name": 1, "digest_opt_out": 1}):
+        if u.get("digest_opt_out") or not u.get("email"):
+            continue
+        try:
+            needs, sections = await _build_user_digest_sections(u["user_id"])
+            if not sections:
+                continue  # only email when there's something worth saying
+            ok = await send_daily_digest(u["email"], u.get("name", ""), needs, sections, "https://use-bracket.com")
+            if ok:
+                sent += 1
+        except Exception:
+            logging.getLogger("bracket").exception("digest failed for %s", u.get("email"))
+    logging.getLogger("bracket").info("[digest] sent %s emails", sent)
+
+
+@api.post("/cron/digest")
+async def cron_digest(background_tasks: _BG, authorization: str = _Header(default="")):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    secret = os.environ.get("WEBHOOK_CRON_SECRET", "")
+    token = authorization[7:] if authorization.startswith("Bearer ") else ""
+    if not secret or not token or not _hmac_cron.compare_digest(token, secret):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    background_tasks.add_task(_run_daily_digest)
+    return {"ok": True, "queued": True}
+
 
 
 # ---------------------------------------------------------------------------
