@@ -26,7 +26,7 @@ from auth import current_user_optional, current_user
 from connectors import (db, _get_account, gmail_list_sources, slack_list_sources,
                         figma_list_sources, github_list_sources, gmail_threads_meta,
                         oauth_auth_url, extract_sources_into_project, _plan_limit,
-                        _active_project_count, PROVIDERS)
+                        _active_project_count, PROVIDERS, send_gmail_reply, send_slack_message)
 import v2_real
 import v2_categories
 
@@ -826,8 +826,31 @@ class DismissIn(BaseModel):
 
 
 @router.post("/w/{wid}/threads/{tid}/send")
-async def send(wid: str, tid: str, payload: SendIn):
-    return {"ok": True, "sent_at": mins(0)}
+async def send(wid: str, tid: str, request: Request, payload: SendIn):
+    mode, proj = await _resolve(wid)
+    if mode != "real":
+        return {"ok": True, "sent_at": mins(0)}
+    user = await current_user(request, db)
+    conn = await db.source_connections.find_one({"id": tid, "project_id": wid}, {"_id": 0})
+    if not conn:
+        raise HTTPException(404, "Conversation not found.")
+    text = (payload.body or "").strip()
+    if not text:
+        raise HTTPException(400, "Nothing to send — the reply is empty.")
+    provider = conn.get("provider")
+    account = await _get_account(user["user_id"], provider)
+    if not account:
+        raise HTTPException(400, f"{PROVIDERS.get(provider, {}).get('label', provider)} isn't connected.")
+    if provider == "gmail":
+        to = (str(payload.to) if payload.to else "") or conn.get("client_email") or ""
+        if "@" not in to:
+            raise HTTPException(400, "No recipient email for this thread.")
+        await send_gmail_reply(account, to, conn.get("source_id", ""), text)
+    elif provider == "slack":
+        await send_slack_message(account, conn.get("source_id", ""), text)
+    else:
+        raise HTTPException(400, "This source can't send messages.")
+    return {"ok": True, "sent_at": iso(_now())}
 
 
 # Lightweight action stubs so the UI's buttons resolve cleanly.

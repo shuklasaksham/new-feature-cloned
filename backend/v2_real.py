@@ -3,7 +3,7 @@ source_connections, notifications) into the v2 workspace response shapes, with
 dynamic categories. Reuses the existing AI (ask / suggest-reply)."""
 from datetime import datetime, timezone
 
-from connectors import db
+from connectors import db, parse_digest_messages
 from connect_ai import answer_project_question, suggest_project_reply
 from v2_categories import get_or_infer_categories, classify_items
 
@@ -273,20 +273,32 @@ async def build_sources(project):
 
 
 async def build_threads(project):
-    """Lightweight: one thread per source connection, recent events as messages."""
+    """One thread per source connection, with the REAL messages (and their real
+    dates) recovered from the stored content_cache digest."""
     out = []
     for c in await _connections(project["id"]):
+        prov = c.get("provider")
+        parsed = parse_digest_messages(prov, c.get("content_cache") or "")
         msgs = []
-        async for e in db.source_events.find({"connection_id": c["id"]}, {"_id": 0}).sort("occurred_at", -1).limit(8):
-            msgs.append({"id": e["id"], "author": e.get("source_label", ""), "at": e.get("occurred_at"),
-                         "body": [{"text": e.get("summary", "")}]})
+        for i, pm in enumerate(parsed):
+            msgs.append({"id": f"{c['id']}-{i}", "author": pm.get("author", ""),
+                         "at": pm.get("at") or c.get("last_activity_at") or c.get("created_at"),
+                         "body": [{"text": pm.get("text", "")}]})
+        if not msgs:
+            # Fallback: synthesize from source events when no digest is stored.
+            async for e in db.source_events.find({"connection_id": c["id"]}, {"_id": 0}).sort("occurred_at", -1).limit(8):
+                msgs.append({"id": e["id"], "author": e.get("source_label", ""), "at": e.get("occurred_at"),
+                             "body": [{"text": e.get("summary", "")}]})
+            msgs = list(reversed(msgs))
         if not msgs:
             continue
-        out.append({"id": c["id"], "provider": c["provider"], "kind": "email" if c["provider"] == "gmail" else c["provider"],
-                    "title": c.get("source_name", ""), "who": c.get("source_name", ""), "participants": c.get("source_name", ""),
-                    "count": len(msgs), "at": msgs[0]["at"], "preview": msgs[0]["body"][0]["text"][:100],
-                    "needs_reply": c["provider"] == "gmail", "messages": list(reversed(msgs)),
-                    "would_change": [], "created": [], "referenced": [], "can_send": c["provider"] == "gmail"})
+        who = c.get("source_name", "") or _PROVIDER_LABEL.get(prov, prov)
+        out.append({"id": c["id"], "provider": prov, "kind": "email" if prov == "gmail" else prov,
+                    "title": c.get("source_name", ""), "who": who, "participants": who,
+                    "count": len(msgs), "at": msgs[-1]["at"], "started_at": msgs[0]["at"],
+                    "preview": (msgs[-1]["body"][0]["text"] or "")[:100],
+                    "needs_reply": prov == "gmail", "messages": msgs,
+                    "would_change": [], "created": [], "referenced": [], "can_send": prov in ("gmail", "slack")})
     return out
 
 

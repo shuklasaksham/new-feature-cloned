@@ -13,6 +13,7 @@ import base64
 import hashlib
 import json as _json
 from email.message import EmailMessage
+from email.utils import parsedate_to_datetime
 import logging
 import os
 import re
@@ -836,6 +837,120 @@ async def gmail_fetch_client_digest(account: dict, thread_id: str, client_email:
 
 
 # ---- Dispatch --------------------------------------------------------------
+def parse_digest_messages(provider: str, digest: str) -> List[dict]:
+    """Recover structured messages — {author, at(ISO), text} — from a stored
+    content_cache digest, so the conversation + timeline can show the REAL dates
+    things were said instead of the import time. Returned oldest-first."""
+    digest = digest or ""
+    out = []
+    if provider == "gmail":
+        # Blocks start with "--- From: X | Date: Y | Subject: Z" then body lines.
+        blocks = re.split(r"(?m)^--- ", digest)
+        for b in blocks:
+            if not b.startswith("From:"):
+                continue
+            head, _, body = b.partition("\n")
+            m = re.match(r"From:\s*(.*?)\s*\|\s*Date:\s*(.*?)\s*\|\s*Subject:\s*(.*)", head)
+            if not m:
+                continue
+            frm, date_s = m.group(1), m.group(2)
+            at = ""
+            try:
+                dt = parsedate_to_datetime(date_s)
+                if dt:
+                    at = (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).isoformat()
+            except Exception:
+                at = ""
+            out.append({"author": frm.strip(), "at": at, "text": body.strip()})
+    elif provider == "slack":
+        # Lines: "- who (YYYY-MM-DD HH:MM): text"  (digest is most-recent-first)
+        for line in digest.splitlines():
+            m = re.match(r"-\s*(.*?)\s*\((\d{4}-\d{2}-\d{2} \d{2}:\d{2})\):\s*(.*)", line)
+            if not m:
+                continue
+            at = ""
+            try:
+                at = datetime.strptime(m.group(2), "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).isoformat()
+            except Exception:
+                at = ""
+            out.append({"author": m.group(1).strip(), "at": at, "text": m.group(3).strip()})
+        out.reverse()
+    return [x for x in out if x.get("text") or x.get("author")]
+
+
+def digest_last_at(provider: str, digest: str) -> Optional[str]:
+    msgs = [m for m in parse_digest_messages(provider, digest) if m.get("at")]
+    return msgs[-1]["at"] if msgs else None
+
+
+async def send_gmail_reply(account: dict, to: str, thread_id: str, text: str, subject_override: str = "") -> bool:
+    """Send a single Gmail reply, threaded into the original conversation."""
+    token = await _access_token(account)
+    async with await _http() as c:
+        in_reply_to, refs, thread_subject = "", "", ""
+        if thread_id:
+            try:
+                tr = await c.get(
+                    f"https://gmail.googleapis.com/gmail/v1/users/me/threads/{thread_id}",
+                    headers={"Authorization": f"Bearer {token}"},
+                    params={"format": "metadata", "metadataHeaders": ["Message-ID", "Subject", "References"]},
+                )
+                if tr.status_code == 200:
+                    msgs = tr.json().get("messages", [])
+                    if msgs:
+                        last = {h["name"].lower(): h["value"] for h in ((msgs[-1].get("payload") or {}).get("headers") or [])}
+                        first = {h["name"].lower(): h["value"] for h in ((msgs[0].get("payload") or {}).get("headers") or [])}
+                        in_reply_to = last.get("message-id", "")
+                        refs = (last.get("references", "") + " " + in_reply_to).strip()
+                        thread_subject = first.get("subject", "")
+            except Exception:
+                pass
+        subj = subject_override or (f"Re: {thread_subject}" if thread_subject and not thread_subject.lower().startswith("re:") else (thread_subject or "Re: your project"))
+        msg = EmailMessage()
+        msg["To"] = to
+        msg["Subject"] = subj
+        if in_reply_to:
+            msg["In-Reply-To"] = in_reply_to
+            msg["References"] = refs
+        msg.set_content(text)
+        payload = {"raw": base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")}
+        if thread_id:
+            payload["threadId"] = thread_id
+        r = await c.post(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json=payload,
+        )
+    if r.status_code in (200, 201):
+        return True
+    if r.status_code == 403:
+        raise HTTPException(400, "Bracket can read this Gmail but isn't allowed to send yet. Disconnect and reconnect Gmail to grant send permission.")
+    if r.status_code == 401:
+        raise HTTPException(400, "Your Gmail connection expired — reconnect Gmail and try again.")
+    logger.warning("gmail send failed %s: %s", r.status_code, r.text[:200])
+    raise HTTPException(502, "Gmail wouldn't send the message right now.")
+
+
+async def send_slack_message(account: dict, channel: str, text: str) -> bool:
+    token = await _access_token(account)
+    async with await _http() as c:
+        r = await c.post(
+            "https://slack.com/api/chat.postMessage",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"},
+            json={"channel": channel, "text": text},
+        )
+    data = r.json() if r.status_code == 200 else {}
+    if not data.get("ok"):
+        err = data.get("error", "")
+        if err in ("missing_scope", "not_allowed_token_type", "no_permission"):
+            raise HTTPException(400, "Bracket can read this Slack but isn't allowed to post yet. Disconnect and reconnect Slack to grant posting permission.")
+        if err in ("not_in_channel", "channel_not_found"):
+            raise HTTPException(400, "Bracket isn't a member of that Slack channel — add it, then try again.")
+        logger.warning("slack send failed %s: %s", r.status_code, data)
+        raise HTTPException(502, f"Slack wouldn't post the message ({err or r.status_code}).")
+    return True
+
+
 async def _fetch_digest(provider: str, account: dict, source_id: str) -> str:
     if provider == "figma":
         return await figma_fetch_digest(account, source_id)
@@ -1022,8 +1137,9 @@ def _extract_client_email(digest: str, own_email: str) -> str:
     return ""
 
 
-def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str, analysis: dict) -> List[dict]:
+def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str, analysis: dict, occurred_at: str = "") -> List[dict]:
     now = _now_iso()
+    at = occurred_at or now
     docs = []
     cat_map = {"requirements": "requirement", "decisions": "decision", "deliverables": "deliverable",
                "deadlines": "deadline", "open_questions": "question"}
@@ -1037,7 +1153,7 @@ def _memory_docs(project_id: str, conn_id: str, provider: str, source_label: str
                 "provider": provider, "source_label": source_label, "category": cat,
                 "title": str(item.get("title", ""))[:200], "detail": str(item.get("detail", ""))[:500],
                 "status": status, "requested_by": str(item.get("requested_by", ""))[:120],
-                "occurred_at": now, "created_at": now, "updated_at": now, "history": [],
+                "occurred_at": at, "created_at": now, "updated_at": now, "history": [],
             })
     return docs
 
@@ -1243,6 +1359,7 @@ async def extract_sources_into_project(user, project_id, provider, sources):
             continue
         conn_id = _uuid()
         client_email = _extract_client_email(digest, own_email) if provider == "gmail" else ""
+        real_at = digest_last_at(provider, digest) or now
         await db.source_connections.insert_one({
             "id": conn_id, "project_id": project_id, "user_id": user["user_id"],
             "provider": provider, "source_type": provider,
@@ -1251,9 +1368,9 @@ async def extract_sources_into_project(user, project_id, provider, sources):
             "status": "connected", "content_hash": _hash(digest),
             "content_cache": digest[:20000],
             "extracted_stats": {k: len(analysis.get(k) or []) for k in ("requirements", "decisions", "deliverables", "deadlines", "open_questions")},
-            "last_synced_at": now, "last_activity_at": now, "created_at": now, "updated_at": now,
+            "last_synced_at": now, "last_activity_at": real_at, "created_at": now, "updated_at": now,
         })
-        mem = _memory_docs(project_id, conn_id, provider, sname, analysis)
+        mem = _memory_docs(project_id, conn_id, provider, sname, analysis, occurred_at=real_at)
         if mem:
             await db.project_memory.insert_many(mem)
         total_mem += len(mem)

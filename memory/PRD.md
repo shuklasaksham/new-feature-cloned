@@ -12,6 +12,18 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Real conversation dates + real message send** (replaced import-time stamps and a no-op send stub).
+  1. **Dates**: added `parse_digest_messages()` / `digest_last_at()` in connectors to recover real
+     messages+dates from the stored `content_cache`. `build_threads` now renders the actual thread
+     messages with their real sent dates; extraction stamps memory `occurred_at` (and connection
+     `last_activity_at`) with the real conversation date. Backfilled existing data (5 connections,
+     132 memory items). Verified: Conversations shows the real 15-msg Sep thread; Timeline items moved
+     from import-time (Oct 13) to the real date (Sep 23).
+     Limitation: all items from one thread share that thread's latest message date (the LLM doesn't map
+     each extracted item to a specific message); the conversation view shows each message's own date.
+  2. **Send**: `/api/v2/w/{wid}/threads/{tid}/send` was a stub returning `{ok:true}` — no mail sent. Now
+     resolves the source connection and sends for real via new `send_gmail_reply()` (threaded reply) /
+     `send_slack_message()` helpers. Verified: empty body → 400; real self-send → 200 and delivered.
 - 2026-06: **Demo projects leaked into every account + Timeline only showed the connect event** — both fixed.
   1. **Seed projects for everyone**: `/api/v2/workspaces` always prepended two synthetic demo workspaces
      (`p1` Fintech Landing Page Redesign, `p2` Spring '26 polo order) — so real new users saw 3 projects.
