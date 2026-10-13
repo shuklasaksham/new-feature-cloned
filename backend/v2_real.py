@@ -204,12 +204,54 @@ async def build_people(project):
     return list(names.values())
 
 
+_CAT_EVENT = {
+    "scope": ("Scope learned", "info"), "scope_change": ("Scope change", "warning"),
+    "decision": ("Decision", "info"), "deliverable": ("Deliverable", "info"),
+    "requirement": ("Requirement", "info"), "commitment": ("Commitment", "info"),
+    "deadline": ("Deadline", "warning"), "person": ("Person", None), "timeline": ("Timeline", "info"),
+}
+
+
 async def build_timeline(project):
+    """Everything that happened in this workspace: the connect/sync events AND
+    what Bracket learned from inside each connected thread (one event per memory
+    item, timestamped to when it happened in the conversation)."""
+    pid = project["id"]
     events = []
-    for e in await _events(project["id"], 100):
-        events.append({"id": e["id"], "at": e.get("occurred_at"), "kind": (e.get("event_type") or "activity").lower(),
-                       "title": e.get("summary", ""), "actor": {"provider": e.get("provider", "notes"), "label": e.get("source_label", "")},
-                       "meta": _PROVIDER_LABEL.get(e.get("provider"), ""), "source": e.get("provider")})
+    # 1) Source events (connected, synced, …)
+    for e in await _events(pid, 100):
+        prov = e.get("provider", "notes")
+        label = e.get("source_label", "")
+        at = e.get("occurred_at")
+        events.append({
+            "id": e["id"], "at": at, "kind": (e.get("event_type") or "activity").lower(),
+            "title": e.get("summary", ""), "actor": {"provider": prov, "label": label},
+            "meta": _PROVIDER_LABEL.get(prov, ""), "source": prov, "system": True,
+            "detail": {"heading": e.get("summary", ""), "eyebrow": "Source", "when": at,
+                       "source": {"provider": prov, "label": label} if label else None},
+        })
+    # 2) What Bracket learned from the threads — one event per memory item.
+    async for m in db.project_memory.find({"project_id": pid, "status": {"$ne": "ignored"}}, {"_id": 0}).sort("occurred_at", -1).limit(300):
+        cat = m.get("category", "")
+        kind_label, dot = _CAT_EVENT.get(cat, ("Learned", "info"))
+        if m.get("is_conflict"):
+            kind_label, dot = "Conflict", "danger"
+        prov = m.get("provider", "notes")
+        label = m.get("source_label", "") or m.get("requested_by", "")
+        at = m.get("occurred_at") or m.get("created_at")
+        verb = "Change detected" if m.get("status") == "detected" else kind_label
+        events.append({
+            "id": m["id"], "at": at, "kind": cat or "memory",
+            "title": f"{kind_label} — {m.get('title', '')}",
+            "actor": {"provider": prov, "label": label},
+            "meta": verb, "source": prov, "dot": dot, "memory": True, "memory_id": m["id"],
+            "detail": {"heading": m.get("title", ""), "eyebrow": kind_label, "when": at,
+                       "rows": [["Category", kind_label], ["Found in", _PROVIDER_LABEL.get(prov, prov.title())]] + ([["Mentioned by", m.get("requested_by")]] if m.get("requested_by") else []),
+                       "result": [{"category": kind_label, "text": m.get("detail", "") or m.get("title", "")}],
+                       "source": {"provider": prov, "label": label, "quote": m.get("detail", "")} if label or m.get("detail") else None},
+        })
+    # Newest first across both kinds.
+    events.sort(key=lambda x: _parse(x.get("at")) or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     return events
 
 
@@ -279,11 +321,24 @@ async def ask(project, question):
         res = await answer_project_question(project.get("name", ""), question, mem, digests)
     except Exception:
         res = {}
-    return {"id": "q_live", "question": question, "answer": (res or {}).get("answer", "I couldn't find enough in this project's memory to answer that yet."),
-            "confidence": (res or {}).get("confidence", "medium"),
-            "sources": [{"provider": s.get("provider", "notes"), "label": s.get("title", s.get("label", "")), "memory_id": s.get("id", "")}
-                        for s in ((res or {}).get("sources") or [])][:6],
-            "at": project.get("updated_at")}
+    res = res or {}
+    srcs = res.get("sources") or []
+    sources = [{"n": i + 1, "provider": s.get("provider", "notes"),
+                "label": s.get("title", s.get("label", "")), "meta": s.get("meta", ""),
+                "memory_id": s.get("id", "")}
+               for i, s in enumerate(srcs)][:6]
+    answer_text = res.get("answer") or ""
+    if not answer_text:
+        return {"id": "q_live", "question": question, "status": "no_answer",
+                "title": "No answer yet",
+                "answer": "Bracket couldn't find enough in this project's memory to answer that yet. Connect a source or add a note so it has something to read.",
+                "basis": {"memories": len(mem), "sources": 0},
+                "confidence": "low", "sources": [], "next": [], "at": project.get("updated_at")}
+    return {"id": "q_live", "question": question,
+            "lead": answer_text, "answer": answer_text, "paragraphs": [],
+            "confidence": res.get("confidence", "medium"),
+            "basis": {"memories": len(mem), "sources": len(sources)},
+            "sources": sources, "next": [], "at": project.get("updated_at")}
 
 
 async def draft(project, thread_id, instruction):
@@ -298,7 +353,11 @@ async def draft(project, thread_id, instruction):
         body = ""
     if not body:
         body = "Thanks for the note — I'll follow up shortly with details."
-    return {"draft": body, "to": (conn or {}).get("source_name", "")}
+    prov = (conn or {}).get("provider")
+    via = prov if prov in ("gmail", "slack") else "copy"
+    to = (conn or {}).get("client_email") if prov == "gmail" else (conn or {}).get("source_name", "")
+    return {"body": body, "to": to or (conn or {}).get("source_name", ""),
+            "via": via, "based_on": [], "note": ""}
 
 
 

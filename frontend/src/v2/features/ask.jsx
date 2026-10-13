@@ -125,12 +125,12 @@ export function AskTurn({ item, onCite, activeCite, compact, onRetry, onNext, ba
               action={<><Button size="s" onClick={() => navigate(`${base}/resolve/cf1`)}>Resolve in review</Button><Button size="s" variant="ghost" onClick={() => navigate(`${base}/conversations/t1?draft=ask`)}>Ask Sarah</Button></>} />
           ) : (
             <>
-              {!compact && <p className="flex items-center gap-2 text-[12px] text-fg-tertiary"><MessageMark /> <span className="font-medium text-fg-secondary">Bracket</span> · answered from {a.basis.memories} memories and {a.basis.sources} sources</p>}
+              {!compact && a.basis && <p className="flex items-center gap-2 text-[12px] text-fg-tertiary"><MessageMark /> <span className="font-medium text-fg-secondary">Bracket</span> · answered from {a.basis.memories} memories and {a.basis.sources} sources</p>}
               {a.partial && (
                 <StateBox tone="info" icon={Loader2} spin title="Answer may be incomplete" body={`${a.partial.source} is ${a.partial.pct}% synced. Bracket answered from what’s ready and will update this answer if anything changes.`} />
               )}
               <Stagger className="space-y-3" step={0.06}>
-                <StaggerItem><p className="text-body-m font-semibold text-fg">{a.lead}</p></StaggerItem>
+                <StaggerItem><p className="text-body-m font-semibold text-fg">{a.lead || a.answer}</p></StaggerItem>
                 {(a.paragraphs || []).map((p, i) => (
                   <StaggerItem key={i}>
                     <p className="text-body-m leading-6 text-fg-secondary">
@@ -166,14 +166,14 @@ export function AskTurn({ item, onCite, activeCite, compact, onRetry, onNext, ba
                 <div>
                   <p className="eyebrow mb-3">Sources · {a.sources.length}</p>
                   <div className="space-y-2">
-                    {a.sources.map((s) => (
-                      <button key={s.n} onClick={() => onCite(s.n)} className={cn("flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left transition-colors duration-fast", activeCite === s.n ? "border-line-strong bg-surface" : "border-line hover:bg-hover")}>
-                        <CiteNum n={s.n} active={activeCite === s.n} />
+                    {a.sources.map((s, i) => { const n = s.n ?? i + 1; return (
+                      <button key={n} onClick={() => onCite(n)} className={cn("flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left transition-colors duration-fast", activeCite === n ? "border-line-strong bg-surface" : "border-line hover:bg-hover")}>
+                        <CiteNum n={n} active={activeCite === n} />
                         {s.provider === "notes" || s.provider === "file" ? <FileText size={14} className="text-fg-secondary" /> : <SourceMark provider={s.provider} size={14} />}
                         <span className="min-w-0 flex-1 truncate text-[12px] text-fg">{s.label} <span className="text-fg-tertiary">{s.meta}</span></span>
                         <ChevronRight size={16} className="text-fg-tertiary" />
                       </button>
-                    ))}
+                    ); })}
                   </div>
                 </div>
               )}

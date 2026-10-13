@@ -737,6 +737,17 @@ async def gmail_list_sources(account: dict, q: str) -> List[dict]:
     return out
 
 
+def _collapse_repeat(s: str) -> str:
+    """Collapse an exact immediate duplication like 'FooFoo' → 'Foo' (seen in
+    some thread subjects). Only collapses a perfect two-half repeat so genuine
+    names are never altered."""
+    s = (s or "").strip()
+    n = len(s)
+    if n >= 4 and n % 2 == 0 and s[: n // 2] == s[n // 2:]:
+        return s[: n // 2]
+    return s
+
+
 async def gmail_threads_meta(account: dict, ids: List[str]) -> dict:
     """Subject/From for specific thread ids (used by onboarding to label the
     exact threads a user picked — including ones found via search that aren't in
@@ -1208,7 +1219,7 @@ async def extract_sources_into_project(user, project_id, provider, sources):
         sid = src.get("id")
         if not sid:
             return None
-        sname = src.get("name") or sid
+        sname = _collapse_repeat(src.get("name") or sid)
         try:
             digest = await _fetch_digest(provider, account, sid)
             if not digest or len(digest) < 40:

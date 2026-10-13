@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 import asyncio
 import logging
+import os
 import uuid
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
@@ -221,12 +222,22 @@ SEED_WORKSPACES = [
     {"id": "p2", "name": "Spring '26 polo order", "client_name": "Ravi Textiles", "business": "Ravi Textiles", "initials": "RT", "attention": 2, "role": "owner", "status": "active", "summary": "Bulk polo order for Ravi Textiles' spring line.", "created_at": dago(-30), "memory_updated_at": mins(1560), "last_seen_prev": dago(-2)},
 ]
 
+# Only these demo/showcase accounts see the two sample workspaces (p1/p2) so the
+# full UI can be demoed. Real signed-up users get a clean account with only the
+# workspaces they create. Overridable via env (comma-separated emails).
+SEED_VIEWER_EMAILS = {
+    e.strip().lower()
+    for e in os.environ.get("SEED_VIEWER_EMAILS", "fresh@use-bracket.com,solo@use-bracket.com,pro@use-bracket.com").split(",")
+    if e.strip()
+}
+
 
 # ── Endpoints ──────────────────────────────────────────────────────────────
 @router.get("/workspaces")
 async def workspaces(request: Request):
     user = await current_user_optional(request, db)
-    items = [dict(w) for w in SEED_WORKSPACES]
+    show_seed = bool(user) and (user.get("email") or "").lower() in SEED_VIEWER_EMAILS
+    items = [dict(w) for w in SEED_WORKSPACES] if show_seed else []
     if user:
         async for p in db.projects.find({"owner_user_id": user["user_id"], "archived": {"$ne": True}}, {"_id": 0}).sort("updated_at", -1).limit(30):
             nm = p.get("name") or "Untitled"
@@ -776,9 +787,13 @@ async def ask(wid: str, payload: AskIn):
     return {
         "id": "q_" + str(int(_now().timestamp())),
         "question": q,
+        "lead": "Based on the project memory: desktop and mobile layouts are in scope and the launch is targeted for Oct 17. Tablet layouts were requested by Sarah Chen but haven't been agreed yet — that change is waiting in your review queue, and it puts the two-week timeline at risk.",
         "answer": "Based on the project memory: desktop and mobile layouts are in scope and the launch is targeted for Oct 17. Tablet layouts were requested by Sarah Chen but haven't been agreed yet — that change is waiting in your review queue, and it puts the two-week timeline at risk.",
+        "paragraphs": [],
         "confidence": "high",
-        "sources": [{"provider": "gmail", "label": "Sarah Chen · Re: Homepage direction", "memory_id": "sc1"}, {"provider": "notes", "label": "Kickoff call notes", "memory_id": "co3"}],
+        "basis": {"memories": 5, "sources": 2},
+        "sources": [{"n": 1, "provider": "gmail", "label": "Sarah Chen · Re: Homepage direction", "meta": "", "memory_id": "sc1"}, {"n": 2, "provider": "notes", "label": "Kickoff call notes", "meta": "", "memory_id": "co3"}],
+        "next": [],
         "at": mins(0),
     }
 
@@ -792,7 +807,7 @@ async def draft(wid: str, tid: str, payload: DraftIn):
     mode, proj = await _resolve(wid)
     if mode == "real":
         return await v2_real.draft(proj, tid, payload.instruction or "")
-    return {"draft": "Hi Sarah — thanks for the note. Before we lock this in: adding tablet layouts expands the scope beyond the desktop + mobile we agreed, so the Oct 17 launch would be at risk unless we move the date or ship tablet in a second phase. Which would you prefer? Happy to send an updated timeline either way.", "to": "sarah.chen@acmefinance.com"}
+    return {"body": "Hi Sarah — thanks for the note. Before we lock this in: adding tablet layouts expands the scope beyond the desktop + mobile we agreed, so the Oct 17 launch would be at risk unless we move the date or ship tablet in a second phase. Which would you prefer? Happy to send an updated timeline either way.", "to": "sarah.chen@acmefinance.com", "via": "gmail", "based_on": [], "note": ""}
 
 
 class SendIn(BaseModel):

@@ -12,6 +12,27 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Demo projects leaked into every account + Timeline only showed the connect event** — both fixed.
+  1. **Seed projects for everyone**: `/api/v2/workspaces` always prepended two synthetic demo workspaces
+     (`p1` Fintech Landing Page Redesign, `p2` Spring '26 polo order) — so real new users saw 3 projects.
+     Now gated to demo accounts only via `SEED_VIEWER_EMAILS` (default fresh/solo/pro@use-bracket.com,
+     env-overridable). Verified: a fresh OTP user gets an empty list; demo accounts still see the showcase.
+  2. **Timeline = thread history**: `v2_real.build_timeline` now merges source events with one event per
+     extracted `project_memory` item (Requirements/Decisions/Deliverables/Commitments/…), newest-first,
+     so Timeline shows everything learned inside connected threads — not just "Connected Gmail". Also added
+     a `detail{}` object to every timeline event (fixes a latent EventDetail crash: `d.heading` on undefined).
+     Verified in-browser: real "Acme Finance" project shows 31 events; clicking one opens the detail panel.
+  3. **Doubled source name** ("Website redesign for FlowdeskWebsite redesign for Flowdesk"): added
+     `_collapse_repeat()` guard at write-time in `extract_sources_into_project`, and cleaned existing DB rows
+     (4 connections, 132 memory labels, 32 events). Chip now reads a single "Website redesign for Flowdesk".
+- 2026-06: **Ask Bracket & Draft reply crashes fixed** ("Cannot read properties of undefined (reading 'memories')").
+  Backend/frontend contract mismatch: `v2_real.ask` returned `{answer, confidence, sources}` (no `basis`,
+  `lead`, numbered sources) but `AskTurn` read `a.basis.memories`/`a.lead`; `v2_real.draft` returned
+  `{draft, to}` but `DraftComposer` read `draft.body`/`draft.via`. Fix: both real + demo `ask` now return
+  `lead`, `answer`, `basis{memories,sources}`, numbered `sources[]` (+`no_answer` status when memory empty);
+  both `draft` now return `body`, `via`, `based_on`, `note`, `to`. Frontend also guards `a.basis`/`a.lead`
+  and falls back to source index. Verified in-browser (demo p1): Ask renders answer + "5 memories and 2
+  sources" + citations; Draft renders body + Send via Gmail. No runtime overlay.
 - 2026-06: **Onboarding read-nothing bug fixed** (Choose → Start learning → Ready all 0s → empty overview).
   Root cause: `_run_onboarding` re-listed `gmail_list_sources(account, "")` (default **12** inbox threads)
   and intersected the user's picked ids against it — so any thread picked via **search** (not in the
