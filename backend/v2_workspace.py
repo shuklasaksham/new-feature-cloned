@@ -371,20 +371,39 @@ async def updates(request: Request):
     if not user:
         return {"items": [], "unread": 0}
     pids = [p["id"] async for p in db.projects.find({"owner_user_id": user["user_id"], "archived": {"$ne": True}}, {"_id": 0, "id": 1})]
-    items, unread = [], 0
-    async for n in db.notifications.find({"project_id": {"$in": pids}}, {"_id": 0}).sort("created_at", -1).limit(30):
-        read = bool(n.get("read"))
-        if not read:
-            unread += 1
-        is_conflict = n.get("kind") == "conflict" or n.get("type") == "conflict"
+    if not pids:
+        return {"items": [], "unread": 0}
+    seen = user.get("updates_seen_at") or ""
+    items = []
+    # Attention — changes Bracket detected that need a decision.
+    async for m in db.project_memory.find({"project_id": {"$in": pids}, "status": "detected"}, {"_id": 0}).sort("occurred_at", -1).limit(15):
         items.append({
-            "id": n.get("id"), "read": read, "group": "attention",
-            "icon": "conflict" if is_conflict else "changed",
-            "title": n.get("title") or n.get("summary") or "Update",
-            "body": n.get("body") or n.get("detail") or "",
-            "at": n.get("created_at"),
-            "link": {"kind": "review", "workspace": n.get("project_id"), "id": n.get("memory_id") or n.get("id")},
+            "id": "m_" + m["id"], "group": "attention",
+            "icon": "conflict" if m.get("is_conflict") else "warning",
+            "title": ("Conflict — " if m.get("is_conflict") else "Change detected — ") + m.get("title", ""),
+            "sub": m.get("source_label", ""), "at": m.get("created_at") or m.get("occurred_at"),
+            "link": {"kind": "review", "workspace": m["project_id"], "id": m["id"]},
         })
+    # Activity — what Bracket learned / synced / sent.
+    async for e in db.source_events.find({"project_id": {"$in": pids}}, {"_id": 0}).sort("occurred_at", -1).limit(25):
+        et = (e.get("event_type") or "").lower()
+        if et == "sent":
+            icon, group, kind = "changed", "system", "thread"
+        elif et in ("sync", "synced"):
+            icon, group, kind = "synced", "system", "source"
+        else:  # source_connected / learned / other
+            icon, group, kind = "synced", "memory", "source"
+        items.append({
+            "id": "e_" + e["id"], "group": group, "icon": icon,
+            "title": e.get("summary", "Update"), "sub": e.get("source_label", ""),
+            "at": e.get("occurred_at"),
+            "link": {"kind": kind, "workspace": e.get("project_id"), "id": e.get("connection_id")},
+        })
+    items.sort(key=lambda x: x.get("at") or "", reverse=True)
+    items = items[:30]
+    for it in items:
+        it["read"] = bool(seen) and (it.get("at") or "") <= seen
+    unread = sum(1 for it in items if not it["read"])
     return {"items": items, "unread": unread}
 
 
@@ -393,11 +412,8 @@ async def updates_read(request: Request, payload: UpdatesReadIn):
     user = await current_user_optional(request, db)
     if not user:
         return {"ok": True}
-    pids = [p["id"] async for p in db.projects.find({"owner_user_id": user["user_id"]}, {"_id": 0, "id": 1})]
-    query = {"project_id": {"$in": pids}}
-    if payload.ids:
-        query["id"] = {"$in": payload.ids}
-    await db.notifications.update_many(query, {"$set": {"read": True}})
+    # Aggregated feed → mark everything up to now as seen (single-item reads are optimistic client-side).
+    await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"updates_seen_at": iso(_now())}})
     return {"ok": True}
 
 
@@ -703,12 +719,16 @@ async def person(wid: str, pid: str):
 
 
 @router.get("/w/{wid}/timeline")
-async def timeline(wid: str, filter: str = ""):
+async def timeline(wid: str, filter: str = "", type: str = "all", source: str = "all",
+                   range: str = "all", memory_only: str = "", q: str = ""):
     mode, proj = await _resolve(wid)
     if mode == "real":
-        evs = await v2_real.build_timeline(proj)
-        return {"events": evs, "total": len(evs)}
-    return {"events": _seed()["events"], "total": len(_seed()["events"])}
+        allev = await v2_real.build_timeline(proj)
+        evs = v2_real.filter_timeline(allev, type=type, source=source, range=range,
+                                      memory_only=(memory_only in ("1", "true", "True")), q=q)
+        return {"events": evs, "total": len(evs), "counts": v2_real.timeline_counts(allev)}
+    evs = _seed()["events"]
+    return {"events": evs, "total": len(evs), "counts": {"all": len(evs)}}
 
 
 @router.get("/w/{wid}/timeline/{eid}")

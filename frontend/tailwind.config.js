@@ -177,7 +177,7 @@ module.exports = {
         "scale-in": "scale-in 200ms cubic-bezier(0.2,0.8,0.2,1)",
         "slide-up": "slide-up 280ms cubic-bezier(0.2,0.8,0.2,1)",
         "slide-in-right": "slide-in-right 200ms cubic-bezier(0.2,0.8,0.2,1)",
-        shimmer: "shimmer 1.6s linear infinite",
+        shimmer: "shimmer 1.8s ease-in-out infinite",
         marquee: "marquee 40s linear infinite",
       },
     },

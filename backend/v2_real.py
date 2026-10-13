@@ -1,7 +1,7 @@
 """Builders that turn a real Bracket project (project_memory, source_events,
 source_connections, notifications) into the v2 workspace response shapes, with
 dynamic categories. Reuses the existing AI (ask / suggest-reply)."""
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from connectors import db, parse_digest_messages
 from connect_ai import answer_project_question, suggest_project_reply
@@ -253,6 +253,51 @@ async def build_timeline(project):
     # Newest first across both kinds.
     events.sort(key=lambda x: _parse(x.get("at")) or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
     return events
+
+
+def _event_type(e):
+    """Coarse type tag used by the Timeline filter."""
+    if e.get("system"):
+        return "sources"
+    prov = e.get("source")
+    if prov in ("notes", "file"):
+        return "notes"
+    if e.get("meta") == "Change detected" or e.get("dot") == "danger" or e.get("kind") in ("scope_change", "conflict"):
+        return "changes"
+    return "memory"
+
+
+def filter_timeline(events, type="all", source="all", range="all", memory_only=False, q=""):
+    q = (q or "").strip().lower()
+    cutoff = None
+    days = {"7d": 7, "30d": 30, "90d": 90}.get(range)
+    if days:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    out = []
+    for e in events:
+        if source and source != "all" and e.get("source") != source:
+            continue
+        if memory_only and not e.get("memory"):
+            continue
+        if type and type != "all" and _event_type(e) != type:
+            continue
+        if cutoff:
+            at = _parse(e.get("at"))
+            if at and at < cutoff:
+                continue
+        if q:
+            hay = (e.get("title", "") + " " + (e.get("meta", "") or "") + " " + str((e.get("actor") or {}).get("label", ""))).lower()
+            if q not in hay:
+                continue
+        out.append(e)
+    return out
+
+
+def timeline_counts(events):
+    c = {"all": len(events), "changes": 0, "memory": 0, "notes": 0, "sources": 0, "messages": 0}
+    for e in events:
+        c[_event_type(e)] = c.get(_event_type(e), 0) + 1
+    return c
 
 
 async def build_sources(project):

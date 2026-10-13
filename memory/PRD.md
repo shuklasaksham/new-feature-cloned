@@ -12,6 +12,18 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Timeline filters, lighter skeletons, notification bell feed.**
+  1. **Timeline filters**: endpoint ignored type/source/range/memory_only/q. Added `filter_timeline()` +
+     `timeline_counts()` in v2_real and wired the params in `/w/{wid}/timeline`. Each event is tagged
+     (changes/memory/notes/sources) via `_event_type`; filters + counts now agree. Verified via API + UI
+     (Changes detected + Last 7 days narrows the list).
+  2. **Lighter skeleton shimmer**: `.skeleton` now a soft white sweep over `--bg-surface-raised`
+     (rgba 6% highlight), shimmer eased to 1.8s ease-in-out — applies site-wide.
+  3. **Notification bell (Toast Center)**: the existing Updates bell was reading an empty `notifications`
+     collection. Rebuilt `/api/v2/updates` to aggregate real events — detected/conflict memory (attention)
+     + source_events (learned/connected, synced, sent) grouped as attention/memory/system, newest-first.
+     Unread tracked via `users.updates_seen_at` (Mark all read bumps it). Verified: bell shows real
+     "Change detected / Connected Figma / sent" items with unread dots.
 - 2026-06: **Figma search, search loading, notifications, performance.**
   1. **Performance (perceived slowness)**: backend endpoints are already fast (80–260ms); the lag was the
      client refetching + showing a skeleton on every tab switch. Added stale-while-revalidate caching to
