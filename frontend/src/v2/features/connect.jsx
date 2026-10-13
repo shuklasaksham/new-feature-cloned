@@ -214,11 +214,13 @@ function SourcePicker({ provider, onBack, onNext, busy }) {
           <Button onClick={() => load(q, url)}>Find</Button>
         </div>
       )}
-      <div className="relative mt-3">
-        <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-tertiary" />
-        <Input value={q} onChange={(e) => onQ(e.target.value)} placeholder={`Search ${provider.label}`} className="pl-8 pr-8" aria-label={`Search ${provider.label}`} />
-        {searching && <Spinner className="absolute right-2.5 top-1/2 -translate-y-1/2" size={14} />}
-      </div>
+      {provider.key !== "figma" && (
+        <div className="relative mt-3">
+          <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-tertiary" />
+          <Input value={q} onChange={(e) => onQ(e.target.value)} placeholder={`Search ${provider.label}`} className="pl-8 pr-8" aria-label={`Search ${provider.label}`} />
+          {searching && <Spinner className="absolute right-2.5 top-1/2 -translate-y-1/2" size={14} />}
+        </div>
+      )}
       <div className="relative mt-3 max-h-[46vh] overflow-y-auto rounded-lg border border-line">
         {searching && list !== null && (
           <div className="absolute right-3 top-2 z-10 flex items-center gap-1.5 rounded-md bg-raised px-2 py-1 text-[11px] text-fg-tertiary shadow-popover" role="status"><Spinner size={12} /> Searching…</div>
@@ -231,7 +233,7 @@ function SourcePicker({ provider, onBack, onNext, busy }) {
         ) : list.length === 0 ? (
           <p className="px-4 py-8 text-center text-body-s text-fg-tertiary">
             {searching ? "Searching…" : provider.key === "figma"
-              ? "No files found. Paste your Figma team or file link above — Figma doesn’t let apps search every file by name."
+              ? "Paste your Figma team or file link above to list files — Figma doesn’t let apps browse files by name."
               : q ? `No results for “${q}”. Try another search.` : "Nothing found yet."}
           </p>
         ) : list.map((s) => (
