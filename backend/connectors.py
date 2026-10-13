@@ -922,7 +922,10 @@ async def send_gmail_reply(account: dict, to: str, thread_id: str, text: str, su
             json=payload,
         )
     if r.status_code in (200, 201):
-        return True
+        try:
+            return r.json().get("threadId") or thread_id or "sent"
+        except Exception:
+            return thread_id or "sent"
     if r.status_code == 403:
         raise HTTPException(400, "Bracket can read this Gmail but isn't allowed to send yet. Disconnect and reconnect Gmail to grant send permission.")
     if r.status_code == 401:

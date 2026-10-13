@@ -258,16 +258,22 @@ async def build_timeline(project):
 async def build_sources(project):
     out = []
     for c in await _connections(project["id"]):
-        ev_count = await db.source_events.count_documents({"connection_id": c["id"]})
+        prov = c["provider"]
         mem_count = await db.project_memory.count_documents({"connection_id": c["id"], "status": {"$ne": "ignored"}})
+        msg_count = len(parse_digest_messages(prov, c.get("content_cache") or "")) or c.get("message_count") or 0
         acts = []
         async for e in db.source_events.find({"connection_id": c["id"]}, {"_id": 0}).sort("occurred_at", -1).limit(5):
             acts.append({"at": e.get("occurred_at"), "text": e.get("summary", "")})
-        out.append({"id": c["id"], "provider": c["provider"], "label": _PROVIDER_LABEL.get(c["provider"], c["provider"].title()),
+        thread_item = {"id": c["id"], "title": c.get("source_name", ""), "subject": c.get("source_name", ""),
+                       "name": c.get("source_name", ""), "from": c.get("client_email") or _PROVIDER_LABEL.get(prov, prov.title()),
+                       "messages": msg_count, "memories": mem_count,
+                       "reading": False, "at": c.get("last_activity_at") or c.get("created_at")}
+        key = "channels" if prov == "slack" else "notes" if prov == "notes" else "threads"
+        out.append({"id": c["id"], "provider": prov, "label": _PROVIDER_LABEL.get(prov, prov.title()),
                     "account": c.get("source_name", ""), "connected_at": c.get("created_at"), "connected_by": "",
                     "status": c.get("status", "connected"), "last_sync_at": c.get("last_synced_at"),
-                    "messages": ev_count, "health": "ok", "reads_summary": c.get("source_name", ""),
-                    "permissions": {"read": True, "send": c["provider"] == "gmail"},
+                    "messages": msg_count, key: [thread_item], "health": "ok", "reads_summary": c.get("source_name", ""),
+                    "permissions": {"read": True, "send": prov in ("gmail", "slack")},
                     "learned": {"total": mem_count, "by": {}, "corroborated": 0}, "activity": acts})
     return out
 

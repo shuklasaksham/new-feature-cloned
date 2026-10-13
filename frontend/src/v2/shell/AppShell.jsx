@@ -2,12 +2,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid, Layers, MessagesSquare, History, Plus, MessageCircleQuestion, Folder, PanelLeft, Search, Menu as MenuIcon,
-  ChevronDown, ArrowLeft, Settings as SettingsIcon, LogOut, CreditCard, Check, Bell, Unlink, Users, ShieldCheck, User, Plug, SlidersHorizontal, ChevronRight,
+  ChevronDown, ArrowLeft, Settings as SettingsIcon, LogOut, CreditCard, Check, Bell, Unlink, Users, ShieldCheck, User, Plug, SlidersHorizontal, ChevronRight, RefreshCw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../lib/AuthContext";
-import { useWorkspace, useProjects } from "../lib/workspace";
+import { useWorkspace, useProjects, refreshAll } from "../lib/workspace";
 import { Avatar, IconButton, Kbd, SourceMark, initialsOf } from "../ui/primitives";
 import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator, Popover, PopoverTrigger, PopoverContent, Sheet, Tooltip, Dialog } from "../ui/overlays";
 import { Count, t as T } from "../ui/motion";
@@ -22,6 +22,8 @@ import PlanLimit, { canCreateWorkspace } from "./PlanLimit";
 import { loadBilling } from "../lib/account";
 import { ConnectFlow } from "../features/connect";
 import { AddSourceDialog } from "../features/sources";
+import { v2 } from "../lib/api2";
+import { toast } from "sonner";
 
 /* Responsive model (Figma › Breakpoints & layout):
    ≥1280 sidebar (260 / 232 at 1280) — the toggle collapses it to the icon rail
@@ -234,6 +236,32 @@ function GroupLabel({ rail, children, action }) {
   );
 }
 
+function SourceTrailing({ projectId, s, bad }) {
+  const [busy, setBusy] = useState(false);
+  const sync = async (e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    try {
+      await v2.syncSource(projectId, s.id);
+      toast.success(`${s.label} synced`, { description: "Checked for new messages." });
+      refreshAll();
+    } catch (err) {
+      toast.error(`Couldn’t sync ${s.label}`);
+    } finally { setBusy(false); }
+  };
+  const label = bad ? <Unlink size={14} className="text-danger" aria-label="Needs reconnecting" /> : s.status === "paused" ? "paused" : s.status === "disconnected" ? "off" : sinceShort(s.last_sync_at);
+  return (
+    <span className="relative flex items-center justify-end" style={{ minWidth: 34 }}>
+      <span className={cn("transition-opacity duration-fast", busy ? "opacity-0" : "group-hover:opacity-0")}>{label}</span>
+      <button type="button" onClick={sync} aria-label={`Sync ${s.label} now`} data-testid={`sidebar-sync-${s.id}`}
+        className={cn("absolute right-0 flex h-6 w-6 items-center justify-center rounded-md text-fg-tertiary hover:bg-hover hover:text-fg transition-opacity duration-fast", busy ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
+        <RefreshCw size={13} className={busy ? "animate-spin" : ""} />
+      </button>
+    </span>
+  );
+}
+
 function Sidebar({ rail, onNavigate, width }) {
   const { projectId, counts, sources } = useWorkspace();
   const navigate = useNavigate();
@@ -278,7 +306,7 @@ function Sidebar({ rail, onNavigate, width }) {
             return (
               <NavRow key={s.id} to={`${base}/sources/${s.id}`} label={s.label} rail={rail}
                 mark={<span className={cn("relative", (s.status === "paused" || s.status === "disconnected") && "opacity-50")}><SourceMark provider={s.provider} size={16} />{bad && rail && <Unlink size={10} className="absolute -right-1.5 -bottom-1 text-danger" />}</span>}
-                trailing={bad ? <Unlink size={14} className="text-danger" aria-label="Needs reconnecting" /> : s.status === "paused" ? "paused" : s.status === "disconnected" ? "off" : sinceShort(s.last_sync_at)} />
+                trailing={rail ? null : <SourceTrailing projectId={projectId} s={s} bad={bad} />} />
             );
           })}
           {rail && (

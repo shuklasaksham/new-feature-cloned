@@ -853,10 +853,72 @@ async def send(wid: str, tid: str, request: Request, payload: SendIn):
     return {"ok": True, "sent_at": iso(_now())}
 
 
-# Lightweight action stubs so the UI's buttons resolve cleanly.
-@router.post("/w/{wid}/seen")
-async def seen(wid: str):
-    return {"ok": True}
+class NewMessageIn(BaseModel):
+    to: object = ""
+    subject: str = ""
+    body: str = ""
+    via: str = "gmail"
+
+
+@router.get("/w/{wid}/message-templates")
+async def message_templates(wid: str):
+    mode, proj = await _resolve(wid)
+    client = (proj or {}).get("client_name", "") if mode == "real" else "the client"
+    return {"templates": [
+        {"id": "intro", "label": "Intro / kickoff", "to": "", "subject": "Great to be working together",
+         "body": f"Hi{(' ' + client) if client else ''},\n\nLooking forward to getting started. I'll keep everything we agree on in one place and share updates as we go.\n\nBest,", "remember": []},
+        {"id": "status", "label": "Status update", "to": "", "subject": "Quick update",
+         "body": "Hi,\n\nA quick update on where things stand:\n\n• \n• \n\nLet me know if you have any questions.\n\nBest,", "remember": []},
+        {"id": "followup", "label": "Follow-up", "to": "", "subject": "Following up",
+         "body": "Hi,\n\nJust following up on this — happy to jump on a quick call if that's easier.\n\nBest,", "remember": []},
+    ]}
+
+
+@router.post("/w/{wid}/messages")
+async def new_message(wid: str, request: Request, payload: NewMessageIn):
+    mode, proj = await _resolve(wid)
+    if mode != "real":
+        return {"id": "t_new"}
+    user = await current_user(request, db)
+    to = (str(payload.to) if payload.to else "").strip()
+    text = (payload.body or "").strip()
+    subject = (payload.subject or "").strip()
+    via = payload.via if payload.via in ("gmail", "slack") else "gmail"
+    if not to:
+        raise HTTPException(400, "Add a recipient first.")
+    if not text:
+        raise HTTPException(400, "Write a message before sending.")
+    account = await _get_account(user["user_id"], via)
+    if not account:
+        raise HTTPException(400, f"{PROVIDERS.get(via, {}).get('label', via)} isn't connected to this workspace.")
+    now = iso(_now())
+    conn_id = str(uuid.uuid4())
+    if via == "gmail":
+        if "@" not in to:
+            raise HTTPException(400, "Enter a valid email address.")
+        thread_id = await send_gmail_reply(account, to, "", text, subject_override=(subject or "(no subject)"))
+        cache = f"GMAIL CONVERSATION (1 messages):\n--- From: {user.get('email','you')} | Date: {_now().strftime('%a, %d %b %Y %H:%M:%S %z')} | Subject: {subject or '(no subject)'}\n{text}"
+        await db.source_connections.insert_one({
+            "id": conn_id, "project_id": wid, "user_id": user["user_id"], "provider": "gmail",
+            "source_type": "gmail", "source_id": str(thread_id) if thread_id else "", "source_name": subject or f"Message to {to}",
+            "source_url": "", "client_email": to, "status": "connected", "content_cache": cache,
+            "last_synced_at": now, "last_activity_at": now, "created_at": now, "updated_at": now,
+        })
+    else:
+        await send_slack_message(account, to, text)
+        cache = f"SLACK CONVERSATION (most recent first):\n- {user.get('email','you')} ({_now().strftime('%Y-%m-%d %H:%M')}): {text}"
+        await db.source_connections.insert_one({
+            "id": conn_id, "project_id": wid, "user_id": user["user_id"], "provider": "slack",
+            "source_type": "slack", "source_id": to, "source_name": f"#{to}", "source_url": "",
+            "status": "connected", "content_cache": cache,
+            "last_synced_at": now, "last_activity_at": now, "created_at": now, "updated_at": now,
+        })
+    await db.source_events.insert_one({
+        "id": str(uuid.uuid4()), "project_id": wid, "connection_id": conn_id, "provider": via,
+        "source_label": subject or to, "event_type": "sent", "occurred_at": now,
+        "summary": f"You sent a message via {PROVIDERS.get(via, {}).get('label', via)} — {subject or to}.",
+    })
+    return {"id": conn_id, "ok": True}
 
 
 class SnoozeIn(BaseModel):

@@ -12,6 +12,18 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Compose "Not Found", source "0 threads/0 messages", sidebar sync** — all fixed.
+  1. **Compose New message → "Not Found"**: `POST /w/{wid}/messages` and `GET /w/{wid}/message-templates`
+     didn't exist. Added both: compose now sends for real via Gmail/Slack (`send_gmail_reply` returns the
+     new threadId), creates a source_connection so the sent message becomes a readable conversation, and
+     returns its id to open. 3 starter templates. Validates empty body / missing recipient (400). Verified:
+     real self-send → `{ok:true}` + navigable conversation.
+  2. **Source detail "0 threads · 0 messages"**: `build_sources` never returned the per-thread array the
+     SourceDetail page reads. Now returns `threads`/`channels`/`notes` with real message counts (parsed
+     from `content_cache`), top-level `messages`, and a `from` label (fixes "undefined · 19 msgs").
+     Verified: real Gmail source shows "1 thread · 19 messages", 65 memories.
+  3. **Sidebar source sync on hover**: each source row in the sidebar now reveals a RefreshCw button on
+     hover (`SourceTrailing` in AppShell) that calls `syncSource` + `refreshAll`. Verified present.
 - 2026-06: **Real conversation dates + real message send** (replaced import-time stamps and a no-op send stub).
   1. **Dates**: added `parse_digest_messages()` / `digest_last_at()` in connectors to recover real
      messages+dates from the stored `content_cache`. `build_threads` now renders the actual thread
