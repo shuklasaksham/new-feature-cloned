@@ -1014,6 +1014,43 @@ async def source_sync(wid: str, sid: str):
     return {"ok": True, "status": "synced"}
 
 
+class DisconnectIn(BaseModel):
+    keep_memory: bool = True
+
+
+@router.post("/w/{wid}/sources/{sid}/disconnect")
+async def source_disconnect(wid: str, sid: str, payload: DisconnectIn = DisconnectIn()):
+    conn = await db.source_connections.find_one({"id": sid, "project_id": wid}, {"_id": 0})
+    if not conn:
+        raise HTTPException(404, "Source not found.")
+    await db.source_connections.delete_one({"id": sid, "project_id": wid})
+    await db.source_events.delete_many({"connection_id": sid})
+    removed_memory = 0
+    if payload.keep_memory:
+        # Keep what was learned, just detach it from the (now gone) source.
+        await db.project_memory.update_many({"connection_id": sid}, {"$set": {"connection_id": None, "source_detached": True}})
+    else:
+        r = await db.project_memory.delete_many({"connection_id": sid})
+        removed_memory = r.deleted_count
+    return {"ok": True, "kept_memory": payload.keep_memory, "removed_memory": removed_memory}
+
+
+@router.post("/w/{wid}/sources/sync-all")
+async def source_sync_all(wid: str, request: Request):
+    user = await current_user(request, db)
+    synced = 0
+    import connectors
+    async for conn in db.source_connections.find({"project_id": wid, "user_id": user["user_id"]}, {"_id": 0}):
+        if conn.get("is_demo"):
+            continue
+        try:
+            await connectors._sync_connection(conn)
+            synced += 1
+        except Exception:
+            pass
+    return {"ok": True, "synced": synced}
+
+
 
 # ── Billing (bridges the v2 account UI to the real plan + Razorpay data) ─────
 BILLING_PRICES = {"monthly": {"inr": 999, "usd": 12}, "project": {"inr": 199, "usd": 2}}

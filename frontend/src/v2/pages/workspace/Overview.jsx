@@ -58,6 +58,22 @@ export default function Overview() {
   const showSkeleton = useDelayed(300);
   const mobile = useIsMobile();
 
+  const [syncing, setSyncing] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [replyFor, setReplyFor] = useState(null);
+  const reviewsRes = useResource(() => v2.reviews(projectId), [projectId]);
+  const pendingReviews = reviewsRes.data?.reviews?.length || 0;
+  const syncAll = async () => {
+    setSyncing(true);
+    try {
+      const r = await v2.syncAll(projectId);
+      toast.success(r?.synced ? `Synced ${r.synced} source${r.synced === 1 ? "" : "s"}` : "Sources are up to date", { description: "Checked every connected source for new messages." });
+      reload(); refreshAll();
+    } catch (e) {
+      toast.error("Couldn’t sync your sources");
+    } finally { setSyncing(false); }
+  };
+
   useEffect(() => {
     const on = () => reload();
     window.addEventListener("bk:refresh", on);
@@ -135,11 +151,21 @@ export default function Overview() {
               <p className="mt-2 text-body-m text-fg-tertiary">{ws.client_name}</p>
             )}
           </div>
-          {ws.memory_updated_at && (
-            <p className="flex shrink-0 items-center gap-2 font-mono text-[12px] text-fg-tertiary">
-              <Clock size={14} aria-hidden="true" /> Memory updated {relative(ws.memory_updated_at)}
-            </p>
-          )}
+          <div className="flex shrink-0 flex-wrap items-center gap-3">
+            {pendingReviews > 0 && (
+              <Button variant="secondary" icon={CheckCircle2} onClick={() => setReviewOpen(true)} data-testid="overview-review-all">
+                Review all <span className="ml-1.5 rounded bg-warning-bg px-1.5 py-0.5 text-[11px] font-medium text-warning">{pendingReviews}</span>
+              </Button>
+            )}
+            {data.sources?.length > 0 && (
+              <Button variant="ghost" icon={RefreshCw} loading={syncing} onClick={syncAll} data-testid="overview-sync-all">Sync all</Button>
+            )}
+            {ws.memory_updated_at && (
+              <p className="flex items-center gap-2 font-mono text-[12px] text-fg-tertiary">
+                <Clock size={14} aria-hidden="true" /> Memory updated {relative(ws.memory_updated_at)}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -241,7 +267,137 @@ export default function Overview() {
           <MessageCircleQuestion size={16} /> Ask Bracket <Kbd>⌘J</Kbd>
         </motion.button>
       </div>
+
+      {reviewOpen && (
+        <ReviewAllDialog projectId={projectId} open={reviewOpen}
+          onClose={() => { setReviewOpen(false); reviewsRes.reload(); reload(); refreshAll(); }}
+          onReviewed={(acc) => { reviewsRes.reload(); setReplyFor(acc); }} />
+      )}
+      {replyFor && <ReplyDialog projectId={projectId} accepted={replyFor} onClose={() => setReplyFor(null)} />}
     </div>
+  );
+}
+
+/* Review-all — compact list of every pending change with inline Accept / Dismiss. */
+function ReviewAllDialog({ projectId, open, onClose, onReviewed }) {
+  const [items, setItems] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+  const [accepted, setAccepted] = useState([]);
+  useEffect(() => {
+    if (!open) return;
+    setAccepted([]); setItems(null);
+    v2.reviews(projectId).then((d) => setItems(d.reviews || [])).catch(() => setItems([]));
+  }, [open, projectId]);
+  const handle = async (r, action) => {
+    setBusyId(r.id);
+    try {
+      if (action === "accept") {
+        await v2.acceptReview(projectId, r.id, [r.proposals?.[0]?.id].filter(Boolean), {});
+        setAccepted((a) => [...a, r]);
+        toast.success("Accepted — memory updated");
+      } else {
+        await v2.dismissReview(projectId, r.id);
+      }
+      setItems((list) => list.filter((x) => x.id !== r.id));
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Couldn’t update that item");
+    } finally { setBusyId(null); }
+  };
+  const finish = () => { const acc = accepted; onClose(); if (acc.length) onReviewed(acc); };
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && finish()} title="Review all pending changes" size="l">
+      {items === null ? (
+        <div className="space-y-3 py-2">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
+      ) : items.length === 0 ? (
+        <div className="py-6 text-center">
+          <CheckCircle2 size={28} className="mx-auto text-success" />
+          <p className="mt-3 text-body-m text-fg">{accepted.length ? `${accepted.length} change${accepted.length === 1 ? "" : "s"} accepted` : "Nothing pending"}</p>
+          <p className="mt-1 text-body-s text-fg-tertiary">{accepted.length ? "You're all caught up." : "No proposed changes need your decision right now."}</p>
+        </div>
+      ) : (
+        <ul className="max-h-[52vh] divide-y divide-line-subtle overflow-y-auto">
+          {items.map((r) => (
+            <li key={r.id} className="flex items-start gap-3 py-3" data-testid={`review-row-${r.id}`}>
+              <div className="min-w-0 flex-1">
+                <p className={cn("eyebrow", r.kind === "scope_change" || r.kind === "conflict" ? "text-warning" : "text-info")}>{r.label}</p>
+                <p className="mt-0.5 text-body-m text-fg">{r.title}</p>
+                {r.interpretation && <p className="mt-0.5 line-clamp-2 text-body-s text-fg-tertiary">{r.interpretation}</p>}
+              </div>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Button size="s" variant="ghost" disabled={busyId === r.id} onClick={() => handle(r, "dismiss")} data-testid={`review-dismiss-${r.id}`}>Dismiss</Button>
+                <Button size="s" loading={busyId === r.id} onClick={() => handle(r, "accept")} data-testid={`review-accept-${r.id}`}>Accept</Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="mt-5 flex items-center justify-between border-t border-line-subtle pt-4">
+        <span className="text-body-s text-fg-tertiary">{accepted.length} accepted{items?.length ? ` · ${items.length} left` : ""}</span>
+        <Button onClick={finish} data-testid="review-all-done">{accepted.length ? "Done — draft a reply" : "Done"}</Button>
+      </div>
+    </Dialog>
+  );
+}
+
+/* After reviewing — auto-draft a reply summarising what was accepted, editable + AI rewrite. */
+function ReplyDialog({ projectId, accepted, onClose }) {
+  const sendable = accepted.filter((a) => (a.provider === "gmail" || a.provider === "slack") && a.connection_id);
+  const target = sendable.find((a) => a.to) || sendable[0] || accepted[0];
+  const canSend = !!(target && (target.provider === "gmail" || target.provider === "slack") && target.connection_id);
+  const [body, setBody] = useState("");
+  const [to, setTo] = useState(target?.to || "");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const titles = accepted.map((a) => a.title).filter(Boolean);
+  const genDraft = useCallback(async (extra) => {
+    setLoading(true);
+    const fallback = `Hi,\n\nQuick note to confirm the following, now updated on my side:\n\n${titles.map((t) => `• ${t}`).join("\n")}\n\nShout if anything looks off.\n\nBest,`;
+    try {
+      if (!target?.connection_id) { setBody(fallback); return; }
+      const instruction = `Write a short, friendly reply confirming these points we just agreed: ${titles.join("; ")}.${extra ? " " + extra : ""}`;
+      const d = await v2.draft(projectId, target.connection_id, instruction);
+      let b = (d?.body || "").replace(/\[\[|\]\]/g, "");
+      if (!b || /^Thanks for the note — I['’]ll follow up shortly/.test(b)) b = fallback;
+      setBody(b);
+      if (d?.to && !to) setTo(d.to);
+    } catch (e) {
+      setBody(fallback);
+    } finally { setLoading(false); }
+  }, [projectId, target, titles, to]);
+  useEffect(() => { genDraft(); /* eslint-disable-next-line */ }, []);
+  const send = async () => {
+    if (!canSend) { toast.error("These changes came from a source Bracket can’t reply through (e.g. Figma). Copy the text into your tool instead."); return; }
+    setSending(true);
+    try {
+      await v2.send(projectId, target.connection_id, body, to);
+      toast.success(`Reply sent to ${to} via Gmail`, { description: "Bracket will watch for a response and update memory." });
+      onClose();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Couldn’t send the reply");
+    } finally { setSending(false); }
+  };
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()} title="Send a reply" size="l">
+      <p className="text-body-s text-fg-secondary">Bracket drafted a reply based on the {accepted.length} change{accepted.length === 1 ? "" : "s"} you just accepted. Edit it or ask Bracket to rewrite, then send.</p>
+      <div className="mt-4 space-y-3">
+        <label className="block">
+          <span className="eyebrow">To</span>
+          <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="recipient@email.com"
+            className="mt-1 h-9 w-full rounded-md border border-line bg-surface px-3 text-body-s text-fg outline-none focus:border-line-strong" data-testid="reply-to" />
+        </label>
+        <div className="relative">
+          <textarea value={loading ? "Drafting…" : body} onChange={(e) => setBody(e.target.value)} rows={10} disabled={loading}
+            className="w-full resize-none rounded-md border border-line bg-surface px-3 py-2.5 text-body-m leading-relaxed text-fg outline-none focus:border-line-strong disabled:text-fg-tertiary" data-testid="reply-body" />
+        </div>
+      </div>
+      <div className="mt-4 flex items-center justify-between">
+        <Button variant="ghost" icon={RefreshCw} loading={loading} onClick={() => genDraft("Make it concise and professional.")} data-testid="reply-rewrite">Rewrite with AI</Button>
+        <div className="flex gap-2">
+          <Button variant="ghost" onClick={onClose}>Not now</Button>
+          <Button icon={Reply} loading={sending} disabled={loading || !canSend || !body.trim() || !to.trim()} onClick={send} data-testid="reply-send">Send reply</Button>
+        </div>
+      </div>
+    </Dialog>
   );
 }
 

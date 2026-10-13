@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../lib/AuthContext";
 import { useWorkspace, useProjects, refreshAll } from "../lib/workspace";
-import { Avatar, IconButton, Kbd, SourceMark, initialsOf } from "../ui/primitives";
+import { Avatar, Button, IconButton, Kbd, SourceMark, initialsOf } from "../ui/primitives";
 import { Menu, MenuTrigger, MenuContent, MenuItem, MenuSeparator, Popover, PopoverTrigger, PopoverContent, Sheet, Tooltip, Dialog } from "../ui/overlays";
 import { Count, t as T } from "../ui/motion";
 import { useIsMobile, useMedia } from "../lib/useMedia";
@@ -236,7 +236,7 @@ function GroupLabel({ rail, children, action }) {
   );
 }
 
-function SourceTrailing({ projectId, s, bad }) {
+function SourceTrailing({ projectId, s, bad, onDisconnect }) {
   const [busy, setBusy] = useState(false);
   const sync = async (e) => {
     e.preventDefault(); e.stopPropagation();
@@ -250,15 +250,50 @@ function SourceTrailing({ projectId, s, bad }) {
       toast.error(`Couldn’t sync ${s.label}`);
     } finally { setBusy(false); }
   };
+  const disconnect = (e) => { e.preventDefault(); e.stopPropagation(); onDisconnect(s); };
   const label = bad ? <Unlink size={14} className="text-danger" aria-label="Needs reconnecting" /> : s.status === "paused" ? "paused" : s.status === "disconnected" ? "off" : sinceShort(s.last_sync_at);
   return (
-    <span className="relative flex items-center justify-end" style={{ minWidth: 34 }}>
+    <span className="relative flex items-center justify-end" style={{ minWidth: 52 }}>
       <span className={cn("transition-opacity duration-fast", busy ? "opacity-0" : "group-hover:opacity-0")}>{label}</span>
-      <button type="button" onClick={sync} aria-label={`Sync ${s.label} now`} data-testid={`sidebar-sync-${s.id}`}
-        className={cn("absolute right-0 flex h-6 w-6 items-center justify-center rounded-md text-fg-tertiary hover:bg-hover hover:text-fg transition-opacity duration-fast", busy ? "opacity-100" : "opacity-0 group-hover:opacity-100")}>
-        <RefreshCw size={13} className={busy ? "animate-spin" : ""} />
-      </button>
+      <span className={cn("absolute right-0 flex items-center gap-0.5 transition-opacity duration-fast", busy ? "opacity-100" : "opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto")}>
+        <button type="button" onClick={sync} aria-label={`Sync ${s.label} now`} data-testid={`sidebar-sync-${s.id}`}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-fg-tertiary hover:bg-hover hover:text-fg">
+          <RefreshCw size={13} className={busy ? "animate-spin" : ""} />
+        </button>
+        <button type="button" onClick={disconnect} aria-label={`Disconnect ${s.label}`} data-testid={`sidebar-disconnect-${s.id}`}
+          className="flex h-6 w-6 items-center justify-center rounded-md text-fg-tertiary hover:bg-danger-bg hover:text-danger">
+          <Unlink size={13} />
+        </button>
+      </span>
     </span>
+  );
+}
+
+function DisconnectDialog({ projectId, source, onClose, base }) {
+  const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
+  const run = async (keep) => {
+    setBusy(true);
+    try {
+      await v2.disconnectSource(projectId, source.id, keep);
+      toast.success(keep ? `${source.label} disconnected` : `${source.label} removed`,
+        { description: keep ? "Stopped reading it — kept what Bracket already learned." : "Deleted the source and everything learned from it." });
+      onClose();
+      refreshAll();
+      if (window.location.pathname.includes(`/sources/${source.id}`)) navigate(`${base}/sources`);
+    } catch (e) {
+      toast.error("Couldn’t disconnect that source");
+    } finally { setBusy(false); }
+  };
+  return (
+    <Dialog open={!!source} onOpenChange={(o) => !o && onClose()} title={source ? `Disconnect ${source.label}?` : ""} size="m">
+      <p className="text-body-s text-fg-secondary">Bracket will stop reading this source. What should happen to everything it already learned from it?</p>
+      <div className="mt-5 flex flex-col gap-2">
+        <Button onClick={() => run(true)} loading={busy} data-testid="disconnect-keep">Keep what was learned</Button>
+        <Button variant="danger" onClick={() => run(false)} loading={busy} data-testid="disconnect-delete">Delete everything learned</Button>
+        <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+      </div>
+    </Dialog>
   );
 }
 
@@ -267,6 +302,7 @@ function Sidebar({ rail, onNavigate, width }) {
   const navigate = useNavigate();
   const [pick, setPick] = useState(false);
   const [connectKey, setConnectKey] = useState(null);
+  const [disc, setDisc] = useState(null);
   const base = `/w/${projectId}`;
   const onPick = (key) => {
     setPick(false);
@@ -306,7 +342,7 @@ function Sidebar({ rail, onNavigate, width }) {
             return (
               <NavRow key={s.id} to={`${base}/sources/${s.id}`} label={s.label} rail={rail}
                 mark={<span className={cn("relative", (s.status === "paused" || s.status === "disconnected") && "opacity-50")}><SourceMark provider={s.provider} size={16} />{bad && rail && <Unlink size={10} className="absolute -right-1.5 -bottom-1 text-danger" />}</span>}
-                trailing={rail ? null : <SourceTrailing projectId={projectId} s={s} bad={bad} />} />
+                trailing={rail ? null : <SourceTrailing projectId={projectId} s={s} bad={bad} onDisconnect={setDisc} />} />
             );
           })}
           {rail && (
@@ -342,6 +378,7 @@ function Sidebar({ rail, onNavigate, width }) {
         )}
       </div>
       <AddSourceDialog open={pick} onOpenChange={setPick} sources={sources} onPick={onPick} />
+      {disc && <DisconnectDialog projectId={projectId} source={disc} base={base} onClose={() => setDisc(null)} />}
       <Dialog open={!!connectKey} onOpenChange={(o) => !o && setConnectKey(null)} title="Add a source" size="l">
         {connectKey && (
           <ConnectFlow projectId={projectId} mode="existing" initialProvider={connectKey}

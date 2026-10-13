@@ -85,6 +85,7 @@ export const v2 = {
   source: (wid, sid) => g(`${W(wid)}/sources/${sid}`),
   updateSource: (wid, sid, body) => pa(`${W(wid)}/sources/${sid}`, body),
   syncSource: (wid, sid) => p(`${W(wid)}/sources/${sid}/sync`),
+  syncAll: (wid) => p(`${W(wid)}/sources/sync-all`),
   pauseSource: (wid, sid) => p(`${W(wid)}/sources/${sid}/pause`),
   resumeSource: (wid, sid) => p(`${W(wid)}/sources/${sid}/resume`),
   reconnectSource: (wid, sid) => p(`${W(wid)}/sources/${sid}/reconnect`),

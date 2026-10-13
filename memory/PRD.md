@@ -12,6 +12,22 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Sidebar disconnect, Overview Sync-all + Review-all, post-review reply, readable conversations.**
+  1. **Sidebar hover actions**: each source row now reveals Sync + Disconnect on hover (`SourceTrailing`).
+     Disconnect opens a confirm asking keep-vs-delete; backend `POST /sources/{sid}/disconnect` removes the
+     connection and either keeps (detaches) or deletes the learned memory. New `/sources/sync-all` too.
+  2. **Overview "Sync all"**: header button calls `/sources/sync-all` (synced all connected sources).
+  3. **Overview "Review all" (N)**: opens a compact modal listing every pending change with inline
+     Accept/Dismiss (`ReviewAllDialog`). `build_reviews` now carries `connection_id`/`to`/`provider`.
+  4. **Post-review reply popup** (`ReplyDialog`): after accepting, auto-drafts a reply summarising the
+     accepted changes, pre-addressed to the thread sender; editable, "Rewrite with AI" (re-calls draft),
+     Send via `/threads/{tid}/send`. Prefers gmail/slack targets; disabled for non-sendable (Figma).
+  5. **Conversation readability**: `_clean_body` strips quoted reply chains ("On … wrote:", `>` lines) and
+     lone bullet dashes, collapses blank runs; frontend renders real paragraphs at a comfortable width.
+     Verified: thread reads like an email, 0 quoted tails.
+  Verified in-browser on the real "Acme Finance" workspace (Sync all, Review all modal with 20 items,
+  accept→reply popup pre-addressed to sender, cleaned conversation). Test review-accept was undone to
+  leave data unchanged.
 - 2026-06: **Compose "Not Found", source "0 threads/0 messages", sidebar sync** — all fixed.
   1. **Compose New message → "Not Found"**: `POST /w/{wid}/messages` and `GET /w/{wid}/message-templates`
      didn't exist. Added both: compose now sends for real via Gmail/Slack (`send_gmail_reply` returns the

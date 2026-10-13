@@ -247,7 +247,13 @@ function ThreadView({ wid, tid, base, mobile, canEdit, params, setParams, wide }
                         <span className="flex-1 text-body-m text-fg">{b.text}</span>
                         <span className="tag shrink-0 pt-0.5 font-mono text-[12px] uppercase">{b.tag}</span>
                       </div>
-                    ) : <p key={i} className="whitespace-pre-line text-body-m text-fg-secondary">{b.text}</p>)}
+                    ) : (
+                      <div key={i} className="max-w-[680px] space-y-3">
+                        {String(b.text || "").split(/\n{2,}/).filter((x) => x.trim()).map((para, j) => (
+                          <p key={j} className="whitespace-pre-line text-body-m leading-relaxed text-fg-secondary">{para}</p>
+                        ))}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </StaggerItem>

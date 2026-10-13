@@ -837,6 +837,29 @@ async def gmail_fetch_client_digest(account: dict, thread_id: str, client_email:
 
 
 # ---- Dispatch --------------------------------------------------------------
+def _clean_body(text: str) -> str:
+    """Tidy a plain-text email/Slack body for comfortable reading: strip quoted
+    reply chains, drop lone bullet dashes, and collapse runs of blank lines."""
+    text = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+    # cut the quoted reply chain ("On <date> <sender> wrote:"), which may wrap
+    # across two lines, and everything after it.
+    m = re.search(r"\n\s*On .{3,300}?\bwrote:\s*(\n|$)", text, flags=re.DOTALL)
+    if m:
+        text = text[:m.start()]
+    lines = []
+    for ln in text.split("\n"):
+        s = ln.rstrip()
+        if s.lstrip().startswith(">"):
+            continue
+        # drop a line that is only a bullet marker with no content
+        if re.match(r"^\s*[-*•]\s*$", s):
+            continue
+        lines.append(s)
+    out = "\n".join(lines)
+    out = re.sub(r"\n{3,}", "\n\n", out)  # collapse 3+ blank lines
+    return out.strip()
+
+
 def parse_digest_messages(provider: str, digest: str) -> List[dict]:
     """Recover structured messages — {author, at(ISO), text} — from a stored
     content_cache digest, so the conversation + timeline can show the REAL dates
@@ -861,7 +884,7 @@ def parse_digest_messages(provider: str, digest: str) -> List[dict]:
                     at = (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)).isoformat()
             except Exception:
                 at = ""
-            out.append({"author": frm.strip(), "at": at, "text": body.strip()})
+            out.append({"author": frm.strip(), "at": at, "text": _clean_body(body)})
     elif provider == "slack":
         # Lines: "- who (YYYY-MM-DD HH:MM): text"  (digest is most-recent-first)
         for line in digest.splitlines():

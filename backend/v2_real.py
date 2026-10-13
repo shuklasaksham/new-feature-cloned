@@ -313,14 +313,23 @@ async def build_reviews(project):
     pid = project["id"]
     cats = await get_or_infer_categories(project)
     cat_label = {c["key"]: c["singular"] for c in cats}
+    # recipient + provider per connection, so an accepted review can be replied to
+    conn_map = {}
+    async for c in db.source_connections.find({"project_id": pid}, {"_id": 0, "id": 1, "client_email": 1, "provider": 1, "source_name": 1}):
+        conn_map[c["id"]] = c
     reviews = []
     async for m in db.project_memory.find({"project_id": pid, "status": "detected"}, {"_id": 0}).sort("occurred_at", -1).limit(20):
+        conn = conn_map.get(m.get("connection_id")) or {}
         reviews.append({
             "id": m["id"], "kind": "scope_change" if m.get("is_conflict") else "decision",
             "status": "pending", "label": "Conflict" if m.get("is_conflict") else "Proposed change",
             "title": m.get("title", ""),
             "detected": {"count": 1, "unit": m.get("provider", "update"), "at": m.get("occurred_at")},
             "interpretation": m.get("detail", ""),
+            "category": m.get("category", "requirement"),
+            "connection_id": m.get("connection_id"),
+            "provider": conn.get("provider", m.get("provider", "gmail")),
+            "to": conn.get("client_email", ""),
             "trigger": {"provider": m.get("provider", "gmail"), "from": m.get("requested_by", ""), "to": "",
                         "at": m.get("occurred_at"), "subject": m.get("source_label", ""),
                         "body": [{"text": m.get("detail", "")}]},
