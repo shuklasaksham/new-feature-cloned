@@ -26,7 +26,7 @@ export default function Sources() {
   const mobile = useIsMobile();
   const navigate = useNavigate();
   const base = `/w/${projectId}`;
-  const { data, reload } = useResource(() => Promise.all([v2.sources(projectId), v2.files(projectId)]).then(([s, f]) => ({ ...s, files: f.files })), [projectId]);
+  const { data, reload } = useResource(() => Promise.all([v2.sources(projectId), v2.files(projectId)]).then(([s, f]) => ({ ...s, files: f.files })), [projectId], { cacheKey: `sources:${projectId}` });
   const [picker, setPicker] = useState(false);
   const [choose, setChoose] = useState(null);
   const [note, setNote] = useState(false);

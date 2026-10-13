@@ -46,7 +46,7 @@ export default function Conversations() {
   const base = `/w/${projectId}`;
   const filter = params.get("filter") || "all";
   const composing = params.get("new") === "1";
-  const list = useResource(() => v2.threads(projectId, filter), [projectId, filter]);
+  const list = useResource(() => v2.threads(projectId, filter), [projectId, filter], { cacheKey: `threads:${projectId}:${filter}` });
   useEffect(() => {
     const on = () => list.reload();
     window.addEventListener("bk:refresh", on);

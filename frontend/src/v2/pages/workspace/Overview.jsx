@@ -50,7 +50,7 @@ export default function Overview() {
   const { projectId, workspace, canEdit, lastSeen, readOnly } = useWorkspace();
   const [params, setParams] = useSearchParams();
   const view = params.get("view") === "later" ? "later" : "now";
-  const { data, setData, reload } = useResource(() => v2.overview(projectId), [projectId]);
+  const { data, setData, reload } = useResource(() => v2.overview(projectId), [projectId], { cacheKey: `overview:${projectId}` });
   const later = useResource(() => v2.attention(projectId), [projectId, view], { enabled: view === "later" });
   const navigate = useNavigate();
   const ask = useAskPanel();
@@ -61,7 +61,7 @@ export default function Overview() {
   const [syncing, setSyncing] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [replyFor, setReplyFor] = useState(null);
-  const reviewsRes = useResource(() => v2.reviews(projectId), [projectId]);
+  const reviewsRes = useResource(() => v2.reviews(projectId), [projectId], { cacheKey: `reviews:${projectId}` });
   const pendingReviews = reviewsRes.data?.reviews?.length || 0;
   const syncAll = async () => {
     setSyncing(true);

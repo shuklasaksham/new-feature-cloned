@@ -12,6 +12,19 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Figma search, search loading, notifications, performance.**
+  1. **Performance (perceived slowness)**: backend endpoints are already fast (80–260ms); the lag was the
+     client refetching + showing a skeleton on every tab switch. Added stale-while-revalidate caching to
+     `useResource` (`cacheKey` + module cache in `data.js`) applied to Overview, Memory, Timeline,
+     Conversations, Sources, Reviews — revisiting a tab now renders instantly and revalidates in the
+     background. Verified: Overview returns with no skeleton flash.
+  2. **Search loading**: `SourcePicker` (in-workspace Add source) now shows a spinner in the search box +
+     a "Searching…" overlay; onboarding search already had its Loader2.
+  3. **Figma search**: widened the team-project scan (12→40) so name search finds more files; when no team
+     is configured (Figma has no global file-name search API) the empty state now guides the user to paste
+     a team/file link instead of a generic "Nothing found".
+  4. **Notifications**: confirmed source add ("Connected — Bracket learned N things"), disconnect/remove,
+     sync, note/memory add, and review-accept all raise toasts (already wired).
 - 2026-06: **Sidebar disconnect, Overview Sync-all + Review-all, post-review reply, readable conversations.**
   1. **Sidebar hover actions**: each source row now reveals Sync + Disconnect on hover (`SourceTrailing`).
      Disconnect opens a confirm asking keep-vs-delete; backend `POST /sources/{sid}/disconnect` removes the

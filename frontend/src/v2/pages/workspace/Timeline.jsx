@@ -45,7 +45,7 @@ export default function Timeline() {
   const [exportOpen, setExportOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const qp = { type, source, range: range === "all" ? undefined : range, memory_only: memOnly ? "1" : undefined, q: params.get("q") || undefined };
-  const list = useResource(() => v2.timeline(projectId, qp), [projectId, type, source, range, memOnly, params.get("q")]);
+  const list = useResource(() => v2.timeline(projectId, qp), [projectId, type, source, range, memOnly, params.get("q")], { cacheKey: `timeline:${projectId}:${type}:${source}:${range}:${memOnly}:${params.get("q") || ""}` });
   useEffect(() => {
     const id = setTimeout(() => { const n = new URLSearchParams(params); if (q) n.set("q", q); else n.delete("q"); if ((params.get("q") || "") !== q) setParams(n, { replace: true }); }, 250);
     return () => clearTimeout(id);

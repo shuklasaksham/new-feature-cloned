@@ -484,7 +484,7 @@ async def figma_list_sources(account: dict, q: str, url: str) -> List[dict]:
             if tm:
                 await db.integration_accounts.update_one({"id": account["id"]}, {"$set": {"figma_team_id": team_id}})
             out: List[dict] = []
-            for proj in (pr.json().get("projects") or [])[:12]:
+            for proj in (pr.json().get("projects") or [])[:40]:
                 fr = await _figma_get(account, c, f"projects/{proj['id']}/files")
                 if fr.status_code != 200:
                     continue
@@ -494,7 +494,7 @@ async def figma_list_sources(account: dict, q: str, url: str) -> List[dict]:
                         continue
                     out.append({"id": f["key"], "name": name, "url": f"https://www.figma.com/design/{f['key']}",
                                 "meta": {"updated": f.get("last_modified", ""), "detail": proj.get("name", "")}})
-                if len(out) >= 60:
+                if len(out) >= 80 and not q:
                     break
     except FigmaRateLimited:
         raise HTTPException(429, "Figma is temporarily limiting requests on their side (API rate limit). It clears on its own — wait about a minute and try again.")

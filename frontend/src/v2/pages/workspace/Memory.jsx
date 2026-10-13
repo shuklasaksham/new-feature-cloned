@@ -50,7 +50,7 @@ export default function Memory() {
   const cat = (categories || []).find((c) => c.key === category);
   const isPeople = category === "person";
   const listParams = q ? { q } : view ? { view } : { category: category || undefined, view: tab === "current" ? undefined : tab };
-  const list = useResource(() => (isPeople && !q ? v2.people(projectId) : v2.memory(projectId, listParams)), [projectId, category, tab, q]);
+  const list = useResource(() => (isPeople && !q ? v2.people(projectId) : v2.memory(projectId, listParams)), [projectId, category, tab, q], { cacheKey: `memory:${projectId}:${category}:${tab}:${q}` });
   useEffect(() => {
     const on = () => list.reload();
     window.addEventListener("bk:refresh", on);

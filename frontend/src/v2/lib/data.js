@@ -9,9 +9,17 @@ export { api, formatApiError };
 
 /* ───────────────────────── useResource ─────────────────────────
    Minimal fetch hook: { data, error, loading, reload, setData }.
-   Keeps the last good data while reloading (no skeleton flash). */
-export function useResource(fetcher, deps = [], { enabled = true } = {}) {
-  const [state, setState] = useState({ data: null, error: null, loading: enabled });
+   Keeps the last good data while reloading (no skeleton flash).
+   Pass { cacheKey } for stale-while-revalidate: revisiting a page shows the
+   cached data instantly and revalidates in the background (no skeleton). */
+const _rcache = new Map();
+export function invalidateResourceCache(prefix) {
+  if (!prefix) { _rcache.clear(); return; }
+  for (const k of _rcache.keys()) if (k.startsWith(prefix)) _rcache.delete(k);
+}
+export function useResource(fetcher, deps = [], { enabled = true, cacheKey } = {}) {
+  const cached = cacheKey ? _rcache.get(cacheKey) : undefined;
+  const [state, setState] = useState({ data: cached ?? null, error: null, loading: enabled && cached === undefined });
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
   const seq = useRef(0); // latest request wins — a slow earlier response never overwrites a newer one
@@ -21,6 +29,7 @@ export function useResource(fetcher, deps = [], { enabled = true } = {}) {
     setState((s) => ({ ...s, loading: true }));
     try {
       const data = await fetcher();
+      if (cacheKey) _rcache.set(cacheKey, data);
       if (alive.current && mine === seq.current) setState({ data, error: null, loading: false });
       return data;
     } catch (e) {
@@ -28,9 +37,13 @@ export function useResource(fetcher, deps = [], { enabled = true } = {}) {
       return null;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, ...deps]);
+  }, [enabled, cacheKey, ...deps]);
   useEffect(() => { run(); }, [run]);
-  const setData = useCallback((updater) => setState((s) => ({ ...s, data: typeof updater === "function" ? updater(s.data) : updater })), []);
+  const setData = useCallback((updater) => setState((s) => {
+    const next = typeof updater === "function" ? updater(s.data) : updater;
+    if (cacheKey) _rcache.set(cacheKey, next);
+    return { ...s, data: next };
+  }), [cacheKey]);
   return { ...state, reload: run, setData };
 }
 

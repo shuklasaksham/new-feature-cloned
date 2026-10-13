@@ -167,11 +167,12 @@ function SourcePicker({ provider, onBack, onNext, busy }) {
   const [url, setUrl] = useState("");
   const [list, setList] = useState(null);
   const [err, setErr] = useState("");
+  const [searching, setSearching] = useState(false);
   const [picked, setPicked] = useState(new Map());
   const t = useRef(null);
   const max = 5;
   const load = useCallback(async (query, link) => {
-    setErr("");
+    setErr(""); setSearching(true);
     try {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
@@ -181,6 +182,8 @@ function SourcePicker({ provider, onBack, onNext, busy }) {
     } catch (e) {
       setErr(formatApiError(e));
       setList([]);
+    } finally {
+      setSearching(false);
     }
   }, [provider.key]);
   useEffect(() => { load("", ""); }, [load]);
@@ -213,16 +216,24 @@ function SourcePicker({ provider, onBack, onNext, busy }) {
       )}
       <div className="relative mt-3">
         <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-fg-tertiary" />
-        <Input value={q} onChange={(e) => onQ(e.target.value)} placeholder={`Search ${provider.label}`} className="pl-8" aria-label={`Search ${provider.label}`} />
+        <Input value={q} onChange={(e) => onQ(e.target.value)} placeholder={`Search ${provider.label}`} className="pl-8 pr-8" aria-label={`Search ${provider.label}`} />
+        {searching && <Spinner className="absolute right-2.5 top-1/2 -translate-y-1/2" size={14} />}
       </div>
-      <div className="mt-3 max-h-[46vh] overflow-y-auto rounded-lg border border-line">
+      <div className="relative mt-3 max-h-[46vh] overflow-y-auto rounded-lg border border-line">
+        {searching && list !== null && (
+          <div className="absolute right-3 top-2 z-10 flex items-center gap-1.5 rounded-md bg-raised px-2 py-1 text-[11px] text-fg-tertiary shadow-popover" role="status"><Spinner size={12} /> Searching…</div>
+        )}
         {list === null ? <div className="flex justify-center py-10"><Spinner /></div> : err ? (
           <div className="px-4 py-6 text-center">
             <AlertTriangle size={16} className="mx-auto text-warning" />
             <p className="mt-2 text-body-s text-fg-secondary">{err}</p>
           </div>
         ) : list.length === 0 ? (
-          <p className="px-4 py-8 text-center text-body-s text-fg-tertiary">Nothing found. Try another search.</p>
+          <p className="px-4 py-8 text-center text-body-s text-fg-tertiary">
+            {searching ? "Searching…" : provider.key === "figma"
+              ? "No files found. Paste your Figma team or file link above — Figma doesn’t let apps search every file by name."
+              : q ? `No results for “${q}”. Try another search.` : "Nothing found yet."}
+          </p>
         ) : list.map((s) => (
           <label key={s.id} htmlFor={`src-${s.id}`} className="flex cursor-pointer items-start gap-3 border-b border-line-subtle px-3 py-2.5 last:border-0 hover:bg-hover">
             <Checkbox id={`src-${s.id}`} checked={picked.has(s.id)} onChange={() => toggle(s)} label={s.name} className="mt-0.5" />
