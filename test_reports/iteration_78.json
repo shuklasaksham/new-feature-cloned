@@ -1,0 +1,16 @@
+{
+  "summary": "Verified OTP spam-fix: /api/auth/otp/request returns {ok:true, dev_code} in test mode without email send; 5 repeated requests all succeed (no throttle in test mode, no error); /api/auth/otp/verify logs in, sets session cookie, and GET /api/v2/workspaces returns 200. 3/3 pytest tests passing.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/backend/tests/test_otp_spamfix.py", "/app/test_reports/pytest/otp_spamfix.xml"],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/backend/tests/test_otp_spamfix.py"],
+  "success_rate": {"backend": "100%", "frontend": "n/a"},
+  "test_credentials": "OTP flow with pro@use-bracket.com; dev_code returned in response (OTP_TEST_MODE=1).",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "OTP spam-fix verified. In test mode (BRACKET_ENV!=production + OTP_TEST_MODE=1) /api/auth/otp/request returns dev_code and skips send_otp_email. Throttle still applied in production path.",
+  "rca of the issue": "Previous bug: test mode skipped 45s throttle AND still called send_otp_email, so every automated/retried login spammed inbox. Fix moved send_otp_email behind `if not test_mode:` while keeping dev_code in response for headless tests. Verified end-to-end."
+}

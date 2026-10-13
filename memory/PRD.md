@@ -12,6 +12,14 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **OTP sign-in spam FIXED (testing_agent verified, iteration_78, 3/3)** + email logo updated.
+  Root cause: `OTP_TEST_MODE=1` made `test_mode` true, which skipped the 45s throttle AND still sent a
+  real email on every `/api/auth/otp/request` — so retries/automated logins spammed the inbox. Fix
+  (`server.py` auth_otp_request): in test mode return `dev_code` but DO NOT call `send_otp_email`;
+  production path keeps throttle + real send. Email templates (shell + OTP) now use the new hexagon
+  logo image. STILL TODO (not done this pass — budget): convert password-reset/invite/attention-alert/
+  source-disconnected/trial-ending/payment-failed to the light shell; digest opt-out Settings toggle;
+  real-time attention-alert email on high-impact change.
 - 2026-06: **Email templates refreshed to the light design + daily digest email (scheduled).**
   - New shared light email shell in `emailer.py` (`_light_shell`): 600px, white card on #F4F4F5, ◧ bracket
     wordmark, single dark CTA, compliant footer (notification settings / unsubscribe). Mail clients handle
