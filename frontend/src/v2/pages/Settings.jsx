@@ -270,11 +270,22 @@ function Workspaces() {
   );
 }
 
-/* ───────── Notifications — web push ───────── */
+/* ───────── Notifications — web push + email digest ───────── */
 function Notifications() {
+  const { user, setUser } = useAuth();
   const supported = typeof window !== "undefined" && "Notification" in window && "serviceWorker" in navigator;
   const [perm, setPerm] = useState(supported ? Notification.permission : "unsupported");
+  const [digestBusy, setDigestBusy] = useState(false);
+  const digestOn = !(user?.digest_opt_out);
   const enable = async () => { await enablePushNotifications(); setPerm(Notification.permission); if (Notification.permission === "granted") toast.success("Notifications on for this device"); };
+  const toggleDigest = async (next) => {
+    setDigestBusy(true);
+    try {
+      const { data } = await api.patch("/auth/me", { digest_opt_out: !next });
+      setUser(data);
+      toast.success(next ? "Daily digest on" : "Daily digest off");
+    } catch (err) { toast.error(formatApiError(err)); } finally { setDigestBusy(false); }
+  };
   return (
     <>
       <Header title="Notifications" desc="Bracket only interrupts you for things that change your work." />
@@ -282,6 +293,10 @@ function Notifications() {
         <div className="flex items-center gap-4 border-b border-line-subtle px-5 py-4">
           <div className="flex-1"><p className="text-title-s">Push on this device</p><p className="text-body-s text-fg-tertiary">Scope changes, conflicts and things waiting on you.</p></div>
           {perm === "granted" ? <Badge tone="success" dot>On</Badge> : perm === "denied" ? <Badge tone="warning">Blocked in browser</Badge> : perm === "unsupported" ? <Badge>Not supported</Badge> : <Button size="s" variant="primary" onClick={enable}>Turn on</Button>}
+        </div>
+        <div className="flex items-center gap-4 border-b border-line-subtle px-5 py-4">
+          <div className="flex-1"><p className="text-title-s">Daily email digest</p><p className="text-body-s text-fg-tertiary">One morning email with what changed across your workspaces. Sent only when there's something to report.</p></div>
+          <Toggle checked={digestOn} disabled={digestBusy} onChange={toggleDigest} label="Daily email digest" data-testid="digest-toggle" />
         </div>
         <div className="flex items-center gap-4 px-5 py-4">
           <div className="flex-1"><p className="text-title-s">In-app updates</p><p className="text-body-s text-fg-tertiary">The bell in the top bar. Always on.</p></div>

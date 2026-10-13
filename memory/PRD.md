@@ -353,3 +353,17 @@ LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend
 
 ## Credentials
 Admin: support@use-bracket.com / Bracket@123 (see /app/memory/test_credentials.md)
+
+## 2026-06-13 — Light email templates + digest opt-out
+- Added 6 light-shell transactional emails in `emailer.py` (all via `_light_shell`, hexagon logo, HTML+text, Resend send fns):
+  `send_password_reset_email`, `send_invite_email`, `send_attention_alert_email`,
+  `send_source_disconnected_email`, `send_trial_ending_email`, `send_payment_failed_email`.
+  Helpers `_light_body`, `_callout`, `_send_light` back them. Builders verified (valid HTML + subjects).
+- Digest opt-out toggle in the real Notifications settings (`v2/pages/workspace/Settings.jsx` desktop +
+  `SettingsMobile.jsx` mobile). Persists `digest_opt_out` via PATCH `/auth/me`
+  (`UpdateProfileIn.digest_opt_out` added). Daily digest cron (`server.py _run_daily_digest`) already
+  skips opted-out users. Verified e2e in browser: toggle flips + persists to user doc.
+- NOTE: `/api/v2/me/notifications` (notificationPrefs) has no real backend route — events matrix is
+  sandbox-only; the digest toggle is independent of it and always renders.
+- NOTE: `v2/pages/Settings.jsx` is dead/unrouted (`/settings` → `SettingsRedirect` → workspace settings).
+- Still pending (not this task): real-time single-item attention email send on high-impact change detection.

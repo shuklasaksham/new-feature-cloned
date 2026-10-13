@@ -1146,3 +1146,176 @@ async def send_daily_digest(to_email: str, name: str, needs_count: int, sections
     except Exception as e:
         logger.exception(f"Daily digest failed for {to_email}: {e}")
         return False
+
+
+
+# ───────── Light transactional templates (v2 light shell) ─────────
+def _esc(s) -> str:
+    return str(s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _light_body(eyebrow, eyebrow_color, heading, paragraphs,
+                button_label="", button_url="", extra_html="") -> str:
+    """Compose the inner <tr> rows for a light-shell transactional email."""
+    rows = ""
+    if eyebrow:
+        rows += (f'<tr><td style="padding:22px 32px 0 32px;">'
+                 f'<p style="margin:0;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;'
+                 f'font-weight:600;color:{eyebrow_color};">{_esc(eyebrow)}</p></td></tr>')
+    rows += (f'<tr><td style="padding:{"10px" if eyebrow else "22px"} 32px 0 32px;">'
+             f'<h1 style="margin:0;font-size:21px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#18181B;">{_esc(heading)}</h1>')
+    for p in paragraphs:
+        rows += f'<p style="margin:12px 0 0 0;font-size:15px;line-height:1.6;color:#52525B;">{p}</p>'
+    rows += "</td></tr>"
+    if extra_html:
+        rows += f'<tr><td style="padding:18px 32px 0 32px;">{extra_html}</td></tr>'
+    if button_label and button_url:
+        rows += (f'<tr><td style="padding:22px 32px 4px 32px;">'
+                 f'<a href="{button_url}" style="display:inline-block;background:#18181B;color:#FFFFFF;'
+                 f'text-decoration:none;font-size:14px;font-weight:500;padding:11px 22px;border-radius:9px;">{_esc(button_label)}</a>'
+                 f'</td></tr>')
+    return rows
+
+
+def _callout(title, detail="", accent="#71717A") -> str:
+    """A bordered highlight block for a single item (attention alerts, etc.)."""
+    sub = (f'<p style="margin:6px 0 0 0;font-size:13px;line-height:1.5;color:#71717A;">{_esc(detail)}</p>'
+           if detail else "")
+    return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            f'style="background:#FAFAFA;border:1px solid #E6E6E8;border-left:3px solid {accent};border-radius:10px;">'
+            f'<tr><td style="padding:14px 16px;">'
+            f'<p style="margin:0;font-size:15px;line-height:1.45;color:#18181B;font-weight:600;">{_esc(title)}</p>'
+            f'{sub}</td></tr></table>')
+
+
+async def _send_light(to_email: str, subject: str, html: str, text: str,
+                      category: str = "transactional", footer_to: str = "") -> bool:
+    if not to_email:
+        return False
+    api_key = os.environ.get("RESEND_API_KEY")
+    if not api_key:
+        logger.warning(f"[{category.upper()} DEV] would send to {to_email}: {subject}")
+        return False
+    resend.api_key = api_key
+    params = {
+        "from": _sender(),
+        "to": [to_email],
+        "subject": subject,
+        "html": _light_shell(html, footer_to or to_email),
+        "text": text,
+        "headers": {
+            "List-Unsubscribe": f"<mailto:{os.environ.get('SENDER_EMAIL', 'support@use-bracket.com')}?subject=unsubscribe>",
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+        "tags": [{"name": "category", "value": category}],
+    }
+    sender_email = os.environ.get("SENDER_EMAIL", "").strip()
+    if sender_email:
+        params["reply_to"] = sender_email
+    try:
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"{category} email sent to {to_email}")
+        return True
+    except Exception as e:
+        logger.exception(f"{category} email failed for {to_email}: {e}")
+        return False
+
+
+# --- 1. PASSWORD RESET -----------------------------------------------------
+async def send_password_reset_email(to_email: str, name: str, reset_url: str) -> bool:
+    display = (name or "there").strip() or "there"
+    body = _light_body(
+        "Sign-in & security", "#4338CA", "Reset your password",
+        [f"Hi {_esc(display)}, we got a request to reset your Bracket password. "
+         "Tap the button below to choose a new one — the link expires in 30 minutes.",
+         "If you didn't ask for this, you can safely ignore this email. Your password won't change."],
+        "Reset password", reset_url)
+    text = (f"Hi {display},\n\nReset your Bracket password using this link (expires in 30 minutes):\n"
+            f"{reset_url}\n\nIf you didn't request this, ignore this email.\n\n— Bracket")
+    return await _send_light(to_email, "Reset your Bracket password", body, text, "auth")
+
+
+# --- 2. TEAM INVITE --------------------------------------------------------
+async def send_invite_email(to_email: str, inviter_name: str, workspace_name: str, accept_url: str) -> bool:
+    inviter = (inviter_name or "A teammate").strip() or "A teammate"
+    ws = (workspace_name or "a workspace").strip() or "a workspace"
+    body = _light_body(
+        "Workspace invite", "#4338CA", f"{_esc(inviter)} invited you to Bracket",
+        [f"You've been invited to join <strong style=\"color:#18181B;\">{_esc(ws)}</strong> on Bracket — "
+         "the project memory for client work. Accept to see the scope, decisions and timeline.",
+         "This invite is tied to your email, so sign in with this address to join."],
+        "Accept invite", accept_url)
+    text = (f"{inviter} invited you to join {ws} on Bracket.\n\nAccept the invite:\n{accept_url}\n\n— Bracket")
+    return await _send_light(to_email, f"{inviter} invited you to {ws}", body, text, "invite")
+
+
+# --- 3. ATTENTION ALERT (single high-impact item) --------------------------
+async def send_attention_alert_email(to_email: str, name: str, project_name: str,
+                                      item_title: str, item_detail: str = "",
+                                      source_label: str = "", project_url: str = "") -> bool:
+    display = (name or "there").strip() or "there"
+    pname = (project_name or "your project").strip() or "your project"
+    src = f" · {_esc(source_label)}" if source_label else ""
+    callout = _callout(item_title, item_detail, accent="#B45309")
+    body = _light_body(
+        f"Needs your attention{src}", "#B45309",
+        "One thing needs a decision",
+        [f"Hi {_esc(display)}, Bracket spotted a high-impact change on "
+         f"<strong style=\"color:#18181B;\">{_esc(pname)}</strong> that's worth a look before you move on."],
+        "Review in Bracket", project_url, extra_html=callout)
+    text = (f"Hi {display},\n\nBracket spotted a high-impact change on {pname}:\n\n"
+            f"  {item_title}" + (f"\n  {item_detail}" if item_detail else "") +
+            f"\n\nReview in Bracket: {project_url}\n\n— Bracket")
+    return await _send_light(to_email, f"Needs your attention: {pname}", body, text, "attention")
+
+
+# --- 4. SOURCE DISCONNECTED ------------------------------------------------
+async def send_source_disconnected_email(to_email: str, name: str, source_label: str,
+                                         project_name: str, reconnect_url: str) -> bool:
+    display = (name or "there").strip() or "there"
+    src = (source_label or "A source").strip() or "A source"
+    pname = (project_name or "your project").strip() or "your project"
+    body = _light_body(
+        "Connection lost", "#B91C1C", f"{_esc(src)} stopped syncing",
+        [f"Hi {_esc(display)}, Bracket can no longer reach <strong style=\"color:#18181B;\">{_esc(src)}</strong> "
+         f"on <strong style=\"color:#18181B;\">{_esc(pname)}</strong>. New messages and changes from this source "
+         "won't appear until you reconnect.",
+         "Your existing memory and timeline are untouched — this only affects new updates."],
+        "Reconnect source", reconnect_url)
+    text = (f"Hi {display},\n\n{src} stopped syncing on {pname}. New updates won't appear until you reconnect.\n\n"
+            f"Reconnect: {reconnect_url}\n\n— Bracket")
+    return await _send_light(to_email, f"{src} disconnected — reconnect to keep syncing", body, text, "source")
+
+
+# --- 5. TRIAL ENDING -------------------------------------------------------
+async def send_trial_ending_email(to_email: str, name: str, days_left: int, upgrade_url: str) -> bool:
+    display = (name or "there").strip() or "there"
+    d = max(0, int(days_left or 0))
+    when = "today" if d == 0 else ("tomorrow" if d == 1 else f"in {d} days")
+    body = _light_body(
+        "Trial ending", "#B45309", f"Your Bracket trial ends {when}",
+        [f"Hi {_esc(display)}, your free trial wraps up {when}. Pick a plan to keep your sources syncing "
+         "and your project memory live — nothing is deleted if you wait, but syncing pauses.",
+         "Upgrade in under a minute and pick up right where you left off."],
+        "Choose a plan", upgrade_url)
+    text = (f"Hi {display},\n\nYour Bracket trial ends {when}. Choose a plan to keep syncing:\n{upgrade_url}\n\n"
+            "Nothing is deleted if you wait, but syncing pauses.\n\n— Bracket")
+    return await _send_light(to_email, f"Your Bracket trial ends {when}", body, text, "trial")
+
+
+# --- 6. PAYMENT FAILED -----------------------------------------------------
+async def send_payment_failed_email(to_email: str, name: str, plan_label: str,
+                                     amount_str: str, update_url: str) -> bool:
+    display = (name or "there").strip() or "there"
+    plan = (plan_label or "your Bracket plan").strip() or "your Bracket plan"
+    amt = f" of {_esc(amount_str)}" if amount_str else ""
+    body = _light_body(
+        "Payment issue", "#B91C1C", "We couldn't process your payment",
+        [f"Hi {_esc(display)}, the payment{amt} for <strong style=\"color:#18181B;\">{_esc(plan)}</strong> didn't go "
+         "through. This usually means an expired card or a temporary bank decline.",
+         "Update your payment method and we'll retry automatically. Your workspaces stay readable in the meantime."],
+        "Update payment", update_url)
+    text = (f"Hi {display},\n\nWe couldn't process your payment for {plan}. "
+            "Update your payment method and we'll retry:\n"
+            f"{update_url}\n\nYour workspaces stay readable in the meantime.\n\n— Bracket")
+    return await _send_light(to_email, "Action needed: your Bracket payment failed", body, text, "billing")

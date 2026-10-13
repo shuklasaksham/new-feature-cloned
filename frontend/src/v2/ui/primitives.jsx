@@ -363,7 +363,7 @@ export function Checkbox({ checked, indeterminate, onChange, label, className, .
 }
 
 /* Toggle (switch) */
-export function Toggle({ checked, onChange, label, disabled }) {
+export function Toggle({ checked, onChange, label, disabled, ...rest }) {
   return (
     <button
       type="button"
@@ -372,6 +372,7 @@ export function Toggle({ checked, onChange, label, disabled }) {
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange?.(!checked)}
+      {...rest}
       className={cn(
         "relative inline-flex h-[18px] w-8 shrink-0 items-center rounded-full border transition-colors duration-fast",
         checked ? "bg-inverse border-inverse" : "bg-white/[0.06] border-line-control",

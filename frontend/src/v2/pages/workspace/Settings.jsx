@@ -162,11 +162,23 @@ function PasswordDialog({ open, onOpenChange }) {
 
 /* ───────────────────────── Notifications ───────────────────────── */
 function Notifications() {
+  const { user, setUser } = useAuth();
   const { data, setData } = useResource(() => v2.notificationPrefs(), []);
   const mobile = useIsMobile();
+  const [digestBusy, setDigestBusy] = useState(false);
+  const digestOn = !(user?.digest_opt_out);
   const set = async (event, channel, value) => {
     setData((d) => ({ ...d, events: d.events.map((e) => (e.key === event ? { ...e, [channel]: value } : e)) }));
     await v2.updateNotificationPrefs({ event, channel, value });
+  };
+  const toggleDigest = async (v) => {
+    setDigestBusy(true);
+    try {
+      const u = await v2Me({ digest_opt_out: !v });
+      setUser(u);
+      if (data) setData((d) => ({ ...d, digest: { ...d.digest, enabled: v } }));
+      toast.success(v ? "Daily email digest on" : "Daily email digest off");
+    } catch { toast.error("Couldn’t save — try again"); } finally { setDigestBusy(false); }
   };
   const cols = [["in_app", "In app"], ["email", "Email"], ["push", "Mobile push"]];
   return (
@@ -186,12 +198,11 @@ function Notifications() {
           </div>
         ))}
       </div>
-      {data && (
-        <Card>
-          <Line title="Daily digest" help={`Everything else, once a day at ${data.digest.time} · ${data.digest.days}`}
-            action={<Toggle checked={data.digest.enabled} label="Daily digest" onChange={async (v) => { setData((d) => ({ ...d, digest: { ...d.digest, enabled: v } })); await v2.updateNotificationPrefs({ digest: { enabled: v } }); }} />} />
-        </Card>
-      )}
+      <Card>
+        <Line title="Daily email digest"
+          help={data?.digest ? `One morning email with what changed, at ${data.digest.time} · ${data.digest.days}. Sent only when there's something to report.` : "One morning email with what changed across your workspaces. Sent only when there's something to report."}
+          action={<Toggle checked={digestOn} disabled={digestBusy} label="Daily email digest" onChange={toggleDigest} data-testid="digest-opt-out-toggle" />} />
+      </Card>
     </div>
   );
 }

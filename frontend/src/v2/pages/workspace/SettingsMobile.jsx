@@ -127,6 +127,7 @@ function Profile() {
 
 /* ───── Notifications — 151:449 ───── */
 function Notifications() {
+  const { user, setUser } = useAuth();
   const { data, setData } = useResource(() => v2.notificationPrefs(), []);
   const ev = (k) => (data?.events || []).find((e) => e.key === k) || {};
   const setPush = async (key, value) => {
@@ -134,6 +135,15 @@ function Notifications() {
     await v2.updateNotificationPrefs({ event: key, channel: "push", value });
   };
   const setDigest = async (k, v) => { setData((d) => ({ ...d, [k]: { ...(d[k] || {}), enabled: v } })); await v2.updateNotificationPrefs({ [k]: { enabled: v } }); };
+  const toggleEmailDigest = async (v) => {
+    try {
+      const { api } = await import("../../../lib/api");
+      const { data: u } = await api.patch("/auth/me", { digest_opt_out: !v });
+      setUser(u);
+      if (data) setData((d) => ({ ...d, digest: { ...(d.digest || {}), enabled: v } }));
+      toast.success(v ? "Daily email digest on" : "Daily email digest off");
+    } catch { toast.error("Couldn’t save — try again"); }
+  };
   const Row = ({ title, help, checked, onChange }) => (
     <div className="flex items-center gap-4 px-4 py-3"><div className="min-w-0 flex-1"><p className="text-body-m text-fg">{title}</p><p className="text-body-s text-fg-tertiary">{help}</p></div><Toggle checked={!!checked} label={title} onChange={onChange} /></div>
   );
@@ -146,7 +156,7 @@ function Notifications() {
       </div>
       <p className="eyebrow mt-6 mb-3">Email</p>
       <div className="overflow-hidden rounded-lg border border-line divide-y divide-line-subtle">
-        <Row title="Daily digest" help={`Everything else, once a day at ${data?.digest?.time || "9:00"}`} checked={data?.digest?.enabled} onChange={(v) => setDigest("digest", v)} />
+        <Row title="Daily digest" help="One morning email with what changed. Sent only when there's something to report." checked={!(user?.digest_opt_out)} onChange={toggleEmailDigest} />
         <Row title="Weekly summary" help="Mondays · what changed across workspaces" checked={data?.weekly?.enabled} onChange={(v) => setDigest("weekly", v)} />
       </div>
       <p className="mt-4 text-body-s text-fg-tertiary">Bracket never notifies anyone except you.</p>

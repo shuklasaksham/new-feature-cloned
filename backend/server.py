@@ -240,6 +240,7 @@ class UpdateProfileIn(_BM):
     name: Optional[str] = _Fd(default=None, max_length=120)
     designation: Optional[str] = _Fd(default=None, max_length=120)
     avatar: Optional[str] = _Fd(default=None, max_length=20)
+    digest_opt_out: Optional[bool] = _Fd(default=None)
 
 
 async def _heal_orphaned_identity(canonical_user_id: str, email: str) -> dict:
