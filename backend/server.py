@@ -424,7 +424,10 @@ async def auth_otp_request(body: OtpRequestIn):
     if not name:
         u = await db.users.find_one({"email": email_norm}, {"_id": 0, "name": 1})
         name = (u or {}).get("name", "")
-    await send_otp_email(email_norm, name, code)
+    # In test mode we only return the dev_code for headless tests — never send a
+    # real email (that was the source of passcode-spam from automated logins).
+    if not test_mode:
+        await send_otp_email(email_norm, name, code)
     resp: Dict[str, Any] = {"ok": True, "ttl_minutes": 10}
     # Test-only convenience: return the OTP in the response so the testing
     # agent can log in headlessly (guarded by BRACKET_ENV + OTP_TEST_MODE).
