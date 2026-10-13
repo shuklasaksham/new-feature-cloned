@@ -737,6 +737,31 @@ async def gmail_list_sources(account: dict, q: str) -> List[dict]:
     return out
 
 
+async def gmail_threads_meta(account: dict, ids: List[str]) -> dict:
+    """Subject/From for specific thread ids (used by onboarding to label the
+    exact threads a user picked — including ones found via search that aren't in
+    the default inbox listing)."""
+    if not ids:
+        return {}
+    at = await _access_token(account)
+    headers = {"Authorization": f"Bearer {at}"}
+    out = {}
+    async with await _http() as c:
+        for tid in list(ids)[:20]:
+            try:
+                tr = await c.get(f"https://gmail.googleapis.com/gmail/v1/users/me/threads/{tid}",
+                                 headers=headers, params={"format": "metadata", "metadataHeaders": ["Subject", "From"]})
+                if tr.status_code != 200:
+                    continue
+                msgs = tr.json().get("messages", [])
+                hdrs = {h["name"]: h["value"] for h in ((msgs[0].get("payload") or {}).get("headers") or [])} if msgs else {}
+                out[tid] = {"name": hdrs.get("Subject") or "(no subject)",
+                            "url": f"https://mail.google.com/mail/u/0/#all/{tid}"}
+            except Exception:
+                continue
+    return out
+
+
 def _gmail_body_text(payload: dict) -> str:
     if payload.get("mimeType") == "text/plain" and (payload.get("body") or {}).get("data"):
         try:

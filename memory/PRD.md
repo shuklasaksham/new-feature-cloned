@@ -12,6 +12,13 @@ React + FastAPI + MongoDB. Live syncing with Gmail, Slack, Figma, GitHub.
 LLM extraction via Claude (Emergent LLM key). Payments: Razorpay. Emails: Resend. Auth: Google + OTP.
 
 ## Implemented (recent)
+- 2026-06: **Onboarding read-nothing bug fixed** (Choose → Start learning → Ready all 0s → empty overview).
+  Root cause: `_run_onboarding` re-listed `gmail_list_sources(account, "")` (default **12** inbox threads)
+  and intersected the user's picked ids against it — so any thread picked via **search** (not in the
+  default 12) was dropped, extraction got an empty `picked`, and 0 memory was created. Fix:
+  pass the user's chosen ids straight to `extract_sources_into_project` (it fetches each by id anyway);
+  Gmail labels resolved via new `gmail_threads_meta()`, Slack via the full channel listing; Figma/GitHub
+  unchanged (most-recent). Verified by harness that a searched/non-default thread id now reaches extraction.
 - 2026-06: **4 more reported bugs fixed** (testing_agent iteration_77 confirmed #1 & #2; #3/#4 are code-level, need a live Gmail to observe in-browser).
   1. **Sandbox runtime crash on conversations/pages** ('RangeError: Invalid time value') → added `safeFmt()`
      in `Conversations.jsx`; all `format(new Date(...))` guard invalid/missing dates. Verified via screenshot.

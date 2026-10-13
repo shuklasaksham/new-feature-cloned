@@ -23,7 +23,7 @@ from fastapi.responses import JSONResponse
 
 from auth import current_user_optional, current_user
 from connectors import (db, _get_account, gmail_list_sources, slack_list_sources,
-                        figma_list_sources, github_list_sources,
+                        figma_list_sources, github_list_sources, gmail_threads_meta,
                         oauth_auth_url, extract_sources_into_project, _plan_limit,
                         _active_project_count, PROVIDERS)
 import v2_real
@@ -432,9 +432,11 @@ async def _list_provider_sources(account, prov):
 
 async def _run_onboarding(user, wid, gmail_ids, slack_ids):
     uid = user["user_id"]
-    # gmail/slack use the user's explicit picks; figma/github auto-include the
-    # most recent sources of any connected account (no per-file picker in the wizard).
-    plan = [("gmail", set(gmail_ids)), ("slack", set(slack_ids))]
+    # gmail/slack use the user's explicit picks (fetched directly by id — we must
+    # NOT re-list + intersect, because that drops threads found via search that
+    # aren't in the default inbox listing). figma/github auto-include the most
+    # recent sources of any connected account (no per-file picker in the wizard).
+    plan = [("gmail", list(gmail_ids)), ("slack", list(slack_ids))]
     for prov in ("figma", "github"):
         try:
             if await _get_account(uid, prov):
@@ -449,14 +451,32 @@ async def _run_onboarding(user, wid, gmail_ids, slack_ids):
                 continue
             try:
                 account = await _get_account(uid, prov)
-                listed = await _list_provider_sources(account, prov)
             except Exception:
-                listed = []
+                account = None
+            if not account:
+                continue
             if ids is None:
-                chosen = listed[:3]
+                # figma/github: auto-include the most recent sources.
+                try:
+                    listed = await _list_provider_sources(account, prov)
+                except Exception:
+                    listed = []
+                picked = [{"id": s["id"], "name": s.get("name", ""), "url": s.get("url", "")} for s in listed[:3]]
+            elif prov == "gmail":
+                # Pick exactly the chosen thread ids; label them from metadata.
+                try:
+                    meta = await gmail_threads_meta(account, ids)
+                except Exception:
+                    meta = {}
+                picked = [{"id": tid, "name": (meta.get(tid) or {}).get("name", ""), "url": (meta.get(tid) or {}).get("url", "")} for tid in ids[:20]]
             else:
-                chosen = [s for s in listed if s["id"] in ids][:8]
-            picked = [{"id": s["id"], "name": s.get("name", ""), "url": s.get("url", "")} for s in chosen]
+                # slack: label chosen channels from the full channel listing.
+                try:
+                    listed = await _list_provider_sources(account, prov)
+                except Exception:
+                    listed = []
+                by_id = {s["id"]: s for s in listed}
+                picked = [{"id": cid, "name": (by_id.get(cid) or {}).get("name", ""), "url": (by_id.get(cid) or {}).get("url", "")} for cid in ids[:20]]
             if not picked:
                 continue
             run["providers"][prov] = {"label": f"Reading {len(picked)} {unit[prov]}", "done": False, "pct": 0.1, "eta": "about a minute"}
