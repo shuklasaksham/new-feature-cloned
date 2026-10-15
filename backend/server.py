@@ -4984,6 +4984,10 @@ _sandbox_v2.install(app)
 import v2_workspace as _v2ws  # noqa: E402
 app.include_router(_v2ws.router)
 
+# --- Voice AI (voice mode, AI client calls, call intelligence) router ---
+import voice_ai as _voice_ai  # noqa: E402
+app.include_router(_voice_ai.router)
+
 
 @app.on_event("startup")
 async def _start_connector_poller():

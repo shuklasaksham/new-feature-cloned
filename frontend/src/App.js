@@ -38,6 +38,7 @@ import { SandboxProvider } from "./v2/sandbox/sandbox";
 import SandboxEntry from "./v2/sandbox/SandboxEntry";
 import SandboxPlans from "./v2/sandbox/SandboxPlans";
 import { AdminRoutes } from "./v2/admin/AdminApp";
+import VoiceAIRoutes from "./features/voice-ai";
 
 import "./App.css";
 
@@ -128,6 +129,7 @@ export default function App() {
                       <Route path="/app" element={<Tool><AppEntry /></Tool>} />
                       <Route path="/welcome" element={<Tool><Onboarding2 /></Tool>} />
                       <Route path="/connect" element={<Tool><Onboarding2 /></Tool>} />
+                      <Route path="/voice/*" element={<Tool><VoiceAIRoutes /></Tool>} />
                       <Route path="/settings" element={<Tool><SettingsRedirect /></Tool>} />
                       <Route path="/settings/:section" element={<Tool><SettingsRedirect /></Tool>} />
                       <Route path="/w/:id" element={<Tool><WorkspaceLayout /></Tool>}>
