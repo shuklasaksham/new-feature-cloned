@@ -4854,6 +4854,10 @@ app.include_router(_connectors.router)
 import demo as _demo  # noqa: E402
 app.include_router(_demo.router)
 
+# --- Voice AI (voice mode, AI client calls, call intelligence) router ---
+import voice_ai as _voice_ai  # noqa: E402
+app.include_router(_voice_ai.router)
+
 
 @app.on_event("startup")
 async def _start_connector_poller():

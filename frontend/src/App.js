@@ -38,6 +38,7 @@ import ProjectFlow from "./pages/ProjectFlow";
 import ProjectOverview from "./pages/ProjectOverview";
 import ProjectDocument from "./pages/ProjectDocument";
 import ClientReview from "./pages/ClientReview";
+import VoiceAIRoutes from "./features/voice-ai";
 
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -101,6 +102,7 @@ export default function App() {
           <Route path="/app/new" element={<Tool><AppEntry /></Tool>} />
           <Route path="/app/connect" element={<Tool><ConnectWork /></Tool>} />
           <Route path="/app/activity" element={<Tool><AppShell><Activity /></AppShell></Tool>} />
+          <Route path="/voice/*" element={<Tool><VoiceAIRoutes /></Tool>} />
           <Route path="/start" element={<Navigate to="/app" replace />} />
           <Route path="/settings" element={<ProtectedRoute><AppShell><Settings /></AppShell></ProtectedRoute>} />
           <Route path="/project/:id" element={<ProtectedRoute><ProjectMemory /></ProtectedRoute>} />
